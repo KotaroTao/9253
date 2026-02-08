@@ -26,11 +26,20 @@ echo "[2/5] npm install..."
 npm ci --production=false
 echo "  ✓ 完了"
 
-# --- 3. Prisma マイグレーション ---
+# --- 3. Prisma マイグレーション + シード ---
 echo ""
 echo "[3/5] Prisma マイグレーション..."
 npx prisma generate
 npx prisma migrate deploy
+# 初回のみ: デモデータが存在しなければseed実行
+npx tsx -e "
+  const { PrismaClient } = require('@prisma/client');
+  const p = new PrismaClient();
+  p.user.count().then(c => {
+    if (c === 0) { console.log('  DB is empty, running seed...'); process.exit(0); }
+    else { console.log('  Seed skipped (users exist)'); process.exit(1); }
+  }).catch(() => process.exit(0)).finally(() => p.\$disconnect());
+" && npm run db:seed || true
 echo "  ✓ 完了"
 
 # --- 4. Next.js ビルド ---
