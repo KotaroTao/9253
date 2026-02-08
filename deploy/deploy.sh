@@ -16,7 +16,8 @@ echo "=========================================="
 # --- 1. 最新コード取得 ---
 echo ""
 echo "[1/5] 最新コード取得..."
-git pull origin main
+git fetch origin main
+git reset --hard origin/main
 echo "  ✓ 完了"
 
 # --- 2. 依存関係インストール ---
