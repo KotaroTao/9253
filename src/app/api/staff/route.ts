@@ -1,32 +1,25 @@
 import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { createStaffSchema } from "@/lib/validations/staff"
-import { requireAuth, isAuthError } from "@/lib/auth-helpers"
+import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
+import { messages } from "@/lib/messages"
 
 export async function POST(request: NextRequest) {
-  const authResult = await requireAuth()
+  const authResult = await requireRole("clinic_admin", "system_admin")
   if (isAuthError(authResult)) return authResult
+
+  const clinicId = authResult.user.clinicId
+  if (!clinicId) {
+    return errorResponse(messages.common.error, 400)
+  }
 
   try {
     const body = await request.json()
     const parsed = createStaffSchema.safeParse(body)
 
     if (!parsed.success) {
-      return errorResponse("入力内容に不備があります", 400)
-    }
-
-    const clinicId = body.clinicId || authResult.user.clinicId
-    if (!clinicId) {
-      return errorResponse("クリニックが指定されていません", 400)
-    }
-
-    // clinic_admin can only create staff in their own clinic
-    if (
-      authResult.user.role === "clinic_admin" &&
-      authResult.user.clinicId !== clinicId
-    ) {
-      return errorResponse("アクセス権限がありません", 403)
+      return errorResponse(messages.common.error, 400)
     }
 
     const staff = await prisma.staff.create({
@@ -39,6 +32,6 @@ export async function POST(request: NextRequest) {
 
     return successResponse(staff, 201)
   } catch {
-    return errorResponse("スタッフの作成に失敗しました", 500)
+    return errorResponse(messages.common.error, 500)
   }
 }

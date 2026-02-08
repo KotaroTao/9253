@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     const parsed = surveySubmissionSchema.safeParse(body)
 
     if (!parsed.success) {
-      return errorResponse("入力内容に不備があります", 400, {
+      return errorResponse(messages.errors.invalidInput, 400, {
         errors: parsed.error.flatten().fieldErrors,
       })
     }
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       (t) => t.id === templateId
     )
     if (!template) {
-      return errorResponse("無効なテンプレートです", 400)
+      return errorResponse(messages.errors.invalidTemplate, 400)
     }
 
     // Rate limit by IP

@@ -28,7 +28,7 @@ export default async function SurveysPage({ searchParams }: SurveysPageProps) {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{messages.nav.surveys}</h1>
         <p className="text-sm text-muted-foreground">
-          全 {total} 件
+          {total}{messages.common.countSuffix}
         </p>
       </div>
 
@@ -61,7 +61,7 @@ export default async function SurveysPage({ searchParams }: SurveysPageProps) {
                       <p className="text-muted-foreground">{r.freeText}</p>
                     )}
                     <p className="text-xs text-muted-foreground">
-                      テンプレート: {r.template.name}
+                      {messages.dashboard.templateLabel}: {r.template.name}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1">
@@ -78,7 +78,7 @@ export default async function SurveysPage({ searchParams }: SurveysPageProps) {
                     </span>
                     {r.reviewClicked && (
                       <span className="text-xs text-primary">
-                        レビュー済み
+                        {messages.dashboard.reviewCompleted}
                       </span>
                     )}
                   </div>

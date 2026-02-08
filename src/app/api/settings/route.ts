@@ -1,16 +1,17 @@
 import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { updateClinicSchema } from "@/lib/validations/clinic"
-import { requireAuth, isAuthError } from "@/lib/auth-helpers"
+import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
+import { messages } from "@/lib/messages"
 
 export async function PATCH(request: NextRequest) {
-  const authResult = await requireAuth()
+  const authResult = await requireRole("clinic_admin", "system_admin")
   if (isAuthError(authResult)) return authResult
 
   const clinicId = authResult.user.clinicId
   if (!clinicId) {
-    return errorResponse("クリニックが関連付けられていません", 400)
+    return errorResponse(messages.errors.clinicNotAssociated, 400)
   }
 
   try {
@@ -18,7 +19,7 @@ export async function PATCH(request: NextRequest) {
     const parsed = updateClinicSchema.safeParse(body)
 
     if (!parsed.success) {
-      return errorResponse("入力内容に不備があります", 400)
+      return errorResponse(messages.errors.invalidInput, 400)
     }
 
     const clinic = await prisma.clinic.update({
@@ -28,6 +29,6 @@ export async function PATCH(request: NextRequest) {
 
     return successResponse(clinic)
   } catch {
-    return errorResponse("設定の更新に失敗しました", 500)
+    return errorResponse(messages.errors.settingsUpdateFailed, 500)
   }
 }

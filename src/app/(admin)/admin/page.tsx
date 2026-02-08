@@ -67,13 +67,13 @@ export default async function AdminPage() {
                   <div className="flex gap-6 text-right text-sm">
                     <div>
                       <p className="font-medium">{clinic._count.staff}</p>
-                      <p className="text-xs text-muted-foreground">スタッフ</p>
+                      <p className="text-xs text-muted-foreground">{messages.common.staffLabel}</p>
                     </div>
                     <div>
                       <p className="font-medium">
                         {clinic._count.surveyResponses}
                       </p>
-                      <p className="text-xs text-muted-foreground">回答数</p>
+                      <p className="text-xs text-muted-foreground">{messages.common.responseCount}</p>
                     </div>
                   </div>
                 </div>

@@ -2,6 +2,7 @@
 
 import { Star } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { messages } from "@/lib/messages"
 
 interface StarRatingProps {
   value: number
@@ -22,7 +23,7 @@ export function StarRating({ value, onChange, disabled }: StarRatingProps) {
             "rounded-full p-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             disabled && "cursor-not-allowed opacity-50"
           )}
-          aria-label={`${star}点`}
+          aria-label={`${star}${messages.survey.scoreSuffix}`}
         >
           <Star
             className={cn(

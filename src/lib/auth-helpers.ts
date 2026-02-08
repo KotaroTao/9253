@@ -1,5 +1,6 @@
 import { auth } from "@/auth"
 import { errorResponse } from "@/lib/api-helpers"
+import { messages } from "@/lib/messages"
 import type { UserRole } from "@/types"
 
 interface AuthResult {
@@ -20,7 +21,7 @@ export async function requireAuth(): Promise<AuthResult | Response> {
   const session = await auth()
 
   if (!session?.user) {
-    return errorResponse("認証が必要です", 401)
+    return errorResponse(messages.errors.authRequired, 401)
   }
 
   return { user: session.user }
@@ -40,7 +41,7 @@ export async function requireRole(
   }
 
   if (!roles.includes(result.user.role as UserRole)) {
-    return errorResponse("アクセス権限がありません", 403)
+    return errorResponse(messages.errors.accessDenied, 403)
   }
 
   return result
@@ -66,7 +67,7 @@ export async function requireClinicAccess(
 
   // clinic_admin は自分のクリニックのみ
   if (result.user.clinicId !== clinicId) {
-    return errorResponse("アクセス権限がありません", 403)
+    return errorResponse(messages.errors.accessDenied, 403)
   }
 
   return result

@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 
 export async function getStaffByToken(qrToken: string) {
-  return prisma.staff.findUnique({
+  return prisma.staff.findFirst({
     where: { qrToken, isActive: true },
     include: {
       clinic: {

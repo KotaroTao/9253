@@ -94,7 +94,7 @@ export function StaffList({ staffList, clinicId }: StaffListProps) {
                   size="sm"
                   onClick={() => handleToggleActive(staff.id, staff.isActive)}
                 >
-                  {staff.isActive ? "無効化" : "有効化"}
+                  {staff.isActive ? messages.staff.deactivate : messages.staff.activate}
                 </Button>
               </div>
             </CardContent>
