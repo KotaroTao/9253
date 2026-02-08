@@ -39,32 +39,29 @@ async function main() {
       settings: {},
     },
   })
-  console.log(`Clinic created: ${clinic.name} (${clinic.id})`)
+  console.log(`Clinic: ${clinic.name} (${clinic.id})`)
 
-  // Create staff members
+  // Create staff members (upsert by qrToken)
   const staffData = [
-    { name: "田中 花子", role: "hygienist" },
-    { name: "佐藤 太郎", role: "dentist" },
-    { name: "鈴木 美咲", role: "staff" },
+    { name: "田中 花子", role: "hygienist", qrToken: "demo-token-田中-花子" },
+    { name: "佐藤 太郎", role: "dentist", qrToken: "demo-token-佐藤-太郎" },
+    { name: "鈴木 美咲", role: "staff", qrToken: "demo-token-鈴木-美咲" },
   ]
 
   const staffMembers = []
   for (const s of staffData) {
     const staff = await prisma.staff.upsert({
-      where: {
-        id: undefined as unknown as string,
-        qrToken: `demo-token-${s.name}`,
-      },
+      where: { qrToken: s.qrToken },
       update: {},
       create: {
         clinicId: clinic.id,
         name: s.name,
         role: s.role,
-        qrToken: `demo-token-${s.name.replace(/\s/g, "-")}`,
+        qrToken: s.qrToken,
       },
     })
     staffMembers.push(staff)
-    console.log(`Staff created: ${staff.name} (qrToken: ${staff.qrToken})`)
+    console.log(`Staff: ${staff.name} (qrToken: ${staff.qrToken})`)
   }
 
   // Create system admin user
@@ -79,7 +76,7 @@ async function main() {
       role: "system_admin",
     },
   })
-  console.log(`System admin created: ${admin.email}`)
+  console.log(`System admin: ${admin.email}`)
 
   // Create clinic admin user
   const clinicPassword = await bcrypt.hash("clinic123", 10)
@@ -94,10 +91,14 @@ async function main() {
       clinicId: clinic.id,
     },
   })
-  console.log(`Clinic admin created: ${clinicAdmin.email}`)
+  console.log(`Clinic admin: ${clinicAdmin.email}`)
 
-  // Create default survey template
-  const template = await prisma.surveyTemplate.create({
+  // Create default survey template (skip if one already exists for this clinic)
+  const existingTemplate = await prisma.surveyTemplate.findFirst({
+    where: { clinicId: clinic.id, isActive: true },
+  })
+
+  const template = existingTemplate ?? await prisma.surveyTemplate.create({
     data: {
       clinicId: clinic.id,
       name: "デフォルトアンケート",
@@ -105,39 +106,47 @@ async function main() {
       isActive: true,
     },
   })
-  console.log(`Survey template created: ${template.name} (${template.id})`)
+  console.log(`Template: ${template.name} (${template.id})`)
 
-  // Create sample survey responses
-  const now = new Date()
-  const sampleResponses = []
-  for (let i = 0; i < 30; i++) {
-    const staff = staffMembers[i % staffMembers.length]
-    const daysAgo = Math.floor(Math.random() * 60)
-    const respondedAt = new Date(now.getTime() - daysAgo * 86400000)
+  // Create sample survey responses (skip if responses already exist)
+  const existingCount = await prisma.surveyResponse.count({
+    where: { clinicId: clinic.id },
+  })
 
-    const q1Score = Math.random() > 0.2 ? Math.ceil(Math.random() * 2) + 3 : Math.ceil(Math.random() * 3)
-    const q2Score = Math.random() > 0.2 ? Math.ceil(Math.random() * 2) + 3 : Math.ceil(Math.random() * 3)
-    const q3Score = Math.random() > 0.2 ? Math.ceil(Math.random() * 2) + 3 : Math.ceil(Math.random() * 3)
-    const overallScore = (q1Score + q2Score + q3Score) / 3
+  if (existingCount === 0) {
+    const now = new Date()
+    const sampleResponses = []
+    for (let i = 0; i < 30; i++) {
+      const staff = staffMembers[i % staffMembers.length]
+      const daysAgo = Math.floor(Math.random() * 60)
+      const respondedAt = new Date(now.getTime() - daysAgo * 86400000)
 
-    const reviewClicked = Math.random() > 0.8
+      const q1Score = Math.random() > 0.2 ? Math.ceil(Math.random() * 2) + 3 : Math.ceil(Math.random() * 3)
+      const q2Score = Math.random() > 0.2 ? Math.ceil(Math.random() * 2) + 3 : Math.ceil(Math.random() * 3)
+      const q3Score = Math.random() > 0.2 ? Math.ceil(Math.random() * 2) + 3 : Math.ceil(Math.random() * 3)
+      const overallScore = (q1Score + q2Score + q3Score) / 3
 
-    sampleResponses.push({
-      clinicId: clinic.id,
-      staffId: staff.id,
-      templateId: template.id,
-      answers: { q1: q1Score, q2: q2Score, q3: q3Score },
-      overallScore,
-      freeText: i % 5 === 0 ? "丁寧に対応していただきありがとうございました。" : null,
-      reviewRequested: true,
-      reviewClicked,
-      ipHash: `sample-hash-${i}`,
-      respondedAt,
-    })
+      const reviewClicked = Math.random() > 0.8
+
+      sampleResponses.push({
+        clinicId: clinic.id,
+        staffId: staff.id,
+        templateId: template.id,
+        answers: { q1: q1Score, q2: q2Score, q3: q3Score },
+        overallScore,
+        freeText: i % 5 === 0 ? "丁寧に対応していただきありがとうございました。" : null,
+        reviewRequested: true,
+        reviewClicked,
+        ipHash: `sample-hash-${i}`,
+        respondedAt,
+      })
+    }
+
+    await prisma.surveyResponse.createMany({ data: sampleResponses })
+    console.log(`Sample responses created: ${sampleResponses.length} records`)
+  } else {
+    console.log(`Sample responses skipped (${existingCount} already exist)`)
   }
-
-  await prisma.surveyResponse.createMany({ data: sampleResponses })
-  console.log(`Sample survey responses created: ${sampleResponses.length} records`)
 
   console.log("\nSeed completed!")
   console.log("\n--- Login Credentials ---")
