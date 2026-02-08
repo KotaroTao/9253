@@ -26,13 +26,14 @@ echo "[2/5] npm install..."
 npm ci --production=false
 echo "  ✓ 完了"
 
-# --- 3. Prisma マイグレーション + シード ---
+# --- 3. Prisma スキーマ同期 + シード ---
 echo ""
-echo "[3/5] Prisma マイグレーション..."
+echo "[3/5] Prisma スキーマ同期..."
 npx prisma generate
-npx prisma migrate deploy
-# seed: upsertベースなので既存データは上書きしない
-npm run db:seed || echo "  ⚠ seed失敗（既にデータがある場合は正常）"
+npx prisma db push --accept-data-loss
+echo "  ✓ スキーマ同期完了"
+echo "  シード実行..."
+npm run db:seed
 echo "  ✓ 完了"
 
 # --- 4. Next.js ビルド ---
