@@ -31,15 +31,8 @@ echo ""
 echo "[3/5] Prisma マイグレーション..."
 npx prisma generate
 npx prisma migrate deploy
-# 初回のみ: デモデータが存在しなければseed実行
-npx tsx -e "
-  const { PrismaClient } = require('@prisma/client');
-  const p = new PrismaClient();
-  p.user.count().then(c => {
-    if (c === 0) { console.log('  DB is empty, running seed...'); process.exit(0); }
-    else { console.log('  Seed skipped (users exist)'); process.exit(1); }
-  }).catch(() => process.exit(0)).finally(() => p.\$disconnect());
-" && npm run db:seed || true
+# seed: upsertベースなので既存データは上書きしない
+npm run db:seed || echo "  ⚠ seed失敗（既にデータがある場合は正常）"
 echo "  ✓ 完了"
 
 # --- 4. Next.js ビルド ---
