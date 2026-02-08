@@ -22,4 +22,5 @@ jobs:
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           script: |
             cd /var/www/9253
+            git stash --include-untracked || true
             bash deploy/deploy.sh
