@@ -66,7 +66,7 @@ echo ""
 echo "  ⚠️  重要: PostgreSQLのパスワードを変更してください！"
 echo "     sudo -u postgres psql -c \"ALTER USER mieru WITH PASSWORD 'あなたの強力なパスワード';\""
 
-# --- 5. Nginx 設定 ---
+# --- 5. Nginx 設定（HTTP のみ、SSL は certbot が後で自動追加） ---
 echo ""
 echo "[5/7] Nginx 設定..."
 cat > /etc/nginx/sites-available/mieru-clinic.com << 'NGINX_CONF'
@@ -79,27 +79,6 @@ server {
     location /.well-known/acme-challenge/ {
         root /var/www/html;
     }
-
-    # HTTPS にリダイレクト（SSL証明書取得後に有効化）
-    location / {
-        return 301 https://$host$request_uri;
-    }
-}
-
-server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
-    server_name mieru-clinic.com www.mieru-clinic.com;
-
-    # SSL証明書（certbot が自動設定）
-    # ssl_certificate /etc/letsencrypt/live/mieru-clinic.com/fullchain.pem;
-    # ssl_certificate_key /etc/letsencrypt/live/mieru-clinic.com/privkey.pem;
-
-    # セキュリティヘッダー
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 
     # Next.js アプリへのリバースプロキシ
     location / {
@@ -122,12 +101,6 @@ server {
         proxy_cache_valid 60m;
         add_header Cache-Control "public, max-age=31536000, immutable";
     }
-
-    # favicon等
-    location /favicon.ico {
-        proxy_pass http://127.0.0.1:3000;
-        access_log off;
-    }
 }
 NGINX_CONF
 
@@ -149,44 +122,18 @@ ufw allow 'Nginx Full'
 ufw --force enable
 echo "  ✓ UFW 設定完了 (SSH + Nginx許可)"
 
-# --- 7. SSL証明書取得（まずHTTPのみで起動） ---
+# --- 7. Nginx 起動 & SSL案内 ---
 echo ""
-echo "[7/7] SSL証明書の取得..."
-
-# まずHTTPのみのNginx設定で起動
-cat > /etc/nginx/sites-available/mieru-clinic.com << 'NGINX_HTTP_ONLY'
-server {
-    listen 80;
-    listen [::]:80;
-    server_name mieru-clinic.com www.mieru-clinic.com;
-
-    location /.well-known/acme-challenge/ {
-        root /var/www/html;
-    }
-
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-NGINX_HTTP_ONLY
-
+echo "[7/7] Nginx 起動..."
 systemctl restart nginx
 
 echo ""
-echo "  Nginx を HTTP のみで起動しました。"
+echo "  ✓ Nginx を HTTP で起動しました。"
 echo "  SSL証明書を取得するには以下を実行してください："
 echo ""
 echo "  certbot --nginx -d mieru-clinic.com -d www.mieru-clinic.com"
 echo ""
-echo "  ※ DNS Aレコードがこのサーバーを指していることを確認してから実行してください"
+echo "  ※ certbot が Nginx 設定にSSL(HTTPS)を自動追加します"
 
 # --- 完了 ---
 echo ""
