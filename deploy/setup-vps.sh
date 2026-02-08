@@ -82,7 +82,7 @@ server {
 
     # Next.js アプリへのリバースプロキシ
     location / {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:3001;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -97,7 +97,7 @@ server {
 
     # 静的ファイルキャッシュ
     location /_next/static {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:3001;
         proxy_cache_valid 60m;
         add_header Cache-Control "public, max-age=31536000, immutable";
     }
