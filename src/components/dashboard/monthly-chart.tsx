@@ -51,7 +51,7 @@ export function MonthlyChart({ data }: MonthlyChartProps) {
               stroke="hsl(221.2, 83.2%, 53.3%)"
               strokeWidth={2}
               dot={{ r: 4 }}
-              name="平均スコア"
+              name={messages.dashboard.avgScore}
             />
           </LineChart>
         </ResponsiveContainer>

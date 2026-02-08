@@ -17,6 +17,26 @@ export const messages = {
     search: "検索",
     noData: "データがありません",
     poweredBy: "Powered by MIERU Clinic",
+    countSuffix: "件",
+    staffLabel: "スタッフ",
+    responseCount: "回答数",
+  },
+  errors: {
+    authRequired: "認証が必要です",
+    accessDenied: "アクセス権限がありません",
+    invalidInput: "入力内容に不備があります",
+    clinicNotAssociated: "クリニックが関連付けられていません",
+    settingsUpdateFailed: "設定の更新に失敗しました",
+    staffNotFound: "スタッフが見つかりません",
+    staffUpdateFailed: "スタッフの更新に失敗しました",
+    invalidTemplate: "無効なテンプレートです",
+  },
+  validations: {
+    validUrl: "有効なURLを入力してください",
+    clinicNameRequired: "クリニック名を入力してください",
+    slugFormat: "英小文字・数字・ハイフンのみ使用できます",
+    staffTokenRequired: "スタッフトークンが必要です",
+    invalidTemplateId: "無効なテンプレートIDです",
   },
   auth: {
     login: "ログイン",
@@ -44,6 +64,7 @@ export const messages = {
     invalidQrSub: "このリンクは無効です。スタッフにお声がけください。",
     alreadySubmitted: "すでにアンケートにご回答いただいております",
     rateLimited: "送信回数の上限に達しました",
+    scoreSuffix: "点",
     closeMessage: "お大事になさってください",
     visitAgain: "またのご来院をお待ちしております",
   },
@@ -58,6 +79,9 @@ export const messages = {
     trend: "満足度推移",
     viewDetails: "詳細を見る",
     period: "期間",
+    avgScore: "平均スコア",
+    templateLabel: "テンプレート",
+    reviewCompleted: "レビュー済み",
   },
   staff: {
     management: "スタッフ管理",
@@ -77,6 +101,8 @@ export const messages = {
     surveyCount: "回答数",
     avgScore: "平均スコア",
     nameRequired: "名前を入力してください",
+    deactivate: "無効化",
+    activate: "有効化",
   },
   settings: {
     title: "設定",
@@ -107,5 +133,33 @@ export const messages = {
     addClinic: "クリニックを追加",
     clinicCount: "登録クリニック数",
     totalResponses: "総回答数",
+    navTitle: "MIERU Admin",
+  },
+  landing: {
+    login: "ログイン",
+    getStarted: "はじめる",
+    featuresTitle: "MIERU Clinicの特徴",
+    flowTitle: "ご利用の流れ",
+    heroDescription:
+      "医療機関専用の患者体験改善プラットフォーム。アンケートで患者体験を可視化し、医院の改善と成長を支援します。",
+    copyright: "© 2025 株式会社ファンクション・ティ. All rights reserved.",
+    feature1Title: "30秒アンケート",
+    feature1Desc:
+      "QRコードを読み取るだけ。患者さまの負担を最小限に、リアルな声を収集します。",
+    feature2Title: "患者体験の見える化",
+    feature2Desc:
+      "満足度スコア、スタッフ別評価、月次推移をダッシュボードで一目で把握できます。",
+    feature3Title: "スタッフ別評価",
+    feature3Desc:
+      "スタッフごとの患者満足度を可視化。チーム全体のサービス向上に貢献します。",
+    feature4Title: "Googleレビュー連携",
+    feature4Desc:
+      "アンケート完了後、自然な流れでGoogleレビューをご案内。口コミ獲得をサポートします。",
+    flow1Title: "QRコード配置",
+    flow1Desc: "スタッフごとのQRコードを受付や診察室に設置",
+    flow2Title: "患者が回答",
+    flow2Desc: "スマホで30秒のアンケートに回答",
+    flow3Title: "データ分析",
+    flow3Desc: "ダッシュボードで満足度をリアルタイム把握",
   },
 } as const

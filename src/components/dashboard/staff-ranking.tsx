@@ -45,7 +45,7 @@ export function StaffRanking({ ranking }: StaffRankingProps) {
                     <span className="font-medium">{s.avgScore.toFixed(1)}</span>
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {s.responseCount}件
+                    {s.responseCount}{messages.common.countSuffix}
                   </span>
                 </div>
               </div>
