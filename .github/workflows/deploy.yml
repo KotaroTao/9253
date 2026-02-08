@@ -1,0 +1,25 @@
+# =============================================================
+# 自動デプロイ - mainブランチへのマージ時にVPSへデプロイ
+# =============================================================
+name: Deploy to VPS
+
+# いつ実行するか: mainブランチにpushされた時
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # SSHでVPSに接続してdeploy.shを実行
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: 210.131.223.161
+          username: root
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/9253
+            bash deploy/deploy.sh
