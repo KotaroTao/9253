@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { LoginForm } from "@/components/auth/login-form"
@@ -10,6 +11,10 @@ import {
 } from "@/components/ui/card"
 import { APP_NAME, APP_DESCRIPTION } from "@/lib/constants"
 import { messages } from "@/lib/messages"
+
+export const metadata: Metadata = {
+  title: "ログイン | MIERU Clinic",
+}
 
 export default async function LoginPage() {
   const session = await auth()

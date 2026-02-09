@@ -16,6 +16,7 @@ export const messages = {
     logout: "ログアウト",
     search: "検索",
     noData: "データがありません",
+    retry: "再試行",
     poweredBy: "Powered by MIERU Clinic",
     countSuffix: "件",
     staffLabel: "スタッフ",

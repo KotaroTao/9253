@@ -21,14 +21,32 @@ export function StaffList({ staffList, clinicId }: StaffListProps) {
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingStaff, setEditingStaff] = useState<StaffWithStats | null>(null)
   const [qrStaff, setQrStaff] = useState<StaffWithStats | null>(null)
+  const [togglingId, setTogglingId] = useState<string | null>(null)
 
   async function handleToggleActive(staffId: string, isActive: boolean) {
-    await fetch(`/api/staff/${staffId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isActive: !isActive }),
-    })
-    router.refresh()
+    const confirmMsg = isActive
+      ? messages.staff.deactivateConfirm
+      : messages.staff.activateConfirm
+    if (!window.confirm(confirmMsg)) return
+
+    setTogglingId(staffId)
+    try {
+      const res = await fetch(`/api/staff/${staffId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !isActive }),
+      })
+      if (!res.ok) {
+        const body = await res.json()
+        alert(body.error || messages.common.error)
+        return
+      }
+      router.refresh()
+    } catch {
+      alert(messages.common.error)
+    } finally {
+      setTogglingId(null)
+    }
   }
 
   return (
@@ -45,14 +63,14 @@ export function StaffList({ staffList, clinicId }: StaffListProps) {
           <Card key={staff.id} className={!staff.isActive ? "opacity-60" : ""}>
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-semibold">{staff.name}</h3>
+                <div className="min-w-0 flex-1">
+                  <h3 className="truncate font-semibold">{staff.name}</h3>
                   <p className="text-sm text-muted-foreground">
                     {STAFF_ROLE_LABELS[staff.role] ?? staff.role}
                   </p>
                 </div>
                 <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                  className={`ml-2 shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
                     staff.isActive
                       ? "bg-green-100 text-green-700"
                       : "bg-gray-100 text-gray-500"
@@ -92,9 +110,14 @@ export function StaffList({ staffList, clinicId }: StaffListProps) {
                 <Button
                   variant="ghost"
                   size="sm"
+                  disabled={togglingId === staff.id}
                   onClick={() => handleToggleActive(staff.id, staff.isActive)}
                 >
-                  {staff.isActive ? messages.staff.deactivate : messages.staff.activate}
+                  {togglingId === staff.id
+                    ? messages.common.loading
+                    : staff.isActive
+                      ? messages.staff.deactivate
+                      : messages.staff.activate}
                 </Button>
               </div>
             </CardContent>

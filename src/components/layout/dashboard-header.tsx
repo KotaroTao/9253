@@ -22,6 +22,7 @@ export function DashboardHeader({
           size="icon"
           className="lg:hidden"
           onClick={onMenuToggle}
+          aria-label="メニュー"
         >
           <Menu className="h-5 w-5" />
         </Button>

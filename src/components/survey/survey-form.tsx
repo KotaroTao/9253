@@ -26,6 +26,7 @@ export function SurveyForm({
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [freeText, setFreeText] = useState("")
   const [error, setError] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitResult, setSubmitResult] = useState<SurveySubmitResult | null>(
     null
   )
@@ -45,6 +46,7 @@ export function SurveyForm({
   }
 
   async function handleSubmit() {
+    setIsSubmitting(true)
     setStep("submitting")
     setError("")
 
@@ -63,6 +65,7 @@ export function SurveyForm({
       if (!res.ok) {
         const body = await res.json()
         setError(body.error || messages.common.error)
+        setIsSubmitting(false)
         setStep("freetext")
         return
       }
@@ -72,6 +75,7 @@ export function SurveyForm({
       setStep("thanks")
     } catch {
       setError(messages.common.error)
+      setIsSubmitting(false)
       setStep("freetext")
     }
   }
@@ -187,8 +191,8 @@ export function SurveyForm({
             >
               {messages.common.back}
             </Button>
-            <Button className="flex-1" onClick={handleSubmit}>
-              {messages.common.submit}
+            <Button className="flex-1" onClick={handleSubmit} disabled={isSubmitting}>
+              {isSubmitting ? messages.common.loading : messages.common.submit}
             </Button>
           </div>
         </CardContent>

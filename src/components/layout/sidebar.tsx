@@ -32,7 +32,7 @@ export function Sidebar({ role }: SidebarProps) {
   return (
     <aside className="flex h-screen w-60 flex-col border-r bg-card">
       <div className="flex h-14 items-center border-b px-4">
-        <Link href="/dashboard" className="text-lg font-bold text-primary">
+        <Link href="/dashboard" className="truncate text-lg font-bold text-primary">
           {APP_NAME}
         </Link>
       </div>
@@ -53,8 +53,8 @@ export function Sidebar({ role }: SidebarProps) {
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
-              <item.icon className="h-4 w-4" />
-              {item.label}
+              <item.icon className="h-4 w-4 shrink-0" />
+              <span className="truncate">{item.label}</span>
             </Link>
           )
         })}

@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { messages } from "@/lib/messages"
 import { STAFF_ROLE_LABELS } from "@/lib/constants"
+import { X } from "lucide-react"
 import type { StaffWithStats } from "@/types"
 
 interface StaffFormDialogProps {
@@ -26,6 +27,16 @@ export function StaffFormDialog({
   const [role, setRole] = useState(staff?.role ?? "staff")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const dialogRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose()
+    }
+    document.addEventListener("keydown", handleKeyDown)
+    dialogRef.current?.focus()
+    return () => document.removeEventListener("keydown", handleKeyDown)
+  }, [onClose])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -57,9 +68,27 @@ export function StaffFormDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-lg border bg-card p-6 shadow-lg">
-        <h2 className="mb-4 text-lg font-semibold">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="staff-form-title"
+    >
+      <div
+        ref={dialogRef}
+        tabIndex={-1}
+        className="relative w-full max-w-md rounded-lg border bg-card p-6 shadow-lg outline-none"
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-3 top-3 rounded-sm p-1 text-muted-foreground hover:text-foreground"
+          aria-label={messages.common.close}
+        >
+          <X className="h-4 w-4" />
+        </button>
+        <h2 id="staff-form-title" className="mb-4 text-lg font-semibold">
           {isEdit ? messages.staff.editStaff : messages.staff.addStaff}
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">

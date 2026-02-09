@@ -1,8 +1,13 @@
+import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { getStaffWithStats } from "@/lib/queries/staff"
 import { StaffList } from "@/components/staff/staff-list"
 import { messages } from "@/lib/messages"
+
+export const metadata: Metadata = {
+  title: "スタッフ管理 | MIERU Clinic",
+}
 
 export default async function StaffPage() {
   const session = await auth()

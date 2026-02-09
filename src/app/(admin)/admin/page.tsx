@@ -1,7 +1,12 @@
+import type { Metadata } from "next"
 import { getAllClinics } from "@/lib/queries/clinics"
 import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
+
+export const metadata: Metadata = {
+  title: "システム管理 | MIERU Clinic",
+}
 
 export default async function AdminPage() {
   const [{ clinics, total }, totalResponses] = await Promise.all([

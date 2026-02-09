@@ -102,8 +102,15 @@ export function SettingsForm({ clinic }: SettingsFormProps) {
               type="button"
               role="switch"
               aria-checked={enableReview}
+              aria-label={messages.settings.enableReview}
               onClick={() => setEnableReview(!enableReview)}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+              onKeyDown={(e) => {
+                if (e.key === " " || e.key === "Enter") {
+                  e.preventDefault()
+                  setEnableReview(!enableReview)
+                }
+              }}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                 enableReview ? "bg-primary" : "bg-muted"
               }`}
             >

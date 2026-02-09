@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { getDashboardStats } from "@/lib/queries/stats"
@@ -7,6 +8,10 @@ import { MonthlyChart } from "@/components/dashboard/monthly-chart"
 import { RecentResponses } from "@/components/dashboard/recent-responses"
 import { StaffRanking } from "@/components/dashboard/staff-ranking"
 import { messages } from "@/lib/messages"
+
+export const metadata: Metadata = {
+  title: "ダッシュボード | MIERU Clinic",
+}
 
 export default async function DashboardPage() {
   const session = await auth()

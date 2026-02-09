@@ -42,7 +42,7 @@ export function RecentResponses({ responses }: RecentResponsesProps) {
                     </span>
                   </div>
                   {r.freeText && (
-                    <p className="text-muted-foreground">{r.freeText}</p>
+                    <p className="line-clamp-2 text-muted-foreground">{r.freeText}</p>
                   )}
                 </div>
                 <div className="flex flex-col items-end gap-1">

@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { getSurveyResponses } from "@/lib/queries/surveys"
@@ -5,6 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
 import { STAFF_ROLE_LABELS } from "@/lib/constants"
 import { Star } from "lucide-react"
+
+export const metadata: Metadata = {
+  title: "アンケート一覧 | MIERU Clinic",
+}
 
 interface SurveysPageProps {
   searchParams: { page?: string }
@@ -58,7 +63,7 @@ export default async function SurveysPage({ searchParams }: SurveysPageProps) {
                       </span>
                     </div>
                     {r.freeText && (
-                      <p className="text-muted-foreground">{r.freeText}</p>
+                      <p className="line-clamp-2 text-muted-foreground">{r.freeText}</p>
                     )}
                     <p className="text-xs text-muted-foreground">
                       {messages.dashboard.templateLabel}: {r.template.name}

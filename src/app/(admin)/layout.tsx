@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+import Link from "next/link"
 import { auth } from "@/auth"
 import { messages } from "@/lib/messages"
 
@@ -21,16 +22,16 @@ export default async function AdminLayout({
     <div className="min-h-screen bg-muted/40">
       <header className="border-b bg-card">
         <div className="container flex h-14 items-center justify-between">
-          <a href="/admin" className="text-lg font-bold text-primary">
+          <Link href="/admin" className="text-lg font-bold text-primary">
             {messages.admin.navTitle}
-          </a>
+          </Link>
           <div className="flex items-center gap-4 text-sm">
-            <a
+            <Link
               href="/dashboard"
               className="text-muted-foreground hover:text-foreground"
             >
               {messages.nav.dashboard}
-            </a>
+            </Link>
             <span className="text-muted-foreground">{session.user.name}</span>
           </div>
         </div>
