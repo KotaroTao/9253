@@ -38,6 +38,7 @@ export const authConfig = {
         "/api/auth",
         "/api/surveys/submit",
         "/api/reviews/click",
+        "/api/health",
       ]
       const isPublicApi = publicApiRoutes.some((route) =>
         pathname.startsWith(route)
