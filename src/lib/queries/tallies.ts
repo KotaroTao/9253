@@ -73,18 +73,25 @@ export async function getStaffMonthlyTallies(
     },
   })
 
+  type TallyCounts = {
+    name: string
+    role: string
+    new_patient: number
+    maintenance_transition: number
+    self_pay_proposal: number
+    self_pay_conversion: number
+  }
+  type TallyKey = keyof Omit<TallyCounts, "name" | "role">
+
+  const tallyKeys = new Set<string>([
+    "new_patient",
+    "maintenance_transition",
+    "self_pay_proposal",
+    "self_pay_conversion",
+  ])
+
   // Group by staffId → type → sum
-  const staffMap = new Map<
-    string,
-    {
-      name: string
-      role: string
-      new_patient: number
-      maintenance_transition: number
-      self_pay_proposal: number
-      self_pay_conversion: number
-    }
-  >()
+  const staffMap = new Map<string, TallyCounts>()
 
   for (const t of tallies) {
     const existing = staffMap.get(t.staffId) ?? {
@@ -95,9 +102,8 @@ export async function getStaffMonthlyTallies(
       self_pay_proposal: 0,
       self_pay_conversion: 0,
     }
-    if (t.type in existing) {
-      ;(existing as Record<string, unknown>)[t.type] =
-        ((existing as Record<string, unknown>)[t.type] as number) + t.count
+    if (tallyKeys.has(t.type)) {
+      existing[t.type as TallyKey] += t.count
     }
     staffMap.set(t.staffId, existing)
   }

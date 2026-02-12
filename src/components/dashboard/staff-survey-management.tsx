@@ -136,7 +136,7 @@ export function StaffSurveyManagement({
                 </Button>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                このURLをLINEグループ等でスタッフに共有してください
+                {messages.staffSurvey.shareInstruction}
               </p>
             </div>
             <div className="flex items-center justify-between">

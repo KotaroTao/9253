@@ -3,9 +3,19 @@ import { staffSurveySubmitSchema } from "@/lib/validations/staff-survey"
 import { getStaffSurveyById, submitStaffSurveyResponse } from "@/lib/queries/staff-surveys"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
+import { getClientIp, hashIp } from "@/lib/ip"
+import { checkRateLimit } from "@/lib/rate-limit"
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit by IP
+    const ip = getClientIp()
+    const ipHash = hashIp(ip)
+    const { allowed } = checkRateLimit(`staff-survey:${ipHash}`)
+    if (!allowed) {
+      return errorResponse(messages.survey.rateLimited, 429)
+    }
+
     const body = await request.json()
     const parsed = staffSurveySubmitSchema.safeParse(body)
 
