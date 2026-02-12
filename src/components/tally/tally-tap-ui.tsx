@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { messages } from "@/lib/messages"
 import { TALLY_TYPE_LABELS } from "@/lib/constants"
 
@@ -26,6 +27,7 @@ export function TallyTapUI({ staffName, staffToken }: TallyTapUIProps) {
   })
   const [loading, setLoading] = useState(true)
   const [tapping, setTapping] = useState<string | null>(null)
+  const [lockedOut, setLockedOut] = useState(false)
 
   const fetchTallies = useCallback(async () => {
     try {
@@ -80,11 +82,34 @@ export function TallyTapUI({ staffName, staffToken }: TallyTapUIProps) {
     weekday: "short",
   })
 
+  function handleLogout() {
+    setLockedOut(true)
+  }
+
+  function handleUnlock() {
+    setLockedOut(false)
+    fetchTallies()
+  }
+
   if (loading) {
     return (
       <Card>
         <CardContent className="py-12 text-center">
           <p className="text-muted-foreground">{messages.common.loading}</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (lockedOut) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center gap-4 py-12">
+          <div className="text-4xl">🔒</div>
+          <p className="text-sm text-muted-foreground">ログアウトしました</p>
+          <Button variant="outline" onClick={handleUnlock}>
+            ロックを解除
+          </Button>
         </CardContent>
       </Card>
     )
@@ -135,6 +160,16 @@ export function TallyTapUI({ staffName, staffToken }: TallyTapUIProps) {
             </div>
           )
         })}
+        <div className="pt-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-muted-foreground"
+            onClick={handleLogout}
+          >
+            {messages.common.logout}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   )
