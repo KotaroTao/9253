@@ -129,6 +129,7 @@ export const messages = {
     copyUrl: "URLをコピー",
     copied: "コピーしました",
     confirmClose: "このサーベイの回答受付を締め切りますか？",
+    shareInstruction: "このURLをLINEグループ等でスタッフに共有してください",
   },
   monthlyMetrics: {
     title: "月次指標",
@@ -139,7 +140,6 @@ export const messages = {
     selfPayConversionCount: "自費成約件数",
     selfPayRate: "自費成約率",
     yearMonth: "年月",
-    saveSuccess: "月次指標を保存しました",
     autoCalc: "自動計算",
     inputHint: "スタッフが日々タップ記録した数値を自動集計しています",
     noData: "月次データがありません",
@@ -157,6 +157,12 @@ export const messages = {
     staffNotFound: "スタッフが見つかりません",
     staffNotFoundSub: "QRコードまたはURLをご確認ください",
     inactive: "このアカウントは無効です",
+    loggedOut: "ログアウトしました",
+    unlockButton: "ロックを解除",
+    tapError: "記録の保存に失敗しました",
+    selectStaff: "記録するスタッフを選択してください",
+    backToStaffSelect: "スタッフ選択に戻る",
+    noDataHint: "スタッフが日報記録ページで日々タップ記録すると、ここに自動集計されます",
   },
   staff: {
     management: "スタッフ管理",
@@ -205,6 +211,8 @@ export const messages = {
     monthlyMetrics: "月次指標",
     tally: "日報記録",
     surveyStart: "アンケート案内",
+    selectStaffForSurvey: "担当スタッフを選択してアンケートを表示します",
+    noTemplate: "アンケートテンプレートが設定されていません",
   },
   admin: {
     title: "MIERU システム管理",

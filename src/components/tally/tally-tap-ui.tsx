@@ -28,6 +28,7 @@ export function TallyTapUI({ staffName, staffToken }: TallyTapUIProps) {
   const [loading, setLoading] = useState(true)
   const [tapping, setTapping] = useState<string | null>(null)
   const [lockedOut, setLockedOut] = useState(false)
+  const [error, setError] = useState("")
 
   const fetchTallies = useCallback(async () => {
     try {
@@ -51,11 +52,13 @@ export function TallyTapUI({ staffName, staffToken }: TallyTapUIProps) {
     if (delta < 0 && (tallies[type] ?? 0) <= 0) return
 
     setTapping(type)
+    setError("")
 
     // Optimistic update
-    setTallies((prev) => ({
-      ...prev,
-      [type]: Math.max(0, (prev[type] ?? 0) + delta),
+    const prev = { ...tallies }
+    setTallies((p) => ({
+      ...p,
+      [type]: Math.max(0, (p[type] ?? 0) + delta),
     }))
 
     try {
@@ -66,10 +69,13 @@ export function TallyTapUI({ staffName, staffToken }: TallyTapUIProps) {
       })
       if (res.ok) {
         setTallies(await res.json())
+      } else {
+        setTallies(prev)
+        setError(messages.tally.tapError)
       }
     } catch {
-      // Revert on error
-      fetchTallies()
+      setTallies(prev)
+      setError(messages.tally.tapError)
     } finally {
       setTapping(null)
     }
@@ -106,9 +112,9 @@ export function TallyTapUI({ staffName, staffToken }: TallyTapUIProps) {
       <Card>
         <CardContent className="flex flex-col items-center gap-4 py-12">
           <div className="text-4xl">🔒</div>
-          <p className="text-sm text-muted-foreground">ログアウトしました</p>
+          <p className="text-sm text-muted-foreground">{messages.tally.loggedOut}</p>
           <Button variant="outline" onClick={handleUnlock}>
-            ロックを解除
+            {messages.tally.unlockButton}
           </Button>
         </CardContent>
       </Card>
@@ -160,6 +166,11 @@ export function TallyTapUI({ staffName, staffToken }: TallyTapUIProps) {
             </div>
           )
         })}
+        {error && (
+          <div className="rounded-md bg-destructive/10 p-2 text-center text-xs text-destructive">
+            {error}
+          </div>
+        )}
         <div className="pt-2">
           <Button
             variant="ghost"

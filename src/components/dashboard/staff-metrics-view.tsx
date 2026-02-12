@@ -95,7 +95,7 @@ export function StaffMetricsView({
           <CardContent className="py-8 text-center">
             <p className="text-muted-foreground">{messages.monthlyMetrics.noData}</p>
             <p className="mt-2 text-xs text-muted-foreground">
-              スタッフが /t/&#123;QRトークン&#125; で日々タップ記録すると、ここに自動集計されます
+              {messages.tally.noDataHint}
             </p>
           </CardContent>
         </Card>
@@ -158,7 +158,7 @@ export function StaffMetricsView({
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b text-left text-xs text-muted-foreground">
-                      <th className="pb-2">スタッフ</th>
+                      <th className="pb-2">{messages.common.staffLabel}</th>
                       <th className="pb-2 text-right">{messages.tally.newPatient}</th>
                       <th className="pb-2 text-right">{messages.tally.maintenanceTransition}</th>
                       <th className="pb-2 text-right">{messages.dashboard.maintenanceRate}</th>

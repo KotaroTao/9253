@@ -90,18 +90,6 @@ export interface StaffSurveyResult {
   freeTexts: string[]
 }
 
-export interface MonthlyMetrics {
-  id?: string
-  year: number
-  month: number
-  newPatientCount: number | null
-  maintenanceTransitionCount: number | null
-  selfPayProposalCount: number | null
-  selfPayConversionCount: number | null
-  maintenanceRate: number | null
-  selfPayRate: number | null
-}
-
 export interface StaffTallyMetrics {
   staffId: string
   name: string

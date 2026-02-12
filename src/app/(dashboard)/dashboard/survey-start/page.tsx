@@ -44,7 +44,7 @@ export default async function SurveyStartPage() {
         <h1 className="text-2xl font-bold">{messages.nav.surveyStart}</h1>
         <div className="rounded-lg border bg-card p-8 text-center">
           <p className="text-muted-foreground">
-            アンケートテンプレートが設定されていません
+            {messages.nav.noTemplate}
           </p>
         </div>
       </div>

@@ -10,15 +10,6 @@ export const staffSurveySubmitSchema = z.object({
   freeText: z.string().max(1000).optional(),
 })
 
-export const monthlyMetricsSchema = z.object({
-  year: z.number().int().min(2020).max(2100),
-  month: z.number().int().min(1).max(12),
-  newPatientCount: z.number().int().min(0).nullable().optional(),
-  maintenanceTransitionCount: z.number().int().min(0).nullable().optional(),
-  selfPayProposalCount: z.number().int().min(0).nullable().optional(),
-  selfPayConversionCount: z.number().int().min(0).nullable().optional(),
-})
-
 export const tallySchema = z.object({
   staffToken: z.string().min(1, "スタッフトークンが必要です"),
   type: z.enum([
