@@ -1,8 +1,11 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
-import { getDashboardStats } from "@/lib/queries/stats"
-import { getMonthlyTrend } from "@/lib/queries/stats"
-import { StatsCards } from "@/components/dashboard/stats-cards"
+import { getDashboardStats, getMonthlyTrend, getFourMetricsTrend } from "@/lib/queries/stats"
+import { getLatestStaffSurveyScore } from "@/lib/queries/staff-surveys"
+import { getLatestTallyMetrics } from "@/lib/queries/tallies"
+import { FourMetricsCards } from "@/components/dashboard/four-metrics-cards"
+import { FourMetricsTrendChart } from "@/components/dashboard/four-metrics-trend"
+import { EmployeeRadarChart } from "@/components/dashboard/radar-chart"
 import { MonthlyChart } from "@/components/dashboard/monthly-chart"
 import { RecentResponses } from "@/components/dashboard/recent-responses"
 import { StaffRanking } from "@/components/dashboard/staff-ranking"
@@ -20,17 +23,39 @@ export default async function DashboardPage() {
     redirect("/login")
   }
 
-  const [stats, monthlyTrend] = await Promise.all([
-    getDashboardStats(clinicId),
-    getMonthlyTrend(clinicId),
-  ])
+  const [stats, monthlyTrend, fourMetricsTrend, staffSurveyScore, latestTallyMetrics] =
+    await Promise.all([
+      getDashboardStats(clinicId),
+      getMonthlyTrend(clinicId),
+      getFourMetricsTrend(clinicId),
+      getLatestStaffSurveyScore(clinicId),
+      getLatestTallyMetrics(clinicId),
+    ])
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">{messages.dashboard.title}</h1>
 
-      <StatsCards stats={stats} />
+      {/* 4 KPI Cards */}
+      <FourMetricsCards
+        data={{
+          patientSatisfaction: stats.averageScore,
+          employeeSatisfaction: staffSurveyScore?.overallScore ?? null,
+          maintenanceRate: latestTallyMetrics?.maintenanceRate ?? null,
+          selfPayRate: latestTallyMetrics?.selfPayRate ?? null,
+        }}
+      />
 
+      {/* 4 Metrics Trend + Radar Chart */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <FourMetricsTrendChart data={fourMetricsTrend} />
+        <EmployeeRadarChart
+          categoryScores={staffSurveyScore?.categoryScores ?? []}
+          surveyTitle={staffSurveyScore?.surveyTitle}
+        />
+      </div>
+
+      {/* Patient satisfaction trend + Staff ranking */}
       <div className="grid gap-6 lg:grid-cols-2">
         <MonthlyChart data={monthlyTrend} />
         <StaffRanking ranking={stats.staffRanking} />

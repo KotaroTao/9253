@@ -18,10 +18,13 @@ model Clinic {
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
 
-  staff           Staff[]
-  users           User[]
-  surveyTemplates SurveyTemplate[]
-  surveyResponses SurveyResponse[]
+  staff                Staff[]
+  users                User[]
+  surveyTemplates      SurveyTemplate[]
+  surveyResponses      SurveyResponse[]
+  staffSurveys         StaffSurvey[]
+  monthlyClinicMetrics MonthlyClinicMetrics[]
+  dailyTallies         StaffDailyTally[]
 
   @@map("clinics")
 }
@@ -38,6 +41,7 @@ model Staff {
 
   clinic          Clinic           @relation(fields: [clinicId], references: [id], onDelete: Cascade)
   surveyResponses SurveyResponse[]
+  dailyTallies    StaffDailyTally[]
   user            User?
 
   @@index([clinicId])
@@ -103,4 +107,76 @@ model SurveyResponse {
   @@index([respondedAt])
   @@index([clinicId, respondedAt])
   @@map("survey_responses")
+}
+
+model StaffSurvey {
+  id        String   @id @default(uuid()) @db.Uuid
+  clinicId  String   @map("clinic_id") @db.Uuid
+  title     String
+  status    String   @default("active")
+  startsAt  DateTime @default(now()) @map("starts_at")
+  endsAt    DateTime? @map("ends_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  clinic    Clinic                @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  responses StaffSurveyResponse[]
+
+  @@index([clinicId])
+  @@index([status])
+  @@map("staff_surveys")
+}
+
+model StaffSurveyResponse {
+  id          String   @id @default(uuid()) @db.Uuid
+  surveyId    String   @map("survey_id") @db.Uuid
+  answers     Json
+  freeText    String?  @map("free_text")
+  overallScore Float?  @map("overall_score")
+  categoryScores Json? @map("category_scores")
+  respondedAt DateTime @default(now()) @map("responded_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  survey StaffSurvey @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+
+  @@index([surveyId])
+  @@map("staff_survey_responses")
+}
+
+model MonthlyClinicMetrics {
+  id                         String   @id @default(uuid()) @db.Uuid
+  clinicId                   String   @map("clinic_id") @db.Uuid
+  year                       Int
+  month                      Int
+  newPatientCount            Int?     @map("new_patient_count")
+  maintenanceTransitionCount Int?     @map("maintenance_transition_count")
+  selfPayProposalCount       Int?     @map("self_pay_proposal_count")
+  selfPayConversionCount     Int?     @map("self_pay_conversion_count")
+  createdAt                  DateTime @default(now()) @map("created_at")
+  updatedAt                  DateTime @updatedAt @map("updated_at")
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, year, month])
+  @@index([clinicId])
+  @@map("monthly_clinic_metrics")
+}
+
+model StaffDailyTally {
+  id        String   @id @default(uuid()) @db.Uuid
+  staffId   String   @map("staff_id") @db.Uuid
+  clinicId  String   @map("clinic_id") @db.Uuid
+  date      DateTime @db.Date
+  type      String
+  count     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  staff  Staff  @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, date, type])
+  @@index([clinicId, date])
+  @@index([staffId, date])
+  @@map("staff_daily_tallies")
 }

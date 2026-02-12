@@ -63,3 +63,61 @@ export interface PaginatedResult<T> {
   limit: number
   totalPages: number
 }
+
+export interface StaffSurveySummary {
+  id: string
+  title: string
+  status: string
+  startsAt: Date | string
+  endsAt: Date | string | null
+  responseCount: number
+  overallScore: number | null
+}
+
+export interface StaffSurveyCategoryScore {
+  category: string
+  label: string
+  score: number
+}
+
+export interface StaffSurveyResult {
+  id: string
+  title: string
+  status: string
+  responseCount: number
+  overallScore: number | null
+  categoryScores: StaffSurveyCategoryScore[]
+  freeTexts: string[]
+}
+
+export interface MonthlyMetrics {
+  id?: string
+  year: number
+  month: number
+  newPatientCount: number | null
+  maintenanceTransitionCount: number | null
+  selfPayProposalCount: number | null
+  selfPayConversionCount: number | null
+  maintenanceRate: number | null
+  selfPayRate: number | null
+}
+
+export interface StaffTallyMetrics {
+  staffId: string
+  name: string
+  role: string
+  newPatientCount: number
+  maintenanceTransitionCount: number
+  selfPayProposalCount: number
+  selfPayConversionCount: number
+  maintenanceRate: number | null
+  selfPayRate: number | null
+}
+
+export interface FourMetricsTrend {
+  month: string
+  patientSatisfaction: number | null
+  employeeSatisfaction: number | null
+  maintenanceRate: number | null
+  selfPayRate: number | null
+}
