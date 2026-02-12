@@ -12,6 +12,7 @@ import {
   Heart,
   BarChart3,
   ClipboardPen,
+  Smartphone,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
@@ -25,6 +26,7 @@ interface SidebarProps {
 const navItems = [
   { href: "/dashboard", label: messages.nav.dashboard, icon: LayoutDashboard },
   { href: "/dashboard/staff", label: messages.nav.staff, icon: Users },
+  { href: "/dashboard/survey-start", label: messages.nav.surveyStart, icon: Smartphone },
   { href: "/dashboard/surveys", label: messages.nav.surveys, icon: ClipboardList },
   { href: "/dashboard/staff-survey", label: messages.nav.staffSurvey, icon: Heart },
   { href: "/dashboard/tally", label: messages.nav.tally, icon: ClipboardPen },

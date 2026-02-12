@@ -204,6 +204,7 @@ export const messages = {
     staffSurvey: "従業員サーベイ",
     monthlyMetrics: "月次指標",
     tally: "日報記録",
+    surveyStart: "アンケート案内",
   },
   admin: {
     title: "MIERU システム管理",
