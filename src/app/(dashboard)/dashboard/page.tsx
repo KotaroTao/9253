@@ -45,7 +45,7 @@ export default async function DashboardPage() {
       }),
     ])
 
-  const showSummaryBanner = !lastMonthSummary?.totalVisits
+  const showSummaryBanner = lastMonthSummary == null
 
   return (
     <div className="space-y-6">

@@ -23,7 +23,7 @@ export async function createSurveyResponse(data: {
   staffId: string
   templateId: string
   answers: Prisma.InputJsonValue
-  overallScore: number
+  overallScore: number | null
   freeText?: string
   ipHash: string
 }) {
@@ -39,7 +39,7 @@ export async function hasRecentSubmission(
     where: {
       ipHash,
       staffId,
-      createdAt: { gte: oneDayAgo },
+      respondedAt: { gte: oneDayAgo },
     },
   })
   return count > 0

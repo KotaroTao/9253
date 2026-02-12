@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     const overallScore =
       ratingValues.length > 0
         ? ratingValues.reduce((sum, v) => sum + v, 0) / ratingValues.length
-        : 0
+        : null
 
     // Save response
     const response = await createSurveyResponse({

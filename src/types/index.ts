@@ -1,19 +1,6 @@
 export type UserRole = "system_admin" | "clinic_admin" | "staff"
 export type StaffRole = "dentist" | "hygienist" | "staff"
 
-export interface SurveyQuestion {
-  id: string
-  text: string
-  type: "rating" | "text"
-  required: boolean
-}
-
-export interface DashboardStats {
-  totalResponses: number
-  averageScore: number
-  recentResponses: RecentResponse[]
-  staffRanking: StaffRankingEntry[]
-}
 
 export interface RecentResponse {
   id: string
@@ -50,14 +37,6 @@ export interface StaffWithStats {
   updatedAt: Date | string
   surveyCount: number
   avgScore: number
-}
-
-export interface PaginatedResult<T> {
-  data: T[]
-  total: number
-  page: number
-  limit: number
-  totalPages: number
 }
 
 export interface StaffSurveySummary {

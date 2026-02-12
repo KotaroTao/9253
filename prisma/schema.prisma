@@ -43,7 +43,6 @@ model Staff {
   user            User?
 
   @@index([clinicId])
-  @@index([qrToken])
   @@map("staff")
 }
 
@@ -144,10 +143,6 @@ model MonthlyClinicMetrics {
   clinicId                   String   @map("clinic_id") @db.Uuid
   year                       Int
   month                      Int
-  newPatientCount            Int?     @map("new_patient_count")
-  maintenanceTransitionCount Int?     @map("maintenance_transition_count")
-  selfPayProposalCount       Int?     @map("self_pay_proposal_count")
-  selfPayConversionCount     Int?     @map("self_pay_conversion_count")
   totalVisits                Int?     @map("total_visits")
   totalRevenue               Int?     @map("total_revenue")
   selfPayRevenue             Int?     @map("self_pay_revenue")

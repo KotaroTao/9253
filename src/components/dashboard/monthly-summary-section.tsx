@@ -85,7 +85,7 @@ export function MonthlySummarySection({
     const sp = selfPayRevenue ? parseInt(selfPayRevenue) : null
     const rc = reviewCount ? parseInt(reviewCount) : null
     const rr = reviewRating ? parseFloat(reviewRating) : null
-    if (v == null && r == null && sp == null && rc == null) return
+    if (v == null && r == null && sp == null && rc == null && rr == null) return
 
     setSaving(true)
     setSaved(false)

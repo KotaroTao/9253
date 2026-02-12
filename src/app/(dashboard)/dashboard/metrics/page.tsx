@@ -58,7 +58,6 @@ export default async function MetricsPage() {
         initialSurveyQuality={surveyQuality}
         initialYear={year}
         initialMonth={month}
-        clinicId={clinicId}
       />
     </div>
   )
