@@ -9,6 +9,8 @@ import {
   Settings,
   LogOut,
   Shield,
+  Heart,
+  BarChart3,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
@@ -23,6 +25,8 @@ const navItems = [
   { href: "/dashboard", label: messages.nav.dashboard, icon: LayoutDashboard },
   { href: "/dashboard/staff", label: messages.nav.staff, icon: Users },
   { href: "/dashboard/surveys", label: messages.nav.surveys, icon: ClipboardList },
+  { href: "/dashboard/staff-survey", label: messages.nav.staffSurvey, icon: Heart },
+  { href: "/dashboard/metrics", label: messages.nav.monthlyMetrics, icon: BarChart3 },
   { href: "/dashboard/settings", label: messages.nav.settings, icon: Settings },
 ]
 
