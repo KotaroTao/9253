@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
 import { STAFF_ROLE_LABELS } from "@/lib/constants"
 import { TrendingUp, TrendingDown } from "lucide-react"
+import { MonthlySummarySection } from "./monthly-summary-section"
 import type { StaffTallyMetrics } from "@/types"
 
 interface ClinicTotals {
@@ -17,10 +18,19 @@ interface ClinicTotals {
   selfPayRate: number | null
 }
 
+interface MonthlySummary {
+  totalVisits: number | null
+  totalRevenue: number | null
+  selfPayRevenue: number | null
+}
+
 interface StaffMetricsViewProps {
   initialStaffMetrics: StaffTallyMetrics[]
   initialClinicTotals: ClinicTotals
   initialPrevTotals: ClinicTotals | null
+  initialSummary: MonthlySummary | null
+  initialPrevSummary: MonthlySummary | null
+  initialSurveyCount: number
   initialYear: number
   initialMonth: number
   clinicId: string
@@ -43,6 +53,9 @@ export function StaffMetricsView({
   initialStaffMetrics,
   initialClinicTotals,
   initialPrevTotals,
+  initialSummary,
+  initialPrevSummary,
+  initialSurveyCount,
   initialYear,
   initialMonth,
 }: StaffMetricsViewProps) {
@@ -51,6 +64,9 @@ export function StaffMetricsView({
   const [staffMetrics, setStaffMetrics] = useState(initialStaffMetrics)
   const [clinicTotals, setClinicTotals] = useState(initialClinicTotals)
   const [prevTotals, setPrevTotals] = useState<ClinicTotals | null>(initialPrevTotals)
+  const [summary, setSummary] = useState<MonthlySummary | null>(initialSummary)
+  const [prevSummary, setPrevSummary] = useState<MonthlySummary | null>(initialPrevSummary)
+  const [surveyCount, setSurveyCount] = useState(initialSurveyCount)
   const [loading, setLoading] = useState(false)
 
   const now = new Date()
@@ -78,6 +94,9 @@ export function StaffMetricsView({
         setStaffMetrics(data.staffMetrics)
         setClinicTotals(data.clinicTotals)
         setPrevTotals(data.prevTotals ?? null)
+        setSummary(data.summary ?? null)
+        setPrevSummary(data.prevSummary ?? null)
+        setSurveyCount(data.surveyCount ?? 0)
       }
     } catch {
       // ignore
@@ -105,20 +124,6 @@ export function StaffMetricsView({
         ))}
       </div>
 
-      {/* Info */}
-      <p className="text-xs text-muted-foreground">{messages.monthlyMetrics.inputHint}</p>
-
-      {!hasData && !loading && (
-        <Card>
-          <CardContent className="py-8 text-center">
-            <p className="text-muted-foreground">{messages.monthlyMetrics.noData}</p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              {messages.tally.noDataHint}
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
       {loading && (
         <Card>
           <CardContent className="py-8 text-center">
@@ -127,92 +132,121 @@ export function StaffMetricsView({
         </Card>
       )}
 
-      {hasData && !loading && (
+      {!loading && (
         <>
-          {/* Clinic totals */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{messages.monthlyMetrics.clinicTotal}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <div>
-                  <p className="text-xs text-muted-foreground">{messages.monthlyMetrics.newPatientCount}</p>
-                  <p className="text-xl font-bold">{clinicTotals.newPatientCount}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">{messages.dashboard.maintenanceRate}</p>
-                  <p className="text-xl font-bold text-orange-600">
-                    {clinicTotals.maintenanceRate != null ? `${clinicTotals.maintenanceRate}%` : "-"}
-                    <RateDelta current={clinicTotals.maintenanceRate} prev={prevTotals?.maintenanceRate ?? null} />
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    ({clinicTotals.maintenanceTransitionCount}/{clinicTotals.newPatientCount})
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">{messages.monthlyMetrics.selfPayProposalCount}</p>
-                  <p className="text-xl font-bold">{clinicTotals.selfPayProposalCount}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">{messages.dashboard.selfPayRate}</p>
-                  <p className="text-xl font-bold text-purple-600">
-                    {clinicTotals.selfPayRate != null ? `${clinicTotals.selfPayRate}%` : "-"}
-                    <RateDelta current={clinicTotals.selfPayRate} prev={prevTotals?.selfPayRate ?? null} />
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    ({clinicTotals.selfPayConversionCount}/{clinicTotals.selfPayProposalCount})
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Monthly Summary Input */}
+          <MonthlySummarySection
+            year={year}
+            month={month}
+            initialSummary={summary}
+            prevSummary={prevSummary}
+            surveyCount={surveyCount}
+            tallyNewPatientCount={clinicTotals.newPatientCount}
+            tallySelfPayConversionCount={clinicTotals.selfPayConversionCount}
+          />
 
-          {/* Per-staff breakdown */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{messages.monthlyMetrics.staffBreakdown}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b text-left text-xs text-muted-foreground">
-                      <th className="pb-2">{messages.common.staffLabel}</th>
-                      <th className="pb-2 text-right">{messages.tally.newPatient}</th>
-                      <th className="pb-2 text-right">{messages.tally.maintenanceTransition}</th>
-                      <th className="pb-2 text-right">{messages.dashboard.maintenanceRate}</th>
-                      <th className="pb-2 text-right">{messages.tally.selfPayProposal}</th>
-                      <th className="pb-2 text-right">{messages.tally.selfPayConversion}</th>
-                      <th className="pb-2 text-right">{messages.dashboard.selfPayRate}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {staffMetrics.map((s) => (
-                      <tr key={s.staffId} className="border-b last:border-0">
-                        <td className="py-2">
-                          <span className="font-medium">{s.name}</span>
-                          <span className="ml-1 text-xs text-muted-foreground">
-                            {STAFF_ROLE_LABELS[s.role] ?? s.role}
-                          </span>
-                        </td>
-                        <td className="py-2 text-right">{s.newPatientCount}</td>
-                        <td className="py-2 text-right">{s.maintenanceTransitionCount}</td>
-                        <td className="py-2 text-right font-medium text-orange-600">
-                          {s.maintenanceRate != null ? `${s.maintenanceRate}%` : "-"}
-                        </td>
-                        <td className="py-2 text-right">{s.selfPayProposalCount}</td>
-                        <td className="py-2 text-right">{s.selfPayConversionCount}</td>
-                        <td className="py-2 text-right font-medium text-purple-600">
-                          {s.selfPayRate != null ? `${s.selfPayRate}%` : "-"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Tally info */}
+          <p className="text-xs text-muted-foreground">{messages.monthlyMetrics.inputHint}</p>
+
+          {!hasData && (
+            <Card>
+              <CardContent className="py-8 text-center">
+                <p className="text-muted-foreground">{messages.monthlyMetrics.noData}</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {messages.tally.noDataHint}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {hasData && (
+            <>
+              {/* Clinic totals */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">{messages.monthlyMetrics.clinicTotal}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground">{messages.monthlyMetrics.newPatientCount}</p>
+                      <p className="text-xl font-bold">{clinicTotals.newPatientCount}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">{messages.dashboard.maintenanceRate}</p>
+                      <p className="text-xl font-bold text-orange-600">
+                        {clinicTotals.maintenanceRate != null ? `${clinicTotals.maintenanceRate}%` : "-"}
+                        <RateDelta current={clinicTotals.maintenanceRate} prev={prevTotals?.maintenanceRate ?? null} />
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        ({clinicTotals.maintenanceTransitionCount}/{clinicTotals.newPatientCount})
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">{messages.monthlyMetrics.selfPayProposalCount}</p>
+                      <p className="text-xl font-bold">{clinicTotals.selfPayProposalCount}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">{messages.dashboard.selfPayRate}</p>
+                      <p className="text-xl font-bold text-purple-600">
+                        {clinicTotals.selfPayRate != null ? `${clinicTotals.selfPayRate}%` : "-"}
+                        <RateDelta current={clinicTotals.selfPayRate} prev={prevTotals?.selfPayRate ?? null} />
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        ({clinicTotals.selfPayConversionCount}/{clinicTotals.selfPayProposalCount})
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Per-staff breakdown */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">{messages.monthlyMetrics.staffBreakdown}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-left text-xs text-muted-foreground">
+                          <th className="pb-2">{messages.common.staffLabel}</th>
+                          <th className="pb-2 text-right">{messages.tally.newPatient}</th>
+                          <th className="pb-2 text-right">{messages.tally.maintenanceTransition}</th>
+                          <th className="pb-2 text-right">{messages.dashboard.maintenanceRate}</th>
+                          <th className="pb-2 text-right">{messages.tally.selfPayProposal}</th>
+                          <th className="pb-2 text-right">{messages.tally.selfPayConversion}</th>
+                          <th className="pb-2 text-right">{messages.dashboard.selfPayRate}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {staffMetrics.map((s) => (
+                          <tr key={s.staffId} className="border-b last:border-0">
+                            <td className="py-2">
+                              <span className="font-medium">{s.name}</span>
+                              <span className="ml-1 text-xs text-muted-foreground">
+                                {STAFF_ROLE_LABELS[s.role] ?? s.role}
+                              </span>
+                            </td>
+                            <td className="py-2 text-right">{s.newPatientCount}</td>
+                            <td className="py-2 text-right">{s.maintenanceTransitionCount}</td>
+                            <td className="py-2 text-right font-medium text-orange-600">
+                              {s.maintenanceRate != null ? `${s.maintenanceRate}%` : "-"}
+                            </td>
+                            <td className="py-2 text-right">{s.selfPayProposalCount}</td>
+                            <td className="py-2 text-right">{s.selfPayConversionCount}</td>
+                            <td className="py-2 text-right font-medium text-purple-600">
+                              {s.selfPayRate != null ? `${s.selfPayRate}%` : "-"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </>
       )}
     </div>

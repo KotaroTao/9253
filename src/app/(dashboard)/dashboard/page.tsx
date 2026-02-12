@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation"
+import Link from "next/link"
 import { auth } from "@/auth"
+import { prisma } from "@/lib/prisma"
 import { getDashboardStats, getMonthlyTrend, getFourMetricsTrend } from "@/lib/queries/stats"
 import { getLatestStaffSurveyScore } from "@/lib/queries/staff-surveys"
 import { getLatestTallyMetrics } from "@/lib/queries/tallies"
@@ -23,18 +25,44 @@ export default async function DashboardPage() {
     redirect("/login")
   }
 
-  const [stats, monthlyTrend, fourMetricsTrend, staffSurveyScore, latestTallyMetrics] =
+  // Check if last month's summary is entered
+  const now = new Date()
+  const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const prevYear = prevDate.getFullYear()
+  const prevMonth = prevDate.getMonth() + 1
+
+  const [stats, monthlyTrend, fourMetricsTrend, staffSurveyScore, latestTallyMetrics, lastMonthSummary] =
     await Promise.all([
       getDashboardStats(clinicId),
       getMonthlyTrend(clinicId),
       getFourMetricsTrend(clinicId),
       getLatestStaffSurveyScore(clinicId),
       getLatestTallyMetrics(clinicId),
+      prisma.monthlyClinicMetrics.findUnique({
+        where: { clinicId_year_month: { clinicId, year: prevYear, month: prevMonth } },
+        select: { totalVisits: true },
+      }),
     ])
+
+  const showSummaryBanner = !lastMonthSummary?.totalVisits
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">{messages.dashboard.title}</h1>
+
+      {showSummaryBanner && (
+        <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-sm text-amber-800">
+            {prevYear}年{prevMonth}月の{messages.monthlyMetrics.summaryNotEntered}
+          </p>
+          <Link
+            href="/dashboard/metrics"
+            className="shrink-0 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700"
+          >
+            {messages.monthlyMetrics.enterSummary}
+          </Link>
+        </div>
+      )}
 
       {/* 4 KPI Cards */}
       <FourMetricsCards

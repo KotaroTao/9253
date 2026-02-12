@@ -152,6 +152,9 @@ model MonthlyClinicMetrics {
   maintenanceTransitionCount Int?     @map("maintenance_transition_count")
   selfPayProposalCount       Int?     @map("self_pay_proposal_count")
   selfPayConversionCount     Int?     @map("self_pay_conversion_count")
+  totalVisits                Int?     @map("total_visits")
+  totalRevenue               Int?     @map("total_revenue")
+  selfPayRevenue             Int?     @map("self_pay_revenue")
   createdAt                  DateTime @default(now()) @map("created_at")
   updatedAt                  DateTime @updatedAt @map("updated_at")
 

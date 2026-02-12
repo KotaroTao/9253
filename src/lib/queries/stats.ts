@@ -98,6 +98,22 @@ export async function getDashboardStats(
   }
 }
 
+export async function getMonthlySurveyCount(
+  clinicId: string,
+  year: number,
+  month: number
+) {
+  const startDate = new Date(year, month - 1, 1)
+  const endDate = new Date(year, month, 0, 23, 59, 59)
+
+  return prisma.surveyResponse.count({
+    where: {
+      clinicId,
+      respondedAt: { gte: startDate, lte: endDate },
+    },
+  })
+}
+
 export async function getMonthlyTrend(clinicId: string, months: number = 6) {
   const startDate = new Date()
   startDate.setMonth(startDate.getMonth() - months)
