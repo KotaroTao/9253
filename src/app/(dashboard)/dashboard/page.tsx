@@ -2,7 +2,7 @@ import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { getDashboardStats, getMonthlyTrend, getFourMetricsTrend } from "@/lib/queries/stats"
 import { getLatestStaffSurveyScore } from "@/lib/queries/staff-surveys"
-import { getLatestMonthlyMetrics } from "@/lib/queries/monthly-metrics"
+import { getLatestTallyMetrics } from "@/lib/queries/tallies"
 import { FourMetricsCards } from "@/components/dashboard/four-metrics-cards"
 import { FourMetricsTrendChart } from "@/components/dashboard/four-metrics-trend"
 import { EmployeeRadarChart } from "@/components/dashboard/radar-chart"
@@ -23,13 +23,13 @@ export default async function DashboardPage() {
     redirect("/login")
   }
 
-  const [stats, monthlyTrend, fourMetricsTrend, staffSurveyScore, latestMetrics] =
+  const [stats, monthlyTrend, fourMetricsTrend, staffSurveyScore, latestTallyMetrics] =
     await Promise.all([
       getDashboardStats(clinicId),
       getMonthlyTrend(clinicId),
       getFourMetricsTrend(clinicId),
       getLatestStaffSurveyScore(clinicId),
-      getLatestMonthlyMetrics(clinicId),
+      getLatestTallyMetrics(clinicId),
     ])
 
   return (
@@ -41,8 +41,8 @@ export default async function DashboardPage() {
         data={{
           patientSatisfaction: stats.averageScore,
           employeeSatisfaction: staffSurveyScore?.overallScore ?? null,
-          maintenanceRate: latestMetrics?.maintenanceRate ?? null,
-          selfPayRate: latestMetrics?.selfPayRate ?? null,
+          maintenanceRate: latestTallyMetrics?.maintenanceRate ?? null,
+          selfPayRate: latestTallyMetrics?.selfPayRate ?? null,
         }}
       />
 

@@ -33,6 +33,22 @@ export const DEFAULTS = {
   STAFF_SURVEY_MIN_RESPONSES: 5,
 } as const
 
+export const TALLY_TYPES = {
+  NEW_PATIENT: "new_patient",
+  MAINTENANCE_TRANSITION: "maintenance_transition",
+  SELF_PAY_PROPOSAL: "self_pay_proposal",
+  SELF_PAY_CONVERSION: "self_pay_conversion",
+} as const
+
+export type TallyType = (typeof TALLY_TYPES)[keyof typeof TALLY_TYPES]
+
+export const TALLY_TYPE_LABELS: Record<string, string> = {
+  new_patient: "新患",
+  maintenance_transition: "メンテ移行",
+  self_pay_proposal: "自費提案",
+  self_pay_conversion: "自費成約",
+}
+
 export const STAFF_SURVEY_CATEGORIES = {
   workEnvironment: "職場環境",
   relationships: "人間関係",

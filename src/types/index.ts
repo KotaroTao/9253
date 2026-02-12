@@ -102,6 +102,18 @@ export interface MonthlyMetrics {
   selfPayRate: number | null
 }
 
+export interface StaffTallyMetrics {
+  staffId: string
+  name: string
+  role: string
+  newPatientCount: number
+  maintenanceTransitionCount: number
+  selfPayProposalCount: number
+  selfPayConversionCount: number
+  maintenanceRate: number | null
+  selfPayRate: number | null
+}
+
 export interface FourMetricsTrend {
   month: string
   patientSatisfaction: number | null
