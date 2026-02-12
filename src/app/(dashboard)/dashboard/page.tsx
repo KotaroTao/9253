@@ -39,10 +39,21 @@ export default async function DashboardPage() {
       {/* 4 KPI Cards */}
       <FourMetricsCards
         data={{
-          patientSatisfaction: stats.averageScore,
-          employeeSatisfaction: staffSurveyScore?.overallScore ?? null,
-          maintenanceRate: latestTallyMetrics?.maintenanceRate ?? null,
-          selfPayRate: latestTallyMetrics?.selfPayRate ?? null,
+          patientSatisfaction: {
+            current: stats.averageScore,
+            prev: stats.prevAverageScore ?? null,
+          },
+          employeeSatisfaction: {
+            current: staffSurveyScore?.overallScore ?? null,
+          },
+          maintenanceRate: {
+            current: latestTallyMetrics?.maintenanceRate ?? null,
+            prev: latestTallyMetrics?.prevMaintenanceRate ?? null,
+          },
+          selfPayRate: {
+            current: latestTallyMetrics?.selfPayRate ?? null,
+            prev: latestTallyMetrics?.prevSelfPayRate ?? null,
+          },
         }}
       />
 

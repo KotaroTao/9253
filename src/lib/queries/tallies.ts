@@ -188,5 +188,20 @@ export async function getLatestTallyMetrics(clinicId: string) {
   const year = latest.date.getFullYear()
   const month = latest.date.getMonth() + 1
 
-  return getClinicMonthlyTallyTotals(clinicId, year, month)
+  const current = await getClinicMonthlyTallyTotals(clinicId, year, month)
+
+  // Get previous month for comparison
+  const prevDate = new Date(year, month - 2, 1)
+  const prev = await getClinicMonthlyTallyTotals(
+    clinicId,
+    prevDate.getFullYear(),
+    prevDate.getMonth() + 1
+  )
+  const hasPrev = prev.newPatientCount > 0 || prev.selfPayProposalCount > 0
+
+  return {
+    ...current,
+    prevMaintenanceRate: hasPrev ? prev.maintenanceRate : null,
+    prevSelfPayRate: hasPrev ? prev.selfPayRate : null,
+  }
 }

@@ -22,10 +22,22 @@ export async function GET(request: NextRequest) {
   const year = yearParam ? parseInt(yearParam) : now.getFullYear()
   const month = monthParam ? parseInt(monthParam) : now.getMonth() + 1
 
-  const [staffMetrics, clinicTotals] = await Promise.all([
+  // Fetch current and previous month
+  const prevDate = new Date(year, month - 2, 1)
+  const prevYear = prevDate.getFullYear()
+  const prevMonth = prevDate.getMonth() + 1
+
+  const [staffMetrics, clinicTotals, prevTotals] = await Promise.all([
     getStaffMonthlyTallies(clinicId, year, month),
     getClinicMonthlyTallyTotals(clinicId, year, month),
+    getClinicMonthlyTallyTotals(clinicId, prevYear, prevMonth),
   ])
 
-  return successResponse({ staffMetrics, clinicTotals })
+  const hasPrev = prevTotals.newPatientCount > 0 || prevTotals.selfPayProposalCount > 0
+
+  return successResponse({
+    staffMetrics,
+    clinicTotals,
+    prevTotals: hasPrev ? prevTotals : null,
+  })
 }

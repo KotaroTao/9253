@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
+import { prisma } from "@/lib/prisma"
 import { getStaffSurveys, getActiveStaffSurvey } from "@/lib/queries/staff-surveys"
 import { StaffSurveyManagement } from "@/components/dashboard/staff-survey-management"
 import { messages } from "@/lib/messages"
@@ -16,9 +17,10 @@ export default async function StaffSurveyPage() {
     redirect("/login")
   }
 
-  const [surveys, activeSurvey] = await Promise.all([
+  const [surveys, activeSurvey, activeStaffCount] = await Promise.all([
     getStaffSurveys(clinicId),
     getActiveStaffSurvey(clinicId),
+    prisma.staff.count({ where: { clinicId, isActive: true } }),
   ])
 
   const activeSummary = activeSurvey
@@ -39,6 +41,7 @@ export default async function StaffSurveyPage() {
       <StaffSurveyManagement
         initialSurveys={surveys}
         activeSurvey={activeSummary}
+        staffCount={activeStaffCount}
       />
     </div>
   )

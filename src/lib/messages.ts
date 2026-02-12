@@ -91,6 +91,9 @@ export const messages = {
     noSurveyData: "従業員サーベイ未実施",
     noMetricsData: "月次データ未入力",
     prevComparison: "前回比",
+    vsLastMonth: "前月",
+    up: "上昇",
+    down: "低下",
   },
   staffSurvey: {
     title: "従業員満足度調査",
@@ -130,6 +133,8 @@ export const messages = {
     copied: "コピーしました",
     confirmClose: "このサーベイの回答受付を締め切りますか？",
     shareInstruction: "このURLをLINEグループ等でスタッフに共有してください",
+    responseProgress: "回答済み",
+    staffTotal: "名中",
   },
   monthlyMetrics: {
     title: "月次指標",
@@ -163,6 +168,8 @@ export const messages = {
     selectStaff: "記録するスタッフを選択してください",
     backToStaffSelect: "スタッフ選択に戻る",
     noDataHint: "スタッフが日報記録ページで日々タップ記録すると、ここに自動集計されます",
+    undo: "取消",
+    todaySurveys: "本日",
   },
   staff: {
     management: "スタッフ管理",

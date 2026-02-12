@@ -5,10 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { messages } from "@/lib/messages"
 import { TALLY_TYPE_LABELS } from "@/lib/constants"
+import { Undo2 } from "lucide-react"
 
 interface TallyTapUIProps {
   staffName: string
   staffToken: string
+}
+
+interface UndoAction {
+  type: string
+  delta: number
+  label: string
 }
 
 const TALLY_ITEMS = [
@@ -29,6 +36,7 @@ export function TallyTapUI({ staffName, staffToken }: TallyTapUIProps) {
   const [tapping, setTapping] = useState<string | null>(null)
   const [lockedOut, setLockedOut] = useState(false)
   const [error, setError] = useState("")
+  const [lastAction, setLastAction] = useState<UndoAction | null>(null)
 
   const fetchTallies = useCallback(async () => {
     try {
@@ -47,14 +55,19 @@ export function TallyTapUI({ staffName, staffToken }: TallyTapUIProps) {
     fetchTallies()
   }, [fetchTallies])
 
-  async function handleTap(type: string, delta: number) {
-    // Prevent negative
+  // Auto-clear undo after 10 seconds
+  useEffect(() => {
+    if (!lastAction) return
+    const timer = setTimeout(() => setLastAction(null), 10000)
+    return () => clearTimeout(timer)
+  }, [lastAction])
+
+  async function handleTap(type: string, delta: number, isUndo = false) {
     if (delta < 0 && (tallies[type] ?? 0) <= 0) return
 
     setTapping(type)
     setError("")
 
-    // Optimistic update
     const prev = { ...tallies }
     setTallies((p) => ({
       ...p,
@@ -69,6 +82,13 @@ export function TallyTapUI({ staffName, staffToken }: TallyTapUIProps) {
       })
       if (res.ok) {
         setTallies(await res.json())
+        if (!isUndo) {
+          setLastAction({
+            type,
+            delta,
+            label: TALLY_TYPE_LABELS[type] ?? type,
+          })
+        }
       } else {
         setTallies(prev)
         setError(messages.tally.tapError)
@@ -81,21 +101,19 @@ export function TallyTapUI({ staffName, staffToken }: TallyTapUIProps) {
     }
   }
 
+  async function handleUndo() {
+    if (!lastAction) return
+    const action = lastAction
+    setLastAction(null)
+    await handleTap(action.type, -action.delta, true)
+  }
+
   const today = new Date().toLocaleDateString("ja-JP", {
     year: "numeric",
     month: "long",
     day: "numeric",
     weekday: "short",
   })
-
-  function handleLogout() {
-    setLockedOut(true)
-  }
-
-  function handleUnlock() {
-    setLockedOut(false)
-    fetchTallies()
-  }
 
   if (loading) {
     return (
@@ -113,7 +131,7 @@ export function TallyTapUI({ staffName, staffToken }: TallyTapUIProps) {
         <CardContent className="flex flex-col items-center gap-4 py-12">
           <div className="text-4xl">🔒</div>
           <p className="text-sm text-muted-foreground">{messages.tally.loggedOut}</p>
-          <Button variant="outline" onClick={handleUnlock}>
+          <Button variant="outline" onClick={() => { setLockedOut(false); fetchTallies() }}>
             {messages.tally.unlockButton}
           </Button>
         </CardContent>
@@ -166,6 +184,15 @@ export function TallyTapUI({ staffName, staffToken }: TallyTapUIProps) {
             </div>
           )
         })}
+        {lastAction && (
+          <button
+            onClick={handleUndo}
+            className="flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed p-2 text-xs text-muted-foreground transition-colors hover:bg-muted"
+          >
+            <Undo2 className="h-3.5 w-3.5" />
+            {messages.tally.undo}: {lastAction.label} {lastAction.delta > 0 ? "+1" : "-1"}
+          </button>
+        )}
         {error && (
           <div className="rounded-md bg-destructive/10 p-2 text-center text-xs text-destructive">
             {error}
@@ -176,7 +203,7 @@ export function TallyTapUI({ staffName, staffToken }: TallyTapUIProps) {
             variant="ghost"
             size="sm"
             className="w-full text-muted-foreground"
-            onClick={handleLogout}
+            onClick={() => setLockedOut(true)}
           >
             {messages.common.logout}
           </Button>

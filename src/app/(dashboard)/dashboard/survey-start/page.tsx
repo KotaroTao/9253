@@ -14,7 +14,11 @@ export default async function SurveyStartPage() {
 
   const clinicId = session.user.clinicId
 
-  const [clinic, staffList] = await Promise.all([
+  // Today start for counting responses
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+
+  const [clinic, staffList, todayCounts] = await Promise.all([
     prisma.clinic.findUnique({
       where: { id: clinicId },
       include: {
@@ -30,11 +34,22 @@ export default async function SurveyStartPage() {
       select: { id: true, name: true, role: true, qrToken: true },
       orderBy: { createdAt: "asc" },
     }),
+    prisma.surveyResponse.groupBy({
+      by: ["staffId"],
+      where: { clinicId, respondedAt: { gte: todayStart } },
+      _count: { _all: true },
+    }),
   ])
 
   if (!clinic) {
     redirect("/login")
   }
+
+  const countMap = new Map(todayCounts.map((c) => [c.staffId, c._count._all]))
+  const staffListWithCounts = staffList.map((s) => ({
+    ...s,
+    todayCount: countMap.get(s.id) ?? 0,
+  }))
 
   const template = clinic.surveyTemplates[0]
 
@@ -55,7 +70,7 @@ export default async function SurveyStartPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">{messages.nav.surveyStart}</h1>
       <SurveyStaffSelector
-        staffList={staffList}
+        staffList={staffListWithCounts}
         clinicName={clinic.name}
         templateId={template.id}
         questions={template.questions as SurveyPageData["questions"]}

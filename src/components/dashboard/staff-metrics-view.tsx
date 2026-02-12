@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
 import { STAFF_ROLE_LABELS } from "@/lib/constants"
+import { TrendingUp, TrendingDown } from "lucide-react"
 import type { StaffTallyMetrics } from "@/types"
 
 interface ClinicTotals {
@@ -19,14 +20,29 @@ interface ClinicTotals {
 interface StaffMetricsViewProps {
   initialStaffMetrics: StaffTallyMetrics[]
   initialClinicTotals: ClinicTotals
+  initialPrevTotals: ClinicTotals | null
   initialYear: number
   initialMonth: number
   clinicId: string
 }
 
+function RateDelta({ current, prev }: { current: number | null; prev: number | null }) {
+  if (current == null || prev == null) return null
+  const diff = Math.round((current - prev) * 10) / 10
+  if (diff === 0) return null
+  const isUp = diff > 0
+  return (
+    <span className={`ml-1 inline-flex items-center gap-0.5 text-xs ${isUp ? "text-green-600" : "text-red-500"}`}>
+      {isUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+      {isUp ? "+" : ""}{diff}
+    </span>
+  )
+}
+
 export function StaffMetricsView({
   initialStaffMetrics,
   initialClinicTotals,
+  initialPrevTotals,
   initialYear,
   initialMonth,
 }: StaffMetricsViewProps) {
@@ -34,6 +50,7 @@ export function StaffMetricsView({
   const [month, setMonth] = useState(initialMonth)
   const [staffMetrics, setStaffMetrics] = useState(initialStaffMetrics)
   const [clinicTotals, setClinicTotals] = useState(initialClinicTotals)
+  const [prevTotals, setPrevTotals] = useState<ClinicTotals | null>(initialPrevTotals)
   const [loading, setLoading] = useState(false)
 
   const now = new Date()
@@ -60,6 +77,7 @@ export function StaffMetricsView({
         const data = await res.json()
         setStaffMetrics(data.staffMetrics)
         setClinicTotals(data.clinicTotals)
+        setPrevTotals(data.prevTotals ?? null)
       }
     } catch {
       // ignore
@@ -126,6 +144,7 @@ export function StaffMetricsView({
                   <p className="text-xs text-muted-foreground">{messages.dashboard.maintenanceRate}</p>
                   <p className="text-xl font-bold text-orange-600">
                     {clinicTotals.maintenanceRate != null ? `${clinicTotals.maintenanceRate}%` : "-"}
+                    <RateDelta current={clinicTotals.maintenanceRate} prev={prevTotals?.maintenanceRate ?? null} />
                   </p>
                   <p className="text-xs text-muted-foreground">
                     ({clinicTotals.maintenanceTransitionCount}/{clinicTotals.newPatientCount})
@@ -139,6 +158,7 @@ export function StaffMetricsView({
                   <p className="text-xs text-muted-foreground">{messages.dashboard.selfPayRate}</p>
                   <p className="text-xl font-bold text-purple-600">
                     {clinicTotals.selfPayRate != null ? `${clinicTotals.selfPayRate}%` : "-"}
+                    <RateDelta current={clinicTotals.selfPayRate} prev={prevTotals?.selfPayRate ?? null} />
                   </p>
                   <p className="text-xs text-muted-foreground">
                     ({clinicTotals.selfPayConversionCount}/{clinicTotals.selfPayProposalCount})

@@ -69,9 +69,24 @@ export async function getDashboardStats(
     }))
     .sort((a, b) => b.avgScore - a.avgScore)
 
+  // Previous month avg for comparison
+  const prevStart = new Date()
+  prevStart.setMonth(prevStart.getMonth() - 1)
+  prevStart.setDate(1)
+  prevStart.setHours(0, 0, 0, 0)
+  const prevEnd = new Date(prevStart.getFullYear(), prevStart.getMonth() + 1, 0, 23, 59, 59)
+
+  const prevAvg = await prisma.surveyResponse.aggregate({
+    where: { clinicId, respondedAt: { gte: prevStart, lte: prevEnd } },
+    _avg: { overallScore: true },
+    _count: { _all: true },
+  })
+
   return {
     totalResponses,
     averageScore: avgScore._avg.overallScore ?? 0,
+    prevAverageScore:
+      prevAvg._count._all > 0 ? (prevAvg._avg.overallScore ?? null) : null,
     reviewClickRate:
       totalResponses > 0
         ? Math.round((reviewClickCount / totalResponses) * 1000) / 10
