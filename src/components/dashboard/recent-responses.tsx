@@ -8,7 +8,6 @@ interface RecentResponsesProps {
     id: string
     overallScore: number | null
     freeText: string | null
-    reviewClicked: boolean
     respondedAt: Date | string
     staff: { name: string; role: string }
   }[]

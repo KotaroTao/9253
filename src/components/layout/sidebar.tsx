@@ -23,16 +23,59 @@ interface SidebarProps {
   role: string
 }
 
-const navItems = [
+const dailyItems = [
   { href: "/dashboard", label: messages.nav.dashboard, icon: LayoutDashboard },
   { href: "/dashboard/survey-start", label: messages.nav.surveyStart, icon: Smartphone },
   { href: "/dashboard/tally", label: messages.nav.tally, icon: ClipboardPen },
+]
+
+const analyticsItems = [
   { href: "/dashboard/metrics", label: messages.nav.monthlyMetrics, icon: BarChart3 },
   { href: "/dashboard/surveys", label: messages.nav.surveys, icon: ClipboardList },
   { href: "/dashboard/staff-survey", label: messages.nav.staffSurvey, icon: Heart },
+]
+
+const adminItems = [
   { href: "/dashboard/staff", label: messages.nav.staff, icon: Users },
   { href: "/dashboard/settings", label: messages.nav.settings, icon: Settings },
 ]
+
+interface NavItem {
+  href: string
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+}
+
+function NavSection({ label, items, pathname }: { label: string; items: NavItem[]; pathname: string }) {
+  return (
+    <div>
+      <p className="mb-1 px-3 pt-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+        {label}
+      </p>
+      {items.map((item) => {
+        const isActive =
+          item.href === "/dashboard"
+            ? pathname === "/dashboard"
+            : pathname.startsWith(item.href)
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+              isActive
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            )}
+          >
+            <item.icon className="h-4 w-4" />
+            {item.label}
+          </Link>
+        )
+      })}
+    </div>
+  )
+}
 
 export function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname()
@@ -44,41 +87,25 @@ export function Sidebar({ role }: SidebarProps) {
           {APP_NAME}
         </Link>
       </div>
-      <nav className="flex-1 space-y-1 p-2">
-        {navItems.map((item) => {
-          const isActive =
-            item.href === "/dashboard"
-              ? pathname === "/dashboard"
-              : pathname.startsWith(item.href)
-          return (
+      <nav className="flex-1 space-y-1 overflow-y-auto p-2">
+        <NavSection label={messages.nav.sectionDaily} items={dailyItems} pathname={pathname} />
+        <NavSection label={messages.nav.sectionAnalytics} items={analyticsItems} pathname={pathname} />
+        <NavSection label={messages.nav.sectionAdmin} items={adminItems} pathname={pathname} />
+        {role === "system_admin" && (
+          <div className="pt-2">
             <Link
-              key={item.href}
-              href={item.href}
+              href="/admin"
               className={cn(
                 "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                isActive
+                pathname.startsWith("/admin")
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
-              <item.icon className="h-4 w-4" />
-              {item.label}
+              <Shield className="h-4 w-4" />
+              {messages.nav.systemAdmin}
             </Link>
-          )
-        })}
-        {role === "system_admin" && (
-          <Link
-            href="/admin"
-            className={cn(
-              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-              pathname.startsWith("/admin")
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            )}
-          >
-            <Shield className="h-4 w-4" />
-            {messages.nav.systemAdmin}
-          </Link>
+          </div>
         )}
       </nav>
       <div className="border-t p-2">

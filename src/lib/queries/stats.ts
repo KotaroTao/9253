@@ -15,18 +15,13 @@ export async function getDashboardStats(
       }),
   }
 
-  const [totalResponses, avgScore, reviewStats, recentResponses, staffRanking] =
+  const [totalResponses, avgScore, recentResponses, staffRanking] =
     await Promise.all([
       prisma.surveyResponse.count({ where }),
 
       prisma.surveyResponse.aggregate({
         where,
         _avg: { overallScore: true },
-      }),
-
-      prisma.surveyResponse.aggregate({
-        where: { ...where, reviewRequested: true },
-        _count: { _all: true },
       }),
 
       prisma.surveyResponse.findMany({
@@ -45,11 +40,6 @@ export async function getDashboardStats(
         _count: { id: true },
       }),
     ])
-
-  // Get review click count separately
-  const reviewClickCount = await prisma.surveyResponse.count({
-    where: { ...where, reviewClicked: true },
-  })
 
   // Enrich staff ranking with names
   const staffIds = staffRanking.map((s) => s.staffId)
@@ -87,15 +77,46 @@ export async function getDashboardStats(
     averageScore: avgScore._avg.overallScore ?? 0,
     prevAverageScore:
       prevAvg._count._all > 0 ? (prevAvg._avg.overallScore ?? null) : null,
-    reviewClickRate:
-      totalResponses > 0
-        ? Math.round((reviewClickCount / totalResponses) * 1000) / 10
-        : 0,
-    reviewClickCount,
-    reviewRequestedCount: reviewStats._count._all,
     recentResponses,
     staffRanking: enrichedStaffRanking,
   }
+}
+
+export async function getMonthlySurveyQuality(
+  clinicId: string,
+  year: number,
+  month: number
+) {
+  const startDate = new Date(year, month - 1, 1)
+  const endDate = new Date(year, month, 0, 23, 59, 59)
+  const where = { clinicId, respondedAt: { gte: startDate, lte: endDate } }
+
+  const [lowScoreCount, freeTextCount, totalCount] = await Promise.all([
+    prisma.surveyResponse.count({ where: { ...where, overallScore: { lte: 3 } } }),
+    prisma.surveyResponse.count({ where: { ...where, freeText: { not: null } } }),
+    prisma.surveyResponse.count({ where }),
+  ])
+
+  return {
+    lowScoreCount,
+    freeTextRate: totalCount > 0 ? Math.round((freeTextCount / totalCount) * 1000) / 10 : null,
+  }
+}
+
+export async function getMonthlySurveyCount(
+  clinicId: string,
+  year: number,
+  month: number
+) {
+  const startDate = new Date(year, month - 1, 1)
+  const endDate = new Date(year, month, 0, 23, 59, 59)
+
+  return prisma.surveyResponse.count({
+    where: {
+      clinicId,
+      respondedAt: { gte: startDate, lte: endDate },
+    },
+  })
 }
 
 export async function getMonthlyTrend(clinicId: string, months: number = 6) {

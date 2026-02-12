@@ -13,8 +13,6 @@ interface SurveyStaffSelectorProps {
   clinicName: string
   templateId: string
   questions: SurveyPageData["questions"]
-  enableReviewRequest: boolean
-  googleReviewUrl: string | null
 }
 
 export function SurveyStaffSelector({
@@ -22,8 +20,6 @@ export function SurveyStaffSelector({
   clinicName,
   templateId,
   questions,
-  enableReviewRequest,
-  googleReviewUrl,
 }: SurveyStaffSelectorProps) {
   const [selectedStaff, setSelectedStaff] = useState<StaffCardItem | null>(null)
   // key to force re-mount SurveyForm on staff change
@@ -55,12 +51,7 @@ export function SurveyStaffSelector({
           {messages.tally.backToStaffSelect}
         </Button>
         <div className="mx-auto max-w-md">
-          <SurveyForm
-            key={formKey}
-            data={pageData}
-            enableReviewRequest={enableReviewRequest}
-            googleReviewUrl={googleReviewUrl}
-          />
+          <SurveyForm key={formKey} data={pageData} />
         </div>
       </div>
     )

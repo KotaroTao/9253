@@ -152,31 +152,31 @@ export function TallyTapUI({ staffName, staffToken }: TallyTapUIProps) {
           return (
             <div
               key={item.type}
-              className="flex items-center gap-3 rounded-lg border p-3"
+              className="flex items-center gap-3 rounded-xl border p-4"
             >
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">{item.icon}</span>
-                  <span className="text-sm font-medium">
+                  <span className="text-xl">{item.icon}</span>
+                  <span className="font-medium">
                     {TALLY_TYPE_LABELS[item.type]}
                   </span>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <button
                   onClick={() => handleTap(item.type, -1)}
                   disabled={count <= 0 || tapping === item.type}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border text-lg font-bold text-muted-foreground transition-colors hover:bg-muted disabled:opacity-30"
+                  className="flex h-12 w-12 items-center justify-center rounded-full border-2 text-xl font-bold text-muted-foreground transition-all hover:bg-muted active:scale-90 disabled:opacity-20"
                 >
                   −
                 </button>
-                <span className="w-10 text-center text-xl font-bold tabular-nums">
+                <span className="w-12 text-center text-2xl font-bold tabular-nums">
                   {count}
                 </span>
                 <button
                   onClick={() => handleTap(item.type, 1)}
                   disabled={tapping === item.type}
-                  className={`flex h-10 w-10 items-center justify-center rounded-full text-lg font-bold text-white transition-colors ${item.color} ${item.hoverColor} active:scale-95`}
+                  className={`flex h-14 w-14 items-center justify-center rounded-full text-2xl font-bold text-white shadow-sm transition-all ${item.color} ${item.hoverColor} active:scale-90`}
                 >
                   +
                 </button>

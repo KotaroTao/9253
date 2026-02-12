@@ -76,11 +76,6 @@ export default async function SurveysPage({ searchParams }: SurveysPageProps) {
                     <span className="text-xs text-muted-foreground">
                       {new Date(r.respondedAt).toLocaleDateString("ja-JP")}
                     </span>
-                    {r.reviewClicked && (
-                      <span className="text-xs text-primary">
-                        {messages.dashboard.reviewCompleted}
-                      </span>
-                    )}
                   </div>
                 </div>
               ))}
