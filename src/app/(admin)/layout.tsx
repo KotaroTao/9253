@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { messages } from "@/lib/messages"
+import { LogoutButton } from "@/components/layout/logout-button"
 
 export default async function AdminLayout({
   children,
@@ -32,6 +33,7 @@ export default async function AdminLayout({
               {messages.nav.dashboard}
             </a>
             <span className="text-muted-foreground">{session.user.name}</span>
+            <LogoutButton />
           </div>
         </div>
       </header>
