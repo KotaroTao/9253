@@ -74,8 +74,6 @@ export default async function SurveyStartPage() {
         clinicName={clinic.name}
         templateId={template.id}
         questions={template.questions as SurveyPageData["questions"]}
-        enableReviewRequest={clinic.enableReviewRequest}
-        googleReviewUrl={clinic.googleReviewUrl}
       />
     </div>
   )

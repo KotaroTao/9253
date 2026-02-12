@@ -11,9 +11,6 @@ export interface SurveyQuestion {
 export interface DashboardStats {
   totalResponses: number
   averageScore: number
-  reviewClickRate: number
-  reviewClickCount: number
-  reviewRequestedCount: number
   recentResponses: RecentResponse[]
   staffRanking: StaffRankingEntry[]
 }
@@ -22,7 +19,6 @@ export interface RecentResponse {
   id: string
   overallScore: number | null
   freeText: string | null
-  reviewClicked: boolean
   respondedAt: Date | string
   staff: {
     name: string

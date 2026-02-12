@@ -12,8 +12,6 @@ model Clinic {
   name                String
   slug                String   @unique
   googlePlaceId       String?  @map("google_place_id")
-  enableReviewRequest Boolean  @default(true) @map("enable_review_request")
-  googleReviewUrl     String?  @map("google_review_url")
   settings            Json     @default("{}")
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
@@ -92,8 +90,6 @@ model SurveyResponse {
   answers         Json
   overallScore    Float?   @map("overall_score")
   freeText        String?  @map("free_text")
-  reviewRequested Boolean  @default(false) @map("review_requested")
-  reviewClicked   Boolean  @default(false) @map("review_clicked")
   ipHash          String?  @map("ip_hash")
   respondedAt     DateTime @default(now()) @map("responded_at")
   createdAt       DateTime @default(now()) @map("created_at")
@@ -155,6 +151,8 @@ model MonthlyClinicMetrics {
   totalVisits                Int?     @map("total_visits")
   totalRevenue               Int?     @map("total_revenue")
   selfPayRevenue             Int?     @map("self_pay_revenue")
+  googleReviewCount          Int?     @map("google_review_count")
+  googleReviewRating         Float?   @map("google_review_rating")
   createdAt                  DateTime @default(now()) @map("created_at")
   updatedAt                  DateTime @updatedAt @map("updated_at")
 

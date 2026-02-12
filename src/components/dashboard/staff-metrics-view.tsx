@@ -22,6 +22,13 @@ interface MonthlySummary {
   totalVisits: number | null
   totalRevenue: number | null
   selfPayRevenue: number | null
+  googleReviewCount: number | null
+  googleReviewRating: number | null
+}
+
+interface SurveyQuality {
+  lowScoreCount: number
+  freeTextRate: number | null
 }
 
 interface StaffMetricsViewProps {
@@ -31,6 +38,7 @@ interface StaffMetricsViewProps {
   initialSummary: MonthlySummary | null
   initialPrevSummary: MonthlySummary | null
   initialSurveyCount: number
+  initialSurveyQuality: SurveyQuality | null
   initialYear: number
   initialMonth: number
   clinicId: string
@@ -56,6 +64,7 @@ export function StaffMetricsView({
   initialSummary,
   initialPrevSummary,
   initialSurveyCount,
+  initialSurveyQuality,
   initialYear,
   initialMonth,
 }: StaffMetricsViewProps) {
@@ -67,6 +76,7 @@ export function StaffMetricsView({
   const [summary, setSummary] = useState<MonthlySummary | null>(initialSummary)
   const [prevSummary, setPrevSummary] = useState<MonthlySummary | null>(initialPrevSummary)
   const [surveyCount, setSurveyCount] = useState(initialSurveyCount)
+  const [surveyQuality, setSurveyQuality] = useState<SurveyQuality | null>(initialSurveyQuality)
   const [loading, setLoading] = useState(false)
 
   const now = new Date()
@@ -97,6 +107,7 @@ export function StaffMetricsView({
         setSummary(data.summary ?? null)
         setPrevSummary(data.prevSummary ?? null)
         setSurveyCount(data.surveyCount ?? 0)
+        setSurveyQuality(data.surveyQuality ?? null)
       }
     } catch {
       // ignore
@@ -141,6 +152,7 @@ export function StaffMetricsView({
             initialSummary={summary}
             prevSummary={prevSummary}
             surveyCount={surveyCount}
+            surveyQuality={surveyQuality}
             tallyNewPatientCount={clinicTotals.newPatientCount}
             tallySelfPayConversionCount={clinicTotals.selfPayConversionCount}
           />

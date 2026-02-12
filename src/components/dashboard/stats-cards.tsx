@@ -18,15 +18,10 @@ export function StatsCards({ stats }: StatsCardsProps) {
       value: stats.totalResponses.toLocaleString(),
       suffix: " 件",
     },
-    {
-      title: messages.dashboard.reviewRate,
-      value: stats.reviewClickRate > 0 ? stats.reviewClickRate.toFixed(1) : "-",
-      suffix: stats.reviewClickRate > 0 ? "%" : "",
-    },
   ]
 
   return (
-    <div className="grid gap-4 sm:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-2">
       {cards.map((card) => (
         <Card key={card.title}>
           <CardHeader className="pb-2">

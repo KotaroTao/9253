@@ -34,8 +34,6 @@ async function main() {
     create: {
       name: "MIERU デモ歯科クリニック",
       slug: "demo-dental",
-      enableReviewRequest: true,
-      googleReviewUrl: "https://search.google.com/local/writereview?placeid=DEMO",
       settings: {},
     },
   })
@@ -126,8 +124,6 @@ async function main() {
       const q3Score = Math.random() > 0.2 ? Math.ceil(Math.random() * 2) + 3 : Math.ceil(Math.random() * 3)
       const overallScore = (q1Score + q2Score + q3Score) / 3
 
-      const reviewClicked = Math.random() > 0.8
-
       sampleResponses.push({
         clinicId: clinic.id,
         staffId: staff.id,
@@ -135,8 +131,6 @@ async function main() {
         answers: { q1: q1Score, q2: q2Score, q3: q3Score },
         overallScore,
         freeText: i % 5 === 0 ? "丁寧に対応していただきありがとうございました。" : null,
-        reviewRequested: true,
-        reviewClicked,
         ipHash: `sample-hash-${i}`,
         respondedAt,
       })

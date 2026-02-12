@@ -7,7 +7,7 @@ import { FAQSection } from "@/components/landing/faq-section"
 import {
   BarChart3,
   Users,
-  Star,
+  FileBarChart,
   ArrowRight,
   QrCode,
   Smartphone,
@@ -36,7 +36,7 @@ const features = [
     description: messages.landing.feature3Desc,
   },
   {
-    icon: Star,
+    icon: FileBarChart,
     title: messages.landing.feature4Title,
     description: messages.landing.feature4Desc,
   },

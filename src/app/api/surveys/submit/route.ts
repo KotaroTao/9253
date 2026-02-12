@@ -65,15 +65,10 @@ export async function POST(request: NextRequest) {
       answers,
       overallScore,
       freeText,
-      reviewRequested: staff.clinic.enableReviewRequest,
       ipHash,
     })
 
-    return successResponse({
-      id: response.id,
-      reviewRequested: staff.clinic.enableReviewRequest,
-      googleReviewUrl: staff.clinic.googleReviewUrl,
-    })
+    return successResponse({ id: response.id })
   } catch {
     return errorResponse(messages.common.error, 500)
   }

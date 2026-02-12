@@ -8,8 +8,6 @@ export interface SurveyFormState {
 
 export interface SurveySubmitResult {
   id: string
-  reviewRequested: boolean
-  googleReviewUrl: string | null
 }
 
 export interface SurveyPageData {

@@ -5,12 +5,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { messages } from "@/lib/messages"
-import { TrendingUp, TrendingDown, Save, Check } from "lucide-react"
+import { TrendingUp, TrendingDown, Save, Check, AlertTriangle } from "lucide-react"
 
 interface MonthlySummary {
   totalVisits: number | null
   totalRevenue: number | null
   selfPayRevenue: number | null
+  googleReviewCount: number | null
+  googleReviewRating: number | null
+}
+
+interface SurveyQuality {
+  lowScoreCount: number
+  freeTextRate: number | null
 }
 
 interface MonthlySummarySectionProps {
@@ -19,6 +26,7 @@ interface MonthlySummarySectionProps {
   initialSummary: MonthlySummary | null
   prevSummary: MonthlySummary | null
   surveyCount: number
+  surveyQuality: SurveyQuality | null
   tallyNewPatientCount: number
   tallySelfPayConversionCount: number
 }
@@ -42,72 +50,47 @@ export function MonthlySummarySection({
   initialSummary,
   prevSummary,
   surveyCount,
+  surveyQuality,
   tallyNewPatientCount,
   tallySelfPayConversionCount,
 }: MonthlySummarySectionProps) {
   const [totalVisits, setTotalVisits] = useState(initialSummary?.totalVisits?.toString() ?? "")
   const [totalRevenue, setTotalRevenue] = useState(initialSummary?.totalRevenue?.toString() ?? "")
   const [selfPayRevenue, setSelfPayRevenue] = useState(initialSummary?.selfPayRevenue?.toString() ?? "")
+  const [reviewCount, setReviewCount] = useState(initialSummary?.googleReviewCount?.toString() ?? "")
+  const [reviewRating, setReviewRating] = useState(initialSummary?.googleReviewRating?.toString() ?? "")
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
-  // Reset when month changes
   useEffect(() => {
     setTotalVisits(initialSummary?.totalVisits?.toString() ?? "")
     setTotalRevenue(initialSummary?.totalRevenue?.toString() ?? "")
     setSelfPayRevenue(initialSummary?.selfPayRevenue?.toString() ?? "")
+    setReviewCount(initialSummary?.googleReviewCount?.toString() ?? "")
+    setReviewRating(initialSummary?.googleReviewRating?.toString() ?? "")
     setSaved(false)
   }, [year, month, initialSummary])
 
   const visits = totalVisits ? parseInt(totalVisits) : null
   const revenue = totalRevenue ? parseInt(totalRevenue) : null
   const selfPay = selfPayRevenue ? parseInt(selfPayRevenue) : null
+  const gReviewCount = reviewCount ? parseInt(reviewCount) : null
+  const gReviewRating = reviewRating ? parseFloat(reviewRating) : null
 
-  // Derived metrics (calculated live as user types)
-  const surveyResponseRate =
-    visits != null && visits > 0
-      ? Math.round((surveyCount / visits) * 1000) / 10
-      : null
+  // Derived metrics
+  const surveyResponseRate = visits != null && visits > 0 ? Math.round((surveyCount / visits) * 1000) / 10 : null
+  const newPatientRate = visits != null && visits > 0 ? Math.round((tallyNewPatientCount / visits) * 1000) / 10 : null
+  const selfPayRatio = revenue != null && revenue > 0 && selfPay != null ? Math.round((selfPay / revenue) * 1000) / 10 : null
+  const revenuePerVisit = visits != null && visits > 0 && revenue != null ? Math.round((revenue / visits) * 10) / 10 : null
+  const selfPayUnitPrice = selfPay != null && tallySelfPayConversionCount > 0 ? Math.round((selfPay / tallySelfPayConversionCount) * 10) / 10 : null
+  const insuranceRevenue = revenue != null && selfPay != null ? revenue - selfPay : null
 
-  const newPatientRate =
-    visits != null && visits > 0
-      ? Math.round((tallyNewPatientCount / visits) * 1000) / 10
-      : null
-
-  const selfPayRatio =
-    revenue != null && revenue > 0 && selfPay != null
-      ? Math.round((selfPay / revenue) * 1000) / 10
-      : null
-
-  const revenuePerVisit =
-    visits != null && visits > 0 && revenue != null
-      ? Math.round((revenue / visits) * 10) / 10
-      : null
-
-  const selfPayUnitPrice =
-    selfPay != null && tallySelfPayConversionCount > 0
-      ? Math.round((selfPay / tallySelfPayConversionCount) * 10) / 10
-      : null
-
-  const insuranceRevenue =
-    revenue != null && selfPay != null
-      ? revenue - selfPay
-      : null
-
-  // Previous month derived metrics for comparison
-  const prevVisits = prevSummary?.totalVisits
+  // Previous month derived
   const prevRevenue = prevSummary?.totalRevenue
   const prevSelfPay = prevSummary?.selfPayRevenue
-
-  const prevSelfPayRatio =
-    prevRevenue != null && prevRevenue > 0 && prevSelfPay != null
-      ? Math.round((prevSelfPay / prevRevenue) * 1000) / 10
-      : null
-
-  const prevRevenuePerVisit =
-    prevVisits != null && prevVisits > 0 && prevRevenue != null
-      ? Math.round((prevRevenue / prevVisits) * 10) / 10
-      : null
+  const prevVisits = prevSummary?.totalVisits
+  const prevSelfPayRatio = prevRevenue != null && prevRevenue > 0 && prevSelfPay != null ? Math.round((prevSelfPay / prevRevenue) * 1000) / 10 : null
+  const prevRevenuePerVisit = prevVisits != null && prevVisits > 0 && prevRevenue != null ? Math.round((prevRevenue / prevVisits) * 10) / 10 : null
 
   async function handleSave() {
     setSaving(true)
@@ -117,11 +100,12 @@ export function MonthlySummarySection({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          year,
-          month,
+          year, month,
           totalVisits: visits,
           totalRevenue: revenue,
           selfPayRevenue: selfPay,
+          googleReviewCount: gReviewCount,
+          googleReviewRating: gReviewRating,
         }),
       })
       if (res.ok) {
@@ -135,53 +119,15 @@ export function MonthlySummarySection({
     }
   }
 
-  const hasInput = visits != null || revenue != null || selfPay != null
+  const hasInput = visits != null || revenue != null || selfPay != null || gReviewCount != null
 
   const derivedMetrics = [
-    {
-      label: messages.monthlyMetrics.surveyResponseRate,
-      value: surveyResponseRate,
-      format: (v: number) => `${v}%`,
-      detail: surveyCount > 0 ? `(${surveyCount}/${visits})` : null,
-      prev: null as number | null,
-    },
-    {
-      label: messages.monthlyMetrics.newPatientRate,
-      value: newPatientRate,
-      format: (v: number) => `${v}%`,
-      detail: tallyNewPatientCount > 0 ? `(${tallyNewPatientCount}/${visits})` : null,
-      prev: null as number | null,
-    },
-    {
-      label: messages.monthlyMetrics.selfPayRatio,
-      value: selfPayRatio,
-      format: (v: number) => `${v}%`,
-      detail: selfPay != null && revenue != null ? `(${selfPay}/${revenue})` : null,
-      prev: prevSelfPayRatio,
-    },
-    {
-      label: messages.monthlyMetrics.revenuePerVisit,
-      value: revenuePerVisit,
-      format: (v: number) => `${v}${messages.monthlyMetrics.unitMan}`,
-      detail: null,
-      prev: prevRevenuePerVisit,
-    },
-    {
-      label: messages.monthlyMetrics.selfPayUnitPrice,
-      value: selfPayUnitPrice,
-      format: (v: number) => `${v}${messages.monthlyMetrics.unitMan}`,
-      detail: selfPay != null && tallySelfPayConversionCount > 0
-        ? `(${selfPay}/${tallySelfPayConversionCount})`
-        : null,
-      prev: null as number | null,
-    },
-    {
-      label: messages.monthlyMetrics.insuranceRevenue,
-      value: insuranceRevenue,
-      format: (v: number) => `${v}${messages.monthlyMetrics.unitMan}`,
-      detail: null,
-      prev: prevRevenue != null && prevSelfPay != null ? prevRevenue - prevSelfPay : null,
-    },
+    { label: messages.monthlyMetrics.surveyResponseRate, value: surveyResponseRate, format: (v: number) => `${v}%`, detail: surveyCount > 0 ? `(${surveyCount}/${visits})` : null, prev: null as number | null },
+    { label: messages.monthlyMetrics.newPatientRate, value: newPatientRate, format: (v: number) => `${v}%`, detail: tallyNewPatientCount > 0 ? `(${tallyNewPatientCount}/${visits})` : null, prev: null as number | null },
+    { label: messages.monthlyMetrics.selfPayRatio, value: selfPayRatio, format: (v: number) => `${v}%`, detail: selfPay != null && revenue != null ? `(${selfPay}/${revenue})` : null, prev: prevSelfPayRatio },
+    { label: messages.monthlyMetrics.revenuePerVisit, value: revenuePerVisit, format: (v: number) => `${v}${messages.monthlyMetrics.unitMan}`, detail: null, prev: prevRevenuePerVisit },
+    { label: messages.monthlyMetrics.selfPayUnitPrice, value: selfPayUnitPrice, format: (v: number) => `${v}${messages.monthlyMetrics.unitMan}`, detail: selfPay != null && tallySelfPayConversionCount > 0 ? `(${selfPay}/${tallySelfPayConversionCount})` : null, prev: null as number | null },
+    { label: messages.monthlyMetrics.insuranceRevenue, value: insuranceRevenue, format: (v: number) => `${v}${messages.monthlyMetrics.unitMan}`, detail: null, prev: prevRevenue != null && prevSelfPay != null ? prevRevenue - prevSelfPay : null },
   ]
 
   return (
@@ -191,81 +137,76 @@ export function MonthlySummarySection({
         <p className="text-xs text-muted-foreground">{messages.monthlyMetrics.summaryHint}</p>
       </CardHeader>
       <CardContent className="space-y-5">
-        {/* 3 Input Fields */}
-        <div className="grid gap-4 sm:grid-cols-3">
+        {/* Input fields */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">
-              {messages.monthlyMetrics.totalVisits}
-            </label>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">{messages.monthlyMetrics.totalVisits}</label>
             <div className="flex items-center gap-1">
-              <Input
-                type="number"
-                min={0}
-                value={totalVisits}
-                onChange={(e) => setTotalVisits(e.target.value)}
-                placeholder="0"
-                className="text-right"
-              />
+              <Input type="number" min={0} value={totalVisits} onChange={(e) => setTotalVisits(e.target.value)} placeholder="0" className="text-right" />
               <span className="text-sm text-muted-foreground">{messages.monthlyMetrics.unitPersons}</span>
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">
-              {messages.monthlyMetrics.totalRevenue}
-            </label>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">{messages.monthlyMetrics.totalRevenue}</label>
             <div className="flex items-center gap-1">
-              <Input
-                type="number"
-                min={0}
-                value={totalRevenue}
-                onChange={(e) => setTotalRevenue(e.target.value)}
-                placeholder="0"
-                className="text-right"
-              />
+              <Input type="number" min={0} value={totalRevenue} onChange={(e) => setTotalRevenue(e.target.value)} placeholder="0" className="text-right" />
               <span className="text-sm text-muted-foreground">{messages.monthlyMetrics.unitMan}</span>
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">
-              {messages.monthlyMetrics.selfPayRevenue}
-            </label>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">{messages.monthlyMetrics.selfPayRevenue}</label>
             <div className="flex items-center gap-1">
-              <Input
-                type="number"
-                min={0}
-                value={selfPayRevenue}
-                onChange={(e) => setSelfPayRevenue(e.target.value)}
-                placeholder="0"
-                className="text-right"
-              />
+              <Input type="number" min={0} value={selfPayRevenue} onChange={(e) => setSelfPayRevenue(e.target.value)} placeholder="0" className="text-right" />
               <span className="text-sm text-muted-foreground">{messages.monthlyMetrics.unitMan}</span>
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">{messages.monthlyMetrics.googleReviewCount}</label>
+            <div className="flex items-center gap-1">
+              <Input type="number" min={0} value={reviewCount} onChange={(e) => setReviewCount(e.target.value)} placeholder="0" className="text-right" />
+              <span className="text-sm text-muted-foreground">{messages.monthlyMetrics.unitReviews}</span>
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">{messages.monthlyMetrics.googleReviewRating}</label>
+            <div className="flex items-center gap-1">
+              <Input type="number" min={0} max={5} step={0.1} value={reviewRating} onChange={(e) => setReviewRating(e.target.value)} placeholder="0.0" className="text-right" />
+              <span className="text-sm text-muted-foreground">{messages.monthlyMetrics.unitPoints}</span>
             </div>
           </div>
         </div>
 
         {/* Save Button */}
         <div className="flex items-center gap-2">
-          <Button
-            onClick={handleSave}
-            disabled={saving || !hasInput}
-            size="sm"
-          >
-            {saved ? (
-              <><Check className="mr-1 h-4 w-4" />{messages.common.saved}</>
-            ) : saving ? (
-              messages.monthlyMetrics.saving
-            ) : (
-              <><Save className="mr-1 h-4 w-4" />{messages.monthlyMetrics.saveSummary}</>
-            )}
+          <Button onClick={handleSave} disabled={saving || !hasInput} size="sm">
+            {saved ? (<><Check className="mr-1 h-4 w-4" />{messages.common.saved}</>) : saving ? messages.monthlyMetrics.saving : (<><Save className="mr-1 h-4 w-4" />{messages.monthlyMetrics.saveSummary}</>)}
           </Button>
         </div>
+
+        {/* Auto-calculated metrics (zero effort) */}
+        {surveyQuality && (surveyQuality.lowScoreCount > 0 || surveyQuality.freeTextRate != null) && (
+          <div className="flex flex-wrap gap-3">
+            {surveyQuality.lowScoreCount > 0 && (
+              <div className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2">
+                <AlertTriangle className="h-4 w-4 text-red-500" />
+                <span className="text-sm font-medium text-red-700">
+                  {messages.monthlyMetrics.lowScoreAlert}: {surveyQuality.lowScoreCount}{messages.monthlyMetrics.lowScoreCount}
+                </span>
+              </div>
+            )}
+            {surveyQuality.freeTextRate != null && (
+              <div className="rounded-lg border px-3 py-2">
+                <span className="text-xs text-muted-foreground">{messages.monthlyMetrics.freeTextRate}: </span>
+                <span className="text-sm font-medium">{surveyQuality.freeTextRate}%</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Derived Metrics */}
         {hasInput && (
           <div>
-            <p className="mb-3 text-xs font-medium text-muted-foreground">
-              {messages.monthlyMetrics.derivedTitle}
-            </p>
+            <p className="mb-3 text-xs font-medium text-muted-foreground">{messages.monthlyMetrics.derivedTitle}</p>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {derivedMetrics.map((m) => (
                 <div key={m.label} className="rounded-lg border p-3">
@@ -274,9 +215,7 @@ export function MonthlySummarySection({
                     {m.value != null ? m.format(m.value) : "-"}
                     <DerivedDelta current={m.value} prev={m.prev} />
                   </p>
-                  {m.detail && (
-                    <p className="text-xs text-muted-foreground">{m.detail}</p>
-                  )}
+                  {m.detail && <p className="text-xs text-muted-foreground">{m.detail}</p>}
                 </div>
               ))}
             </div>

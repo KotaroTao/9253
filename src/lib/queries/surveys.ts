@@ -25,7 +25,6 @@ export async function createSurveyResponse(data: {
   answers: Prisma.InputJsonValue
   overallScore: number
   freeText?: string
-  reviewRequested: boolean
   ipHash: string
 }) {
   return prisma.surveyResponse.create({ data })

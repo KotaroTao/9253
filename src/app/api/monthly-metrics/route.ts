@@ -7,7 +7,7 @@ import {
   getStaffMonthlyTallies,
   getClinicMonthlyTallyTotals,
 } from "@/lib/queries/tallies"
-import { getMonthlySurveyCount } from "@/lib/queries/stats"
+import { getMonthlySurveyCount, getMonthlySurveyQuality } from "@/lib/queries/stats"
 
 export async function GET(request: NextRequest) {
   const authResult = await requireRole("clinic_admin", "system_admin")
@@ -36,16 +36,18 @@ export async function GET(request: NextRequest) {
       getClinicMonthlyTallyTotals(clinicId, prevYear, prevMonth),
       prisma.monthlyClinicMetrics.findUnique({
         where: { clinicId_year_month: { clinicId, year, month } },
-        select: { totalVisits: true, totalRevenue: true, selfPayRevenue: true },
+        select: { totalVisits: true, totalRevenue: true, selfPayRevenue: true, googleReviewCount: true, googleReviewRating: true },
       }),
       prisma.monthlyClinicMetrics.findUnique({
         where: { clinicId_year_month: { clinicId, year: prevYear, month: prevMonth } },
-        select: { totalVisits: true, totalRevenue: true, selfPayRevenue: true },
+        select: { totalVisits: true, totalRevenue: true, selfPayRevenue: true, googleReviewCount: true, googleReviewRating: true },
       }),
       getMonthlySurveyCount(clinicId, year, month),
     ])
 
   const hasPrev = prevTotals.newPatientCount > 0 || prevTotals.selfPayProposalCount > 0
+
+  const surveyQuality = await getMonthlySurveyQuality(clinicId, year, month)
 
   return successResponse({
     staffMetrics,
@@ -54,6 +56,7 @@ export async function GET(request: NextRequest) {
     summary: summary ?? null,
     prevSummary: prevSummary?.totalVisits != null ? prevSummary : null,
     surveyCount,
+    surveyQuality,
   })
 }
 
@@ -67,7 +70,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { year, month, totalVisits, totalRevenue, selfPayRevenue } = body
+  const { year, month, totalVisits, totalRevenue, selfPayRevenue, googleReviewCount, googleReviewRating } = body
 
   if (!year || !month) {
     return errorResponse(messages.errors.invalidInput, 400)
@@ -80,23 +83,22 @@ export async function POST(request: NextRequest) {
 
   // selfPayRevenue cannot exceed totalRevenue
   const safeSelfPay = revenue != null && selfPay != null ? Math.min(selfPay, revenue) : selfPay
+  const reviewCount = googleReviewCount != null ? Math.max(0, Math.round(googleReviewCount)) : null
+  const reviewRating = googleReviewRating != null ? Math.max(0, Math.min(5, Math.round(googleReviewRating * 10) / 10)) : null
+
+  const data = {
+    totalVisits: visits,
+    totalRevenue: revenue,
+    selfPayRevenue: safeSelfPay,
+    googleReviewCount: reviewCount,
+    googleReviewRating: reviewRating,
+  }
 
   const result = await prisma.monthlyClinicMetrics.upsert({
     where: { clinicId_year_month: { clinicId, year, month } },
-    update: {
-      totalVisits: visits,
-      totalRevenue: revenue,
-      selfPayRevenue: safeSelfPay,
-    },
-    create: {
-      clinicId,
-      year,
-      month,
-      totalVisits: visits,
-      totalRevenue: revenue,
-      selfPayRevenue: safeSelfPay,
-    },
-    select: { totalVisits: true, totalRevenue: true, selfPayRevenue: true },
+    update: data,
+    create: { clinicId, year, month, ...data },
+    select: { totalVisits: true, totalRevenue: true, selfPayRevenue: true, googleReviewCount: true, googleReviewRating: true },
   })
 
   return successResponse(result)
