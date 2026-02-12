@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StarRating } from "@/components/survey/star-rating"
 import { messages } from "@/lib/messages"
 import { DEFAULTS } from "@/lib/constants"
+import { ChevronLeft } from "lucide-react"
 import type { SurveyPageData } from "@/types/survey"
 
 interface SurveyFormProps {
@@ -22,6 +23,7 @@ export function SurveyForm({ data }: SurveyFormProps) {
   const [error, setError] = useState("")
 
   const ratingQuestions = data.questions.filter((q) => q.type === "rating")
+  const totalSteps = ratingQuestions.length + 1 // questions + free text
 
   function handleRating(questionId: string, value: number) {
     setAnswers((prev) => ({ ...prev, [questionId]: value }))
@@ -64,16 +66,23 @@ export function SurveyForm({ data }: SurveyFormProps) {
     }
   }
 
+  // Progress: 0 = welcome, 1..N = questions, N+1 = freetext
+  const progressCurrent = step === "welcome" ? 0 : step === "questions" ? currentQuestion + 1 : step === "freetext" ? totalSteps : totalSteps
+  const progressPercent = step === "thanks" || step === "submitting" ? 100 : Math.round((progressCurrent / totalSteps) * 100)
+
   if (step === "welcome") {
     return (
-      <Card>
-        <CardHeader className="text-center">
+      <Card className="overflow-hidden">
+        <div className="h-1.5 bg-muted">
+          <div className="h-full bg-primary/30 transition-all duration-300" style={{ width: "0%" }} />
+        </div>
+        <CardHeader className="pb-3 text-center">
           <p className="text-sm text-muted-foreground">{data.clinicName}</p>
           <CardTitle className="text-xl">{messages.survey.welcome}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 text-center">
+        <CardContent className="space-y-5 text-center">
           <p className="text-sm text-muted-foreground">担当: {data.staffName}</p>
-          <Button onClick={() => setStep("questions")} className="w-full">
+          <Button onClick={() => setStep("questions")} size="lg" className="w-full h-14 text-base">
             {messages.survey.startButton}
           </Button>
           <p className="text-xs text-muted-foreground">
@@ -87,23 +96,34 @@ export function SurveyForm({ data }: SurveyFormProps) {
   if (step === "questions") {
     const q = ratingQuestions[currentQuestion]
     return (
-      <Card>
-        <CardHeader className="text-center">
+      <Card className="overflow-hidden">
+        {/* Progress bar */}
+        <div className="h-1.5 bg-muted">
+          <div
+            className="h-full bg-primary transition-all duration-300"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+        <CardHeader className="pb-2 text-center">
           <p className="text-xs text-muted-foreground">
             {currentQuestion + 1} / {ratingQuestions.length}
           </p>
-          <CardTitle className="text-lg">{q.text}</CardTitle>
+          <CardTitle className="text-lg leading-relaxed">{q.text}</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col items-center gap-4">
+        <CardContent className="flex flex-col items-center gap-6 pb-8">
           <StarRating value={answers[q.id] || 0} onChange={(v) => handleRating(q.id, v)} />
-          <div className="flex w-full justify-between text-xs text-muted-foreground">
+          <div className="flex w-full justify-between px-2 text-xs text-muted-foreground">
             <span>{DEFAULTS.MIN_STAR_RATING}点</span>
             <span>{DEFAULTS.MAX_STAR_RATING}点</span>
           </div>
           {currentQuestion > 0 && (
-            <Button variant="ghost" size="sm" onClick={() => setCurrentQuestion((prev) => prev - 1)}>
+            <button
+              className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+              onClick={() => setCurrentQuestion((prev) => prev - 1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
               {messages.common.back}
-            </Button>
+            </button>
           )}
         </CardContent>
       </Card>
@@ -112,13 +132,16 @@ export function SurveyForm({ data }: SurveyFormProps) {
 
   if (step === "freetext") {
     return (
-      <Card>
+      <Card className="overflow-hidden">
+        <div className="h-1.5 bg-muted">
+          <div className="h-full bg-primary transition-all duration-300" style={{ width: `${progressPercent}%` }} />
+        </div>
         <CardHeader className="text-center">
           <CardTitle className="text-lg">{messages.survey.freeTextLabel}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <textarea
-            className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="flex min-h-[120px] w-full rounded-xl border border-input bg-background px-4 py-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             placeholder={messages.survey.freeTextPlaceholder}
             value={freeText}
             onChange={(e) => setFreeText(e.target.value)}
@@ -131,10 +154,10 @@ export function SurveyForm({ data }: SurveyFormProps) {
             <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
           )}
           <div className="flex gap-2">
-            <Button variant="outline" className="flex-1" onClick={() => { setCurrentQuestion(ratingQuestions.length - 1); setStep("questions") }}>
+            <Button variant="outline" className="flex-1 h-12" onClick={() => { setCurrentQuestion(ratingQuestions.length - 1); setStep("questions") }}>
               {messages.common.back}
             </Button>
-            <Button className="flex-1" onClick={handleSubmit}>{messages.common.submit}</Button>
+            <Button className="flex-1 h-12 text-base" onClick={handleSubmit}>{messages.common.submit}</Button>
           </div>
         </CardContent>
       </Card>
@@ -143,9 +166,10 @@ export function SurveyForm({ data }: SurveyFormProps) {
 
   if (step === "submitting") {
     return (
-      <Card>
-        <CardContent className="py-12 text-center">
-          <div className="mb-4 text-2xl">⏳</div>
+      <Card className="overflow-hidden">
+        <div className="h-1.5 bg-primary" />
+        <CardContent className="py-16 text-center">
+          <div className="mb-4 text-3xl">⏳</div>
           <p className="text-muted-foreground">{messages.common.loading}</p>
         </CardContent>
       </Card>
@@ -153,13 +177,14 @@ export function SurveyForm({ data }: SurveyFormProps) {
   }
 
   return (
-    <Card>
-      <CardHeader className="text-center">
-        <div className="mb-2 text-4xl">🎉</div>
+    <Card className="overflow-hidden">
+      <div className="h-1.5 bg-primary" />
+      <CardHeader className="text-center pt-8">
+        <div className="mb-3 text-5xl">🎉</div>
         <CardTitle className="text-xl">{messages.survey.thankYou}</CardTitle>
         <p className="text-sm text-muted-foreground">{messages.survey.thankYouSub}</p>
       </CardHeader>
-      <CardContent className="space-y-4 text-center">
+      <CardContent className="space-y-4 pb-8 text-center">
         <div className="pt-4 text-sm text-muted-foreground">
           <p>{messages.survey.closeMessage}</p>
           <p>{messages.survey.visitAgain}</p>

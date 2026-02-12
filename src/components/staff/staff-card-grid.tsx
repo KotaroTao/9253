@@ -44,14 +44,14 @@ export function StaffCardGrid({ staffList, onSelect, hint }: StaffCardGridProps)
           <button
             key={staff.id}
             onClick={() => onSelect(staff)}
-            className="flex items-center gap-3 rounded-lg border bg-card p-4 text-left transition-colors hover:bg-accent"
+            className="flex items-center gap-4 rounded-xl border-2 bg-card p-5 text-left transition-all hover:border-primary/40 hover:bg-accent hover:shadow-sm active:scale-[0.98]"
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-lg font-bold text-primary">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xl font-bold text-primary">
               {staff.name.charAt(0)}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium truncate">{staff.name}</p>
-              <div className="flex items-center gap-1.5">
+              <p className="text-lg font-medium truncate">{staff.name}</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
                 <span
                   className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${ROLE_COLORS[staff.role] ?? ROLE_COLORS.other}`}
                 >

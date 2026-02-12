@@ -1,11 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { messages } from "@/lib/messages"
-import { TrendingUp, TrendingDown, Save, Check, AlertTriangle } from "lucide-react"
+import { TrendingUp, TrendingDown, Check, AlertTriangle, Loader2 } from "lucide-react"
 
 interface MonthlySummary {
   totalVisits: number | null
@@ -61,6 +60,8 @@ export function MonthlySummarySection({
   const [reviewRating, setReviewRating] = useState(initialSummary?.googleReviewRating?.toString() ?? "")
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isInitialMount = useRef(true)
 
   useEffect(() => {
     setTotalVisits(initialSummary?.totalVisits?.toString() ?? "")
@@ -69,6 +70,7 @@ export function MonthlySummarySection({
     setReviewCount(initialSummary?.googleReviewCount?.toString() ?? "")
     setReviewRating(initialSummary?.googleReviewRating?.toString() ?? "")
     setSaved(false)
+    isInitialMount.current = true
   }, [year, month, initialSummary])
 
   const visits = totalVisits ? parseInt(totalVisits) : null
@@ -76,6 +78,51 @@ export function MonthlySummarySection({
   const selfPay = selfPayRevenue ? parseInt(selfPayRevenue) : null
   const gReviewCount = reviewCount ? parseInt(reviewCount) : null
   const gReviewRating = reviewRating ? parseFloat(reviewRating) : null
+
+  const doSave = useCallback(async () => {
+    const v = totalVisits ? parseInt(totalVisits) : null
+    const r = totalRevenue ? parseInt(totalRevenue) : null
+    const sp = selfPayRevenue ? parseInt(selfPayRevenue) : null
+    const rc = reviewCount ? parseInt(reviewCount) : null
+    const rr = reviewRating ? parseFloat(reviewRating) : null
+    if (v == null && r == null && sp == null && rc == null) return
+
+    setSaving(true)
+    setSaved(false)
+    try {
+      const res = await fetch("/api/monthly-metrics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          year, month,
+          totalVisits: v,
+          totalRevenue: r,
+          selfPayRevenue: sp,
+          googleReviewCount: rc,
+          googleReviewRating: rr,
+        }),
+      })
+      if (res.ok) {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 3000)
+      }
+    } catch {
+      // ignore
+    } finally {
+      setSaving(false)
+    }
+  }, [year, month, totalVisits, totalRevenue, selfPayRevenue, reviewCount, reviewRating])
+
+  // Auto-save 1.5s after any input change
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
+    }
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => { doSave() }, 1500)
+    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
+  }, [totalVisits, totalRevenue, selfPayRevenue, reviewCount, reviewRating, doSave])
 
   // Derived metrics
   const surveyResponseRate = visits != null && visits > 0 ? Math.round((surveyCount / visits) * 1000) / 10 : null
@@ -92,33 +139,6 @@ export function MonthlySummarySection({
   const prevSelfPayRatio = prevRevenue != null && prevRevenue > 0 && prevSelfPay != null ? Math.round((prevSelfPay / prevRevenue) * 1000) / 10 : null
   const prevRevenuePerVisit = prevVisits != null && prevVisits > 0 && prevRevenue != null ? Math.round((prevRevenue / prevVisits) * 10) / 10 : null
 
-  async function handleSave() {
-    setSaving(true)
-    setSaved(false)
-    try {
-      const res = await fetch("/api/monthly-metrics", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          year, month,
-          totalVisits: visits,
-          totalRevenue: revenue,
-          selfPayRevenue: selfPay,
-          googleReviewCount: gReviewCount,
-          googleReviewRating: gReviewRating,
-        }),
-      })
-      if (res.ok) {
-        setSaved(true)
-        setTimeout(() => setSaved(false), 3000)
-      }
-    } catch {
-      // ignore
-    } finally {
-      setSaving(false)
-    }
-  }
-
   const hasInput = visits != null || revenue != null || selfPay != null || gReviewCount != null
 
   const derivedMetrics = [
@@ -133,8 +153,23 @@ export function MonthlySummarySection({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{messages.monthlyMetrics.summaryTitle}</CardTitle>
-        <p className="text-xs text-muted-foreground">{messages.monthlyMetrics.summaryHint}</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-base">{messages.monthlyMetrics.summaryTitle}</CardTitle>
+            <p className="text-xs text-muted-foreground">{messages.monthlyMetrics.summaryHint}</p>
+          </div>
+          {/* Auto-save status indicator */}
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            {saving && (
+              <><Loader2 className="h-3.5 w-3.5 animate-spin" />{messages.monthlyMetrics.saving}</>
+            )}
+            {saved && !saving && (
+              <span className="text-green-600 flex items-center gap-1">
+                <Check className="h-3.5 w-3.5" />{messages.monthlyMetrics.autoSaved}
+              </span>
+            )}
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="space-y-5">
         {/* Input fields */}
@@ -174,13 +209,6 @@ export function MonthlySummarySection({
               <span className="text-sm text-muted-foreground">{messages.monthlyMetrics.unitPoints}</span>
             </div>
           </div>
-        </div>
-
-        {/* Save Button */}
-        <div className="flex items-center gap-2">
-          <Button onClick={handleSave} disabled={saving || !hasInput} size="sm">
-            {saved ? (<><Check className="mr-1 h-4 w-4" />{messages.common.saved}</>) : saving ? messages.monthlyMetrics.saving : (<><Save className="mr-1 h-4 w-4" />{messages.monthlyMetrics.saveSummary}</>)}
-          </Button>
         </div>
 
         {/* Auto-calculated metrics (zero effort) */}
