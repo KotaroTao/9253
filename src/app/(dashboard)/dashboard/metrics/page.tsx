@@ -20,10 +20,17 @@ export default async function MetricsPage() {
   const year = now.getFullYear()
   const month = now.getMonth() + 1
 
-  const [staffMetrics, clinicTotals] = await Promise.all([
+  const prevDate = new Date(year, month - 2, 1)
+  const prevYear = prevDate.getFullYear()
+  const prevMonth = prevDate.getMonth() + 1
+
+  const [staffMetrics, clinicTotals, prevTotals] = await Promise.all([
     getStaffMonthlyTallies(clinicId, year, month),
     getClinicMonthlyTallyTotals(clinicId, year, month),
+    getClinicMonthlyTallyTotals(clinicId, prevYear, prevMonth),
   ])
+
+  const hasPrev = prevTotals.newPatientCount > 0 || prevTotals.selfPayProposalCount > 0
 
   return (
     <div className="space-y-6">
@@ -31,6 +38,7 @@ export default async function MetricsPage() {
       <StaffMetricsView
         initialStaffMetrics={staffMetrics}
         initialClinicTotals={clinicTotals}
+        initialPrevTotals={hasPrev ? prevTotals : null}
         initialYear={year}
         initialMonth={month}
         clinicId={clinicId}

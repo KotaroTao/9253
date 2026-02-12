@@ -11,11 +11,13 @@ import type { StaffSurveySummary, StaffSurveyResult } from "@/types"
 interface StaffSurveyManagementProps {
   initialSurveys: StaffSurveySummary[]
   activeSurvey: (StaffSurveySummary & { id: string }) | null
+  staffCount: number
 }
 
 export function StaffSurveyManagement({
   initialSurveys,
   activeSurvey: initialActive,
+  staffCount,
 }: StaffSurveyManagementProps) {
   const [surveys, setSurveys] = useState(initialSurveys)
   const [activeSurvey, setActiveSurvey] = useState(initialActive)
@@ -139,13 +141,26 @@ export function StaffSurveyManagement({
                 {messages.staffSurvey.shareInstruction}
               </p>
             </div>
-            <div className="flex items-center justify-between">
-              <p className="text-sm">
-                {messages.staffSurvey.responseCount}: {activeSurvey.responseCount}件
-              </p>
-              <Button variant="destructive" size="sm" onClick={handleClose} disabled={loading}>
-                {messages.staffSurvey.closeSurvey}
-              </Button>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">
+                    {activeSurvey.responseCount} / {staffCount}{messages.common.staffLabel}
+                    {messages.staffSurvey.responseProgress}
+                  </p>
+                  {staffCount > 0 && (
+                    <div className="mt-1 h-2 w-48 rounded-full bg-muted">
+                      <div
+                        className="h-2 rounded-full bg-green-500 transition-all"
+                        style={{ width: `${Math.min(100, (activeSurvey.responseCount / staffCount) * 100)}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+                <Button variant="destructive" size="sm" onClick={handleClose} disabled={loading}>
+                  {messages.staffSurvey.closeSurvey}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

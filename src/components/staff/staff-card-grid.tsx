@@ -9,6 +9,7 @@ export interface StaffCardItem {
   name: string
   role: string
   qrToken: string
+  todayCount?: number
 }
 
 const ROLE_COLORS: Record<string, string> = {
@@ -50,11 +51,18 @@ export function StaffCardGrid({ staffList, onSelect, hint }: StaffCardGridProps)
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-medium truncate">{staff.name}</p>
-              <span
-                className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${ROLE_COLORS[staff.role] ?? ROLE_COLORS.other}`}
-              >
-                {STAFF_ROLE_LABELS[staff.role] ?? staff.role}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span
+                  className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${ROLE_COLORS[staff.role] ?? ROLE_COLORS.other}`}
+                >
+                  {STAFF_ROLE_LABELS[staff.role] ?? staff.role}
+                </span>
+                {staff.todayCount != null && staff.todayCount > 0 && (
+                  <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
+                    {messages.tally.todaySurveys} {staff.todayCount}{messages.common.countSuffix}
+                  </span>
+                )}
+              </div>
             </div>
           </button>
         ))}
