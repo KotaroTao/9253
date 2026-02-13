@@ -16,8 +16,8 @@ export default async function SurveyPage({ params }: SurveyPageProps) {
       <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4">
         <div className="w-full max-w-sm text-center">
           <div className="mb-4 text-4xl">😔</div>
-          <h1 className="mb-2 text-xl font-bold">{messages.survey.invalidQr}</h1>
-          <p className="text-muted-foreground">{messages.survey.invalidQrSub}</p>
+          <h1 className="mb-2 text-xl font-bold">{messages.survey.invalidLink}</h1>
+          <p className="text-muted-foreground">{messages.survey.invalidLinkSub}</p>
         </div>
       </div>
     )

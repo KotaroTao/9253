@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     // Verify staff + clinic
     const staff = await getStaffByToken(staffToken)
     if (!staff || !staff.clinic) {
-      return errorResponse(messages.survey.invalidQr, 404)
+      return errorResponse(messages.survey.invalidLink, 404)
     }
 
     // Verify template belongs to this clinic

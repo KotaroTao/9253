@@ -7,8 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
 import { STAFF_ROLE_LABELS } from "@/lib/constants"
 import { StaffFormDialog } from "@/components/staff/staff-form-dialog"
-import { QrCodeDialog } from "@/components/staff/qr-code-dialog"
-import { Star, QrCode, Plus, Pencil } from "lucide-react"
+import { Star, Plus, Pencil } from "lucide-react"
 import type { StaffWithStats } from "@/types"
 
 interface StaffListProps {
@@ -20,7 +19,6 @@ export function StaffList({ staffList, clinicId }: StaffListProps) {
   const router = useRouter()
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingStaff, setEditingStaff] = useState<StaffWithStats | null>(null)
-  const [qrStaff, setQrStaff] = useState<StaffWithStats | null>(null)
 
   async function handleToggleActive(staffId: string, isActive: boolean) {
     await fetch(`/api/staff/${staffId}`, {
@@ -76,14 +74,6 @@ export function StaffList({ staffList, clinicId }: StaffListProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setQrStaff(staff)}
-                >
-                  <QrCode className="mr-1 h-3.5 w-3.5" />
-                  QR
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
                   onClick={() => setEditingStaff(staff)}
                 >
                   <Pencil className="mr-1 h-3.5 w-3.5" />
@@ -122,13 +112,6 @@ export function StaffList({ staffList, clinicId }: StaffListProps) {
             setEditingStaff(null)
             router.refresh()
           }}
-        />
-      )}
-
-      {qrStaff && (
-        <QrCodeDialog
-          staff={qrStaff}
-          onClose={() => setQrStaff(null)}
         />
       )}
     </>
