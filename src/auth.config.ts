@@ -13,6 +13,7 @@ export const authConfig = {
       if (user) {
         token.role = user.role
         token.clinicId = user.clinicId
+        token.staffId = user.staffId
       }
       return token
     },
@@ -21,6 +22,7 @@ export const authConfig = {
         session.user.id = token.sub as string
         session.user.role = token.role as string
         session.user.clinicId = token.clinicId as string | null
+        session.user.staffId = token.staffId as string | null
       }
       return session
     },
@@ -61,10 +63,11 @@ export const authConfig = {
         return Response.redirect(new URL("/dashboard", nextUrl))
       }
 
-      // /dashboard/* requires clinic_admin or system_admin
+      // /dashboard/* requires clinic_admin, staff, or system_admin
       if (
         pathname.startsWith("/dashboard") &&
         role !== "clinic_admin" &&
+        role !== "staff" &&
         role !== "system_admin"
       ) {
         return Response.redirect(new URL("/login", nextUrl))

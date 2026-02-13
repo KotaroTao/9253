@@ -41,7 +41,6 @@ interface StaffMetricsViewProps {
   initialSurveyQuality: SurveyQuality | null
   initialYear: number
   initialMonth: number
-  clinicId: string
 }
 
 function RateDelta({ current, prev }: { current: number | null; prev: number | null }) {

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+import Link from "next/link"
 import { auth } from "@/auth"
 import { getSurveyResponses } from "@/lib/queries/surveys"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,6 +16,10 @@ export default async function SurveysPage({ searchParams }: SurveysPageProps) {
 
   if (!session?.user?.clinicId) {
     redirect("/login")
+  }
+
+  if (session.user.role === "staff") {
+    redirect("/dashboard")
   }
 
   const page = Number(searchParams.page) || 1
@@ -86,23 +91,23 @@ export default async function SurveysPage({ searchParams }: SurveysPageProps) {
           {totalPages > 1 && (
             <div className="mt-4 flex items-center justify-center gap-2">
               {page > 1 && (
-                <a
+                <Link
                   href={`/dashboard/surveys?page=${page - 1}`}
                   className="rounded-md border px-3 py-1 text-sm hover:bg-muted"
                 >
                   {messages.common.back}
-                </a>
+                </Link>
               )}
               <span className="text-sm text-muted-foreground">
                 {page} / {totalPages}
               </span>
               {page < totalPages && (
-                <a
+                <Link
                   href={`/dashboard/surveys?page=${page + 1}`}
                   className="rounded-md border px-3 py-1 text-sm hover:bg-muted"
                 >
                   {messages.common.next}
-                </a>
+                </Link>
               )}
             </div>
           )}

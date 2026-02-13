@@ -11,6 +11,10 @@ export default async function StaffPage() {
     redirect("/login")
   }
 
+  if (session.user.role === "staff") {
+    redirect("/dashboard")
+  }
+
   const staffList = await getStaffWithStats(session.user.clinicId)
 
   return (

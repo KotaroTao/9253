@@ -121,17 +121,17 @@ export default function HomePage() {
             {messages.landing.heroSub}
           </p>
           <div className="animate-fade-in-up-delay-3 mt-10 flex flex-col gap-3 sm:flex-row sm:gap-4">
-            <a href="#cta">
-              <Button size="lg" className="h-12 px-8 text-base shadow-lg shadow-primary/25">
+            <Button asChild size="lg" className="h-12 px-8 text-base shadow-lg shadow-primary/25">
+              <a href="#cta">
                 {messages.landing.heroCta}
                 <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </a>
-            <a href="#features">
-              <Button variant="outline" size="lg" className="h-12 px-8 text-base">
+              </a>
+            </Button>
+            <Button asChild variant="outline" size="lg" className="h-12 px-8 text-base">
+              <a href="#features">
                 {messages.landing.heroCtaSub}
-              </Button>
-            </a>
+              </a>
+            </Button>
           </div>
         </div>
         {/* Decorative elements */}
@@ -301,15 +301,12 @@ export default function HomePage() {
               {messages.landing.ctaSub}
             </p>
             <div className="mt-10 flex flex-col items-center gap-4">
-              <Link href="/login">
-                <Button
-                  size="lg"
-                  className="h-14 px-10 text-base shadow-lg shadow-primary/25"
-                >
+              <Button asChild size="lg" className="h-14 px-10 text-base shadow-lg shadow-primary/25">
+                <Link href="/login">
                   {messages.landing.ctaButton}
                   <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
               <p className="text-sm text-muted-foreground">
                 {messages.landing.ctaNote}
               </p>

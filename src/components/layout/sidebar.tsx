@@ -77,6 +77,8 @@ function NavSection({ label, items, pathname }: { label: string; items: NavItem[
   )
 }
 
+const isAdminRole = (role: string) => role === "clinic_admin" || role === "system_admin"
+
 export function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname()
 
@@ -89,8 +91,12 @@ export function Sidebar({ role }: SidebarProps) {
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto p-2">
         <NavSection label={messages.nav.sectionDaily} items={dailyItems} pathname={pathname} />
-        <NavSection label={messages.nav.sectionAnalytics} items={analyticsItems} pathname={pathname} />
-        <NavSection label={messages.nav.sectionAdmin} items={adminItems} pathname={pathname} />
+        {isAdminRole(role) && (
+          <>
+            <NavSection label={messages.nav.sectionAnalytics} items={analyticsItems} pathname={pathname} />
+            <NavSection label={messages.nav.sectionAdmin} items={adminItems} pathname={pathname} />
+          </>
+        )}
         {role === "system_admin" && (
           <div className="pt-2">
             <Link

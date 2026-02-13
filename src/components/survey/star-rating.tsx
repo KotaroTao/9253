@@ -12,11 +12,13 @@ interface StarRatingProps {
 
 export function StarRating({ value, onChange, disabled }: StarRatingProps) {
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-2" role="radiogroup" aria-label={messages.survey.scoreSuffix}>
       {[1, 2, 3, 4, 5].map((star) => (
         <button
           key={star}
           type="button"
+          role="radio"
+          aria-checked={value === star}
           onClick={() => onChange(star)}
           disabled={disabled}
           className={cn(

@@ -17,8 +17,8 @@ export default async function DashboardLayout({
   const { role, clinicId } = session.user
 
   // system_admin with no clinicId can still access dashboard
-  // clinic_admin must have a clinicId
-  if (role === "clinic_admin" && !clinicId) {
+  // clinic_admin and staff must have a clinicId
+  if ((role === "clinic_admin" || role === "staff") && !clinicId) {
     redirect("/login")
   }
 

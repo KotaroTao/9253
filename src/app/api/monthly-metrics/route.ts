@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   const prevYear = prevDate.getFullYear()
   const prevMonth = prevDate.getMonth() + 1
 
-  const [staffMetrics, clinicTotals, prevTotals, summary, prevSummary, surveyCount] =
+  const [staffMetrics, clinicTotals, prevTotals, summary, prevSummary, surveyCount, surveyQuality] =
     await Promise.all([
       getStaffMonthlyTallies(clinicId, year, month),
       getClinicMonthlyTallyTotals(clinicId, year, month),
@@ -43,11 +43,10 @@ export async function GET(request: NextRequest) {
         select: { totalVisits: true, totalRevenue: true, selfPayRevenue: true, googleReviewCount: true, googleReviewRating: true },
       }),
       getMonthlySurveyCount(clinicId, year, month),
+      getMonthlySurveyQuality(clinicId, year, month),
     ])
 
   const hasPrev = prevTotals.newPatientCount > 0 || prevTotals.selfPayProposalCount > 0
-
-  const surveyQuality = await getMonthlySurveyQuality(clinicId, year, month)
 
   return successResponse({
     staffMetrics,
@@ -72,7 +71,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json()
   const { year, month, totalVisits, totalRevenue, selfPayRevenue, googleReviewCount, googleReviewRating } = body
 
-  if (!year || !month) {
+  if (typeof year !== "number" || typeof month !== "number" || month < 1 || month > 12 || year < 2000 || year > 2100) {
     return errorResponse(messages.errors.invalidInput, 400)
   }
 

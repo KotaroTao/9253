@@ -140,7 +140,9 @@ export function SurveyForm({ data }: SurveyFormProps) {
           <CardTitle className="text-lg">{messages.survey.freeTextLabel}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <label htmlFor="survey-freetext" className="sr-only">{messages.survey.freeTextLabel}</label>
           <textarea
+            id="survey-freetext"
             className="flex min-h-[120px] w-full rounded-xl border border-input bg-background px-4 py-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             placeholder={messages.survey.freeTextPlaceholder}
             value={freeText}

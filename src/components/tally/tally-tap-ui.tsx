@@ -166,7 +166,7 @@ export function TallyTapUI({ staffName, staffToken }: TallyTapUIProps) {
                 <button
                   onClick={() => handleTap(item.type, -1)}
                   disabled={count <= 0 || tapping === item.type}
-                  className="flex h-12 w-12 items-center justify-center rounded-full border-2 text-xl font-bold text-muted-foreground transition-all hover:bg-muted active:scale-90 disabled:opacity-20"
+                  className="flex h-12 w-12 items-center justify-center rounded-full border-2 text-xl font-bold text-muted-foreground transition-all hover:bg-muted active:scale-90 disabled:opacity-40"
                 >
                   −
                 </button>
