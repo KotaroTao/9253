@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useCallback, useEffect, useRef } from "react"
+import { useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { SurveyForm } from "@/components/survey/survey-form"
 import { messages } from "@/lib/messages"
-import { MessageSquare, LogOut, Lightbulb } from "lucide-react"
+import { MessageSquare, LogOut, Lightbulb, RotateCcw } from "lucide-react"
 import { Confetti } from "@/components/survey/confetti"
 import { DENTAL_TIPS } from "@/lib/constants"
 import type { SurveyPageData } from "@/types/survey"
@@ -15,9 +15,7 @@ interface KioskSurveyProps {
   initialTodayCount: number
 }
 
-type KioskState = "ready" | "survey" | "cooldown"
-
-const COOLDOWN_SECONDS = 4
+type KioskState = "ready" | "survey" | "thanks"
 
 export function KioskSurvey({ data, initialTodayCount }: KioskSurveyProps) {
   const router = useRouter()
@@ -25,15 +23,12 @@ export function KioskSurvey({ data, initialTodayCount }: KioskSurveyProps) {
   const [todayCount, setTodayCount] = useState(initialTodayCount)
   const [formKey, setFormKey] = useState(0)
   const [showExitConfirm, setShowExitConfirm] = useState(false)
-  const [cooldownProgress, setCooldownProgress] = useState(100)
   const [randomTip, setRandomTip] = useState(() => DENTAL_TIPS[Math.floor(Math.random() * DENTAL_TIPS.length)])
   const [showConfetti, setShowConfetti] = useState(false)
-  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const resetToReady = useCallback(() => {
     setFormKey((k) => k + 1)
     setState("ready")
-    setCooldownProgress(100)
     setShowConfetti(false)
   }, [])
 
@@ -41,31 +36,8 @@ export function KioskSurvey({ data, initialTodayCount }: KioskSurveyProps) {
     setTodayCount((c) => c + 1)
     setRandomTip(DENTAL_TIPS[Math.floor(Math.random() * DENTAL_TIPS.length)])
     setShowConfetti(true)
-    setState("cooldown")
+    setState("thanks")
   }, [])
-
-  // Cooldown timer with smooth progress bar
-  useEffect(() => {
-    if (state !== "cooldown") return
-
-    const startTime = Date.now()
-    const duration = COOLDOWN_SECONDS * 1000
-
-    cooldownRef.current = setInterval(() => {
-      const elapsed = Date.now() - startTime
-      const remaining = Math.max(0, 100 - (elapsed / duration) * 100)
-      setCooldownProgress(remaining)
-
-      if (elapsed >= duration) {
-        if (cooldownRef.current) clearInterval(cooldownRef.current)
-        resetToReady()
-      }
-    }, 50)
-
-    return () => {
-      if (cooldownRef.current) clearInterval(cooldownRef.current)
-    }
-  }, [state, resetToReady])
 
   const handleStartSurvey = useCallback(() => {
     setState("survey")
@@ -75,12 +47,12 @@ export function KioskSurvey({ data, initialTodayCount }: KioskSurveyProps) {
     router.push("/dashboard")
   }, [router])
 
-  // Ready screen - staff hands tablet to patient, patient taps to start
+  // Ready screen
   if (state === "ready") {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-blue-50/80 to-white px-4">
         <div className="w-full max-w-sm space-y-8 text-center">
-          <p className="text-sm text-muted-foreground">{data.staffName}</p>
+          <p className="text-sm text-muted-foreground">{data.clinicName}</p>
 
           <Button
             size="lg"
@@ -122,8 +94,8 @@ export function KioskSurvey({ data, initialTodayCount }: KioskSurveyProps) {
     )
   }
 
-  // Cooldown - thank you + tip + countdown
-  if (state === "cooldown") {
+  // Thanks screen - stays until "TOPに戻る" is pressed
+  if (state === "thanks") {
     return (
       <>
         {showConfetti && <Confetti />}
@@ -142,14 +114,13 @@ export function KioskSurvey({ data, initialTodayCount }: KioskSurveyProps) {
 
             <p className="text-sm text-muted-foreground">{messages.survey.closeMessage}</p>
 
-            <div className="mx-auto max-w-xs space-y-1 pt-2">
-              <div className="h-1 overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-primary/40 transition-all duration-100 ease-linear"
-                  style={{ width: `${cooldownProgress}%` }}
-                />
-              </div>
-            </div>
+            <Button
+              className="h-16 w-full text-lg"
+              onClick={resetToReady}
+            >
+              <RotateCcw className="mr-2 h-5 w-5" />
+              {messages.survey.backToTop}
+            </Button>
           </div>
         </div>
       </>

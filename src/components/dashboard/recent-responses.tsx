@@ -9,7 +9,7 @@ interface RecentResponsesProps {
     overallScore: number | null
     freeText: string | null
     respondedAt: Date | string
-    staff: { name: string; role: string }
+    staff: { name: string; role: string } | null
   }[]
 }
 
@@ -35,10 +35,12 @@ export function RecentResponses({ responses }: RecentResponsesProps) {
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium">{r.staff.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {STAFF_ROLE_LABELS[r.staff.role] ?? r.staff.role}
-                    </span>
+                    <span className="font-medium">{r.staff?.name ?? "患者"}</span>
+                    {r.staff && (
+                      <span className="text-xs text-muted-foreground">
+                        {STAFF_ROLE_LABELS[r.staff.role] ?? r.staff.role}
+                      </span>
+                    )}
                   </div>
                   {r.freeText && (
                     <p className="text-muted-foreground">{r.freeText}</p>

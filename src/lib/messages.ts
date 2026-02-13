@@ -66,6 +66,8 @@ export const messages = {
     closeMessage: "お大事になさってください",
     visitAgain: "またのご来院をお待ちしております",
     tipLabel: "歯の豆知識",
+    backToTop: "TOPに戻る",
+    allRequiredHint: "すべての質問にご回答ください",
   },
   dashboard: {
     title: "ダッシュボード",

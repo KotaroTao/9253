@@ -18,9 +18,22 @@ export async function getStaffByToken(qrToken: string) {
   })
 }
 
+export async function getClinicBySlug(slug: string) {
+  return prisma.clinic.findUnique({
+    where: { slug },
+    include: {
+      surveyTemplates: {
+        where: { isActive: true },
+        take: 1,
+        orderBy: { createdAt: "desc" },
+      },
+    },
+  })
+}
+
 export async function createSurveyResponse(data: {
   clinicId: string
-  staffId: string
+  staffId?: string
   templateId: string
   answers: Prisma.InputJsonValue
   overallScore: number | null
@@ -32,13 +45,13 @@ export async function createSurveyResponse(data: {
 
 export async function hasRecentSubmission(
   ipHash: string,
-  staffId: string
+  clinicId: string
 ): Promise<boolean> {
   const oneDayAgo = new Date(Date.now() - 86400000)
   const count = await prisma.surveyResponse.count({
     where: {
       ipHash,
-      staffId,
+      clinicId,
       respondedAt: { gte: oneDayAgo },
     },
   })

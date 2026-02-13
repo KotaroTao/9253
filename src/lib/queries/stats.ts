@@ -42,7 +42,7 @@ export async function getDashboardStats(
     ])
 
   // Enrich staff ranking with names
-  const staffIds = staffRanking.map((s) => s.staffId)
+  const staffIds = staffRanking.map((s) => s.staffId).filter((id): id is string => id !== null)
   const staffNames = await prisma.staff.findMany({
     where: { id: { in: staffIds } },
     select: { id: true, name: true, role: true },
@@ -50,10 +50,11 @@ export async function getDashboardStats(
   const staffNameMap = new Map(staffNames.map((s) => [s.id, s]))
 
   const enrichedStaffRanking = staffRanking
+    .filter((s) => s.staffId !== null)
     .map((s) => ({
-      staffId: s.staffId,
-      name: staffNameMap.get(s.staffId)?.name ?? "不明",
-      role: staffNameMap.get(s.staffId)?.role ?? "staff",
+      staffId: s.staffId as string,
+      name: staffNameMap.get(s.staffId as string)?.name ?? "不明",
+      role: staffNameMap.get(s.staffId as string)?.role ?? "staff",
       avgScore: s._avg.overallScore ?? 0,
       responseCount: s._count.id,
     }))
