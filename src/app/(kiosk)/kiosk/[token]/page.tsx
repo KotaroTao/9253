@@ -7,9 +7,10 @@ import type { SurveyPageData } from "@/types/survey"
 
 interface KioskPageProps {
   params: { token: string }
+  searchParams: { t?: string }
 }
 
-export default async function KioskPage({ params }: KioskPageProps) {
+export default async function KioskPage({ params, searchParams }: KioskPageProps) {
   const slug = decodeURIComponent(params.token)
   const clinic = await getClinicBySlug(slug)
 
@@ -24,7 +25,12 @@ export default async function KioskPage({ params }: KioskPageProps) {
     )
   }
 
-  const template = clinic.surveyTemplates[0]
+  // Find template by ID from query param, or fall back to first active template
+  const templateId = searchParams.t
+  const template = templateId
+    ? clinic.surveyTemplates.find((t) => t.id === templateId)
+    : clinic.surveyTemplates[0]
+
   if (!template) {
     return notFound()
   }
@@ -44,6 +50,7 @@ export default async function KioskPage({ params }: KioskPageProps) {
     clinicName: clinic.name,
     clinicSlug: clinic.slug,
     templateId: template.id,
+    templateName: template.name,
     questions: template.questions as SurveyPageData["questions"],
   }
 

@@ -27,6 +27,7 @@ export function SurveyStaffSelector({
       clinicName,
       clinicSlug,
       templateId,
+      templateName: "",
       questions,
     }
 

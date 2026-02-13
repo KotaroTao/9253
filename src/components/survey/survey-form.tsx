@@ -100,6 +100,11 @@ export function SurveyForm({ data, onComplete, kioskMode = false }: SurveyFormPr
           <CardTitle className={kioskMode ? "text-xl" : "text-lg"}>
             {messages.survey.welcome}
           </CardTitle>
+          {data.templateName && (
+            <p className="mt-1 inline-block rounded-full bg-primary/10 px-3 py-0.5 text-xs font-medium text-primary">
+              {data.templateName}
+            </p>
+          )}
         </CardHeader>
         <CardContent className="space-y-5 pb-8">
           {ratingQuestions.map((q, index) => (
