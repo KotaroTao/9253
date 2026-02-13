@@ -6,9 +6,10 @@ import type { SurveyPageData } from "@/types/survey"
 
 interface SurveyPageProps {
   params: { token: string }
+  searchParams: { t?: string }
 }
 
-export default async function SurveyPage({ params }: SurveyPageProps) {
+export default async function SurveyPage({ params, searchParams }: SurveyPageProps) {
   const slug = decodeURIComponent(params.token)
   const clinic = await getClinicBySlug(slug)
 
@@ -24,7 +25,11 @@ export default async function SurveyPage({ params }: SurveyPageProps) {
     )
   }
 
-  const template = clinic.surveyTemplates[0]
+  const templateId = searchParams.t
+  const template = templateId
+    ? clinic.surveyTemplates.find((t) => t.id === templateId)
+    : clinic.surveyTemplates[0]
+
   if (!template) {
     return notFound()
   }
@@ -33,6 +38,7 @@ export default async function SurveyPage({ params }: SurveyPageProps) {
     clinicName: clinic.name,
     clinicSlug: clinic.slug,
     templateId: template.id,
+    templateName: template.name,
     questions: template.questions as SurveyPageData["questions"],
   }
 

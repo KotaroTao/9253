@@ -24,8 +24,7 @@ export async function getClinicBySlug(slug: string) {
     include: {
       surveyTemplates: {
         where: { isActive: true },
-        take: 1,
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: "asc" },
       },
     },
   })

@@ -52,7 +52,14 @@ export function KioskSurvey({ data, initialTodayCount }: KioskSurveyProps) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-blue-50/80 to-white px-4">
         <div className="w-full max-w-sm space-y-8 text-center">
-          <p className="text-sm text-muted-foreground">{data.clinicName}</p>
+          <div>
+            <p className="text-sm text-muted-foreground">{data.clinicName}</p>
+            {data.templateName && (
+              <p className="mt-2 inline-block rounded-full bg-primary/10 px-4 py-1 text-sm font-semibold text-primary">
+                {data.templateName}
+              </p>
+            )}
+          </div>
 
           <Button
             size="lg"

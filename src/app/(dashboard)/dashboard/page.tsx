@@ -14,8 +14,38 @@ import { RecentResponses } from "@/components/dashboard/recent-responses"
 import { StaffRanking } from "@/components/dashboard/staff-ranking"
 import { AdminInlineAuth } from "@/components/dashboard/admin-inline-auth"
 import { messages } from "@/lib/messages"
-import { Smartphone, ClipboardPen, ArrowRight } from "lucide-react"
+import { ClipboardPen, ArrowRight, UserPlus, Stethoscope, CalendarCheck } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
+
+const SURVEY_TYPE_CONFIG: Record<string, {
+  icon: typeof UserPlus
+  border: string
+  bg: string
+  iconBg: string
+  text: string
+}> = {
+  "初診": {
+    icon: UserPlus,
+    border: "border-blue-200 hover:border-blue-400",
+    bg: "bg-gradient-to-b from-blue-50 to-white",
+    iconBg: "bg-blue-500",
+    text: "text-blue-900",
+  },
+  "治療中": {
+    icon: Stethoscope,
+    border: "border-violet-200 hover:border-violet-400",
+    bg: "bg-gradient-to-b from-violet-50 to-white",
+    iconBg: "bg-violet-500",
+    text: "text-violet-900",
+  },
+  "定期検診": {
+    icon: CalendarCheck,
+    border: "border-teal-200 hover:border-teal-400",
+    bg: "bg-gradient-to-b from-teal-50 to-white",
+    iconBg: "bg-teal-500",
+    text: "text-teal-900",
+  },
+}
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -31,14 +61,23 @@ export default async function DashboardPage() {
 
   const adminMode = isAdminMode()
 
-  // Check if clinic has admin password set + get slug for kiosk link
+  // Check if clinic has admin password set + get slug/templates for kiosk links
   const clinic = await prisma.clinic.findUnique({
     where: { id: clinicId },
-    select: { slug: true, settings: true },
+    select: {
+      slug: true,
+      settings: true,
+      surveyTemplates: {
+        where: { isActive: true },
+        orderBy: { createdAt: "asc" },
+        select: { id: true, name: true },
+      },
+    },
   })
   const settings = clinic?.settings as Record<string, unknown> | null
   const hasAdminPassword = !!settings?.adminPassword
-  const kioskUrl = clinic ? `/kiosk/${encodeURIComponent(clinic.slug)}` : "/dashboard/survey-start"
+  const kioskBase = clinic ? `/kiosk/${encodeURIComponent(clinic.slug)}` : "/dashboard/survey-start"
+  const surveyTemplates = clinic?.surveyTemplates ?? []
 
   // Time-aware greeting
   const hour = new Date().getHours()
@@ -97,37 +136,46 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* 2 big action cards - always shown */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Link
-          href={kioskUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="group flex items-center gap-4 rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-6 transition-all hover:border-blue-400 hover:shadow-md active:scale-[0.98]"
-        >
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-blue-500 text-white shadow-sm">
-            <Smartphone className="h-8 w-8" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xl font-bold text-blue-900">{messages.dashboard.startSurvey}</p>
-            <p className="text-sm text-blue-600/70">{messages.dashboard.startSurveyDesc}</p>
-          </div>
-          <ArrowRight className="h-5 w-5 shrink-0 text-blue-400 transition-transform group-hover:translate-x-1" />
-        </Link>
-        <Link
-          href="/dashboard/tally"
-          className="group flex items-center gap-4 rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-6 transition-all hover:border-emerald-400 hover:shadow-md active:scale-[0.98]"
-        >
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-sm">
-            <ClipboardPen className="h-8 w-8" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xl font-bold text-emerald-900">{messages.dashboard.startTally}</p>
-            <p className="text-sm text-emerald-600/70">{messages.dashboard.startTallyDesc}</p>
-          </div>
-          <ArrowRight className="h-5 w-5 shrink-0 text-emerald-400 transition-transform group-hover:translate-x-1" />
-        </Link>
+      {/* 3 survey type buttons - always shown */}
+      <div>
+        <p className="mb-3 text-sm font-semibold text-muted-foreground">{messages.dashboard.startSurvey}</p>
+        <div className="grid grid-cols-3 gap-3">
+          {surveyTemplates.map((tmpl) => {
+            const kioskUrl = `${kioskBase}?t=${tmpl.id}`
+            const config = SURVEY_TYPE_CONFIG[tmpl.name] ?? SURVEY_TYPE_CONFIG["初診"]
+            const Icon = config.icon
+            return (
+              <a
+                key={tmpl.id}
+                href={kioskUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`group flex flex-col items-center gap-3 rounded-2xl border-2 ${config.border} ${config.bg} p-5 transition-all hover:shadow-lg active:scale-[0.97]`}
+              >
+                <div className={`flex h-16 w-16 items-center justify-center rounded-xl ${config.iconBg} text-white shadow-sm`}>
+                  <Icon className="h-8 w-8" />
+                </div>
+                <span className={`text-lg font-bold ${config.text}`}>{tmpl.name}</span>
+              </a>
+            )
+          })}
+        </div>
       </div>
+
+      {/* Tally card */}
+      <Link
+        href="/dashboard/tally"
+        className="group flex items-center gap-4 rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5 transition-all hover:border-emerald-400 hover:shadow-md active:scale-[0.98]"
+      >
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-sm">
+          <ClipboardPen className="h-7 w-7" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-lg font-bold text-emerald-900">{messages.dashboard.startTally}</p>
+          <p className="text-sm text-emerald-600/70">{messages.dashboard.startTallyDesc}</p>
+        </div>
+        <ArrowRight className="h-5 w-5 shrink-0 text-emerald-400 transition-transform group-hover:translate-x-1" />
+      </Link>
 
       {/* Admin analytics - only when admin mode is active */}
       {adminData && (

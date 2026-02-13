@@ -3,67 +3,44 @@ import bcrypt from "bcryptjs"
 
 const prisma = new PrismaClient()
 
-const DEFAULT_QUESTIONS = [
-  {
-    id: "q1",
-    text: "本日の治療の満足度を教えてください",
-    type: "rating",
-    required: true,
-  },
-  {
-    id: "q2",
-    text: "受付の対応はいかがでしたか？",
-    type: "rating",
-    required: true,
-  },
-  {
-    id: "q3",
-    text: "待ち時間は適切でしたか？",
-    type: "rating",
-    required: true,
-  },
-  {
-    id: "q4",
-    text: "治療内容の説明は分かりやすかったですか？",
-    type: "rating",
-    required: true,
-  },
-  {
-    id: "q5",
-    text: "治療費用の説明は十分でしたか？",
-    type: "rating",
-    required: true,
-  },
-  {
-    id: "q6",
-    text: "痛みへの配慮は十分でしたか？",
-    type: "rating",
-    required: true,
-  },
-  {
-    id: "q7",
-    text: "プライバシーへの配慮は十分でしたか？",
-    type: "rating",
-    required: true,
-  },
-  {
-    id: "q8",
-    text: "院内の清潔さはいかがでしたか？",
-    type: "rating",
-    required: true,
-  },
-  {
-    id: "q9",
-    text: "予約の取りやすさはいかがでしたか？",
-    type: "rating",
-    required: true,
-  },
-  {
-    id: "q10",
-    text: "当院を知人に薦めたいと思いますか？",
-    type: "rating",
-    required: true,
-  },
+// 3 survey types: first visit, treatment, checkup
+const FIRST_VISIT_QUESTIONS = [
+  { id: "fv1", text: "医院の見つけやすさ・アクセスは良かったですか？", type: "rating", required: true },
+  { id: "fv2", text: "受付の対応はいかがでしたか？", type: "rating", required: true },
+  { id: "fv3", text: "初診時の問診・カウンセリングは丁寧でしたか？", type: "rating", required: true },
+  { id: "fv4", text: "治療内容の説明は分かりやすかったですか？", type: "rating", required: true },
+  { id: "fv5", text: "治療費用の説明は十分でしたか？", type: "rating", required: true },
+  { id: "fv6", text: "院内の清潔さ・雰囲気はいかがでしたか？", type: "rating", required: true },
+  { id: "fv7", text: "待ち時間は適切でしたか？", type: "rating", required: true },
+  { id: "fv8", text: "次回も当院に通院したいと思いますか？", type: "rating", required: true },
+]
+
+const TREATMENT_QUESTIONS = [
+  { id: "tr1", text: "本日の治療の満足度を教えてください", type: "rating", required: true },
+  { id: "tr2", text: "治療内容の説明は分かりやすかったですか？", type: "rating", required: true },
+  { id: "tr3", text: "痛みへの配慮は十分でしたか？", type: "rating", required: true },
+  { id: "tr4", text: "治療の進捗についての説明は適切でしたか？", type: "rating", required: true },
+  { id: "tr5", text: "待ち時間は適切でしたか？", type: "rating", required: true },
+  { id: "tr6", text: "スタッフの対応はいかがでしたか？", type: "rating", required: true },
+  { id: "tr7", text: "プライバシーへの配慮は十分でしたか？", type: "rating", required: true },
+  { id: "tr8", text: "当院での治療を知人に薦めたいと思いますか？", type: "rating", required: true },
+]
+
+const CHECKUP_QUESTIONS = [
+  { id: "ck1", text: "定期検診の内容に満足されましたか？", type: "rating", required: true },
+  { id: "ck2", text: "歯のクリーニングの丁寧さはいかがでしたか？", type: "rating", required: true },
+  { id: "ck3", text: "口腔ケアのアドバイスは参考になりましたか？", type: "rating", required: true },
+  { id: "ck4", text: "予約の取りやすさはいかがでしたか？", type: "rating", required: true },
+  { id: "ck5", text: "待ち時間は適切でしたか？", type: "rating", required: true },
+  { id: "ck6", text: "スタッフの対応はいかがでしたか？", type: "rating", required: true },
+  { id: "ck7", text: "院内の清潔さ・雰囲気はいかがでしたか？", type: "rating", required: true },
+  { id: "ck8", text: "今後も当院で定期検診を続けたいと思いますか？", type: "rating", required: true },
+]
+
+const SURVEY_TEMPLATES = [
+  { name: "初診", questions: FIRST_VISIT_QUESTIONS },
+  { name: "治療中", questions: TREATMENT_QUESTIONS },
+  { name: "定期検診", questions: CHECKUP_QUESTIONS },
 ]
 
 async function main() {
@@ -136,28 +113,42 @@ async function main() {
   })
   console.log(`Clinic admin: ${clinicAdmin.email}`)
 
-  // Create or update default survey template
-  const existingTemplate = await prisma.surveyTemplate.findFirst({
-    where: { clinicId: clinic.id, isActive: true },
+  // Create or update 3 survey templates (初診・治療中・定期検診)
+  const templates = []
+  for (const tmpl of SURVEY_TEMPLATES) {
+    const existing = await prisma.surveyTemplate.findFirst({
+      where: { clinicId: clinic.id, name: tmpl.name },
+    })
+    let template
+    if (existing) {
+      template = await prisma.surveyTemplate.update({
+        where: { id: existing.id },
+        data: { questions: tmpl.questions, isActive: true },
+      })
+    } else {
+      template = await prisma.surveyTemplate.create({
+        data: {
+          clinicId: clinic.id,
+          name: tmpl.name,
+          questions: tmpl.questions,
+          isActive: true,
+        },
+      })
+    }
+    templates.push(template)
+    console.log(`Template: ${template.name} (${template.id})`)
+  }
+
+  // Deactivate old templates that don't match the 3 types
+  await prisma.surveyTemplate.updateMany({
+    where: {
+      clinicId: clinic.id,
+      id: { notIn: templates.map((t) => t.id) },
+    },
+    data: { isActive: false },
   })
 
-  let template
-  if (existingTemplate) {
-    template = await prisma.surveyTemplate.update({
-      where: { id: existingTemplate.id },
-      data: { questions: DEFAULT_QUESTIONS },
-    })
-  } else {
-    template = await prisma.surveyTemplate.create({
-      data: {
-        clinicId: clinic.id,
-        name: "デフォルトアンケート",
-        questions: DEFAULT_QUESTIONS,
-        isActive: true,
-      },
-    })
-  }
-  console.log(`Template: ${template.name} (${template.id})`)
+  const template = templates[0]
 
   // Create sample survey responses (skip if responses already exist)
   const existingCount = await prisma.surveyResponse.count({
@@ -172,8 +163,11 @@ async function main() {
       const respondedAt = new Date(now.getTime() - daysAgo * 86400000)
 
       const scores: Record<string, number> = {}
-      for (let q = 1; q <= 10; q++) {
-        scores[`q${q}`] = Math.random() > 0.2 ? Math.ceil(Math.random() * 2) + 3 : Math.ceil(Math.random() * 3)
+      // Use template from round-robin across 3 templates
+      const tmplIndex = i % templates.length
+      const tmplQuestions = SURVEY_TEMPLATES[tmplIndex].questions
+      for (const q of tmplQuestions) {
+        scores[q.id] = Math.random() > 0.2 ? Math.ceil(Math.random() * 2) + 3 : Math.ceil(Math.random() * 3)
       }
       const scoreValues = Object.values(scores)
       const overallScore = scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length
@@ -181,7 +175,7 @@ async function main() {
       sampleResponses.push({
         clinicId: clinic.id,
         staffId: staffMembers[i % staffMembers.length].id,
-        templateId: template.id,
+        templateId: templates[tmplIndex].id,
         answers: scores,
         overallScore,
         freeText: i % 5 === 0 ? "丁寧に対応していただきありがとうございました。" : null,
