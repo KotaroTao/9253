@@ -8,17 +8,18 @@ import { messages } from "@/lib/messages"
 import { DEFAULTS, DENTAL_TIPS } from "@/lib/constants"
 import { Lightbulb, RotateCcw } from "lucide-react"
 import { Confetti } from "@/components/survey/confetti"
-import type { SurveyPageData } from "@/types/survey"
+import type { SurveyPageData, PatientAttributes } from "@/types/survey"
 
 interface SurveyFormProps {
   data: SurveyPageData
   onComplete?: () => void
   kioskMode?: boolean
+  patientAttributes?: PatientAttributes
 }
 
 type Step = "welcome" | "survey" | "submitting" | "thanks"
 
-export function SurveyForm({ data, onComplete, kioskMode = false }: SurveyFormProps) {
+export function SurveyForm({ data, onComplete, kioskMode = false, patientAttributes }: SurveyFormProps) {
   const [step, setStep] = useState<Step>(kioskMode ? "survey" : "welcome")
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [freeText, setFreeText] = useState("")
@@ -53,6 +54,7 @@ export function SurveyForm({ data, onComplete, kioskMode = false }: SurveyFormPr
           templateId: data.templateId,
           answers,
           freeText: freeText || undefined,
+          patientAttributes: patientAttributes || undefined,
         }),
       })
 

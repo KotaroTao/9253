@@ -172,6 +172,21 @@ async function main() {
       const scoreValues = Object.values(scores)
       const overallScore = scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length
 
+      // Generate sample patient attributes
+      const visitTypes = ["first_visit", "revisit"] as const
+      const treatmentTypes = ["treatment", "checkup", "consultation"] as const
+      const complaints = ["pain", "filling_crown", "periodontal", "cosmetic", "prevention", "orthodontics", "other"]
+      const ageGroups = ["under_20", "30s", "40s", "50s", "60s_over"]
+      const genders = ["male", "female", "unspecified"]
+
+      const patientAttributes = {
+        visitType: tmplIndex === 0 ? "first_visit" : "revisit",
+        treatmentType: tmplIndex === 2 ? "checkup" : tmplIndex === 1 ? "treatment" : "treatment",
+        chiefComplaint: complaints[i % complaints.length],
+        ageGroup: ageGroups[i % ageGroups.length],
+        gender: genders[i % genders.length],
+      }
+
       sampleResponses.push({
         clinicId: clinic.id,
         staffId: staffMembers[i % staffMembers.length].id,
@@ -179,6 +194,7 @@ async function main() {
         answers: scores,
         overallScore,
         freeText: i % 5 === 0 ? "丁寧に対応していただきありがとうございました。" : null,
+        patientAttributes,
         ipHash: `sample-hash-${i}`,
         respondedAt,
       })

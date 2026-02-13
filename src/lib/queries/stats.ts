@@ -28,7 +28,12 @@ export async function getDashboardStats(
         where: { clinicId },
         orderBy: { respondedAt: "desc" },
         take: 10,
-        include: {
+        select: {
+          id: true,
+          overallScore: true,
+          freeText: true,
+          patientAttributes: true,
+          respondedAt: true,
           staff: { select: { name: true, role: true } },
         },
       }),

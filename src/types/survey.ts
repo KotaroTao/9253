@@ -10,3 +10,17 @@ export interface SurveyPageData {
     required: boolean
   }[]
 }
+
+export interface SurveyTemplateInfo {
+  id: string
+  name: string
+  questions: SurveyPageData["questions"]
+}
+
+export interface PatientAttributes {
+  visitType: "first_visit" | "revisit"
+  treatmentType: "treatment" | "checkup" | "consultation"
+  chiefComplaint: string
+  ageGroup: string
+  gender: string
+}

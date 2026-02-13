@@ -88,8 +88,9 @@ model SurveyResponse {
   templateId      String   @map("template_id") @db.Uuid
   answers         Json
   overallScore    Float?   @map("overall_score")
-  freeText        String?  @map("free_text")
-  ipHash          String?  @map("ip_hash")
+  freeText          String?  @map("free_text")
+  patientAttributes Json?    @map("patient_attributes")
+  ipHash            String?  @map("ip_hash")
   respondedAt     DateTime @default(now()) @map("responded_at")
   createdAt       DateTime @default(now()) @map("created_at")
 

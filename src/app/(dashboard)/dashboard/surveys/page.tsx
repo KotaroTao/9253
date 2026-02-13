@@ -5,7 +5,14 @@ import { isAdminMode } from "@/lib/admin-mode"
 import { getSurveyResponses } from "@/lib/queries/surveys"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
-import { STAFF_ROLE_LABELS } from "@/lib/constants"
+import { STAFF_ROLE_LABELS, VISIT_TYPES, TREATMENT_TYPES, AGE_GROUPS, GENDERS } from "@/lib/constants"
+
+const LABEL_MAP: Record<string, string> = Object.fromEntries([
+  ...VISIT_TYPES.map((v) => [v.value, v.label]),
+  ...TREATMENT_TYPES.map((v) => [v.value, v.label]),
+  ...AGE_GROUPS.map((v) => [v.value, v.label]),
+  ...GENDERS.map((v) => [v.value, v.label]),
+])
 import { Star } from "lucide-react"
 
 interface SurveysPageProps {
@@ -58,14 +65,22 @@ export default async function SurveysPage({ searchParams }: SurveysPageProps) {
                   className="flex items-start justify-between rounded-md border p-3 text-sm"
                 >
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{r.staff?.name ?? "医院"}</span>
-                      {r.staff && (
-                        <span className="text-xs text-muted-foreground">
-                          {STAFF_ROLE_LABELS[r.staff.role] ?? r.staff.role}
-                        </span>
-                      )}
-                    </div>
+                    {(() => {
+                      const pa = r.patientAttributes as Record<string, string> | null
+                      return pa ? (
+                        <div className="flex flex-wrap gap-1">
+                          {["visitType", "treatmentType", "ageGroup", "gender"].map((key) => {
+                            const val = pa[key]
+                            if (!val) return null
+                            return (
+                              <span key={key} className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium">
+                                {LABEL_MAP[val] ?? val}
+                              </span>
+                            )
+                          })}
+                        </div>
+                      ) : null
+                    })()}
                     {r.freeText && (
                       <p className="text-muted-foreground">{r.freeText}</p>
                     )}

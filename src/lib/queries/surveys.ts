@@ -37,6 +37,7 @@ export async function createSurveyResponse(data: {
   answers: Prisma.InputJsonValue
   overallScore: number | null
   freeText?: string
+  patientAttributes?: Prisma.InputJsonValue
   ipHash: string
 }) {
   return prisma.surveyResponse.create({ data })
@@ -86,7 +87,12 @@ export async function getSurveyResponses(
       orderBy: { respondedAt: "desc" },
       skip,
       take: limit,
-      include: {
+      select: {
+        id: true,
+        overallScore: true,
+        freeText: true,
+        patientAttributes: true,
+        respondedAt: true,
         staff: { select: { name: true, role: true } },
         template: { select: { name: true } },
       },

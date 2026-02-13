@@ -33,6 +33,50 @@ export const DEFAULTS = {
   STAFF_SURVEY_MIN_RESPONSES: 5,
 } as const
 
+// Patient attribute options for staff setup screen
+export const VISIT_TYPES = [
+  { value: "first_visit", label: "初診" },
+  { value: "revisit", label: "再診" },
+] as const
+
+export const TREATMENT_TYPES = [
+  { value: "treatment", label: "治療" },
+  { value: "checkup", label: "定期検診" },
+  { value: "consultation", label: "相談" },
+] as const
+
+export const CHIEF_COMPLAINTS = [
+  { value: "pain", label: "痛み・違和感" },
+  { value: "filling_crown", label: "詰め物・被せ物" },
+  { value: "periodontal", label: "歯周病・歯ぐき" },
+  { value: "cosmetic", label: "審美・ホワイトニング" },
+  { value: "prevention", label: "予防・クリーニング" },
+  { value: "orthodontics", label: "矯正" },
+  { value: "denture_implant", label: "入れ歯・インプラント" },
+  { value: "other", label: "その他" },
+] as const
+
+export const AGE_GROUPS = [
+  { value: "under_20", label: "〜20代" },
+  { value: "30s", label: "30代" },
+  { value: "40s", label: "40代" },
+  { value: "50s", label: "50代" },
+  { value: "60s_over", label: "60代〜" },
+] as const
+
+export const GENDERS = [
+  { value: "male", label: "男性" },
+  { value: "female", label: "女性" },
+  { value: "unspecified", label: "未回答" },
+] as const
+
+// Template name → selection mapping
+export const TEMPLATE_SELECTION_MAP: Record<string, { visitType: string; treatmentType: string }> = {
+  "初診": { visitType: "first_visit", treatmentType: "treatment" },
+  "治療中": { visitType: "revisit", treatmentType: "treatment" },
+  "定期検診": { visitType: "revisit", treatmentType: "checkup" },
+}
+
 export const TALLY_TYPES = {
   NEW_PATIENT: "new_patient",
   MAINTENANCE_TRANSITION: "maintenance_transition",

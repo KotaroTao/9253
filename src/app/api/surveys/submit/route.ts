@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const { clinicSlug, templateId, answers, freeText } = parsed.data
+    const { clinicSlug, templateId, answers, freeText, patientAttributes } = parsed.data
 
     // Verify clinic
     const clinic = await getClinicBySlug(clinicSlug)
@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
       answers,
       overallScore,
       freeText,
+      patientAttributes: patientAttributes ?? undefined,
       ipHash,
     })
 
