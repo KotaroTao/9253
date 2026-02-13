@@ -55,11 +55,28 @@ export default async function DashboardPage() {
     const myScore = staffStats?._avg?.overallScore
     const totalCount = staffStats?._count?._all ?? 0
 
+    // Time-aware greeting
+    const hour = new Date().getHours()
+    const greeting = hour < 12
+      ? messages.dashboard.staffGreetingMorning
+      : hour < 17
+        ? messages.dashboard.staffGreetingAfternoon
+        : messages.dashboard.staffGreetingEvening
+
+    // Milestone message
+    const milestoneMsg = todayCount >= 20
+      ? messages.dashboard.staffMilestone20
+      : todayCount >= 10
+        ? messages.dashboard.staffMilestone10
+        : null
+
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">{messages.dashboard.staffDashboardGreeting}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{messages.dashboard.staffDashboardMessage}</p>
+          <h1 className="text-2xl font-bold">{greeting}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {milestoneMsg || messages.dashboard.staffDashboardMessage}
+          </p>
         </div>
 
         {/* Staff personal stats */}

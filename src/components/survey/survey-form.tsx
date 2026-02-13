@@ -12,12 +12,14 @@ import type { SurveyPageData } from "@/types/survey"
 interface SurveyFormProps {
   data: SurveyPageData
   onComplete?: () => void
+  kioskMode?: boolean
 }
 
 type Step = "welcome" | "questions" | "freetext" | "submitting" | "thanks"
 
-export function SurveyForm({ data, onComplete }: SurveyFormProps) {
-  const [step, setStep] = useState<Step>("welcome")
+export function SurveyForm({ data, onComplete, kioskMode = false }: SurveyFormProps) {
+  // In kiosk mode, skip welcome screen - staff already explained
+  const [step, setStep] = useState<Step>(kioskMode ? "questions" : "welcome")
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [freeText, setFreeText] = useState("")
@@ -34,7 +36,7 @@ export function SurveyForm({ data, onComplete }: SurveyFormProps) {
       } else {
         setStep("freetext")
       }
-    }, 300)
+    }, 400)
   }
 
   async function handleSubmit() {
@@ -68,7 +70,6 @@ export function SurveyForm({ data, onComplete }: SurveyFormProps) {
     }
   }
 
-  // Progress: 0 = welcome, 1..N = questions, N+1 = freetext
   const progressCurrent = step === "welcome" ? 0 : step === "questions" ? currentQuestion + 1 : step === "freetext" ? totalSteps : totalSteps
   const progressPercent = step === "thanks" || step === "submitting" ? 100 : Math.round((progressCurrent / totalSteps) * 100)
 
@@ -99,10 +100,9 @@ export function SurveyForm({ data, onComplete }: SurveyFormProps) {
     const q = ratingQuestions[currentQuestion]
     return (
       <Card className="overflow-hidden">
-        {/* Progress bar */}
         <div className="h-1.5 bg-muted">
           <div
-            className="h-full bg-primary transition-all duration-300"
+            className="h-full bg-primary transition-all duration-500 ease-out"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -110,10 +110,14 @@ export function SurveyForm({ data, onComplete }: SurveyFormProps) {
           <p className="text-xs text-muted-foreground">
             {currentQuestion + 1} / {ratingQuestions.length}
           </p>
-          <CardTitle className="text-lg leading-relaxed">{q.text}</CardTitle>
+          <CardTitle className={`leading-relaxed ${kioskMode ? "text-xl" : "text-lg"}`}>{q.text}</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col items-center gap-6 pb-8">
-          <StarRating value={answers[q.id] || 0} onChange={(v) => handleRating(q.id, v)} />
+        <CardContent className={`flex flex-col items-center gap-6 ${kioskMode ? "pb-10" : "pb-8"}`}>
+          <StarRating
+            value={answers[q.id] || 0}
+            onChange={(v) => handleRating(q.id, v)}
+            large={kioskMode}
+          />
           <div className="flex w-full justify-between px-2 text-xs text-muted-foreground">
             <span>{DEFAULTS.MIN_STAR_RATING}点</span>
             <span>{DEFAULTS.MAX_STAR_RATING}点</span>
@@ -127,6 +131,11 @@ export function SurveyForm({ data, onComplete }: SurveyFormProps) {
               {messages.common.back}
             </button>
           )}
+          {kioskMode && currentQuestion === 0 && (
+            <p className="text-xs text-muted-foreground/60">
+              {messages.survey.estimatedTime} ・ {messages.survey.anonymous}
+            </p>
+          )}
         </CardContent>
       </Card>
     )
@@ -136,7 +145,7 @@ export function SurveyForm({ data, onComplete }: SurveyFormProps) {
     return (
       <Card className="overflow-hidden">
         <div className="h-1.5 bg-muted">
-          <div className="h-full bg-primary transition-all duration-300" style={{ width: `${progressPercent}%` }} />
+          <div className="h-full bg-primary transition-all duration-500 ease-out" style={{ width: `${progressPercent}%` }} />
         </div>
         <CardHeader className="text-center">
           <CardTitle className="text-lg">{messages.survey.freeTextLabel}</CardTitle>
@@ -145,7 +154,7 @@ export function SurveyForm({ data, onComplete }: SurveyFormProps) {
           <label htmlFor="survey-freetext" className="sr-only">{messages.survey.freeTextLabel}</label>
           <textarea
             id="survey-freetext"
-            className="flex min-h-[120px] w-full rounded-xl border border-input bg-background px-4 py-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className={`flex w-full rounded-xl border border-input bg-background px-4 py-3 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${kioskMode ? "min-h-[160px] text-base" : "min-h-[120px] text-sm"}`}
             placeholder={messages.survey.freeTextPlaceholder}
             value={freeText}
             onChange={(e) => setFreeText(e.target.value)}
@@ -173,7 +182,7 @@ export function SurveyForm({ data, onComplete }: SurveyFormProps) {
       <Card className="overflow-hidden">
         <div className="h-1.5 bg-primary" />
         <CardContent className="py-16 text-center">
-          <div className="mb-4 text-3xl">⏳</div>
+          <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
           <p className="text-muted-foreground">{messages.common.loading}</p>
         </CardContent>
       </Card>

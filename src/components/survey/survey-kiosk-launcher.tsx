@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { StaffCardGrid, type StaffCardItem } from "@/components/staff/staff-card-grid"
 import { messages } from "@/lib/messages"
-import { Smartphone, ArrowLeft } from "lucide-react"
+import { Smartphone, ArrowLeft, MessageSquare } from "lucide-react"
 
 interface SurveyKioskLauncherProps {
   staffList: StaffCardItem[]
@@ -23,9 +23,9 @@ export function SurveyKioskLauncher({
       : null
   )
 
-  // If staff is selected, show kiosk launch screen
   if (selectedStaff) {
     const kioskUrl = `/kiosk/${selectedStaff.qrToken}`
+    const count = selectedStaff.todayCount ?? 0
 
     return (
       <div className="space-y-4">
@@ -48,34 +48,32 @@ export function SurveyKioskLauncher({
             </div>
 
             <div className="text-center space-y-2">
-              <h2 className="text-xl font-bold">{messages.kiosk.readyMessage}</h2>
+              <h2 className="text-xl font-bold">{messages.kiosk.launchKiosk}</h2>
               <p className="text-muted-foreground">
                 担当: {selectedStaff.name}
               </p>
               <p className="text-sm text-muted-foreground">
-                {messages.kiosk.handToPatient}
+                {messages.kiosk.launchDesc}
               </p>
             </div>
 
             <Link href={kioskUrl} className="w-full max-w-xs">
-              <Button size="lg" className="h-14 w-full text-base gap-2">
+              <Button size="lg" className="h-14 w-full text-base gap-2 shadow-md shadow-blue-200/50">
                 <Smartphone className="h-5 w-5" />
                 {messages.dashboard.startSurvey}
               </Button>
             </Link>
 
-            {selectedStaff.todayCount != null && selectedStaff.todayCount > 0 && (
-              <p className="text-sm text-muted-foreground">
-                {messages.kiosk.todayCount}: {selectedStaff.todayCount}{messages.common.countSuffix}
-              </p>
-            )}
+            <div className="inline-flex items-center gap-2 rounded-full bg-muted px-4 py-1.5 text-sm text-muted-foreground">
+              <MessageSquare className="h-3.5 w-3.5" />
+              {messages.kiosk.todayCount}: {count}{messages.common.countSuffix}
+            </div>
           </CardContent>
         </Card>
       </div>
     )
   }
 
-  // Admin view: show staff selector
   return (
     <StaffCardGrid
       staffList={staffList}

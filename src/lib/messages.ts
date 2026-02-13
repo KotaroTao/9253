@@ -57,8 +57,8 @@ export const messages = {
     skip: "スキップ",
     freeTextLabel: "ご意見・ご感想",
     freeTextPlaceholder: "ご意見・ご感想があればお聞かせください（任意）",
-    invalidQr: "無効なQRコードです",
-    invalidQrSub: "このリンクは無効です。スタッフにお声がけください。",
+    invalidLink: "無効なリンクです",
+    invalidLinkSub: "このリンクは無効です。スタッフにお声がけください。",
     alreadySubmitted: "すでにアンケートにご回答いただいております",
     rateLimited: "送信回数の上限に達しました",
     scoreSuffix: "点",
@@ -89,8 +89,13 @@ export const messages = {
     noMetricsData: "月次データ未入力",
     sectionPatientExperience: "患者体験",
     sectionClinicPerformance: "経営指標",
-    staffDashboardGreeting: "今日もお疲れさまです",
+    staffDashboardGreeting: "お疲れさまです",
     staffDashboardMessage: "患者さまの「ありがとう」を増やす活動を続けましょう",
+    staffGreetingMorning: "おはようございます",
+    staffGreetingAfternoon: "お疲れさまです",
+    staffGreetingEvening: "今日もお疲れさまでした",
+    staffMilestone10: "本日10件達成！素晴らしいですね",
+    staffMilestone20: "本日20件！チームの力ですね",
     staffTodayCount: "本日のアンケート回答数",
     staffMyScore: "あなたの患者体験スコア",
     staffNoScoreYet: "まだ回答がありません",
@@ -179,7 +184,8 @@ export const messages = {
     selfPayConversion: "自費成約",
     todayCount: "今日",
     staffNotFound: "スタッフが見つかりません",
-    staffNotFoundSub: "QRコードまたはURLをご確認ください",
+    staffNotFoundSub: "URLをご確認ください",
+    recorded: "記録しました",
     inactive: "このアカウントは無効です",
     loggedOut: "ログアウトしました",
     unlockButton: "ロックを解除",
@@ -196,8 +202,6 @@ export const messages = {
     editStaff: "スタッフを編集",
     name: "名前",
     role: "役職",
-    qrCode: "QRコード",
-    qrCodeUrl: "QRコードURL",
     active: "有効",
     inactive: "無効",
     status: "ステータス",
@@ -227,7 +231,13 @@ export const messages = {
     exitConfirm: "スタッフ画面に戻りますか？",
     todayCount: "本日の回答",
     readyMessage: "アンケートの準備ができています",
-    handToPatient: "患者さまにお渡しください",
+    handToPatient: "患者さまにタブレットをお渡しください",
+    readyTitle: "患者さまの声を聴く準備完了",
+    autoReturn: "スタッフ画面に自動で戻ります",
+    staffGuide: "このまま患者さまにお渡しください。回答後、自動で待機画面に戻ります。",
+    thanksStaff: "ご協力ありがとうございました",
+    launchKiosk: "アンケートを開始する",
+    launchDesc: "タブレットをそのまま患者さまにお渡しください",
   },
   settings: {
     title: "設定",
@@ -278,7 +288,7 @@ export const messages = {
     // Hero
     heroHeadline: "患者の「本音」、\n見えていますか？",
     heroSub:
-      "30秒のQRアンケートで患者体験を数値化。\nデータに基づく改善で、患者に選ばれ続ける医院へ。",
+      "30秒のタブレットアンケートで患者体験を数値化。\nデータに基づく改善で、患者に選ばれ続ける医院へ。",
     heroCta: "無料で相談する",
     heroCtaSub: "資料をダウンロード",
     heroBadge: "歯科医院専用 患者体験改善プラットフォーム",
@@ -296,9 +306,9 @@ export const messages = {
     featuresTitle: "MIERU Clinicが選ばれる理由",
     featuresSub:
       "患者体験の改善に必要な機能を、ワンストップで提供します。",
-    feature1Title: "30秒で完了するQRアンケート",
+    feature1Title: "30秒で完了するタブレットアンケート",
     feature1Desc:
-      "受付や診察室に設置したQRコードをスマホで読み取るだけ。患者さまに負担をかけず、診療直後のリアルな声を収集できます。紙のアンケートの集計作業も不要です。",
+      "会計待ちの間にタブレットをお渡しするだけ。患者さまに負担をかけず、診療直後のリアルな声を収集できます。紙のアンケートの集計作業も不要です。",
     feature2Title: "リアルタイム満足度ダッシュボード",
     feature2Desc:
       "患者満足度スコア・月次推移・回答数をダッシュボードで一目で把握。感覚ではなくデータに基づいた経営判断を実現します。",
@@ -312,12 +322,12 @@ export const messages = {
     // Flow
     flowTitle: "ご利用の流れ",
     flowSub: "導入は3ステップ。最短即日でご利用開始いただけます。",
-    flow1Title: "QRコードを設置",
+    flow1Title: "タブレットを準備",
     flow1Desc:
-      "スタッフごとに発行されるQRコードを、受付カウンターや各チェアに設置します。ラミネートカードなので繰り返し使えます。",
-    flow2Title: "患者がスマホで回答",
+      "スタッフがアンケート画面を開き、会計待ちの患者さまにタブレットをお渡しします。準備はワンタップで完了です。",
+    flow2Title: "患者がタブレットで回答",
     flow2Desc:
-      "患者さまがQRコードを読み取り、スマホで約30秒のアンケートに回答。アプリのインストールや個人情報の入力は不要です。",
+      "患者さまがタブレット上で約30秒のアンケートに回答。アプリのインストールや個人情報の入力は不要です。",
     flow3Title: "ダッシュボードで分析",
     flow3Desc:
       "リアルタイムで更新されるダッシュボードで、患者満足度やスタッフ別評価を確認。改善ポイントが一目でわかります。",
@@ -328,7 +338,7 @@ export const messages = {
       "アンケートを通じて、患者体験の改善サイクルを構築できます。",
     result1Value: "30〜40%",
     result1Label: "アンケート協力率",
-    result1Desc: "QRコードによる手軽さで、高い協力率を実現",
+    result1Desc: "タブレットによる手軽さで、高い協力率を実現",
     result2Value: "約30秒",
     result2Label: "回答所要時間",
     result2Desc: "患者さまの負担を最小限に抑えた設計",
@@ -354,7 +364,7 @@ export const messages = {
     faqTitle: "よくある質問",
     faq1Q: "導入に必要な準備は何ですか？",
     faq1A:
-      "QRコードの設置スペースのみです。受付カウンターや各チェアのそばに、ラミネートカードを置いていただくだけで始められます。特別な機器や工事は不要です。",
+      "iPadなどのタブレット端末のみです。会計カウンターに1台ご用意いただくだけで始められます。特別な機器や工事は不要です。",
     faq2Q: "患者の個人情報は安全に管理されますか？",
     faq2A:
       "はい。アンケートでは氏名・連絡先などの個人情報は一切収集しません。不正防止用のIPアドレスもSHA-256でハッシュ化して保存しており、個人を特定することはできません。",
@@ -363,10 +373,10 @@ export const messages = {
       "MIERU Clinicは口コミ誘導機能を搭載していません。Google口コミの件数・平均点は月次レポートで推移を確認できますが、患者への口コミ依頼は行わず、純粋な患者体験改善に特化したサービスです。",
     faq4Q: "既存の紙アンケートとの違いは何ですか？",
     faq4A:
-      "紙のアンケートは集計に手間がかかり、回答率も低くなりがちです。MIERU ClinicはQRコードでスマホから30秒で回答でき、結果はリアルタイムでダッシュボードに反映。集計作業が不要で、スタッフ別の分析やトレンド把握も自動で行えます。",
+      "紙のアンケートは集計に手間がかかり、回答率も低くなりがちです。MIERU Clinicはタブレットから30秒で回答でき、結果はリアルタイムでダッシュボードに反映。集計作業が不要で、スタッフ別の分析やトレンド把握も自動で行えます。",
     faq5Q: "スタッフへの説明や研修は必要ですか？",
     faq5A:
-      "「お会計の際にQRコードをご案内ください」と伝えるだけで十分です。患者さま側の操作も直感的なので、特別な研修は不要です。",
+      "「お会計の際にタブレットをお渡しください」と伝えるだけで十分です。患者さま側の操作も直感的なので、特別な研修は不要です。",
 
     // CTA
     ctaTitle: "患者体験の改善を、\n今日から始めませんか？",

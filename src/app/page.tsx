@@ -9,7 +9,7 @@ import {
   Users,
   FileBarChart,
   ArrowRight,
-  QrCode,
+  Tablet,
   Smartphone,
   LineChart,
   Shield,
@@ -21,7 +21,7 @@ import {
 
 const features = [
   {
-    icon: QrCode,
+    icon: Tablet,
     title: messages.landing.feature1Title,
     description: messages.landing.feature1Desc,
   },
@@ -51,7 +51,7 @@ const painPoints = [
 
 const flowSteps = [
   {
-    icon: QrCode,
+    icon: Tablet,
     title: messages.landing.flow1Title,
     desc: messages.landing.flow1Desc,
   },
