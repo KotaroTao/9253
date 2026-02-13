@@ -64,6 +64,21 @@ export const STAFF_SURVEY_CATEGORIES = {
 
 export type StaffSurveyCategory = keyof typeof STAFF_SURVEY_CATEGORIES
 
+export const DENTAL_TIPS = [
+  "フッ素入り歯磨き粉は、吐き出した後すすぎすぎないのがコツです",
+  "歯ブラシは1〜2ヶ月に1回の交換がおすすめです",
+  "デンタルフロスや歯間ブラシで、歯ブラシだけでは届かない汚れを落とせます",
+  "よく噛んで食べると唾液が増え、虫歯予防につながります",
+  "食後すぐの歯磨きが虫歯予防に効果的です",
+  "キシリトールガムは虫歯菌の活動を抑える効果があります",
+  "就寝前の歯磨きが1日で最も大切です",
+  "歯ぎしりが気になる方は、ナイトガードの相談がおすすめです",
+  "定期検診で早期発見・早期治療ができ、治療費の節約にもなります",
+  "電動歯ブラシは小さく振動させるだけで十分です。ゴシゴシこすらないのがポイント",
+  "酸性の飲み物（炭酸・柑橘ジュース等）の後は30分待ってから歯磨きを",
+  "歯茎からの出血は歯周病のサインかもしれません。早めにご相談ください",
+] as const
+
 export const STAFF_SURVEY_QUESTIONS = [
   { id: "es1", category: "workEnvironment" as const, text: "院内の設備・清潔さに満足している" },
   { id: "es2", category: "workEnvironment" as const, text: "業務量は適切だと感じる" },

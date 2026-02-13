@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { SurveyForm } from "@/components/survey/survey-form"
 import { messages } from "@/lib/messages"
-import { MessageSquare, LogOut, Sparkles } from "lucide-react"
+import { MessageSquare, LogOut, Sparkles, Lightbulb } from "lucide-react"
+import { Confetti } from "@/components/survey/confetti"
+import { DENTAL_TIPS } from "@/lib/constants"
 import type { SurveyPageData } from "@/types/survey"
 
 interface KioskSurveyProps {
@@ -24,16 +26,21 @@ export function KioskSurvey({ data, initialTodayCount }: KioskSurveyProps) {
   const [formKey, setFormKey] = useState(0)
   const [showExitConfirm, setShowExitConfirm] = useState(false)
   const [cooldownProgress, setCooldownProgress] = useState(100)
+  const [randomTip, setRandomTip] = useState(() => DENTAL_TIPS[Math.floor(Math.random() * DENTAL_TIPS.length)])
+  const [showConfetti, setShowConfetti] = useState(false)
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const resetToReady = useCallback(() => {
     setFormKey((k) => k + 1)
     setState("ready")
     setCooldownProgress(100)
+    setShowConfetti(false)
   }, [])
 
   const handleSurveyComplete = useCallback(() => {
     setTodayCount((c) => c + 1)
+    setRandomTip(DENTAL_TIPS[Math.floor(Math.random() * DENTAL_TIPS.length)])
+    setShowConfetti(true)
     setState("cooldown")
   }, [])
 
@@ -142,34 +149,47 @@ export function KioskSurvey({ data, initialTodayCount }: KioskSurveyProps) {
   // Cooldown - thank you + countdown
   if (state === "cooldown") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-green-50/60 to-white px-4">
-        <div className="w-full max-w-md space-y-6 text-center">
-          <div className="text-6xl">
-            {todayCount % 10 === 0 && todayCount > 0 ? "🎊" : "🎉"}
-          </div>
-          <h1 className="text-2xl font-bold">{messages.survey.thankYou}</h1>
-          <p className="text-muted-foreground">{messages.survey.thankYouSub}</p>
-          <div className="pt-2">
-            <p className="text-sm text-muted-foreground">{messages.survey.closeMessage}</p>
-            <p className="text-sm text-muted-foreground">{messages.survey.visitAgain}</p>
-          </div>
-
-          {/* Countdown bar */}
-          <div className="mx-auto max-w-xs space-y-2 pt-4">
-            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary/40 transition-all duration-100 ease-linear"
-                style={{ width: `${cooldownProgress}%` }}
-              />
+      <>
+        {showConfetti && <Confetti />}
+        <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-green-50/60 to-white px-4">
+          <div className="w-full max-w-md space-y-6 text-center">
+            <div className="text-6xl">
+              {todayCount % 10 === 0 && todayCount > 0 ? "🎊" : "🎉"}
             </div>
-            <p className="text-xs text-muted-foreground/60">{messages.kiosk.autoReturn}</p>
-          </div>
+            <h1 className="text-2xl font-bold">{messages.survey.thankYou}</h1>
+            <p className="text-muted-foreground">{messages.survey.thankYouSub}</p>
 
-          <Button variant="ghost" size="sm" className="text-muted-foreground/50" onClick={resetToReady}>
-            {messages.kiosk.nextPatient}
-          </Button>
+            {/* Dental health tip */}
+            <div className="mx-auto max-w-sm rounded-xl bg-blue-50 p-4 text-left">
+              <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-blue-600">
+                <Lightbulb className="h-3.5 w-3.5" />
+                {messages.survey.tipLabel}
+              </p>
+              <p className="text-sm text-blue-800">{randomTip}</p>
+            </div>
+
+            <div className="pt-1">
+              <p className="text-sm text-muted-foreground">{messages.survey.closeMessage}</p>
+              <p className="text-sm text-muted-foreground">{messages.survey.visitAgain}</p>
+            </div>
+
+            {/* Countdown bar */}
+            <div className="mx-auto max-w-xs space-y-2 pt-2">
+              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary/40 transition-all duration-100 ease-linear"
+                  style={{ width: `${cooldownProgress}%` }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground/60">{messages.kiosk.autoReturn}</p>
+            </div>
+
+            <Button variant="ghost" size="sm" className="text-muted-foreground/50" onClick={resetToReady}>
+              {messages.kiosk.nextPatient}
+            </Button>
+          </div>
         </div>
-      </div>
+      </>
     )
   }
 

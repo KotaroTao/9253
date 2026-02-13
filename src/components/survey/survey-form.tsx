@@ -6,7 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StarRating } from "@/components/survey/star-rating"
 import { messages } from "@/lib/messages"
 import { DEFAULTS } from "@/lib/constants"
-import { ChevronLeft } from "lucide-react"
+import { ChevronLeft, Lightbulb } from "lucide-react"
+import { Confetti } from "@/components/survey/confetti"
+import { DENTAL_TIPS } from "@/lib/constants"
 import type { SurveyPageData } from "@/types/survey"
 
 interface SurveyFormProps {
@@ -24,6 +26,7 @@ export function SurveyForm({ data, onComplete, kioskMode = false }: SurveyFormPr
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [freeText, setFreeText] = useState("")
   const [error, setError] = useState("")
+  const [randomTip] = useState(() => DENTAL_TIPS[Math.floor(Math.random() * DENTAL_TIPS.length)])
 
   const ratingQuestions = data.questions.filter((q) => q.type === "rating")
   const totalSteps = ratingQuestions.length + 1 // questions + free text
@@ -190,19 +193,29 @@ export function SurveyForm({ data, onComplete, kioskMode = false }: SurveyFormPr
   }
 
   return (
-    <Card className="overflow-hidden">
-      <div className="h-1.5 bg-primary" />
-      <CardHeader className="text-center pt-8">
-        <div className="mb-3 text-5xl">🎉</div>
-        <CardTitle className="text-xl">{messages.survey.thankYou}</CardTitle>
-        <p className="text-sm text-muted-foreground">{messages.survey.thankYouSub}</p>
-      </CardHeader>
-      <CardContent className="space-y-4 pb-8 text-center">
-        <div className="pt-4 text-sm text-muted-foreground">
-          <p>{messages.survey.closeMessage}</p>
-          <p>{messages.survey.visitAgain}</p>
-        </div>
-      </CardContent>
-    </Card>
+    <>
+      <Confetti />
+      <Card className="overflow-hidden">
+        <div className="h-1.5 bg-primary" />
+        <CardHeader className="text-center pt-8">
+          <div className="mb-3 text-5xl">🎉</div>
+          <CardTitle className="text-xl">{messages.survey.thankYou}</CardTitle>
+          <p className="text-sm text-muted-foreground">{messages.survey.thankYouSub}</p>
+        </CardHeader>
+        <CardContent className="space-y-4 pb-8 text-center">
+          <div className="mx-auto max-w-xs rounded-xl bg-blue-50 p-4 text-left">
+            <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-blue-600">
+              <Lightbulb className="h-3.5 w-3.5" />
+              {messages.survey.tipLabel}
+            </p>
+            <p className="text-sm text-blue-800">{randomTip}</p>
+          </div>
+          <div className="pt-2 text-sm text-muted-foreground">
+            <p>{messages.survey.closeMessage}</p>
+            <p>{messages.survey.visitAgain}</p>
+          </div>
+        </CardContent>
+      </Card>
+    </>
   )
 }

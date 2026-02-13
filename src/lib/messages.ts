@@ -64,6 +64,7 @@ export const messages = {
     scoreSuffix: "点",
     closeMessage: "お大事になさってください",
     visitAgain: "またのご来院をお待ちしております",
+    tipLabel: "歯の豆知識",
   },
   dashboard: {
     title: "ダッシュボード",
