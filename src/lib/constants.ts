@@ -49,6 +49,9 @@ export const TALLY_TYPE_LABELS: Record<string, string> = {
   self_pay_conversion: "自費成約",
 }
 
+export const ADMIN_MODE_COOKIE = "mieru-admin"
+export const ADMIN_MODE_MAX_AGE = 60 * 60 * 8 // 8 hours
+
 export const STAFF_SURVEY_CATEGORIES = {
   workEnvironment: "職場環境",
   relationships: "人間関係",

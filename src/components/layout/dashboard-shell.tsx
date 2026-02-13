@@ -10,6 +10,8 @@ interface DashboardShellProps {
   role: string
   userName: string
   clinicName?: string
+  isAdminMode?: boolean
+  hasAdminPassword?: boolean
 }
 
 export function DashboardShell({
@@ -17,6 +19,8 @@ export function DashboardShell({
   role,
   userName,
   clinicName,
+  isAdminMode = false,
+  hasAdminPassword = false,
 }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
@@ -36,7 +40,11 @@ export function DashboardShell({
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <Sidebar role={role} />
+        <Sidebar
+          role={role}
+          isAdminMode={isAdminMode}
+          hasAdminPassword={hasAdminPassword}
+        />
       </div>
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">

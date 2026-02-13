@@ -18,9 +18,12 @@ import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
 import { messages } from "@/lib/messages"
 import { APP_NAME } from "@/lib/constants"
+import { AdminUnlockDialog } from "@/components/layout/admin-unlock-dialog"
 
 interface SidebarProps {
   role: string
+  isAdminMode?: boolean
+  hasAdminPassword?: boolean
 }
 
 const dailyItems = [
@@ -77,10 +80,13 @@ function NavSection({ label, items, pathname }: { label: string; items: NavItem[
   )
 }
 
-const isAdminRole = (role: string) => role === "clinic_admin" || role === "system_admin"
-
-export function Sidebar({ role }: SidebarProps) {
+export function Sidebar({ role, isAdminMode = false, hasAdminPassword = false }: SidebarProps) {
   const pathname = usePathname()
+
+  // Show admin menu when:
+  // 1. Admin mode is active (password unlocked), OR
+  // 2. No admin password set yet AND user is clinic_admin/system_admin (legacy/setup)
+  const showAdminMenu = isAdminMode || (!hasAdminPassword && (role === "clinic_admin" || role === "system_admin"))
 
   return (
     <aside className="flex h-screen w-60 flex-col border-r bg-card">
@@ -91,7 +97,7 @@ export function Sidebar({ role }: SidebarProps) {
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto p-2">
         <NavSection label={messages.nav.sectionDaily} items={dailyItems} pathname={pathname} />
-        {isAdminRole(role) && (
+        {showAdminMenu && (
           <>
             <NavSection label={messages.nav.sectionAnalytics} items={analyticsItems} pathname={pathname} />
             <NavSection label={messages.nav.sectionAdmin} items={adminItems} pathname={pathname} />
@@ -114,7 +120,8 @@ export function Sidebar({ role }: SidebarProps) {
           </div>
         )}
       </nav>
-      <div className="border-t p-2">
+      <div className="space-y-1 border-t p-2">
+        <AdminUnlockDialog isAdminMode={isAdminMode} hasAdminPassword={hasAdminPassword} />
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
           className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"

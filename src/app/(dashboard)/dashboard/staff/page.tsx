@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
+import { isAdminMode } from "@/lib/admin-mode"
 import { getStaffWithStats } from "@/lib/queries/staff"
 import { StaffList } from "@/components/staff/staff-list"
 import { messages } from "@/lib/messages"
@@ -11,7 +12,8 @@ export default async function StaffPage() {
     redirect("/login")
   }
 
-  if (session.user.role === "staff") {
+  const adminMode = isAdminMode()
+  if (!adminMode && session.user.role !== "system_admin") {
     redirect("/dashboard")
   }
 

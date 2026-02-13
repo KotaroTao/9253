@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
+import { isAdminMode } from "@/lib/admin-mode"
 import { prisma } from "@/lib/prisma"
 import { getStaffSurveys, getActiveStaffSurvey } from "@/lib/queries/staff-surveys"
 import { StaffSurveyManagement } from "@/components/dashboard/staff-survey-management"
@@ -12,7 +13,8 @@ export default async function StaffSurveyPage() {
     redirect("/login")
   }
 
-  if (session.user.role === "staff") {
+  const adminMode = isAdminMode()
+  if (!adminMode && session.user.role !== "system_admin") {
     redirect("/dashboard")
   }
 

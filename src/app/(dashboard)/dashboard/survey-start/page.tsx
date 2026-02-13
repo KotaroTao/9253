@@ -1,10 +1,8 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
-import { SurveyStaffSelector } from "@/components/survey/survey-staff-selector"
-import { SurveyForm } from "@/components/survey/survey-form"
+import { SurveyKioskLauncher } from "@/components/survey/survey-kiosk-launcher"
 import { messages } from "@/lib/messages"
-import type { SurveyPageData } from "@/types/survey"
 
 export default async function SurveyStartPage() {
   const session = await auth()
@@ -68,36 +66,17 @@ export default async function SurveyStartPage() {
     )
   }
 
-  // Staff: auto-select own record, skip the selector
-  if (isStaff && session.user.staffId) {
-    const myStaff = staffList.find((s) => s.id === session.user.staffId)
-    if (myStaff) {
-      const pageData: SurveyPageData = {
-        staffName: myStaff.name,
-        clinicName: clinic.name,
-        templateId: template.id,
-        questions: template.questions as SurveyPageData["questions"],
-        qrToken: myStaff.qrToken,
-      }
-      return (
-        <div className="space-y-6">
-          <h1 className="text-2xl font-bold">{messages.nav.surveyStart}</h1>
-          <div className="mx-auto max-w-md">
-            <SurveyForm data={pageData} />
-          </div>
-        </div>
-      )
-    }
-  }
+  // Staff: auto-select own record
+  const autoSelectedToken = isStaff && session.user.staffId
+    ? staffList.find((s) => s.id === session.user.staffId)?.qrToken ?? null
+    : null
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">{messages.nav.surveyStart}</h1>
-      <SurveyStaffSelector
+      <SurveyKioskLauncher
         staffList={staffListWithCounts}
-        clinicName={clinic.name}
-        templateId={template.id}
-        questions={template.questions as SurveyPageData["questions"]}
+        autoSelectedToken={autoSelectedToken}
       />
     </div>
   )
