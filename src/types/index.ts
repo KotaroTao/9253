@@ -1,5 +1,4 @@
 export type UserRole = "system_admin" | "clinic_admin" | "staff"
-export type StaffRole = "dentist" | "hygienist" | "staff"
 
 
 export interface RecentResponse {
