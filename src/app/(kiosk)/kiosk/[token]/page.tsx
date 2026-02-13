@@ -10,7 +10,8 @@ interface KioskPageProps {
 }
 
 export default async function KioskPage({ params }: KioskPageProps) {
-  const staff = await getStaffByToken(params.token)
+  const token = decodeURIComponent(params.token)
+  const staff = await getStaffByToken(token)
 
   if (!staff || !staff.clinic) {
     return (
@@ -44,7 +45,7 @@ export default async function KioskPage({ params }: KioskPageProps) {
     clinicName: staff.clinic.name,
     templateId: template.id,
     questions: template.questions as SurveyPageData["questions"],
-    qrToken: params.token,
+    qrToken: token,
   }
 
   return (
