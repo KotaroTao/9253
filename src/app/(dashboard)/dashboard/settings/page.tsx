@@ -11,6 +11,10 @@ export default async function SettingsPage() {
     redirect("/login")
   }
 
+  if (session.user.role === "staff") {
+    redirect("/dashboard")
+  }
+
   const clinic = await getClinicById(session.user.clinicId)
   if (!clinic) {
     redirect("/dashboard")

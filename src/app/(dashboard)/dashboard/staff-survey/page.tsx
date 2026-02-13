@@ -12,6 +12,10 @@ export default async function StaffSurveyPage() {
     redirect("/login")
   }
 
+  if (session.user.role === "staff") {
+    redirect("/dashboard")
+  }
+
   const clinicId = session.user.clinicId
   if (!clinicId) {
     redirect("/login")

@@ -13,6 +13,10 @@ export default async function MetricsPage() {
     redirect("/login")
   }
 
+  if (session.user.role === "staff") {
+    redirect("/dashboard")
+  }
+
   const clinicId = session.user.clinicId
   if (!clinicId) {
     redirect("/login")

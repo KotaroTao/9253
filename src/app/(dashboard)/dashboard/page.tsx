@@ -26,7 +26,46 @@ export default async function DashboardPage() {
     redirect("/login")
   }
 
-  // Check if last month's summary is entered
+  const isStaff = session.user.role === "staff"
+
+  // Staff view: only quick actions
+  if (isStaff) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold">{messages.dashboard.title}</h1>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Link
+            href="/dashboard/survey-start"
+            className="group flex items-center gap-4 rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-5 transition-all hover:border-blue-400 hover:shadow-md active:scale-[0.98]"
+          >
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-500 text-white shadow-sm">
+              <Smartphone className="h-7 w-7" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-lg font-bold text-blue-900">{messages.dashboard.startSurvey}</p>
+              <p className="text-sm text-blue-600/70">{messages.dashboard.startSurveyDesc}</p>
+            </div>
+            <ArrowRight className="h-5 w-5 shrink-0 text-blue-400 transition-transform group-hover:translate-x-1" />
+          </Link>
+          <Link
+            href="/dashboard/tally"
+            className="group flex items-center gap-4 rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5 transition-all hover:border-emerald-400 hover:shadow-md active:scale-[0.98]"
+          >
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-sm">
+              <ClipboardPen className="h-7 w-7" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-lg font-bold text-emerald-900">{messages.dashboard.startTally}</p>
+              <p className="text-sm text-emerald-600/70">{messages.dashboard.startTallyDesc}</p>
+            </div>
+            <ArrowRight className="h-5 w-5 shrink-0 text-emerald-400 transition-transform group-hover:translate-x-1" />
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  // Admin view: full dashboard
   const now = new Date()
   const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1)
   const prevYear = prevDate.getFullYear()

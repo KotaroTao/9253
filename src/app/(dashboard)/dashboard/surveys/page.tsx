@@ -18,6 +18,10 @@ export default async function SurveysPage({ searchParams }: SurveysPageProps) {
     redirect("/login")
   }
 
+  if (session.user.role === "staff") {
+    redirect("/dashboard")
+  }
+
   const page = Number(searchParams.page) || 1
   const { responses, total, totalPages } = await getSurveyResponses(
     session.user.clinicId,

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { SurveyStaffSelector } from "@/components/survey/survey-staff-selector"
+import { SurveyForm } from "@/components/survey/survey-form"
 import { messages } from "@/lib/messages"
 import type { SurveyPageData } from "@/types/survey"
 
@@ -13,6 +14,7 @@ export default async function SurveyStartPage() {
   }
 
   const clinicId = session.user.clinicId
+  const isStaff = session.user.role === "staff"
 
   // Today start for counting responses
   const todayStart = new Date()
@@ -64,6 +66,28 @@ export default async function SurveyStartPage() {
         </div>
       </div>
     )
+  }
+
+  // Staff: auto-select own record, skip the selector
+  if (isStaff && session.user.staffId) {
+    const myStaff = staffList.find((s) => s.id === session.user.staffId)
+    if (myStaff) {
+      const pageData: SurveyPageData = {
+        staffName: myStaff.name,
+        clinicName: clinic.name,
+        templateId: template.id,
+        questions: template.questions as SurveyPageData["questions"],
+        qrToken: myStaff.qrToken,
+      }
+      return (
+        <div className="space-y-6">
+          <h1 className="text-2xl font-bold">{messages.nav.surveyStart}</h1>
+          <div className="mx-auto max-w-md">
+            <SurveyForm data={pageData} />
+          </div>
+        </div>
+      )
+    }
   }
 
   return (
