@@ -12,36 +12,54 @@ const DEFAULT_QUESTIONS = [
   },
   {
     id: "q2",
-    text: "待ち時間は適切でしたか？",
+    text: "受付の対応はいかがでしたか？",
     type: "rating",
     required: true,
   },
   {
     id: "q3",
-    text: "治療内容の説明は分かりやすかったですか？",
+    text: "待ち時間は適切でしたか？",
     type: "rating",
     required: true,
   },
   {
     id: "q4",
-    text: "痛みへの配慮は十分でしたか？",
+    text: "治療内容の説明は分かりやすかったですか？",
     type: "rating",
     required: true,
   },
   {
     id: "q5",
-    text: "院内の清潔さはいかがでしたか？",
+    text: "治療費用の説明は十分でしたか？",
     type: "rating",
     required: true,
   },
   {
     id: "q6",
-    text: "スタッフの対応はいかがでしたか？",
+    text: "痛みへの配慮は十分でしたか？",
     type: "rating",
     required: true,
   },
   {
     id: "q7",
+    text: "プライバシーへの配慮は十分でしたか？",
+    type: "rating",
+    required: true,
+  },
+  {
+    id: "q8",
+    text: "院内の清潔さはいかがでしたか？",
+    type: "rating",
+    required: true,
+  },
+  {
+    id: "q9",
+    text: "予約の取りやすさはいかがでしたか？",
+    type: "rating",
+    required: true,
+  },
+  {
+    id: "q10",
     text: "当院を知人に薦めたいと思いますか？",
     type: "rating",
     required: true,
@@ -146,7 +164,7 @@ async function main() {
       const respondedAt = new Date(now.getTime() - daysAgo * 86400000)
 
       const scores: Record<string, number> = {}
-      for (let q = 1; q <= 7; q++) {
+      for (let q = 1; q <= 10; q++) {
         scores[`q${q}`] = Math.random() > 0.2 ? Math.ceil(Math.random() * 2) + 3 : Math.ceil(Math.random() * 3)
       }
       const scoreValues = Object.values(scores)

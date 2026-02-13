@@ -31,13 +31,14 @@ export default async function DashboardPage() {
 
   const adminMode = isAdminMode()
 
-  // Check if clinic has admin password set
+  // Check if clinic has admin password set + get slug for kiosk link
   const clinic = await prisma.clinic.findUnique({
     where: { id: clinicId },
-    select: { settings: true },
+    select: { slug: true, settings: true },
   })
   const settings = clinic?.settings as Record<string, unknown> | null
   const hasAdminPassword = !!settings?.adminPassword
+  const kioskUrl = clinic ? `/kiosk/${encodeURIComponent(clinic.slug)}` : "/dashboard/survey-start"
 
   // Time-aware greeting
   const hour = new Date().getHours()
@@ -99,7 +100,9 @@ export default async function DashboardPage() {
       {/* 2 big action cards - always shown */}
       <div className="grid gap-4 sm:grid-cols-2">
         <Link
-          href="/dashboard/survey-start"
+          href={kioskUrl}
+          target="_blank"
+          rel="noopener noreferrer"
           className="group flex items-center gap-4 rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-6 transition-all hover:border-blue-400 hover:shadow-md active:scale-[0.98]"
         >
           <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-blue-500 text-white shadow-sm">
