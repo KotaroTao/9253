@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
+import { isAdminMode } from "@/lib/admin-mode"
 import { getClinicById } from "@/lib/queries/clinics"
 import { SettingsForm } from "@/components/settings/settings-form"
 import { messages } from "@/lib/messages"
@@ -11,7 +12,8 @@ export default async function SettingsPage() {
     redirect("/login")
   }
 
-  if (session.user.role === "staff") {
+  const adminMode = isAdminMode()
+  if (!adminMode && session.user.role !== "system_admin") {
     redirect("/dashboard")
   }
 
@@ -20,10 +22,13 @@ export default async function SettingsPage() {
     redirect("/dashboard")
   }
 
+  const settings = (clinic as { settings?: Record<string, unknown> }).settings
+  const hasAdminPassword = !!settings?.adminPassword
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">{messages.settings.title}</h1>
-      <SettingsForm clinic={clinic} />
+      <SettingsForm clinic={clinic} hasAdminPassword={hasAdminPassword} />
     </div>
   )
 }

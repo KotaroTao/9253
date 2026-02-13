@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { auth } from "@/auth"
+import { isAdminMode } from "@/lib/admin-mode"
 import { getSurveyResponses } from "@/lib/queries/surveys"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
@@ -18,7 +19,8 @@ export default async function SurveysPage({ searchParams }: SurveysPageProps) {
     redirect("/login")
   }
 
-  if (session.user.role === "staff") {
+  const adminMode = isAdminMode()
+  if (!adminMode && session.user.role !== "system_admin") {
     redirect("/dashboard")
   }
 

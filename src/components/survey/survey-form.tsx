@@ -11,11 +11,12 @@ import type { SurveyPageData } from "@/types/survey"
 
 interface SurveyFormProps {
   data: SurveyPageData
+  onComplete?: () => void
 }
 
 type Step = "welcome" | "questions" | "freetext" | "submitting" | "thanks"
 
-export function SurveyForm({ data }: SurveyFormProps) {
+export function SurveyForm({ data, onComplete }: SurveyFormProps) {
   const [step, setStep] = useState<Step>("welcome")
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<Record<string, number>>({})
@@ -60,6 +61,7 @@ export function SurveyForm({ data }: SurveyFormProps) {
       }
 
       setStep("thanks")
+      onComplete?.()
     } catch {
       setError(messages.common.error)
       setStep("freetext")
