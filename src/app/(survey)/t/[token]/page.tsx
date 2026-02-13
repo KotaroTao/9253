@@ -7,8 +7,9 @@ interface TallyPageProps {
 }
 
 export default async function TallyPage({ params }: TallyPageProps) {
+  const token = decodeURIComponent(params.token)
   const staff = await prisma.staff.findFirst({
-    where: { qrToken: params.token, isActive: true },
+    where: { qrToken: token, isActive: true },
     select: { id: true, name: true, role: true, qrToken: true },
   })
 

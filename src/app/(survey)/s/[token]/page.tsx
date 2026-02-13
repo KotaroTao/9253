@@ -9,7 +9,8 @@ interface SurveyPageProps {
 }
 
 export default async function SurveyPage({ params }: SurveyPageProps) {
-  const staff = await getStaffByToken(params.token)
+  const token = decodeURIComponent(params.token)
+  const staff = await getStaffByToken(token)
 
   if (!staff || !staff.clinic) {
     return (
@@ -33,7 +34,7 @@ export default async function SurveyPage({ params }: SurveyPageProps) {
     clinicName: staff.clinic.name,
     templateId: template.id,
     questions: template.questions as SurveyPageData["questions"],
-    qrToken: params.token,
+    qrToken: token,
   }
 
   return (

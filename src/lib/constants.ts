@@ -51,6 +51,7 @@ export const TALLY_TYPE_LABELS: Record<string, string> = {
 
 export const ADMIN_MODE_COOKIE = "mieru-admin"
 export const ADMIN_MODE_MAX_AGE = 60 * 60 * 8 // 8 hours
+export const DEFAULT_ADMIN_PASSWORD = "1111"
 
 export const STAFF_SURVEY_CATEGORIES = {
   workEnvironment: "職場環境",

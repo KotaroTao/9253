@@ -27,14 +27,17 @@ const DEFAULT_QUESTIONS = [
 async function main() {
   console.log("Seeding database...")
 
-  // Create demo clinic
+  // Create demo clinic with default admin password "1111"
+  const defaultAdminPasswordHash = await bcrypt.hash("1111", 10)
   const clinic = await prisma.clinic.upsert({
     where: { slug: "demo-dental" },
-    update: {},
+    update: {
+      settings: { adminPassword: defaultAdminPasswordHash },
+    },
     create: {
       name: "MIERU デモ歯科クリニック",
       slug: "demo-dental",
-      settings: {},
+      settings: { adminPassword: defaultAdminPasswordHash },
     },
   })
   console.log(`Clinic: ${clinic.name} (${clinic.id})`)

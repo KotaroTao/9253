@@ -224,6 +224,13 @@ export const messages = {
     wrongPassword: "パスワードが正しくありません",
     noPasswordSet: "管理者パスワードが未設定です",
     setupPrompt: "設定画面で管理者パスワードを設定してください",
+    active: "管理者モード有効",
+    changePassword: "パスワードを変更する",
+    currentPassword: "現在のパスワード",
+    newPassword: "新しいパスワード",
+    passwordChanged: "パスワードを変更しました",
+    passwordChangeError: "パスワードの変更に失敗しました",
+    defaultHint: "初期パスワード: 1111",
   },
   kiosk: {
     nextPatient: "次の患者さまへ",
