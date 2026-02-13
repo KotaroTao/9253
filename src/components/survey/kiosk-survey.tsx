@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { SurveyForm } from "@/components/survey/survey-form"
 import { messages } from "@/lib/messages"
-import { MessageSquare, LogOut, Sparkles, Lightbulb } from "lucide-react"
+import { MessageSquare, LogOut, Lightbulb } from "lucide-react"
 import { Confetti } from "@/components/survey/confetti"
 import { DENTAL_TIPS } from "@/lib/constants"
 import type { SurveyPageData } from "@/types/survey"
@@ -17,7 +17,7 @@ interface KioskSurveyProps {
 
 type KioskState = "ready" | "survey" | "cooldown"
 
-const COOLDOWN_SECONDS = 6
+const COOLDOWN_SECONDS = 4
 
 export function KioskSurvey({ data, initialTodayCount }: KioskSurveyProps) {
   const router = useRouter()
@@ -72,55 +72,31 @@ export function KioskSurvey({ data, initialTodayCount }: KioskSurveyProps) {
   }, [])
 
   const handleExit = useCallback(() => {
-    router.push("/dashboard/survey-start")
+    router.push("/dashboard")
   }, [router])
 
-  // Ready screen - staff sees this before handing tablet to patient
+  // Ready screen - staff hands tablet to patient, patient taps to start
   if (state === "ready") {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-blue-50/80 to-white px-4">
-        <div className="w-full max-w-md space-y-8 text-center">
-          {/* Today's count */}
-          <div className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-5 py-2.5 text-sm font-medium text-blue-700">
-            <MessageSquare className="h-4 w-4" />
-            {messages.kiosk.todayCount}: {todayCount}{messages.common.countSuffix}
-          </div>
+        <div className="w-full max-w-sm space-y-8 text-center">
+          <p className="text-sm text-muted-foreground">{data.staffName}</p>
 
-          {/* Animated pulse ring */}
-          <div className="relative mx-auto flex h-28 w-28 items-center justify-center">
-            <div className="absolute inset-0 animate-ping rounded-full bg-blue-200/40" style={{ animationDuration: "3s" }} />
-            <div className="absolute inset-2 animate-ping rounded-full bg-blue-200/30" style={{ animationDuration: "3s", animationDelay: "0.5s" }} />
-            <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-blue-500 text-white shadow-lg">
-              <Sparkles className="h-10 w-10" />
-            </div>
-          </div>
-
-          {/* Main message for staff */}
-          <div className="space-y-2">
-            <h1 className="text-2xl font-bold text-foreground">
-              {messages.kiosk.readyTitle}
-            </h1>
-            <p className="text-base text-muted-foreground">
-              {messages.kiosk.staffGuide}
-            </p>
-          </div>
-
-          {/* Start button */}
           <Button
             size="lg"
-            className="h-16 w-full max-w-xs text-lg shadow-md shadow-blue-200/50"
+            className="h-20 w-full text-xl shadow-lg shadow-blue-200/50"
             onClick={handleStartSurvey}
           >
             {messages.survey.startButton}
           </Button>
 
-          {/* Clinic & staff info */}
-          <p className="text-xs text-muted-foreground/50">
-            {data.clinicName} ・ {data.staffName}
-          </p>
+          <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-xs text-muted-foreground">
+            <MessageSquare className="h-3.5 w-3.5" />
+            {messages.kiosk.todayCount}: {todayCount}{messages.common.countSuffix}
+          </div>
         </div>
 
-        {/* Exit button */}
+        {/* Exit button - intentionally subtle */}
         <div className="fixed bottom-4 right-4">
           {showExitConfirm ? (
             <div className="flex items-center gap-2 rounded-lg border bg-card p-3 shadow-lg">
@@ -134,7 +110,7 @@ export function KioskSurvey({ data, initialTodayCount }: KioskSurveyProps) {
             </div>
           ) : (
             <button
-              className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground/20 transition-colors hover:bg-muted hover:text-muted-foreground"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground/15 transition-colors hover:bg-muted hover:text-muted-foreground"
               onClick={() => setShowExitConfirm(true)}
               aria-label={messages.kiosk.exitKiosk}
             >
@@ -146,21 +122,17 @@ export function KioskSurvey({ data, initialTodayCount }: KioskSurveyProps) {
     )
   }
 
-  // Cooldown - thank you + countdown
+  // Cooldown - thank you + tip + countdown
   if (state === "cooldown") {
     return (
       <>
         {showConfetti && <Confetti />}
         <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-green-50/60 to-white px-4">
-          <div className="w-full max-w-md space-y-6 text-center">
-            <div className="text-6xl">
-              {todayCount % 10 === 0 && todayCount > 0 ? "🎊" : "🎉"}
-            </div>
+          <div className="w-full max-w-sm space-y-6 text-center">
+            <div className="text-5xl">🎉</div>
             <h1 className="text-2xl font-bold">{messages.survey.thankYou}</h1>
-            <p className="text-muted-foreground">{messages.survey.thankYouSub}</p>
 
-            {/* Dental health tip */}
-            <div className="mx-auto max-w-sm rounded-xl bg-blue-50 p-4 text-left">
+            <div className="rounded-xl bg-blue-50 p-4 text-left">
               <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-blue-600">
                 <Lightbulb className="h-3.5 w-3.5" />
                 {messages.survey.tipLabel}
@@ -168,25 +140,16 @@ export function KioskSurvey({ data, initialTodayCount }: KioskSurveyProps) {
               <p className="text-sm text-blue-800">{randomTip}</p>
             </div>
 
-            <div className="pt-1">
-              <p className="text-sm text-muted-foreground">{messages.survey.closeMessage}</p>
-              <p className="text-sm text-muted-foreground">{messages.survey.visitAgain}</p>
-            </div>
+            <p className="text-sm text-muted-foreground">{messages.survey.closeMessage}</p>
 
-            {/* Countdown bar */}
-            <div className="mx-auto max-w-xs space-y-2 pt-2">
-              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+            <div className="mx-auto max-w-xs space-y-1 pt-2">
+              <div className="h-1 overflow-hidden rounded-full bg-muted">
                 <div
                   className="h-full rounded-full bg-primary/40 transition-all duration-100 ease-linear"
                   style={{ width: `${cooldownProgress}%` }}
                 />
               </div>
-              <p className="text-xs text-muted-foreground/60">{messages.kiosk.autoReturn}</p>
             </div>
-
-            <Button variant="ghost" size="sm" className="text-muted-foreground/50" onClick={resetToReady}>
-              {messages.kiosk.nextPatient}
-            </Button>
           </div>
         </div>
       </>

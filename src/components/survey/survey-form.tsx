@@ -5,10 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StarRating } from "@/components/survey/star-rating"
 import { messages } from "@/lib/messages"
-import { DEFAULTS } from "@/lib/constants"
-import { ChevronLeft, Lightbulb } from "lucide-react"
+import { DEFAULTS, DENTAL_TIPS } from "@/lib/constants"
+import { ChevronLeft, Lightbulb, MessageSquarePlus } from "lucide-react"
 import { Confetti } from "@/components/survey/confetti"
-import { DENTAL_TIPS } from "@/lib/constants"
 import type { SurveyPageData } from "@/types/survey"
 
 interface SurveyFormProps {
@@ -20,16 +19,16 @@ interface SurveyFormProps {
 type Step = "welcome" | "questions" | "freetext" | "submitting" | "thanks"
 
 export function SurveyForm({ data, onComplete, kioskMode = false }: SurveyFormProps) {
-  // In kiosk mode, skip welcome screen - staff already explained
+  // In kiosk mode, skip welcome screen
   const [step, setStep] = useState<Step>(kioskMode ? "questions" : "welcome")
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [freeText, setFreeText] = useState("")
+  const [showFreeText, setShowFreeText] = useState(false)
   const [error, setError] = useState("")
   const [randomTip] = useState(() => DENTAL_TIPS[Math.floor(Math.random() * DENTAL_TIPS.length)])
 
   const ratingQuestions = data.questions.filter((q) => q.type === "rating")
-  const totalSteps = ratingQuestions.length + 1 // questions + free text
 
   function handleRating(questionId: string, value: number) {
     setAnswers((prev) => ({ ...prev, [questionId]: value }))
@@ -73,7 +72,8 @@ export function SurveyForm({ data, onComplete, kioskMode = false }: SurveyFormPr
     }
   }
 
-  const progressCurrent = step === "welcome" ? 0 : step === "questions" ? currentQuestion + 1 : step === "freetext" ? totalSteps : totalSteps
+  const totalSteps = ratingQuestions.length + 1
+  const progressCurrent = step === "welcome" ? 0 : step === "questions" ? currentQuestion + 1 : totalSteps
   const progressPercent = step === "thanks" || step === "submitting" ? 100 : Math.round((progressCurrent / totalSteps) * 100)
 
   if (step === "welcome") {
@@ -121,10 +121,6 @@ export function SurveyForm({ data, onComplete, kioskMode = false }: SurveyFormPr
             onChange={(v) => handleRating(q.id, v)}
             large={kioskMode}
           />
-          <div className="flex w-full justify-between px-2 text-xs text-muted-foreground">
-            <span>{DEFAULTS.MIN_STAR_RATING}点</span>
-            <span>{DEFAULTS.MAX_STAR_RATING}点</span>
-          </div>
           {currentQuestion > 0 && (
             <button
               className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -134,17 +130,58 @@ export function SurveyForm({ data, onComplete, kioskMode = false }: SurveyFormPr
               {messages.common.back}
             </button>
           )}
-          {kioskMode && currentQuestion === 0 && (
-            <p className="text-xs text-muted-foreground/60">
-              {messages.survey.estimatedTime} ・ {messages.survey.anonymous}
-            </p>
-          )}
         </CardContent>
       </Card>
     )
   }
 
   if (step === "freetext") {
+    // Kiosk mode: "Submit" is primary, free text is optional toggle
+    if (kioskMode) {
+      return (
+        <Card className="overflow-hidden">
+          <div className="h-1.5 bg-primary" />
+          <CardContent className="space-y-4 py-8">
+            {error && (
+              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
+            )}
+
+            {showFreeText ? (
+              <>
+                <label htmlFor="survey-freetext" className="sr-only">{messages.survey.freeTextLabel}</label>
+                <textarea
+                  id="survey-freetext"
+                  className="flex w-full rounded-xl border border-input bg-background px-4 py-3 text-base min-h-[120px] ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  placeholder={messages.survey.freeTextPlaceholder}
+                  value={freeText}
+                  onChange={(e) => setFreeText(e.target.value)}
+                  maxLength={DEFAULTS.MAX_FREE_TEXT_LENGTH}
+                  autoFocus
+                />
+                <Button className="w-full h-14 text-lg" onClick={handleSubmit}>
+                  {messages.common.submit}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button className="w-full h-16 text-lg" onClick={handleSubmit}>
+                  {messages.common.submit}
+                </Button>
+                <button
+                  className="flex w-full items-center justify-center gap-2 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  onClick={() => setShowFreeText(true)}
+                >
+                  <MessageSquarePlus className="h-4 w-4" />
+                  {messages.survey.addComment}
+                </button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )
+    }
+
+    // Non-kiosk: show full free text form
     return (
       <Card className="overflow-hidden">
         <div className="h-1.5 bg-muted">
@@ -157,7 +194,7 @@ export function SurveyForm({ data, onComplete, kioskMode = false }: SurveyFormPr
           <label htmlFor="survey-freetext" className="sr-only">{messages.survey.freeTextLabel}</label>
           <textarea
             id="survey-freetext"
-            className={`flex w-full rounded-xl border border-input bg-background px-4 py-3 ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${kioskMode ? "min-h-[160px] text-base" : "min-h-[120px] text-sm"}`}
+            className="flex w-full rounded-xl border border-input bg-background px-4 py-3 text-sm min-h-[120px] ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             placeholder={messages.survey.freeTextPlaceholder}
             value={freeText}
             onChange={(e) => setFreeText(e.target.value)}

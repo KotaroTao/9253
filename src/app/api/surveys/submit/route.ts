@@ -1,8 +1,7 @@
 import { NextRequest } from "next/server"
 import { surveySubmissionSchema } from "@/lib/validations/survey"
-import { getStaffByToken, createSurveyResponse, hasRecentSubmission } from "@/lib/queries/surveys"
+import { getStaffByToken, createSurveyResponse } from "@/lib/queries/surveys"
 import { getClientIp, hashIp } from "@/lib/ip"
-import { checkRateLimit } from "@/lib/rate-limit"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
 
@@ -33,20 +32,9 @@ export async function POST(request: NextRequest) {
       return errorResponse(messages.errors.invalidTemplate, 400)
     }
 
-    // Rate limit by IP
+    // IP hash for audit trail only (no blocking)
     const ip = getClientIp()
     const ipHash = hashIp(ip)
-
-    const rateLimit = checkRateLimit(ipHash)
-    if (!rateLimit.allowed) {
-      return errorResponse(messages.survey.rateLimited, 429)
-    }
-
-    // Check recent submission (same IP + same staff within 24h)
-    const recentlySubmitted = await hasRecentSubmission(ipHash, staff.id)
-    if (recentlySubmitted) {
-      return errorResponse(messages.survey.alreadySubmitted, 429)
-    }
 
     // Calculate overall score from rating answers
     const ratingValues = Object.values(answers).filter(

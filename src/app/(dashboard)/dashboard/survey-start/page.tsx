@@ -12,7 +12,6 @@ export default async function SurveyStartPage() {
   }
 
   const clinicId = session.user.clinicId
-  const isStaff = session.user.role === "staff"
 
   // Today start for counting responses
   const todayStart = new Date()
@@ -45,18 +44,11 @@ export default async function SurveyStartPage() {
     redirect("/login")
   }
 
-  const countMap = new Map(todayCounts.map((c) => [c.staffId, c._count._all]))
-  const staffListWithCounts = staffList.map((s) => ({
-    ...s,
-    todayCount: countMap.get(s.id) ?? 0,
-  }))
-
   const template = clinic.surveyTemplates[0]
 
   if (!template) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold">{messages.nav.surveyStart}</h1>
         <div className="rounded-lg border bg-card p-8 text-center">
           <p className="text-muted-foreground">
             {messages.nav.noTemplate}
@@ -66,17 +58,32 @@ export default async function SurveyStartPage() {
     )
   }
 
-  // Staff: auto-select own record
-  const autoSelectedToken = isStaff && session.user.staffId
-    ? staffList.find((s) => s.id === session.user.staffId)?.qrToken ?? null
-    : null
+  // Staff with own staffId: skip selection, go straight to kiosk
+  if (session.user.staffId) {
+    const myStaff = staffList.find((s) => s.id === session.user.staffId)
+    if (myStaff) {
+      redirect(`/kiosk/${encodeURIComponent(myStaff.qrToken)}`)
+    }
+  }
+
+  // Staff count = 1: skip selection, go straight to kiosk
+  if (staffList.length === 1) {
+    redirect(`/kiosk/${encodeURIComponent(staffList[0].qrToken)}`)
+  }
+
+  // Multiple staff: show selection grid
+  const countMap = new Map(todayCounts.map((c) => [c.staffId, c._count._all]))
+  const staffListWithCounts = staffList.map((s) => ({
+    ...s,
+    todayCount: countMap.get(s.id) ?? 0,
+  }))
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">{messages.nav.surveyStart}</h1>
       <SurveyKioskLauncher
         staffList={staffListWithCounts}
-        autoSelectedToken={autoSelectedToken}
+        autoSelectedToken={null}
       />
     </div>
   )
