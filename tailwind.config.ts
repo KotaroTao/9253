@@ -65,10 +65,20 @@ const config: Config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "confetti-fall": {
+          "0%": { transform: "translateY(0) translateX(0)", opacity: "1" },
+          "100%": { transform: "translateY(100vh) translateX(40px)", opacity: "0" },
+        },
+        "confetti-spin": {
+          "0%": { transform: "rotateX(0) rotateY(0)" },
+          "100%": { transform: "rotateX(360deg) rotateY(180deg)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "confetti-fall": "confetti-fall 2s ease-in forwards",
+        "confetti-spin": "confetti-spin 0.6s linear infinite",
       },
     },
   },
