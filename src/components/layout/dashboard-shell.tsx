@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Sidebar } from "@/components/layout/sidebar"
 import { DashboardHeader } from "@/components/layout/dashboard-header"
+import { BottomNav } from "@/components/layout/bottom-nav"
 import { cn } from "@/lib/utils"
 
 interface DashboardShellProps {
@@ -10,6 +11,7 @@ interface DashboardShellProps {
   role: string
   userName: string
   clinicName?: string
+  clinicSlug?: string
   isAdminMode?: boolean
   hasAdminPassword?: boolean
 }
@@ -19,11 +21,29 @@ export function DashboardShell({
   role,
   userName,
   clinicName,
+  clinicSlug,
   isAdminMode = false,
   hasAdminPassword = false,
 }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
+  // Staff mode: no sidebar/header, bottom nav only
+  if (!isAdminMode) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <main className="flex-1 bg-muted/40 p-4 pb-20">
+          {children}
+        </main>
+        <BottomNav
+          clinicSlug={clinicSlug}
+          isAdminMode={isAdminMode}
+          hasAdminPassword={hasAdminPassword}
+        />
+      </div>
+    )
+  }
+
+  // Admin mode: full sidebar + header layout
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Mobile overlay */}

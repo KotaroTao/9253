@@ -8,9 +8,10 @@ import { messages } from "@/lib/messages"
 interface AdminUnlockDialogProps {
   isAdminMode: boolean
   hasAdminPassword: boolean
+  compact?: boolean
 }
 
-export function AdminUnlockDialog({ isAdminMode, hasAdminPassword }: AdminUnlockDialogProps) {
+export function AdminUnlockDialog({ isAdminMode, hasAdminPassword, compact = false }: AdminUnlockDialogProps) {
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [password, setPassword] = useState("")
@@ -51,6 +52,17 @@ export function AdminUnlockDialog({ isAdminMode, hasAdminPassword }: AdminUnlock
   }
 
   if (isAdminMode) {
+    if (compact) {
+      return (
+        <button
+          onClick={handleLock}
+          className="flex flex-col items-center justify-center gap-0.5 py-2 text-primary transition-colors active:bg-muted"
+        >
+          <Unlock className="h-5 w-5" />
+          <span className="text-[10px] font-medium">{messages.adminMode.active}</span>
+        </button>
+      )
+    }
     return (
       <button
         onClick={handleLock}
@@ -70,10 +82,16 @@ export function AdminUnlockDialog({ isAdminMode, hasAdminPassword }: AdminUnlock
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className={compact
+          ? "flex flex-col items-center justify-center gap-0.5 py-2 text-muted-foreground transition-colors active:bg-muted"
+          : "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        }
       >
-        <Lock className="h-4 w-4" />
-        {messages.adminMode.unlock}
+        <Lock className={compact ? "h-5 w-5" : "h-4 w-4"} />
+        {compact
+          ? <span className="text-[10px] font-medium">{messages.adminMode.unlock}</span>
+          : messages.adminMode.unlock
+        }
       </button>
 
       {isOpen && (

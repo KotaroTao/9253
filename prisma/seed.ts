@@ -136,19 +136,27 @@ async function main() {
   })
   console.log(`Clinic admin: ${clinicAdmin.email}`)
 
-  // Create default survey template (skip if one already exists for this clinic)
+  // Create or update default survey template
   const existingTemplate = await prisma.surveyTemplate.findFirst({
     where: { clinicId: clinic.id, isActive: true },
   })
 
-  const template = existingTemplate ?? await prisma.surveyTemplate.create({
-    data: {
-      clinicId: clinic.id,
-      name: "デフォルトアンケート",
-      questions: DEFAULT_QUESTIONS,
-      isActive: true,
-    },
-  })
+  let template
+  if (existingTemplate) {
+    template = await prisma.surveyTemplate.update({
+      where: { id: existingTemplate.id },
+      data: { questions: DEFAULT_QUESTIONS },
+    })
+  } else {
+    template = await prisma.surveyTemplate.create({
+      data: {
+        clinicId: clinic.id,
+        name: "デフォルトアンケート",
+        questions: DEFAULT_QUESTIONS,
+        isActive: true,
+      },
+    })
+  }
   console.log(`Template: ${template.name} (${template.id})`)
 
   // Create sample survey responses (skip if responses already exist)

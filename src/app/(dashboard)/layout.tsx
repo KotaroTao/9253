@@ -24,13 +24,15 @@ export default async function DashboardLayout({
   }
 
   let clinicName: string | undefined
+  let clinicSlug: string | undefined
   let hasAdminPassword = false
   if (clinicId) {
     const clinic = await prisma.clinic.findUnique({
       where: { id: clinicId },
-      select: { name: true, settings: true },
+      select: { name: true, slug: true, settings: true },
     })
     clinicName = clinic?.name ?? undefined
+    clinicSlug = clinic?.slug ?? undefined
     const settings = clinic?.settings as Record<string, unknown> | null
     hasAdminPassword = !!settings?.adminPassword
   }
@@ -42,6 +44,7 @@ export default async function DashboardLayout({
       role={role}
       userName={session.user.name ?? ""}
       clinicName={clinicName}
+      clinicSlug={clinicSlug}
       isAdminMode={adminMode}
       hasAdminPassword={hasAdminPassword}
     >
