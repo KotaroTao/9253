@@ -1,6 +1,6 @@
 export interface SurveyPageData {
-  staffName: string
   clinicName: string
+  clinicSlug: string
   templateId: string
   questions: {
     id: string
@@ -8,5 +8,4 @@ export interface SurveyPageData {
     type: "rating" | "text"
     required: boolean
   }[]
-  qrToken: string
 }

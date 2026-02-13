@@ -9,7 +9,7 @@ export interface RecentResponse {
   staff: {
     name: string
     role: string
-  }
+  } | null
 }
 
 export interface StaffRankingEntry {

@@ -59,10 +59,12 @@ export default async function SurveysPage({ searchParams }: SurveysPageProps) {
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{r.staff.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {STAFF_ROLE_LABELS[r.staff.role] ?? r.staff.role}
-                      </span>
+                      <span className="font-medium">{r.staff?.name ?? "医院"}</span>
+                      {r.staff && (
+                        <span className="text-xs text-muted-foreground">
+                          {STAFF_ROLE_LABELS[r.staff.role] ?? r.staff.role}
+                        </span>
+                      )}
                     </div>
                     {r.freeText && (
                       <p className="text-muted-foreground">{r.freeText}</p>

@@ -2,7 +2,7 @@ import { z } from "zod"
 import { messages } from "@/lib/messages"
 
 export const surveySubmissionSchema = z.object({
-  staffToken: z.string().min(1, messages.validations.staffTokenRequired),
+  clinicSlug: z.string().min(1),
   templateId: z.string().uuid(messages.validations.invalidTemplateId),
   answers: z.record(
     z.string(),

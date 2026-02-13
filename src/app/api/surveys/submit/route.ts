@@ -1,8 +1,7 @@
 import { NextRequest } from "next/server"
 import { surveySubmissionSchema } from "@/lib/validations/survey"
-import { getStaffByToken, createSurveyResponse, hasRecentSubmission } from "@/lib/queries/surveys"
+import { getClinicBySlug, createSurveyResponse } from "@/lib/queries/surveys"
 import { getClientIp, hashIp } from "@/lib/ip"
-import { checkRateLimit } from "@/lib/rate-limit"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
 
@@ -17,36 +16,25 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const { staffToken, templateId, answers, freeText } = parsed.data
+    const { clinicSlug, templateId, answers, freeText } = parsed.data
 
-    // Verify staff + clinic
-    const staff = await getStaffByToken(staffToken)
-    if (!staff || !staff.clinic) {
+    // Verify clinic
+    const clinic = await getClinicBySlug(clinicSlug)
+    if (!clinic) {
       return errorResponse(messages.survey.invalidLink, 404)
     }
 
     // Verify template belongs to this clinic
-    const template = staff.clinic.surveyTemplates.find(
+    const template = clinic.surveyTemplates.find(
       (t) => t.id === templateId
     )
     if (!template) {
       return errorResponse(messages.errors.invalidTemplate, 400)
     }
 
-    // Rate limit by IP
+    // IP hash for audit trail only (no blocking)
     const ip = getClientIp()
     const ipHash = hashIp(ip)
-
-    const rateLimit = checkRateLimit(ipHash)
-    if (!rateLimit.allowed) {
-      return errorResponse(messages.survey.rateLimited, 429)
-    }
-
-    // Check recent submission (same IP + same staff within 24h)
-    const recentlySubmitted = await hasRecentSubmission(ipHash, staff.id)
-    if (recentlySubmitted) {
-      return errorResponse(messages.survey.alreadySubmitted, 429)
-    }
 
     // Calculate overall score from rating answers
     const ratingValues = Object.values(answers).filter(
@@ -57,10 +45,9 @@ export async function POST(request: NextRequest) {
         ? ratingValues.reduce((sum, v) => sum + v, 0) / ratingValues.length
         : null
 
-    // Save response
+    // Save response (clinic-level, no staff tracking)
     const response = await createSurveyResponse({
-      clinicId: staff.clinic.id,
-      staffId: staff.id,
+      clinicId: clinic.id,
       templateId,
       answers,
       overallScore,

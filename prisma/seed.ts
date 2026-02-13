@@ -12,12 +12,36 @@ const DEFAULT_QUESTIONS = [
   },
   {
     id: "q2",
-    text: "スタッフの対応はいかがでしたか？",
+    text: "待ち時間は適切でしたか？",
     type: "rating",
     required: true,
   },
   {
     id: "q3",
+    text: "治療内容の説明は分かりやすかったですか？",
+    type: "rating",
+    required: true,
+  },
+  {
+    id: "q4",
+    text: "痛みへの配慮は十分でしたか？",
+    type: "rating",
+    required: true,
+  },
+  {
+    id: "q5",
+    text: "院内の清潔さはいかがでしたか？",
+    type: "rating",
+    required: true,
+  },
+  {
+    id: "q6",
+    text: "スタッフの対応はいかがでしたか？",
+    type: "rating",
+    required: true,
+  },
+  {
+    id: "q7",
     text: "当院を知人に薦めたいと思いますか？",
     type: "rating",
     required: true,
@@ -118,20 +142,21 @@ async function main() {
     const now = new Date()
     const sampleResponses = []
     for (let i = 0; i < 30; i++) {
-      const staff = staffMembers[i % staffMembers.length]
       const daysAgo = Math.floor(Math.random() * 60)
       const respondedAt = new Date(now.getTime() - daysAgo * 86400000)
 
-      const q1Score = Math.random() > 0.2 ? Math.ceil(Math.random() * 2) + 3 : Math.ceil(Math.random() * 3)
-      const q2Score = Math.random() > 0.2 ? Math.ceil(Math.random() * 2) + 3 : Math.ceil(Math.random() * 3)
-      const q3Score = Math.random() > 0.2 ? Math.ceil(Math.random() * 2) + 3 : Math.ceil(Math.random() * 3)
-      const overallScore = (q1Score + q2Score + q3Score) / 3
+      const scores: Record<string, number> = {}
+      for (let q = 1; q <= 7; q++) {
+        scores[`q${q}`] = Math.random() > 0.2 ? Math.ceil(Math.random() * 2) + 3 : Math.ceil(Math.random() * 3)
+      }
+      const scoreValues = Object.values(scores)
+      const overallScore = scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length
 
       sampleResponses.push({
         clinicId: clinic.id,
-        staffId: staff.id,
+        staffId: staffMembers[i % staffMembers.length].id,
         templateId: template.id,
-        answers: { q1: q1Score, q2: q2Score, q3: q3Score },
+        answers: scores,
         overallScore,
         freeText: i % 5 === 0 ? "丁寧に対応していただきありがとうございました。" : null,
         ipHash: `sample-hash-${i}`,
@@ -149,7 +174,7 @@ async function main() {
   console.log("\n--- Login Credentials ---")
   console.log("System Admin: admin@mieru-clinic.com / admin123")
   console.log("Clinic Admin: clinic@demo.com / clinic123")
-  console.log(`\nSurvey URL (demo): /s/demo-token-田中-花子`)
+  console.log(`\nSurvey URL (demo): /s/demo-dental`)
 }
 
 main()

@@ -3,40 +3,31 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { SurveyForm } from "@/components/survey/survey-form"
-import { StaffCardGrid, type StaffCardItem } from "@/components/staff/staff-card-grid"
 import { messages } from "@/lib/messages"
 import { ArrowLeft } from "lucide-react"
 import type { SurveyPageData } from "@/types/survey"
 
 interface SurveyStaffSelectorProps {
-  staffList: StaffCardItem[]
   clinicName: string
+  clinicSlug: string
   templateId: string
   questions: SurveyPageData["questions"]
 }
 
 export function SurveyStaffSelector({
-  staffList,
   clinicName,
+  clinicSlug,
   templateId,
   questions,
 }: SurveyStaffSelectorProps) {
-  const [selectedStaff, setSelectedStaff] = useState<StaffCardItem | null>(null)
-  // key to force re-mount SurveyForm on staff change
-  const [formKey, setFormKey] = useState(0)
+  const [started, setStarted] = useState(false)
 
-  function handleSelectStaff(staff: StaffCardItem) {
-    setSelectedStaff(staff)
-    setFormKey((k) => k + 1)
-  }
-
-  if (selectedStaff) {
+  if (started) {
     const pageData: SurveyPageData = {
-      staffName: selectedStaff.name,
       clinicName,
+      clinicSlug,
       templateId,
       questions,
-      qrToken: selectedStaff.qrToken,
     }
 
     return (
@@ -45,23 +36,23 @@ export function SurveyStaffSelector({
           variant="ghost"
           size="sm"
           className="gap-1.5"
-          onClick={() => setSelectedStaff(null)}
+          onClick={() => setStarted(false)}
         >
           <ArrowLeft className="h-4 w-4" />
-          {messages.tally.backToStaffSelect}
+          {messages.common.back}
         </Button>
         <div className="mx-auto max-w-md">
-          <SurveyForm key={formKey} data={pageData} />
+          <SurveyForm data={pageData} />
         </div>
       </div>
     )
   }
 
   return (
-    <StaffCardGrid
-      staffList={staffList}
-      onSelect={handleSelectStaff}
-      hint={messages.nav.selectStaffForSurvey}
-    />
+    <div className="text-center">
+      <Button onClick={() => setStarted(true)} size="lg">
+        {messages.survey.startButton}
+      </Button>
+    </div>
   )
 }

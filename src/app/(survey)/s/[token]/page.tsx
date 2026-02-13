@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation"
-import { getStaffByToken } from "@/lib/queries/surveys"
+import { getClinicBySlug } from "@/lib/queries/surveys"
 import { SurveyForm } from "@/components/survey/survey-form"
 import { messages } from "@/lib/messages"
 import type { SurveyPageData } from "@/types/survey"
@@ -9,10 +9,10 @@ interface SurveyPageProps {
 }
 
 export default async function SurveyPage({ params }: SurveyPageProps) {
-  const token = decodeURIComponent(params.token)
-  const staff = await getStaffByToken(token)
+  const slug = decodeURIComponent(params.token)
+  const clinic = await getClinicBySlug(slug)
 
-  if (!staff || !staff.clinic) {
+  if (!clinic) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4">
         <div className="w-full max-w-sm text-center">
@@ -24,17 +24,16 @@ export default async function SurveyPage({ params }: SurveyPageProps) {
     )
   }
 
-  const template = staff.clinic.surveyTemplates[0]
+  const template = clinic.surveyTemplates[0]
   if (!template) {
     return notFound()
   }
 
   const pageData: SurveyPageData = {
-    staffName: staff.name,
-    clinicName: staff.clinic.name,
+    clinicName: clinic.name,
+    clinicSlug: clinic.slug,
     templateId: template.id,
     questions: template.questions as SurveyPageData["questions"],
-    qrToken: token,
   }
 
   return (

@@ -57,6 +57,7 @@ export const messages = {
     skip: "スキップ",
     freeTextLabel: "ご意見・ご感想",
     freeTextPlaceholder: "ご意見・ご感想があればお聞かせください（任意）",
+    addComment: "コメントを追加する",
     invalidLink: "無効なリンクです",
     invalidLinkSub: "このリンクは無効です。スタッフにお声がけください。",
     alreadySubmitted: "すでにアンケートにご回答いただいております",
@@ -65,6 +66,8 @@ export const messages = {
     closeMessage: "お大事になさってください",
     visitAgain: "またのご来院をお待ちしております",
     tipLabel: "歯の豆知識",
+    backToTop: "TOPに戻る",
+    allRequiredHint: "すべての質問にご回答ください",
   },
   dashboard: {
     title: "ダッシュボード",
