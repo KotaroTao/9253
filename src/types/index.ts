@@ -12,14 +12,6 @@ export interface RecentResponse {
   } | null
 }
 
-export interface StaffRankingEntry {
-  staffId: string
-  name: string
-  role: string
-  avgScore: number
-  responseCount: number
-}
-
 export interface MonthlyTrend {
   month: string
   avgScore: number
@@ -35,7 +27,6 @@ export interface StaffWithStats {
   createdAt: Date | string
   updatedAt: Date | string
   surveyCount: number
-  avgScore: number
 }
 
 export interface StaffSurveySummary {

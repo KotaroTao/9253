@@ -11,7 +11,6 @@ import { SatisfactionTrendChart } from "@/components/dashboard/satisfaction-tren
 import { EmployeeRadarChart } from "@/components/dashboard/radar-chart"
 import { MonthlyChart } from "@/components/dashboard/monthly-chart"
 import { RecentResponses } from "@/components/dashboard/recent-responses"
-import { StaffRanking } from "@/components/dashboard/staff-ranking"
 import { AdminInlineAuth } from "@/components/dashboard/admin-inline-auth"
 import { QuestionBreakdown } from "@/components/dashboard/question-breakdown"
 import { messages } from "@/lib/messages"
@@ -162,10 +161,7 @@ export default async function DashboardPage() {
             {/* Question-level breakdown chart + improvement advice */}
             <QuestionBreakdown data={adminData.questionBreakdown} />
 
-            <div className="grid gap-6 lg:grid-cols-2">
-              <MonthlyChart data={adminData.monthlyTrend} />
-              <StaffRanking ranking={adminData.stats.staffRanking} />
-            </div>
+            <MonthlyChart data={adminData.monthlyTrend} />
 
             <RecentResponses responses={adminData.stats.recentResponses} />
           </div>
