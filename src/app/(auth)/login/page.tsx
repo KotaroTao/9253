@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
-import { LoginTabs } from "@/components/auth/login-tabs"
+import { LoginForm } from "@/components/auth/login-form"
 import {
   Card,
   CardContent,
@@ -32,7 +32,7 @@ export default async function LoginPage() {
           <h2 className="mb-4 text-center text-lg font-semibold">
             {messages.auth.login}
           </h2>
-          <LoginTabs />
+          <LoginForm />
         </CardContent>
       </Card>
     </div>
