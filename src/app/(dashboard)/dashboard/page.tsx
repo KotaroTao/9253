@@ -18,6 +18,7 @@ import { ClinicBenchmark } from "@/components/dashboard/clinic-benchmark"
 import { messages } from "@/lib/messages"
 import { Smartphone, ArrowRight } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
+import { DailyTip } from "@/components/dashboard/daily-tip"
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -101,6 +102,9 @@ export default async function DashboardPage() {
           {messages.dashboard.staffDashboardMessage}
         </p>
       </div>
+
+      {/* Daily patient satisfaction tip */}
+      <DailyTip />
 
       {/* Action card - only shown when NOT in admin mode */}
       {!adminMode && (
