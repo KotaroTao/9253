@@ -189,15 +189,16 @@ export const patientTips: PatientTip[] = [
 ]
 
 /**
- * 日付ベースのシード値を使った疑似ランダムで、その日のTipを1つ返す。
- * 同じ日であれば同じTipが返り、日が変わると別のTipが表示される。
+ * 日時ベースのシード値を使った疑似ランダムで、1時間ごとに切り替わるTipを返す。
+ * 同じ時間帯であれば同じTipが返り、1時間経過すると別のTipが表示される。
  */
-export function getTodayTip(): PatientTip {
-  const today = new Date()
+export function getCurrentTip(): PatientTip {
+  const now = new Date()
   const seed =
-    today.getFullYear() * 10000 +
-    (today.getMonth() + 1) * 100 +
-    today.getDate()
+    now.getFullYear() * 1000000 +
+    (now.getMonth() + 1) * 10000 +
+    now.getDate() * 100 +
+    now.getHours()
   const index = seed % patientTips.length
   return patientTips[index]
 }

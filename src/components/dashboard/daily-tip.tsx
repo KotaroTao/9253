@@ -1,8 +1,8 @@
-import { getTodayTip } from "@/lib/patient-tips"
+import { getCurrentTip } from "@/lib/patient-tips"
 import { Lightbulb } from "lucide-react"
 
-export function DailyTip() {
-  const tip = getTodayTip()
+export function PatientSatisfactionTip() {
+  const tip = getCurrentTip()
 
   return (
     <div className="rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50/80 to-white px-5 py-4">
@@ -13,7 +13,7 @@ export function DailyTip() {
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <p className="text-xs font-semibold text-amber-700">
-              今日のワンポイント
+              患者満足度アップのヒント
             </p>
             <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-600">
               {tip.category}

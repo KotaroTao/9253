@@ -16,7 +16,7 @@ import { QuestionBreakdown } from "@/components/dashboard/question-breakdown"
 import { messages } from "@/lib/messages"
 import { Smartphone, ArrowRight } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
-import { DailyTip } from "@/components/dashboard/daily-tip"
+import { PatientSatisfactionTip } from "@/components/dashboard/daily-tip"
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -98,8 +98,8 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* Daily patient satisfaction tip */}
-      <DailyTip />
+      {/* Patient satisfaction tip - changes every hour */}
+      <PatientSatisfactionTip />
 
       {/* Action card - only shown when NOT in admin mode */}
       {!adminMode && (
