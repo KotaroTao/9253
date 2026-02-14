@@ -4,7 +4,9 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
+  LogOut,
 } from "lucide-react"
+import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
 import { messages } from "@/lib/messages"
 import { AdminUnlockDialog } from "@/components/layout/admin-unlock-dialog"
@@ -48,6 +50,13 @@ export function BottomNav({ clinicSlug, isAdminMode = false, hasAdminPassword = 
         <div className="flex flex-1 items-center justify-center">
           <AdminUnlockDialog isAdminMode={isAdminMode} hasAdminPassword={hasAdminPassword} compact />
         </div>
+        <button
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-muted-foreground transition-colors active:bg-muted"
+        >
+          <LogOut className="h-5 w-5" />
+          <span className="text-[10px] font-medium">{messages.common.logout}</span>
+        </button>
       </div>
     </nav>
   )

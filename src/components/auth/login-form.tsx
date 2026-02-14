@@ -8,7 +8,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { messages } from "@/lib/messages"
 
-export function LoginForm() {
+interface LoginFormProps {
+  redirectTo?: string
+}
+
+export function LoginForm({ redirectTo = "/dashboard" }: LoginFormProps) {
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -32,7 +36,7 @@ export function LoginForm() {
         return
       }
 
-      router.push("/dashboard")
+      router.push(redirectTo)
       router.refresh()
     } catch {
       setError(messages.auth.loginError)

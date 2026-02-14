@@ -40,6 +40,8 @@ export const messages = {
   },
   auth: {
     login: "ログイン",
+    clinicLogin: "歯科医院ログイン",
+    adminLogin: "運営ログイン",
     email: "メールアドレス",
     password: "パスワード",
     loginButton: "ログインする",
