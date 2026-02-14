@@ -3,38 +3,35 @@ import bcrypt from "bcryptjs"
 
 const prisma = new PrismaClient()
 
-// 3 survey types: first visit, treatment, checkup
+// 3 survey types: first visit (8Q), treatment (6Q), checkup (6Q)
+// 設問方針: 特定の処置を前提にしない汎用的な設問。どんな診療内容でも回答可能。
 const FIRST_VISIT_QUESTIONS = [
-  { id: "fv1", text: "医院の見つけやすさ・アクセスは良かったですか？", type: "rating", required: true },
-  { id: "fv2", text: "受付の対応はいかがでしたか？", type: "rating", required: true },
-  { id: "fv3", text: "初診時の問診・カウンセリングは丁寧でしたか？", type: "rating", required: true },
-  { id: "fv4", text: "治療内容の説明は分かりやすかったですか？", type: "rating", required: true },
-  { id: "fv5", text: "治療費用の説明は十分でしたか？", type: "rating", required: true },
-  { id: "fv6", text: "院内の清潔さ・雰囲気はいかがでしたか？", type: "rating", required: true },
-  { id: "fv7", text: "待ち時間は適切でしたか？", type: "rating", required: true },
-  { id: "fv8", text: "次回も当院に通院したいと思いますか？", type: "rating", required: true },
+  { id: "fv1", text: "医院の第一印象（清潔さ・雰囲気）はいかがでしたか？", type: "rating", required: true },
+  { id: "fv2", text: "受付の対応は丁寧でしたか？", type: "rating", required: true },
+  { id: "fv3", text: "待ち時間は気にならない程度でしたか？", type: "rating", required: true },
+  { id: "fv4", text: "お悩みや症状についてのヒアリングは十分でしたか？", type: "rating", required: true },
+  { id: "fv5", text: "今後の方針や内容の説明は分かりやすかったですか？", type: "rating", required: true },
+  { id: "fv6", text: "費用に関する説明は十分でしたか？", type: "rating", required: true },
+  { id: "fv7", text: "不安や疑問を相談しやすい雰囲気でしたか？", type: "rating", required: true },
+  { id: "fv8", text: "今後も当院に通いたいと思いますか？", type: "rating", required: true },
 ]
 
 const TREATMENT_QUESTIONS = [
-  { id: "tr1", text: "本日の治療の満足度を教えてください", type: "rating", required: true },
-  { id: "tr2", text: "治療内容の説明は分かりやすかったですか？", type: "rating", required: true },
-  { id: "tr3", text: "痛みへの配慮は十分でしたか？", type: "rating", required: true },
-  { id: "tr4", text: "治療の進捗についての説明は適切でしたか？", type: "rating", required: true },
-  { id: "tr5", text: "待ち時間は適切でしたか？", type: "rating", required: true },
-  { id: "tr6", text: "スタッフの対応はいかがでしたか？", type: "rating", required: true },
-  { id: "tr7", text: "プライバシーへの配慮は十分でしたか？", type: "rating", required: true },
-  { id: "tr8", text: "当院での治療を知人に薦めたいと思いますか？", type: "rating", required: true },
+  { id: "tr1", text: "本日の診療についての説明は分かりやすかったですか？", type: "rating", required: true },
+  { id: "tr2", text: "不安や痛みへの配慮は十分でしたか？", type: "rating", required: true },
+  { id: "tr3", text: "質問や相談がしやすい雰囲気でしたか？", type: "rating", required: true },
+  { id: "tr4", text: "待ち時間は気にならない程度でしたか？", type: "rating", required: true },
+  { id: "tr5", text: "スタッフの対応は丁寧でしたか？", type: "rating", required: true },
+  { id: "tr6", text: "通院を続けることに安心感がありますか？", type: "rating", required: true },
 ]
 
 const CHECKUP_QUESTIONS = [
-  { id: "ck1", text: "定期検診の内容に満足されましたか？", type: "rating", required: true },
-  { id: "ck2", text: "歯のクリーニングの丁寧さはいかがでしたか？", type: "rating", required: true },
-  { id: "ck3", text: "口腔ケアのアドバイスは参考になりましたか？", type: "rating", required: true },
-  { id: "ck4", text: "予約の取りやすさはいかがでしたか？", type: "rating", required: true },
-  { id: "ck5", text: "待ち時間は適切でしたか？", type: "rating", required: true },
-  { id: "ck6", text: "スタッフの対応はいかがでしたか？", type: "rating", required: true },
-  { id: "ck7", text: "院内の清潔さ・雰囲気はいかがでしたか？", type: "rating", required: true },
-  { id: "ck8", text: "今後も当院で定期検診を続けたいと思いますか？", type: "rating", required: true },
+  { id: "ck1", text: "本日の診療内容についての説明は分かりやすかったですか？", type: "rating", required: true },
+  { id: "ck2", text: "丁寧に対応してもらえたと感じましたか？", type: "rating", required: true },
+  { id: "ck3", text: "質問や相談がしやすい雰囲気でしたか？", type: "rating", required: true },
+  { id: "ck4", text: "待ち時間は気にならない程度でしたか？", type: "rating", required: true },
+  { id: "ck5", text: "予約の取りやすさはいかがでしたか？", type: "rating", required: true },
+  { id: "ck6", text: "今後も当院に定期的に通いたいと思いますか？", type: "rating", required: true },
 ]
 
 const SURVEY_TEMPLATES = [
@@ -172,6 +169,21 @@ async function main() {
       const scoreValues = Object.values(scores)
       const overallScore = scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length
 
+      // Generate sample patient attributes
+      const visitTypes = ["first_visit", "revisit"] as const
+      const treatmentTypes = ["treatment", "checkup", "consultation"] as const
+      const complaints = ["pain", "filling_crown", "periodontal", "cosmetic", "prevention", "orthodontics", "other"]
+      const ageGroups = ["under_20", "30s", "40s", "50s", "60s_over"]
+      const genders = ["male", "female", "unspecified"]
+
+      const patientAttributes = {
+        visitType: tmplIndex === 0 ? "first_visit" : "revisit",
+        treatmentType: tmplIndex === 2 ? "checkup" : tmplIndex === 1 ? "treatment" : "treatment",
+        chiefComplaint: complaints[i % complaints.length],
+        ageGroup: ageGroups[i % ageGroups.length],
+        gender: genders[i % genders.length],
+      }
+
       sampleResponses.push({
         clinicId: clinic.id,
         staffId: staffMembers[i % staffMembers.length].id,
@@ -179,6 +191,7 @@ async function main() {
         answers: scores,
         overallScore,
         freeText: i % 5 === 0 ? "丁寧に対応していただきありがとうございました。" : null,
+        patientAttributes,
         ipHash: `sample-hash-${i}`,
         respondedAt,
       })

@@ -3,14 +3,13 @@ import { getClinicBySlug } from "@/lib/queries/surveys"
 import { prisma } from "@/lib/prisma"
 import { KioskSurvey } from "@/components/survey/kiosk-survey"
 import { messages } from "@/lib/messages"
-import type { SurveyPageData } from "@/types/survey"
+import type { SurveyPageData, SurveyTemplateInfo } from "@/types/survey"
 
 interface KioskPageProps {
   params: { token: string }
-  searchParams: { t?: string }
 }
 
-export default async function KioskPage({ params, searchParams }: KioskPageProps) {
+export default async function KioskPage({ params }: KioskPageProps) {
   const slug = decodeURIComponent(params.token)
   const clinic = await getClinicBySlug(slug)
 
@@ -25,13 +24,7 @@ export default async function KioskPage({ params, searchParams }: KioskPageProps
     )
   }
 
-  // Find template by ID from query param, or fall back to first active template
-  const templateId = searchParams.t
-  const template = templateId
-    ? clinic.surveyTemplates.find((t) => t.id === templateId)
-    : clinic.surveyTemplates[0]
-
-  if (!template) {
+  if (clinic.surveyTemplates.length === 0) {
     return notFound()
   }
 
@@ -46,17 +39,17 @@ export default async function KioskPage({ params, searchParams }: KioskPageProps
     },
   })
 
-  const pageData: SurveyPageData = {
-    clinicName: clinic.name,
-    clinicSlug: clinic.slug,
-    templateId: template.id,
-    templateName: template.name,
-    questions: template.questions as SurveyPageData["questions"],
-  }
+  const templates: SurveyTemplateInfo[] = clinic.surveyTemplates.map((t) => ({
+    id: t.id,
+    name: t.name,
+    questions: t.questions as SurveyPageData["questions"],
+  }))
 
   return (
     <KioskSurvey
-      data={pageData}
+      clinicName={clinic.name}
+      clinicSlug={clinic.slug}
+      templates={templates}
       initialTodayCount={todayCount}
     />
   )

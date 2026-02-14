@@ -5,31 +5,125 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { SurveyForm } from "@/components/survey/survey-form"
 import { messages } from "@/lib/messages"
-import { MessageSquare, LogOut, Lightbulb, RotateCcw } from "lucide-react"
+import {
+  MessageSquare,
+  LogOut,
+  Lightbulb,
+  RotateCcw,
+  ArrowRight,
+} from "lucide-react"
 import { Confetti } from "@/components/survey/confetti"
-import { DENTAL_TIPS } from "@/lib/constants"
-import type { SurveyPageData } from "@/types/survey"
+import {
+  DENTAL_TIPS,
+  VISIT_TYPES,
+  TREATMENT_TYPES,
+  CHIEF_COMPLAINTS,
+  AGE_GROUPS,
+  GENDERS,
+} from "@/lib/constants"
+import type { SurveyPageData, SurveyTemplateInfo, PatientAttributes } from "@/types/survey"
 
 interface KioskSurveyProps {
-  data: SurveyPageData
+  clinicName: string
+  clinicSlug: string
+  templates: SurveyTemplateInfo[]
   initialTodayCount: number
 }
 
-type KioskState = "ready" | "survey" | "thanks"
+type KioskState = "setup" | "survey" | "thanks"
 
-export function KioskSurvey({ data, initialTodayCount }: KioskSurveyProps) {
+function resolveTemplate(
+  templates: SurveyTemplateInfo[],
+  visitType: string,
+  treatmentType: string
+): SurveyTemplateInfo | undefined {
+  if (visitType === "first_visit") {
+    return templates.find((t) => t.name === "初診") ?? templates[0]
+  }
+  if (treatmentType === "checkup") {
+    return templates.find((t) => t.name === "定期検診") ?? templates[0]
+  }
+  return templates.find((t) => t.name === "治療中") ?? templates[0]
+}
+
+// Pill selector component for rapid tap selection
+function PillSelector({
+  label,
+  options,
+  value,
+  onChange,
+  columns = 4,
+}: {
+  label: string
+  options: readonly { value: string; label: string }[]
+  value: string
+  onChange: (v: string) => void
+  columns?: number
+}) {
+  return (
+    <div>
+      <p className="mb-2 text-xs font-semibold text-muted-foreground">{label}</p>
+      <div
+        className="grid gap-2"
+        style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+      >
+        {options.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(value === opt.value ? "" : opt.value)}
+            className={`rounded-xl border-2 px-2 py-3 text-sm font-bold transition-all active:scale-95 ${
+              value === opt.value
+                ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                : "border-muted bg-card text-foreground hover:border-primary/30"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function KioskSurvey({
+  clinicName,
+  clinicSlug,
+  templates,
+  initialTodayCount,
+}: KioskSurveyProps) {
   const router = useRouter()
-  const [state, setState] = useState<KioskState>("ready")
+  const [state, setState] = useState<KioskState>("setup")
   const [todayCount, setTodayCount] = useState(initialTodayCount)
   const [formKey, setFormKey] = useState(0)
   const [showExitConfirm, setShowExitConfirm] = useState(false)
-  const [randomTip, setRandomTip] = useState(() => DENTAL_TIPS[Math.floor(Math.random() * DENTAL_TIPS.length)])
+  const [randomTip, setRandomTip] = useState(
+    () => DENTAL_TIPS[Math.floor(Math.random() * DENTAL_TIPS.length)]
+  )
   const [showConfetti, setShowConfetti] = useState(false)
 
-  const resetToReady = useCallback(() => {
+  // Staff setup state
+  const [visitType, setVisitType] = useState("")
+  const [treatmentType, setTreatmentType] = useState("")
+  const [chiefComplaint, setChiefComplaint] = useState("")
+  const [ageGroup, setAgeGroup] = useState("")
+  const [gender, setGender] = useState("")
+  const [selectedData, setSelectedData] = useState<SurveyPageData | null>(null)
+  const [patientAttrs, setPatientAttrs] = useState<PatientAttributes | null>(null)
+
+  const canProceed = visitType !== "" && treatmentType !== ""
+
+  const resetToSetup = useCallback(() => {
     setFormKey((k) => k + 1)
-    setState("ready")
+    setState("setup")
     setShowConfetti(false)
+    setVisitType("")
+    setTreatmentType("")
+    setChiefComplaint("")
+    setAgeGroup("")
+    setGender("")
+    setSelectedData(null)
+    setPatientAttrs(null)
   }, [])
 
   const handleSurveyComplete = useCallback(() => {
@@ -40,43 +134,117 @@ export function KioskSurvey({ data, initialTodayCount }: KioskSurveyProps) {
   }, [])
 
   const handleStartSurvey = useCallback(() => {
+    if (!canProceed) return
+    const template = resolveTemplate(templates, visitType, treatmentType)
+    if (!template) return
+
+    setSelectedData({
+      clinicName,
+      clinicSlug,
+      templateId: template.id,
+      templateName: template.name,
+      questions: template.questions,
+    })
+    setPatientAttrs({
+      visitType: visitType as PatientAttributes["visitType"],
+      treatmentType: treatmentType as PatientAttributes["treatmentType"],
+      chiefComplaint,
+      ageGroup,
+      gender,
+    })
     setState("survey")
-  }, [])
+  }, [canProceed, templates, visitType, treatmentType, chiefComplaint, ageGroup, gender, clinicName, clinicSlug])
 
   const handleExit = useCallback(() => {
     router.push("/dashboard")
   }, [router])
 
-  // Ready screen
-  if (state === "ready") {
+  // Staff setup screen - optimized for quick taps during busy hours
+  if (state === "setup") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-blue-50/80 to-white px-4">
-        <div className="w-full max-w-sm space-y-8 text-center">
-          <div>
-            <p className="text-sm text-muted-foreground">{data.clinicName}</p>
-            {data.templateName && (
-              <p className="mt-2 inline-block rounded-full bg-primary/10 px-4 py-1 text-sm font-semibold text-primary">
-                {data.templateName}
-              </p>
-            )}
-          </div>
+      <div className="flex min-h-screen flex-col bg-gradient-to-b from-slate-50 to-white">
+        <div className="flex-1 overflow-y-auto px-4 pb-28 pt-6">
+          <div className="mx-auto max-w-lg space-y-5">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-lg font-bold">{messages.patientSetup.title}</h1>
+                <p className="text-xs text-muted-foreground">{clinicName}</p>
+              </div>
+              <div className="flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-xs text-muted-foreground">
+                <MessageSquare className="h-3 w-3" />
+                {todayCount}{messages.common.countSuffix}
+              </div>
+            </div>
 
-          <Button
-            size="lg"
-            className="h-20 w-full text-xl shadow-lg shadow-blue-200/50"
-            onClick={handleStartSurvey}
-          >
-            {messages.survey.startButton}
-          </Button>
+            {/* Visit type */}
+            <PillSelector
+              label={messages.patientSetup.visitType}
+              options={VISIT_TYPES}
+              value={visitType}
+              onChange={setVisitType}
+              columns={2}
+            />
 
-          <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-xs text-muted-foreground">
-            <MessageSquare className="h-3.5 w-3.5" />
-            {messages.kiosk.todayCount}: {todayCount}{messages.common.countSuffix}
+            {/* Treatment type */}
+            <PillSelector
+              label={messages.patientSetup.treatmentType}
+              options={TREATMENT_TYPES}
+              value={treatmentType}
+              onChange={setTreatmentType}
+              columns={3}
+            />
+
+            {/* Chief complaint */}
+            <PillSelector
+              label={messages.patientSetup.chiefComplaint}
+              options={CHIEF_COMPLAINTS}
+              value={chiefComplaint}
+              onChange={setChiefComplaint}
+              columns={4}
+            />
+
+            {/* Age group */}
+            <PillSelector
+              label={messages.patientSetup.ageGroup}
+              options={AGE_GROUPS}
+              value={ageGroup}
+              onChange={setAgeGroup}
+              columns={5}
+            />
+
+            {/* Gender */}
+            <PillSelector
+              label={messages.patientSetup.gender}
+              options={GENDERS}
+              value={gender}
+              onChange={setGender}
+              columns={3}
+            />
           </div>
         </div>
 
-        {/* Exit button - intentionally subtle */}
-        <div className="fixed bottom-4 right-4">
+        {/* Fixed bottom action */}
+        <div className="fixed bottom-0 left-0 right-0 border-t bg-card p-4 safe-area-pb">
+          <div className="mx-auto max-w-lg">
+            <Button
+              className="h-14 w-full text-lg shadow-lg"
+              onClick={handleStartSurvey}
+              disabled={!canProceed}
+            >
+              {messages.patientSetup.handToPatient}
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+            {!canProceed && (
+              <p className="mt-2 text-center text-xs text-muted-foreground">
+                {messages.patientSetup.requiredHint}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Exit button */}
+        <div className="fixed bottom-4 right-4" style={{ bottom: "5rem" }}>
           {showExitConfirm ? (
             <div className="flex items-center gap-2 rounded-lg border bg-card p-3 shadow-lg">
               <p className="text-sm">{messages.kiosk.exitConfirm}</p>
@@ -121,10 +289,7 @@ export function KioskSurvey({ data, initialTodayCount }: KioskSurveyProps) {
 
             <p className="text-sm text-muted-foreground">{messages.survey.closeMessage}</p>
 
-            <Button
-              className="h-16 w-full text-lg"
-              onClick={resetToReady}
-            >
+            <Button className="h-16 w-full text-lg" onClick={resetToSetup}>
               <RotateCcw className="mr-2 h-5 w-5" />
               {messages.survey.backToTop}
             </Button>
@@ -135,13 +300,16 @@ export function KioskSurvey({ data, initialTodayCount }: KioskSurveyProps) {
   }
 
   // Survey - patient answering
+  if (!selectedData) return null
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-8">
       <div className="w-full max-w-md">
         <SurveyForm
           key={formKey}
-          data={data}
+          data={selectedData}
           onComplete={handleSurveyComplete}
+          patientAttributes={patientAttrs ?? undefined}
           kioskMode
         />
       </div>

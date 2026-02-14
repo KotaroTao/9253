@@ -250,6 +250,16 @@ export const messages = {
     launchKiosk: "アンケートを開始する",
     launchDesc: "タブレットをそのまま患者さまにお渡しください",
   },
+  patientSetup: {
+    title: "患者情報",
+    visitType: "来院区分",
+    treatmentType: "診療内容",
+    chiefComplaint: "主訴",
+    ageGroup: "年代",
+    gender: "性別",
+    handToPatient: "患者さまに渡す",
+    requiredHint: "来院区分と診療内容を選択してください",
+  },
   settings: {
     title: "設定",
     clinicInfo: "クリニック情報",
