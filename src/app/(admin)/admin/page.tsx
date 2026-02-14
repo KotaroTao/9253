@@ -2,6 +2,7 @@ import { getAllClinics } from "@/lib/queries/clinics"
 import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
+import { TipManager } from "@/components/admin/tip-manager"
 
 export default async function AdminPage() {
   const [{ clinics, total }, totalResponses] = await Promise.all([
@@ -38,6 +39,9 @@ export default async function AdminPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Tip Management */}
+      <TipManager />
 
       {/* Clinic list */}
       <Card>

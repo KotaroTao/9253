@@ -201,3 +201,14 @@ export function getTodayTip(): PatientTip {
   const index = seed % patientTips.length
   return patientTips[index]
 }
+
+/**
+ * 指定された切り替え間隔（分）に基づいて、現在のTipを1つ返す。
+ * 同一interval内であれば同じTipが返り、interval経過後に次のTipが表示される。
+ */
+export function getCurrentTip(tips: PatientTip[], rotationMinutes: number): PatientTip {
+  if (tips.length === 0) return getTodayTip()
+  const intervalMs = Math.max(1, rotationMinutes) * 60 * 1000
+  const index = Math.floor(Date.now() / intervalMs) % tips.length
+  return tips[index]
+}

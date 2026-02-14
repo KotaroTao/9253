@@ -19,7 +19,8 @@ import { messages } from "@/lib/messages"
 import { Smartphone, ArrowRight } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { DailyTip } from "@/components/dashboard/daily-tip"
-import { getTodayTip } from "@/lib/patient-tips"
+import { getTodayTip, getCurrentTip } from "@/lib/patient-tips"
+import type { PatientTip } from "@/lib/patient-tips"
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -44,10 +45,25 @@ export default async function DashboardPage() {
   const hasAdminPassword = !!settings?.adminPassword
   const kioskUrl = clinic ? `/kiosk/${encodeURIComponent(clinic.slug)}` : "/dashboard/survey-start"
 
-  // Daily tip: custom (from settings) or default (date-based)
-  const customDailyTip = settings?.dailyTip as { category: string; title: string; content: string } | undefined
-  const dailyTip = customDailyTip ?? getTodayTip()
+  // Daily tip: clinic custom > platform tips (with rotation) > hardcoded fallback
+  const customDailyTip = settings?.dailyTip as PatientTip | undefined
+  let dailyTip: PatientTip
   const isCustomTip = !!customDailyTip
+  if (customDailyTip) {
+    dailyTip = customDailyTip
+  } else {
+    const platformSetting = await prisma.platformSetting.findUnique({
+      where: { key: "patientTips" },
+    })
+    if (platformSetting) {
+      const val = platformSetting.value as unknown as { tips: PatientTip[]; rotationMinutes: number }
+      dailyTip = val.tips.length > 0
+        ? getCurrentTip(val.tips, val.rotationMinutes)
+        : getTodayTip()
+    } else {
+      dailyTip = getTodayTip()
+    }
+  }
   const role = session.user.role
   const canEditTip = role === "clinic_admin" || role === "system_admin"
 
