@@ -102,6 +102,14 @@ model SurveyResponse {
   @@map("survey_responses")
 }
 
+model PlatformSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_settings")
+}
+
 model MonthlyClinicMetrics {
   id                         String   @id @default(uuid()) @db.Uuid
   clinicId                   String   @map("clinic_id") @db.Uuid
