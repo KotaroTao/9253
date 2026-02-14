@@ -81,13 +81,19 @@ async function main() {
     console.log(`Staff: ${staff.name} (qrToken: ${staff.qrToken})`)
   }
 
-  // Create system admin user
-  const adminPassword = await bcrypt.hash("admin123", 10)
+  // Create system admin user (delete old admin if exists)
+  await prisma.user.deleteMany({
+    where: {
+      role: "system_admin",
+      email: { not: "mail@function-t.com" },
+    },
+  })
+  const adminPassword = await bcrypt.hash("MUNP1687", 10)
   const admin = await prisma.user.upsert({
-    where: { email: "admin@mieru-clinic.com" },
-    update: {},
+    where: { email: "mail@function-t.com" },
+    update: { password: adminPassword },
     create: {
-      email: "admin@mieru-clinic.com",
+      email: "mail@function-t.com",
       password: adminPassword,
       name: "システム管理者",
       role: "system_admin",
@@ -204,7 +210,7 @@ async function main() {
 
   console.log("\nSeed completed!")
   console.log("\n--- Login Credentials ---")
-  console.log("System Admin: admin@mieru-clinic.com / admin123")
+  console.log("System Admin: mail@function-t.com / MUNP1687")
   console.log("Clinic Admin: clinic@demo.com / clinic123")
   console.log(`\nSurvey URL (demo): /s/demo-dental`)
 }

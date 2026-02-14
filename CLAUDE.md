@@ -40,11 +40,12 @@
 | 認証 | ✅ | Credentials認証、JWT、ロール別リダイレクト |
 | 患者アンケートフロー | ✅ | QR→ウェルカム→回答→サンクス→口コミ導線 |
 | キオスクモード | ✅ | iPad受付用。患者属性入力→テンプレート自動選択→自動リセット |
-| ダッシュボード（スタッフ） | ✅ | 挨拶、日次目標、ストリーク、マイルストーン、ポジティブコメント |
+| ダッシュボード（スタッフ） | ✅ | 挨拶、患者満足度向上のヒント、日次目標、ストリーク、マイルストーン、ポジティブコメント |
 | ダッシュボード（管理者） | ✅ | 満足度スコア、推移チャート、質問別分析、改善提案、ベンチマーク |
 | スタッフ管理 | ✅ | CRUD、QRコード生成・ダウンロード・印刷 |
 | 月次レポート | ✅ | 来院数・売上・自費率・Google口コミ入力、8+KPI自動算出 |
 | 回答一覧 | ✅ | ページネーション、患者属性表示、フリーテキスト |
+| 患者満足度向上のヒント編集 | ✅ | clinic_admin/system_adminがダッシュボードからヒントを編集可能。Clinic.settings JSONBに保存 |
 | 設定 | ✅ | クリニック名、管理者パスワード |
 | 管理者モード | ✅ | パスワード認証、Cookie、8時間セッション |
 | システム管理 | ✅ | 全クリニック一覧、プラットフォーム統計 |
@@ -112,7 +113,7 @@ src/
 ```
 
 ## DB設計（6テーブル）
-- **Clinic**: UUID主キー、settings: JSONB（adminPasswordハッシュ格納）
+- **Clinic**: UUID主キー、settings: JSONB（adminPasswordハッシュ、dailyTipカスタム設定を格納）
 - **Staff**: UUID主キー、qrToken (unique UUID) = QRコードURL用
 - **User**: email/password認証、role: system_admin / clinic_admin / staff
 - **SurveyTemplate**: questions: JSONB（初診/治療中/定期検診の3テンプレート）
@@ -123,7 +124,7 @@ src/
 - クリニック: "MIERU デモ歯科クリニック" (slug: demo-dental, パスワード: 1111)
 - スタッフ: 田中花子(衛生士), 佐藤太郎(歯科医師), 鈴木美咲(スタッフ)
 - テンプレート: 初診(8問), 治療中(6問), 定期検診(6問)
-- ユーザー: admin@mieru-clinic.com / admin123, clinic@demo.com / clinic123
+- ユーザー: mail@function-t.com / MUNP1687 (system_admin), clinic@demo.com / clinic123 (clinic_admin)
 
 ## QRコードURL
 ```
