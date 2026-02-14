@@ -29,34 +29,7 @@ export interface StaffWithStats {
   surveyCount: number
 }
 
-export interface StaffSurveySummary {
-  id: string
-  title: string
-  status: string
-  startsAt: Date | string
-  endsAt: Date | string | null
-  responseCount: number
-  overallScore: number | null
-}
-
-export interface StaffSurveyCategoryScore {
-  category: string
-  label: string
-  score: number
-}
-
-export interface StaffSurveyResult {
-  id: string
-  title: string
-  status: string
-  responseCount: number
-  overallScore: number | null
-  categoryScores: StaffSurveyCategoryScore[]
-  freeTexts: string[]
-}
-
 export interface SatisfactionTrend {
   month: string
   patientSatisfaction: number | null
-  employeeSatisfaction: number | null
 }

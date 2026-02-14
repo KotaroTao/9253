@@ -20,7 +20,6 @@ model Clinic {
   users                User[]
   surveyTemplates      SurveyTemplate[]
   surveyResponses      SurveyResponse[]
-  staffSurveys         StaffSurvey[]
   monthlyClinicMetrics MonthlyClinicMetrics[]
 
   @@map("clinics")
@@ -101,40 +100,6 @@ model SurveyResponse {
   @@index([respondedAt])
   @@index([clinicId, respondedAt])
   @@map("survey_responses")
-}
-
-model StaffSurvey {
-  id        String   @id @default(uuid()) @db.Uuid
-  clinicId  String   @map("clinic_id") @db.Uuid
-  title     String
-  status    String   @default("active")
-  startsAt  DateTime @default(now()) @map("starts_at")
-  endsAt    DateTime? @map("ends_at")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  clinic    Clinic                @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  responses StaffSurveyResponse[]
-
-  @@index([clinicId])
-  @@index([status])
-  @@map("staff_surveys")
-}
-
-model StaffSurveyResponse {
-  id          String   @id @default(uuid()) @db.Uuid
-  surveyId    String   @map("survey_id") @db.Uuid
-  answers     Json
-  freeText    String?  @map("free_text")
-  overallScore Float?  @map("overall_score")
-  categoryScores Json? @map("category_scores")
-  respondedAt DateTime @default(now()) @map("responded_at")
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  survey StaffSurvey @relation(fields: [surveyId], references: [id], onDelete: Cascade)
-
-  @@index([surveyId])
-  @@map("staff_survey_responses")
 }
 
 model MonthlyClinicMetrics {
