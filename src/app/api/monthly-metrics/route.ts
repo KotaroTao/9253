@@ -3,10 +3,6 @@ import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
 import { prisma } from "@/lib/prisma"
-import {
-  getStaffMonthlyTallies,
-  getClinicMonthlyTallyTotals,
-} from "@/lib/queries/tallies"
 import { getMonthlySurveyCount, getMonthlySurveyQuality } from "@/lib/queries/stats"
 
 export async function GET(request: NextRequest) {
@@ -29,11 +25,8 @@ export async function GET(request: NextRequest) {
   const prevYear = prevDate.getFullYear()
   const prevMonth = prevDate.getMonth() + 1
 
-  const [staffMetrics, clinicTotals, prevTotals, summary, prevSummary, surveyCount, surveyQuality] =
+  const [summary, prevSummary, surveyCount, surveyQuality] =
     await Promise.all([
-      getStaffMonthlyTallies(clinicId, year, month),
-      getClinicMonthlyTallyTotals(clinicId, year, month),
-      getClinicMonthlyTallyTotals(clinicId, prevYear, prevMonth),
       prisma.monthlyClinicMetrics.findUnique({
         where: { clinicId_year_month: { clinicId, year, month } },
         select: { totalVisits: true, totalRevenue: true, selfPayRevenue: true, googleReviewCount: true, googleReviewRating: true },
@@ -46,12 +39,7 @@ export async function GET(request: NextRequest) {
       getMonthlySurveyQuality(clinicId, year, month),
     ])
 
-  const hasPrev = prevTotals.newPatientCount > 0 || prevTotals.selfPayProposalCount > 0
-
   return successResponse({
-    staffMetrics,
-    clinicTotals,
-    prevTotals: hasPrev ? prevTotals : null,
     summary: summary ?? null,
     prevSummary: prevSummary?.totalVisits != null ? prevSummary : null,
     surveyCount,

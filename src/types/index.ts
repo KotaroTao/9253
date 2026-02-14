@@ -64,22 +64,8 @@ export interface StaffSurveyResult {
   freeTexts: string[]
 }
 
-export interface StaffTallyMetrics {
-  staffId: string
-  name: string
-  role: string
-  newPatientCount: number
-  maintenanceTransitionCount: number
-  selfPayProposalCount: number
-  selfPayConversionCount: number
-  maintenanceRate: number | null
-  selfPayRate: number | null
-}
-
-export interface FourMetricsTrend {
+export interface SatisfactionTrend {
   month: string
   patientSatisfaction: number | null
   employeeSatisfaction: number | null
-  maintenanceRate: number | null
-  selfPayRate: number | null
 }

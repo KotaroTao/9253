@@ -26,8 +26,6 @@ interface MonthlySummarySectionProps {
   prevSummary: MonthlySummary | null
   surveyCount: number
   surveyQuality: SurveyQuality | null
-  tallyNewPatientCount: number
-  tallySelfPayConversionCount: number
 }
 
 function DerivedDelta({ current, prev }: { current: number | null; prev: number | null }) {
@@ -50,8 +48,6 @@ export function MonthlySummarySection({
   prevSummary,
   surveyCount,
   surveyQuality,
-  tallyNewPatientCount,
-  tallySelfPayConversionCount,
 }: MonthlySummarySectionProps) {
   const [totalVisits, setTotalVisits] = useState(initialSummary?.totalVisits?.toString() ?? "")
   const [totalRevenue, setTotalRevenue] = useState(initialSummary?.totalRevenue?.toString() ?? "")
@@ -77,7 +73,6 @@ export function MonthlySummarySection({
   const revenue = totalRevenue ? parseInt(totalRevenue) : null
   const selfPay = selfPayRevenue ? parseInt(selfPayRevenue) : null
   const gReviewCount = reviewCount ? parseInt(reviewCount) : null
-  const gReviewRating = reviewRating ? parseFloat(reviewRating) : null
 
   const doSave = useCallback(async () => {
     const v = totalVisits ? parseInt(totalVisits) : null
@@ -126,10 +121,8 @@ export function MonthlySummarySection({
 
   // Derived metrics
   const surveyResponseRate = visits != null && visits > 0 ? Math.round((surveyCount / visits) * 1000) / 10 : null
-  const newPatientRate = visits != null && visits > 0 ? Math.round((tallyNewPatientCount / visits) * 1000) / 10 : null
   const selfPayRatio = revenue != null && revenue > 0 && selfPay != null ? Math.round((selfPay / revenue) * 1000) / 10 : null
   const revenuePerVisit = visits != null && visits > 0 && revenue != null ? Math.round((revenue / visits) * 10) / 10 : null
-  const selfPayUnitPrice = selfPay != null && tallySelfPayConversionCount > 0 ? Math.round((selfPay / tallySelfPayConversionCount) * 10) / 10 : null
   const insuranceRevenue = revenue != null && selfPay != null ? revenue - selfPay : null
 
   // Previous month derived
@@ -143,10 +136,8 @@ export function MonthlySummarySection({
 
   const derivedMetrics = [
     { label: messages.monthlyMetrics.surveyResponseRate, value: surveyResponseRate, format: (v: number) => `${v}%`, detail: surveyCount > 0 ? `(${surveyCount}/${visits})` : null, prev: null as number | null },
-    { label: messages.monthlyMetrics.newPatientRate, value: newPatientRate, format: (v: number) => `${v}%`, detail: tallyNewPatientCount > 0 ? `(${tallyNewPatientCount}/${visits})` : null, prev: null as number | null },
     { label: messages.monthlyMetrics.selfPayRatio, value: selfPayRatio, format: (v: number) => `${v}%`, detail: selfPay != null && revenue != null ? `(${selfPay}/${revenue})` : null, prev: prevSelfPayRatio },
     { label: messages.monthlyMetrics.revenuePerVisit, value: revenuePerVisit, format: (v: number) => `${v}${messages.monthlyMetrics.unitMan}`, detail: null, prev: prevRevenuePerVisit },
-    { label: messages.monthlyMetrics.selfPayUnitPrice, value: selfPayUnitPrice, format: (v: number) => `${v}${messages.monthlyMetrics.unitMan}`, detail: selfPay != null && tallySelfPayConversionCount > 0 ? `(${selfPay}/${tallySelfPayConversionCount})` : null, prev: null as number | null },
     { label: messages.monthlyMetrics.insuranceRevenue, value: insuranceRevenue, format: (v: number) => `${v}${messages.monthlyMetrics.unitMan}`, detail: null, prev: prevRevenue != null && prevSelfPay != null ? prevRevenue - prevSelfPay : null },
   ]
 

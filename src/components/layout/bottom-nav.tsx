@@ -4,7 +4,6 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
-  ClipboardPen,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { messages } from "@/lib/messages"
@@ -25,12 +24,6 @@ export function BottomNav({ clinicSlug, isAdminMode = false, hasAdminPassword = 
       label: messages.nav.dashboard,
       icon: LayoutDashboard,
       isActive: pathname === "/dashboard",
-    },
-    {
-      href: "/dashboard/tally",
-      label: messages.nav.tally,
-      icon: ClipboardPen,
-      isActive: pathname.startsWith("/dashboard/tally"),
     },
   ]
 

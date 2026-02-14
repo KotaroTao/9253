@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { DEFAULTS } from "@/lib/constants"
-import type { FourMetricsTrend } from "@/types"
+import type { SatisfactionTrend } from "@/types"
 
 export async function getDashboardStats(
   clinicId: string,
@@ -228,10 +228,10 @@ export async function getQuestionBreakdown(
   return result
 }
 
-export async function getFourMetricsTrend(
+export async function getSatisfactionTrend(
   clinicId: string,
   months: number = 12
-): Promise<FourMetricsTrend[]> {
+): Promise<SatisfactionTrend[]> {
   const startDate = new Date()
   startDate.setMonth(startDate.getMonth() - months)
   startDate.setDate(1)
@@ -271,64 +271,22 @@ export async function getFourMetricsTrend(
     employeeMonthly.set(key, Math.round((total / s.responses.length) * 10) / 10)
   }
 
-  // 3. Tally-based metrics (staff daily tallies aggregated by month)
-  const tallies = await prisma.staffDailyTally.findMany({
-    where: { clinicId, date: { gte: startDate } },
-    select: { date: true, type: true, count: true },
-  })
-
-  const tallyMonthly = new Map<
-    string,
-    { new_patient: number; maintenance_transition: number; self_pay_proposal: number; self_pay_conversion: number }
-  >()
-  for (const t of tallies) {
-    const key = `${t.date.getFullYear()}-${String(t.date.getMonth() + 1).padStart(2, "0")}`
-    const e = tallyMonthly.get(key) ?? {
-      new_patient: 0, maintenance_transition: 0, self_pay_proposal: 0, self_pay_conversion: 0,
-    }
-    if (t.type in e) {
-      e[t.type as keyof typeof e] += t.count
-    }
-    tallyMonthly.set(key, e)
-  }
-
-  const metricsMonthly = new Map<
-    string,
-    { maintenanceRate: number | null; selfPayRate: number | null }
-  >()
-  for (const [key, m] of Array.from(tallyMonthly.entries())) {
-    metricsMonthly.set(key, {
-      maintenanceRate:
-        m.new_patient > 0
-          ? Math.round((m.maintenance_transition / m.new_patient) * 1000) / 10
-          : null,
-      selfPayRate:
-        m.self_pay_proposal > 0
-          ? Math.round((m.self_pay_conversion / m.self_pay_proposal) * 1000) / 10
-          : null,
-    })
-  }
-
   // Merge all months
   const allMonths = new Set<string>([
     ...Array.from(patientMonthly.keys()),
     ...Array.from(employeeMonthly.keys()),
-    ...Array.from(metricsMonthly.keys()),
   ])
 
   return Array.from(allMonths)
     .sort()
     .map((month) => {
       const patient = patientMonthly.get(month)
-      const metrics = metricsMonthly.get(month)
       return {
         month,
         patientSatisfaction: patient && patient.count > 0
           ? Math.round((patient.total / patient.count) * 10) / 10
           : null,
         employeeSatisfaction: employeeMonthly.get(month) ?? null,
-        maintenanceRate: metrics?.maintenanceRate ?? null,
-        selfPayRate: metrics?.selfPayRate ?? null,
       }
     })
 }

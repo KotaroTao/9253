@@ -22,7 +22,6 @@ model Clinic {
   surveyResponses      SurveyResponse[]
   staffSurveys         StaffSurvey[]
   monthlyClinicMetrics MonthlyClinicMetrics[]
-  dailyTallies         StaffDailyTally[]
 
   @@map("clinics")
 }
@@ -39,7 +38,6 @@ model Staff {
 
   clinic          Clinic           @relation(fields: [clinicId], references: [id], onDelete: Cascade)
   surveyResponses SurveyResponse[]
-  dailyTallies    StaffDailyTally[]
   user            User?
 
   @@index([clinicId])
@@ -157,23 +155,4 @@ model MonthlyClinicMetrics {
   @@unique([clinicId, year, month])
   @@index([clinicId])
   @@map("monthly_clinic_metrics")
-}
-
-model StaffDailyTally {
-  id        String   @id @default(uuid()) @db.Uuid
-  staffId   String   @map("staff_id") @db.Uuid
-  clinicId  String   @map("clinic_id") @db.Uuid
-  date      DateTime @db.Date
-  type      String
-  count     Int      @default(0)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  staff  Staff  @relation(fields: [staffId], references: [id], onDelete: Cascade)
-  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-
-  @@unique([staffId, date, type])
-  @@index([clinicId, date])
-  @@index([staffId, date])
-  @@map("staff_daily_tallies")
 }

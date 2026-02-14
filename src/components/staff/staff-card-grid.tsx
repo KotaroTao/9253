@@ -9,7 +9,6 @@ export interface StaffCardItem {
   name: string
   role: string
   qrToken: string
-  todayCount?: number
 }
 
 const ROLE_COLORS: Record<string, string> = {
@@ -57,11 +56,6 @@ export function StaffCardGrid({ staffList, onSelect, hint }: StaffCardGridProps)
                 >
                   {STAFF_ROLE_LABELS[staff.role] ?? staff.role}
                 </span>
-                {staff.todayCount != null && staff.todayCount > 0 && (
-                  <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
-                    {messages.tally.todaySurveys} {staff.todayCount}{messages.common.countSuffix}
-                  </span>
-                )}
               </div>
             </div>
           </button>

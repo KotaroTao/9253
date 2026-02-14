@@ -7,15 +7,13 @@ interface MetricItem {
   prev?: number | null
 }
 
-interface FourMetricsData {
+interface SatisfactionData {
   patientSatisfaction: MetricItem
   employeeSatisfaction: MetricItem
-  maintenanceRate: MetricItem
-  selfPayRate: MetricItem
 }
 
-interface FourMetricsCardsProps {
-  data: FourMetricsData
+interface SatisfactionCardsProps {
+  data: SatisfactionData
 }
 
 function Delta({ current, prev }: { current: number | null; prev?: number | null }) {
@@ -40,7 +38,7 @@ function Delta({ current, prev }: { current: number | null; prev?: number | null
   )
 }
 
-export function FourMetricsCards({ data }: FourMetricsCardsProps) {
+export function SatisfactionCards({ data }: SatisfactionCardsProps) {
   const cards = [
     {
       title: messages.dashboard.satisfaction,
@@ -49,7 +47,6 @@ export function FourMetricsCards({ data }: FourMetricsCardsProps) {
       suffix: data.patientSatisfaction.current != null && data.patientSatisfaction.current > 0 ? " / 5.0" : "",
       color: "text-blue-600",
       metric: data.patientSatisfaction,
-      isScore: true,
     },
     {
       title: messages.dashboard.employeeSatisfaction,
@@ -59,32 +56,11 @@ export function FourMetricsCards({ data }: FourMetricsCardsProps) {
       color: "text-green-600",
       note: data.employeeSatisfaction.current == null ? messages.dashboard.noSurveyData : undefined,
       metric: data.employeeSatisfaction,
-      isScore: true,
-    },
-    {
-      title: messages.dashboard.maintenanceRate,
-      value: data.maintenanceRate.current != null
-        ? data.maintenanceRate.current.toFixed(1) : "-",
-      suffix: data.maintenanceRate.current != null ? "%" : "",
-      color: "text-orange-600",
-      note: data.maintenanceRate.current == null ? messages.dashboard.noMetricsData : undefined,
-      metric: data.maintenanceRate,
-      isScore: false,
-    },
-    {
-      title: messages.dashboard.selfPayRate,
-      value: data.selfPayRate.current != null
-        ? data.selfPayRate.current.toFixed(1) : "-",
-      suffix: data.selfPayRate.current != null ? "%" : "",
-      color: "text-purple-600",
-      note: data.selfPayRate.current == null ? messages.dashboard.noMetricsData : undefined,
-      metric: data.selfPayRate,
-      isScore: false,
     },
   ]
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2">
       {cards.map((card) => (
         <Card key={card.title}>
           <CardHeader className="pb-2">
