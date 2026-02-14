@@ -28,7 +28,6 @@ export async function getStaffWithStats(clinicId: string) {
       by: ["staffId"],
       where: { clinicId },
       _count: { id: true },
-      _avg: { overallScore: true },
     }),
   ])
 
@@ -37,9 +36,6 @@ export async function getStaffWithStats(clinicId: string) {
       s.staffId,
       {
         surveyCount: s._count.id,
-        avgScore: s._avg.overallScore
-          ? Math.round(s._avg.overallScore * 10) / 10
-          : 0,
       },
     ])
   )
@@ -55,7 +51,6 @@ export async function getStaffWithStats(clinicId: string) {
       createdAt: s.createdAt,
       updatedAt: s.updatedAt,
       surveyCount: stat?.surveyCount ?? 0,
-      avgScore: stat?.avgScore ?? 0,
     }
   })
 }

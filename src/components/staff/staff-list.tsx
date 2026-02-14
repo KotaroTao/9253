@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
 import { STAFF_ROLE_LABELS } from "@/lib/constants"
 import { StaffFormDialog } from "@/components/staff/staff-form-dialog"
-import { Star, Plus, Pencil } from "lucide-react"
+import { Plus, Pencil } from "lucide-react"
 import type { StaffWithStats } from "@/types"
 
 interface StaffListProps {
@@ -60,11 +60,7 @@ export function StaffList({ staffList, clinicId }: StaffListProps) {
                 </span>
               </div>
 
-              <div className="mt-3 flex items-center gap-4 text-sm">
-                <div className="flex items-center gap-1">
-                  <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-                  <span>{staff.avgScore > 0 ? staff.avgScore.toFixed(1) : "-"}</span>
-                </div>
+              <div className="mt-3 text-sm">
                 <span className="text-muted-foreground">
                   {staff.surveyCount} {messages.staff.surveyCount}
                 </span>

@@ -15,7 +15,7 @@ export async function getDashboardStats(
       }),
   }
 
-  const [totalResponses, avgScore, recentResponses, staffRanking] =
+  const [totalResponses, avgScore, recentResponses] =
     await Promise.all([
       prisma.surveyResponse.count({ where }),
 
@@ -37,33 +37,7 @@ export async function getDashboardStats(
           staff: { select: { name: true, role: true } },
         },
       }),
-
-      prisma.surveyResponse.groupBy({
-        by: ["staffId"],
-        where,
-        _avg: { overallScore: true },
-        _count: { id: true },
-      }),
     ])
-
-  // Enrich staff ranking with names
-  const staffIds = staffRanking.map((s) => s.staffId).filter((id): id is string => id !== null)
-  const staffNames = await prisma.staff.findMany({
-    where: { id: { in: staffIds } },
-    select: { id: true, name: true, role: true },
-  })
-  const staffNameMap = new Map(staffNames.map((s) => [s.id, s]))
-
-  const enrichedStaffRanking = staffRanking
-    .filter((s) => s.staffId !== null)
-    .map((s) => ({
-      staffId: s.staffId as string,
-      name: staffNameMap.get(s.staffId as string)?.name ?? "不明",
-      role: staffNameMap.get(s.staffId as string)?.role ?? "staff",
-      avgScore: s._avg.overallScore ?? 0,
-      responseCount: s._count.id,
-    }))
-    .sort((a, b) => b.avgScore - a.avgScore)
 
   // Previous month avg for comparison
   const prevStart = new Date()
@@ -84,7 +58,6 @@ export async function getDashboardStats(
     prevAverageScore:
       prevAvg._count._all > 0 ? (prevAvg._avg.overallScore ?? null) : null,
     recentResponses,
-    staffRanking: enrichedStaffRanking,
   }
 }
 
