@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Sidebar } from "@/components/layout/sidebar"
 import { DashboardHeader } from "@/components/layout/dashboard-header"
 import { BottomNav } from "@/components/layout/bottom-nav"
+import { AdminFooter } from "@/components/layout/admin-footer"
 import { cn } from "@/lib/utils"
 
 interface DashboardShellProps {
@@ -76,6 +77,7 @@ export function DashboardShell({
         <main className="flex-1 overflow-y-auto bg-muted/40 p-4 lg:p-6">
           {children}
         </main>
+        <AdminFooter />
       </div>
     </div>
   )
