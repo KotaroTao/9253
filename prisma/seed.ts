@@ -28,7 +28,7 @@ const TREATMENT_QUESTIONS = [
 const CHECKUP_QUESTIONS = [
   { id: "ck1", text: "本日の診療内容についての説明は分かりやすかったですか？", type: "rating", required: true },
   { id: "ck2", text: "丁寧に対応してもらえたと感じましたか？", type: "rating", required: true },
-  { id: "ck3", text: "お口の健康について参考になるアドバイスはありましたか？", type: "rating", required: true },
+  { id: "ck3", text: "質問や相談がしやすい雰囲気でしたか？", type: "rating", required: true },
   { id: "ck4", text: "待ち時間は気にならない程度でしたか？", type: "rating", required: true },
   { id: "ck5", text: "予約の取りやすさはいかがでしたか？", type: "rating", required: true },
   { id: "ck6", text: "今後も当院に定期的に通いたいと思いますか？", type: "rating", required: true },
