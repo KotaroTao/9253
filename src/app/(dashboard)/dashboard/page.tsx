@@ -61,6 +61,7 @@ export default async function DashboardPage() {
     satisfactionTrend: Awaited<ReturnType<typeof getSatisfactionTrend>>
     questionBreakdown: TemplateQuestionScores[]
     showSummaryBanner: boolean
+    summaryBannerLabel: string
     benchmark: Awaited<ReturnType<typeof getClinicBenchmark>>
   } | null = null
 
@@ -89,6 +90,7 @@ export default async function DashboardPage() {
       satisfactionTrend,
       questionBreakdown,
       showSummaryBanner: lastMonthSummary == null,
+      summaryBannerLabel: `${prevYear}年${prevMonth}月`,
       benchmark,
     }
   }
@@ -134,7 +136,7 @@ export default async function DashboardPage() {
           {adminData.showSummaryBanner && (
             <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
               <p className="text-sm text-amber-800">
-                {new Date().getFullYear()}年{new Date().getMonth()}月の{messages.monthlyMetrics.summaryNotEntered}
+                {adminData.summaryBannerLabel}の{messages.monthlyMetrics.summaryNotEntered}
               </p>
               <Link
                 href="/dashboard/metrics"
