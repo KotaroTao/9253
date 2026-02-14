@@ -3,7 +3,8 @@ import Link from "next/link"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { isAdminMode } from "@/lib/admin-mode"
-import { getDashboardStats, getMonthlyTrend, getFourMetricsTrend } from "@/lib/queries/stats"
+import { getDashboardStats, getMonthlyTrend, getFourMetricsTrend, getQuestionBreakdown } from "@/lib/queries/stats"
+import type { TemplateQuestionScores } from "@/lib/queries/stats"
 import { getLatestStaffSurveyScore } from "@/lib/queries/staff-surveys"
 import { getLatestTallyMetrics } from "@/lib/queries/tallies"
 import { FourMetricsCards } from "@/components/dashboard/four-metrics-cards"
@@ -13,6 +14,7 @@ import { MonthlyChart } from "@/components/dashboard/monthly-chart"
 import { RecentResponses } from "@/components/dashboard/recent-responses"
 import { StaffRanking } from "@/components/dashboard/staff-ranking"
 import { AdminInlineAuth } from "@/components/dashboard/admin-inline-auth"
+import { QuestionBreakdown } from "@/components/dashboard/question-breakdown"
 import { messages } from "@/lib/messages"
 import { Smartphone, ClipboardPen, ArrowRight } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
@@ -55,6 +57,7 @@ export default async function DashboardPage() {
     fourMetricsTrend: Awaited<ReturnType<typeof getFourMetricsTrend>>
     staffSurveyScore: Awaited<ReturnType<typeof getLatestStaffSurveyScore>>
     latestTallyMetrics: Awaited<ReturnType<typeof getLatestTallyMetrics>>
+    questionBreakdown: TemplateQuestionScores[]
     showSummaryBanner: boolean
   } | null = null
 
@@ -64,13 +67,14 @@ export default async function DashboardPage() {
     const prevYear = prevDate.getFullYear()
     const prevMonth = prevDate.getMonth() + 1
 
-    const [stats, monthlyTrend, fourMetricsTrend, staffSurveyScore, latestTallyMetrics, lastMonthSummary] =
+    const [stats, monthlyTrend, fourMetricsTrend, staffSurveyScore, latestTallyMetrics, questionBreakdown, lastMonthSummary] =
       await Promise.all([
         getDashboardStats(clinicId),
         getMonthlyTrend(clinicId),
         getFourMetricsTrend(clinicId),
         getLatestStaffSurveyScore(clinicId),
         getLatestTallyMetrics(clinicId),
+        getQuestionBreakdown(clinicId),
         prisma.monthlyClinicMetrics.findUnique({
           where: { clinicId_year_month: { clinicId, year: prevYear, month: prevMonth } },
           select: { totalVisits: true },
@@ -83,6 +87,7 @@ export default async function DashboardPage() {
       fourMetricsTrend,
       staffSurveyScore,
       latestTallyMetrics,
+      questionBreakdown,
       showSummaryBanner: lastMonthSummary == null,
     }
   }
@@ -97,37 +102,39 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* 2 big action cards - always shown */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <a
-          href={kioskUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="group flex items-center gap-4 rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-6 transition-all hover:border-blue-400 hover:shadow-md active:scale-[0.98]"
-        >
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-blue-500 text-white shadow-sm">
-            <Smartphone className="h-8 w-8" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xl font-bold text-blue-900">{messages.dashboard.startSurvey}</p>
-            <p className="text-sm text-blue-600/70">{messages.dashboard.startSurveyDesc}</p>
-          </div>
-          <ArrowRight className="h-5 w-5 shrink-0 text-blue-400 transition-transform group-hover:translate-x-1" />
-        </a>
-        <Link
-          href="/dashboard/tally"
-          className="group flex items-center gap-4 rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-6 transition-all hover:border-emerald-400 hover:shadow-md active:scale-[0.98]"
-        >
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-sm">
-            <ClipboardPen className="h-8 w-8" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xl font-bold text-emerald-900">{messages.dashboard.startTally}</p>
-            <p className="text-sm text-emerald-600/70">{messages.dashboard.startTallyDesc}</p>
-          </div>
-          <ArrowRight className="h-5 w-5 shrink-0 text-emerald-400 transition-transform group-hover:translate-x-1" />
-        </Link>
-      </div>
+      {/* 2 big action cards - only shown when NOT in admin mode */}
+      {!adminMode && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <a
+            href={kioskUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-center gap-4 rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-6 transition-all hover:border-blue-400 hover:shadow-md active:scale-[0.98]"
+          >
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-blue-500 text-white shadow-sm">
+              <Smartphone className="h-8 w-8" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xl font-bold text-blue-900">{messages.dashboard.startSurvey}</p>
+              <p className="text-sm text-blue-600/70">{messages.dashboard.startSurveyDesc}</p>
+            </div>
+            <ArrowRight className="h-5 w-5 shrink-0 text-blue-400 transition-transform group-hover:translate-x-1" />
+          </a>
+          <Link
+            href="/dashboard/tally"
+            className="group flex items-center gap-4 rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-6 transition-all hover:border-emerald-400 hover:shadow-md active:scale-[0.98]"
+          >
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-sm">
+              <ClipboardPen className="h-8 w-8" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xl font-bold text-emerald-900">{messages.dashboard.startTally}</p>
+              <p className="text-sm text-emerald-600/70">{messages.dashboard.startTallyDesc}</p>
+            </div>
+            <ArrowRight className="h-5 w-5 shrink-0 text-emerald-400 transition-transform group-hover:translate-x-1" />
+          </Link>
+        </div>
+      )}
 
       {/* Admin analytics - only when admin mode is active */}
       {adminData && (
@@ -170,6 +177,9 @@ export default async function DashboardPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Question-level breakdown chart + improvement advice */}
+            <QuestionBreakdown data={adminData.questionBreakdown} />
 
             <div className="grid gap-6 lg:grid-cols-2">
               <MonthlyChart data={adminData.monthlyTrend} />

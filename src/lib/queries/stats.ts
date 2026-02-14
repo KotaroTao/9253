@@ -164,6 +164,70 @@ export async function getMonthlyTrend(clinicId: string, months: number = 6) {
   }))
 }
 
+export interface QuestionScore {
+  questionId: string
+  text: string
+  avgScore: number
+  count: number
+}
+
+export interface TemplateQuestionScores {
+  templateName: string
+  responseCount: number
+  questions: QuestionScore[]
+}
+
+export async function getQuestionBreakdown(
+  clinicId: string
+): Promise<TemplateQuestionScores[]> {
+  // Get active templates with question definitions
+  const templates = await prisma.surveyTemplate.findMany({
+    where: { clinicId, isActive: true },
+    select: { id: true, name: true, questions: true },
+  })
+
+  // Get all survey responses grouped by template
+  const responses = await prisma.surveyResponse.findMany({
+    where: { clinicId },
+    select: { templateId: true, answers: true },
+  })
+
+  const result: TemplateQuestionScores[] = []
+
+  for (const template of templates) {
+    const questions = template.questions as Array<{ id: string; text: string }>
+    const templateResponses = responses.filter((r) => r.templateId === template.id)
+
+    if (templateResponses.length === 0) continue
+
+    const questionScores: QuestionScore[] = questions.map((q) => {
+      let total = 0
+      let count = 0
+      for (const r of templateResponses) {
+        const answers = r.answers as Record<string, number>
+        if (answers[q.id] != null) {
+          total += answers[q.id]
+          count++
+        }
+      }
+      return {
+        questionId: q.id,
+        text: q.text,
+        avgScore: count > 0 ? Math.round((total / count) * 10) / 10 : 0,
+        count,
+      }
+    })
+
+    result.push({
+      templateName: template.name,
+      responseCount: templateResponses.length,
+      questions: questionScores,
+    })
+  }
+
+  return result
+}
+
 export async function getFourMetricsTrend(
   clinicId: string,
   months: number = 12
