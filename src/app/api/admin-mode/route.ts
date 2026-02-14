@@ -4,8 +4,14 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { setAdminModeCookie, clearAdminModeCookie } from "@/lib/admin-mode"
+import { checkRateLimit } from "@/lib/rate-limit"
 import { messages } from "@/lib/messages"
-import { DEFAULT_ADMIN_PASSWORD } from "@/lib/constants"
+import { DEFAULT_ADMIN_PASSWORD, ADMIN_MODE_RATE_LIMIT_WINDOW_MS, ADMIN_MODE_RATE_LIMIT_MAX } from "@/lib/constants"
+
+const adminRateLimitOptions = {
+  windowMs: ADMIN_MODE_RATE_LIMIT_WINDOW_MS,
+  maxRequests: ADMIN_MODE_RATE_LIMIT_MAX,
+}
 
 async function getClinicPassword(clinicId: string) {
   const clinic = await prisma.clinic.findUnique({
@@ -30,6 +36,11 @@ export async function POST(request: NextRequest) {
   const clinicId = authResult.user.clinicId
   if (!clinicId) {
     return errorResponse(messages.errors.clinicNotAssociated, 400)
+  }
+
+  const { allowed } = checkRateLimit(`admin-unlock:${clinicId}`, adminRateLimitOptions)
+  if (!allowed) {
+    return errorResponse(messages.adminMode.rateLimited, 429)
   }
 
   const body = await request.json()
@@ -57,6 +68,11 @@ export async function PATCH(request: NextRequest) {
   const clinicId = authResult.user.clinicId
   if (!clinicId) {
     return errorResponse(messages.errors.clinicNotAssociated, 400)
+  }
+
+  const { allowed } = checkRateLimit(`admin-password-change:${clinicId}`, adminRateLimitOptions)
+  if (!allowed) {
+    return errorResponse(messages.adminMode.rateLimited, 429)
   }
 
   const body = await request.json()
