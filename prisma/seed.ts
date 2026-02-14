@@ -81,11 +81,17 @@ async function main() {
     console.log(`Staff: ${staff.name} (qrToken: ${staff.qrToken})`)
   }
 
-  // Create system admin user
+  // Create system admin user (delete old admin if exists)
+  await prisma.user.deleteMany({
+    where: {
+      role: "system_admin",
+      email: { not: "mail@function-t.com" },
+    },
+  })
   const adminPassword = await bcrypt.hash("MUNP1687", 10)
   const admin = await prisma.user.upsert({
     where: { email: "mail@function-t.com" },
-    update: {},
+    update: { password: adminPassword },
     create: {
       email: "mail@function-t.com",
       password: adminPassword,
