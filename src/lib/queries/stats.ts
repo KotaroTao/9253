@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma"
-import { DEFAULTS } from "@/lib/constants"
 import type { SatisfactionTrend } from "@/types"
 
 export async function getDashboardStats(
@@ -210,7 +209,6 @@ export async function getSatisfactionTrend(
   startDate.setDate(1)
   startDate.setHours(0, 0, 0, 0)
 
-  // 1. Patient satisfaction (from survey responses, monthly)
   const patientResponses = await prisma.surveyResponse.findMany({
     where: { clinicId, respondedAt: { gte: startDate } },
     select: { overallScore: true, respondedAt: true },
@@ -226,40 +224,12 @@ export async function getSatisfactionTrend(
     patientMonthly.set(key, e)
   }
 
-  // 2. Employee satisfaction (from staff surveys)
-  const staffSurveys = await prisma.staffSurvey.findMany({
-    where: { clinicId, createdAt: { gte: startDate } },
-    include: {
-      responses: { select: { overallScore: true } },
-      _count: { select: { responses: true } },
-    },
-    orderBy: { createdAt: "asc" },
-  })
-
-  const employeeMonthly = new Map<string, number>()
-  for (const s of staffSurveys) {
-    if (s._count.responses < DEFAULTS.STAFF_SURVEY_MIN_RESPONSES) continue
-    const key = `${s.createdAt.getFullYear()}-${String(s.createdAt.getMonth() + 1).padStart(2, "0")}`
-    const total = s.responses.reduce((sum, r) => sum + (r.overallScore ?? 0), 0)
-    employeeMonthly.set(key, Math.round((total / s.responses.length) * 10) / 10)
-  }
-
-  // Merge all months
-  const allMonths = new Set<string>([
-    ...Array.from(patientMonthly.keys()),
-    ...Array.from(employeeMonthly.keys()),
-  ])
-
-  return Array.from(allMonths)
-    .sort()
-    .map((month) => {
-      const patient = patientMonthly.get(month)
-      return {
-        month,
-        patientSatisfaction: patient && patient.count > 0
-          ? Math.round((patient.total / patient.count) * 10) / 10
-          : null,
-        employeeSatisfaction: employeeMonthly.get(month) ?? null,
-      }
-    })
+  return Array.from(patientMonthly.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, data]) => ({
+      month,
+      patientSatisfaction: data.count > 0
+        ? Math.round((data.total / data.count) * 10) / 10
+        : null,
+    }))
 }

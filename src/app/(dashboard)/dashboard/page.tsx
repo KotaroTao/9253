@@ -5,12 +5,10 @@ import { prisma } from "@/lib/prisma"
 import { isAdminMode } from "@/lib/admin-mode"
 import { getDashboardStats, getMonthlyTrend, getSatisfactionTrend, getQuestionBreakdown } from "@/lib/queries/stats"
 import type { TemplateQuestionScores } from "@/lib/queries/stats"
-import { getLatestStaffSurveyScore } from "@/lib/queries/staff-surveys"
 import { getStaffEngagementData } from "@/lib/queries/engagement"
 import { getClinicBenchmark } from "@/lib/queries/benchmark"
 import { SatisfactionCards } from "@/components/dashboard/satisfaction-cards"
 import { SatisfactionTrendChart } from "@/components/dashboard/satisfaction-trend"
-import { EmployeeRadarChart } from "@/components/dashboard/radar-chart"
 import { MonthlyChart } from "@/components/dashboard/monthly-chart"
 import { RecentResponses } from "@/components/dashboard/recent-responses"
 import { AdminInlineAuth } from "@/components/dashboard/admin-inline-auth"
@@ -60,7 +58,6 @@ export default async function DashboardPage() {
     stats: Awaited<ReturnType<typeof getDashboardStats>>
     monthlyTrend: Awaited<ReturnType<typeof getMonthlyTrend>>
     satisfactionTrend: Awaited<ReturnType<typeof getSatisfactionTrend>>
-    staffSurveyScore: Awaited<ReturnType<typeof getLatestStaffSurveyScore>>
     questionBreakdown: TemplateQuestionScores[]
     showSummaryBanner: boolean
     benchmark: Awaited<ReturnType<typeof getClinicBenchmark>>
@@ -72,12 +69,11 @@ export default async function DashboardPage() {
     const prevYear = prevDate.getFullYear()
     const prevMonth = prevDate.getMonth() + 1
 
-    const [stats, monthlyTrend, satisfactionTrend, staffSurveyScore, questionBreakdown, lastMonthSummary, benchmark] =
+    const [stats, monthlyTrend, satisfactionTrend, questionBreakdown, lastMonthSummary, benchmark] =
       await Promise.all([
         getDashboardStats(clinicId),
         getMonthlyTrend(clinicId),
         getSatisfactionTrend(clinicId),
-        getLatestStaffSurveyScore(clinicId),
         getQuestionBreakdown(clinicId),
         prisma.monthlyClinicMetrics.findUnique({
           where: { clinicId_year_month: { clinicId, year: prevYear, month: prevMonth } },
@@ -90,7 +86,6 @@ export default async function DashboardPage() {
       stats,
       monthlyTrend,
       satisfactionTrend,
-      staffSurveyScore,
       questionBreakdown,
       showSummaryBanner: lastMonthSummary == null,
       benchmark,
@@ -191,19 +186,10 @@ export default async function DashboardPage() {
                   current: adminData.stats.averageScore,
                   prev: adminData.stats.prevAverageScore ?? null,
                 },
-                employeeSatisfaction: {
-                  current: adminData.staffSurveyScore?.overallScore ?? null,
-                },
               }}
             />
 
-            <div className="grid gap-6 lg:grid-cols-2">
-              <SatisfactionTrendChart data={adminData.satisfactionTrend} />
-              <EmployeeRadarChart
-                categoryScores={adminData.staffSurveyScore?.categoryScores ?? []}
-                surveyTitle={adminData.staffSurveyScore?.surveyTitle}
-              />
-            </div>
+            <SatisfactionTrendChart data={adminData.satisfactionTrend} />
           </div>
 
           {/* Benchmark Section */}

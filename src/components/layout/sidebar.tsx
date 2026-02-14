@@ -9,7 +9,6 @@ import {
   Settings,
   LogOut,
   Shield,
-  Heart,
   BarChart3,
   Smartphone,
 } from "lucide-react"
@@ -33,7 +32,6 @@ const dailyItems = [
 const analyticsItems = [
   { href: "/dashboard/metrics", label: messages.nav.monthlyMetrics, icon: BarChart3 },
   { href: "/dashboard/surveys", label: messages.nav.surveys, icon: ClipboardList },
-  { href: "/dashboard/staff-survey", label: messages.nav.staffSurvey, icon: Heart },
 ]
 
 const adminItems = [

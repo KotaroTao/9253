@@ -64,15 +64,6 @@ export function SatisfactionTrendChart({ data }: SatisfactionTrendChartProps) {
               name={messages.dashboard.satisfaction}
               connectNulls
             />
-            <Line
-              type="monotone"
-              dataKey="employeeSatisfaction"
-              stroke="#16a34a"
-              strokeWidth={2}
-              dot={{ r: 3 }}
-              name={messages.dashboard.employeeSatisfaction}
-              connectNulls
-            />
           </LineChart>
         </ResponsiveContainer>
       </CardContent>

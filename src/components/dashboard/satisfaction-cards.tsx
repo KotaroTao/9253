@@ -7,13 +7,10 @@ interface MetricItem {
   prev?: number | null
 }
 
-interface SatisfactionData {
-  patientSatisfaction: MetricItem
-  employeeSatisfaction: MetricItem
-}
-
 interface SatisfactionCardsProps {
-  data: SatisfactionData
+  data: {
+    patientSatisfaction: MetricItem
+  }
 }
 
 function Delta({ current, prev }: { current: number | null; prev?: number | null }) {
@@ -39,51 +36,24 @@ function Delta({ current, prev }: { current: number | null; prev?: number | null
 }
 
 export function SatisfactionCards({ data }: SatisfactionCardsProps) {
-  const cards = [
-    {
-      title: messages.dashboard.satisfaction,
-      value: data.patientSatisfaction.current != null && data.patientSatisfaction.current > 0
-        ? data.patientSatisfaction.current.toFixed(1) : "-",
-      suffix: data.patientSatisfaction.current != null && data.patientSatisfaction.current > 0 ? " / 5.0" : "",
-      color: "text-blue-600",
-      metric: data.patientSatisfaction,
-    },
-    {
-      title: messages.dashboard.employeeSatisfaction,
-      value: data.employeeSatisfaction.current != null
-        ? data.employeeSatisfaction.current.toFixed(1) : "-",
-      suffix: data.employeeSatisfaction.current != null ? " / 5.0" : "",
-      color: "text-green-600",
-      note: data.employeeSatisfaction.current == null ? messages.dashboard.noSurveyData : undefined,
-      metric: data.employeeSatisfaction,
-    },
-  ]
+  const { current, prev } = data.patientSatisfaction
+  const value = current != null && current > 0 ? current.toFixed(1) : "-"
+  const suffix = current != null && current > 0 ? " / 5.0" : ""
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      {cards.map((card) => (
-        <Card key={card.title}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              {card.title}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-baseline">
-              <span className={`text-2xl font-bold ${card.color}`}>
-                {card.value}
-              </span>
-              <span className="text-sm font-normal text-muted-foreground">
-                {card.suffix}
-              </span>
-              <Delta current={card.metric.current} prev={card.metric.prev} />
-            </div>
-            {card.note && (
-              <p className="mt-1 text-xs text-muted-foreground">{card.note}</p>
-            )}
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">
+          {messages.dashboard.satisfaction}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-baseline">
+          <span className="text-2xl font-bold text-blue-600">{value}</span>
+          <span className="text-sm font-normal text-muted-foreground">{suffix}</span>
+          <Delta current={current} prev={prev} />
+        </div>
+      </CardContent>
+    </Card>
   )
 }
