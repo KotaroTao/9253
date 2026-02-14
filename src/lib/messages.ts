@@ -158,11 +158,11 @@ export const messages = {
     activate: "有効化",
   },
   adminMode: {
-    unlock: "管理者モード",
+    unlock: "管理者ログイン",
     unlockDesc: "管理者パスワードを入力してください",
     lock: "管理者モードを終了",
     password: "管理者パスワード",
-    unlockButton: "解除する",
+    unlockButton: "ログイン",
     wrongPassword: "パスワードが正しくありません",
     noPasswordSet: "管理者パスワードが未設定です",
     setupPrompt: "設定画面で管理者パスワードを設定してください",
