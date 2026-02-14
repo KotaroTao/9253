@@ -31,7 +31,10 @@ export const DEFAULTS = {
   MIN_STAR_RATING: 1,
   MAX_STAR_RATING: 5,
   STAFF_SURVEY_MIN_RESPONSES: 5,
+  DAILY_SURVEY_GOAL: 15,
 } as const
+
+export const MILESTONES = [50, 100, 250, 500, 1000, 2000, 5000, 10000] as const
 
 // Patient attribute options for staff setup screen
 export const VISIT_TYPES = [
