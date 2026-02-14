@@ -186,7 +186,6 @@ async function main() {
 
       sampleResponses.push({
         clinicId: clinic.id,
-        staffId: staffMembers[i % staffMembers.length].id,
         templateId: templates[tmplIndex].id,
         answers: scores,
         overallScore,
