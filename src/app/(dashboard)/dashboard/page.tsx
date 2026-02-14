@@ -19,6 +19,7 @@ import { messages } from "@/lib/messages"
 import { Smartphone, ArrowRight } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { DailyTip } from "@/components/dashboard/daily-tip"
+import { getTodayTip } from "@/lib/patient-tips"
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -42,6 +43,13 @@ export default async function DashboardPage() {
   const settings = clinic?.settings as Record<string, unknown> | null
   const hasAdminPassword = !!settings?.adminPassword
   const kioskUrl = clinic ? `/kiosk/${encodeURIComponent(clinic.slug)}` : "/dashboard/survey-start"
+
+  // Daily tip: custom (from settings) or default (date-based)
+  const customDailyTip = settings?.dailyTip as { category: string; title: string; content: string } | undefined
+  const dailyTip = customDailyTip ?? getTodayTip()
+  const isCustomTip = !!customDailyTip
+  const role = session.user.role
+  const canEditTip = role === "clinic_admin" || role === "system_admin"
 
   // Time-aware greeting
   const hour = new Date().getHours()
@@ -106,7 +114,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Daily patient satisfaction tip */}
-      <DailyTip />
+      <DailyTip tip={dailyTip} canEdit={canEditTip} isCustom={isCustomTip} />
 
       {/* Action card - only shown when NOT in admin mode */}
       {!adminMode && (
