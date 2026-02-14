@@ -3,12 +3,11 @@ import Link from "next/link"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { isAdminMode } from "@/lib/admin-mode"
-import { getDashboardStats, getMonthlyTrend, getFourMetricsTrend, getQuestionBreakdown } from "@/lib/queries/stats"
+import { getDashboardStats, getMonthlyTrend, getSatisfactionTrend, getQuestionBreakdown } from "@/lib/queries/stats"
 import type { TemplateQuestionScores } from "@/lib/queries/stats"
 import { getLatestStaffSurveyScore } from "@/lib/queries/staff-surveys"
-import { getLatestTallyMetrics } from "@/lib/queries/tallies"
-import { FourMetricsCards } from "@/components/dashboard/four-metrics-cards"
-import { FourMetricsTrendChart } from "@/components/dashboard/four-metrics-trend"
+import { SatisfactionCards } from "@/components/dashboard/satisfaction-cards"
+import { SatisfactionTrendChart } from "@/components/dashboard/satisfaction-trend"
 import { EmployeeRadarChart } from "@/components/dashboard/radar-chart"
 import { MonthlyChart } from "@/components/dashboard/monthly-chart"
 import { RecentResponses } from "@/components/dashboard/recent-responses"
@@ -16,7 +15,7 @@ import { StaffRanking } from "@/components/dashboard/staff-ranking"
 import { AdminInlineAuth } from "@/components/dashboard/admin-inline-auth"
 import { QuestionBreakdown } from "@/components/dashboard/question-breakdown"
 import { messages } from "@/lib/messages"
-import { Smartphone, ClipboardPen, ArrowRight } from "lucide-react"
+import { Smartphone, ArrowRight } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 
 export default async function DashboardPage() {
@@ -54,9 +53,8 @@ export default async function DashboardPage() {
   let adminData: {
     stats: Awaited<ReturnType<typeof getDashboardStats>>
     monthlyTrend: Awaited<ReturnType<typeof getMonthlyTrend>>
-    fourMetricsTrend: Awaited<ReturnType<typeof getFourMetricsTrend>>
+    satisfactionTrend: Awaited<ReturnType<typeof getSatisfactionTrend>>
     staffSurveyScore: Awaited<ReturnType<typeof getLatestStaffSurveyScore>>
-    latestTallyMetrics: Awaited<ReturnType<typeof getLatestTallyMetrics>>
     questionBreakdown: TemplateQuestionScores[]
     showSummaryBanner: boolean
   } | null = null
@@ -67,13 +65,12 @@ export default async function DashboardPage() {
     const prevYear = prevDate.getFullYear()
     const prevMonth = prevDate.getMonth() + 1
 
-    const [stats, monthlyTrend, fourMetricsTrend, staffSurveyScore, latestTallyMetrics, questionBreakdown, lastMonthSummary] =
+    const [stats, monthlyTrend, satisfactionTrend, staffSurveyScore, questionBreakdown, lastMonthSummary] =
       await Promise.all([
         getDashboardStats(clinicId),
         getMonthlyTrend(clinicId),
-        getFourMetricsTrend(clinicId),
+        getSatisfactionTrend(clinicId),
         getLatestStaffSurveyScore(clinicId),
-        getLatestTallyMetrics(clinicId),
         getQuestionBreakdown(clinicId),
         prisma.monthlyClinicMetrics.findUnique({
           where: { clinicId_year_month: { clinicId, year: prevYear, month: prevMonth } },
@@ -84,9 +81,8 @@ export default async function DashboardPage() {
     adminData = {
       stats,
       monthlyTrend,
-      fourMetricsTrend,
+      satisfactionTrend,
       staffSurveyScore,
-      latestTallyMetrics,
       questionBreakdown,
       showSummaryBanner: lastMonthSummary == null,
     }
@@ -102,38 +98,23 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* 2 big action cards - only shown when NOT in admin mode */}
+      {/* Action card - only shown when NOT in admin mode */}
       {!adminMode && (
-        <div className="grid gap-4 sm:grid-cols-2">
-          <a
-            href={kioskUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group flex items-center gap-4 rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-6 transition-all hover:border-blue-400 hover:shadow-md active:scale-[0.98]"
-          >
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-blue-500 text-white shadow-sm">
-              <Smartphone className="h-8 w-8" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xl font-bold text-blue-900">{messages.dashboard.startSurvey}</p>
-              <p className="text-sm text-blue-600/70">{messages.dashboard.startSurveyDesc}</p>
-            </div>
-            <ArrowRight className="h-5 w-5 shrink-0 text-blue-400 transition-transform group-hover:translate-x-1" />
-          </a>
-          <Link
-            href="/dashboard/tally"
-            className="group flex items-center gap-4 rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-6 transition-all hover:border-emerald-400 hover:shadow-md active:scale-[0.98]"
-          >
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-sm">
-              <ClipboardPen className="h-8 w-8" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xl font-bold text-emerald-900">{messages.dashboard.startTally}</p>
-              <p className="text-sm text-emerald-600/70">{messages.dashboard.startTallyDesc}</p>
-            </div>
-            <ArrowRight className="h-5 w-5 shrink-0 text-emerald-400 transition-transform group-hover:translate-x-1" />
-          </Link>
-        </div>
+        <a
+          href={kioskUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group flex items-center gap-4 rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-6 transition-all hover:border-blue-400 hover:shadow-md active:scale-[0.98]"
+        >
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-blue-500 text-white shadow-sm">
+            <Smartphone className="h-8 w-8" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xl font-bold text-blue-900">{messages.dashboard.startSurvey}</p>
+            <p className="text-sm text-blue-600/70">{messages.dashboard.startSurveyDesc}</p>
+          </div>
+          <ArrowRight className="h-5 w-5 shrink-0 text-blue-400 transition-transform group-hover:translate-x-1" />
+        </a>
       )}
 
       {/* Admin analytics - only when admin mode is active */}
@@ -189,13 +170,13 @@ export default async function DashboardPage() {
             <RecentResponses responses={adminData.stats.recentResponses} />
           </div>
 
-          {/* Clinic Performance Section */}
+          {/* Satisfaction Section */}
           <div className="space-y-4">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
-              {messages.dashboard.sectionClinicPerformance}
+              {messages.dashboard.sectionSatisfaction}
             </h2>
 
-            <FourMetricsCards
+            <SatisfactionCards
               data={{
                 patientSatisfaction: {
                   current: adminData.stats.averageScore,
@@ -204,19 +185,11 @@ export default async function DashboardPage() {
                 employeeSatisfaction: {
                   current: adminData.staffSurveyScore?.overallScore ?? null,
                 },
-                maintenanceRate: {
-                  current: adminData.latestTallyMetrics?.maintenanceRate ?? null,
-                  prev: adminData.latestTallyMetrics?.prevMaintenanceRate ?? null,
-                },
-                selfPayRate: {
-                  current: adminData.latestTallyMetrics?.selfPayRate ?? null,
-                  prev: adminData.latestTallyMetrics?.prevSelfPayRate ?? null,
-                },
               }}
             />
 
             <div className="grid gap-6 lg:grid-cols-2">
-              <FourMetricsTrendChart data={adminData.fourMetricsTrend} />
+              <SatisfactionTrendChart data={adminData.satisfactionTrend} />
               <EmployeeRadarChart
                 categoryScores={adminData.staffSurveyScore?.categoryScores ?? []}
                 surveyTitle={adminData.staffSurveyScore?.surveyTitle}

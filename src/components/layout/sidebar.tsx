@@ -11,7 +11,6 @@ import {
   Shield,
   Heart,
   BarChart3,
-  ClipboardPen,
   Smartphone,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
@@ -29,7 +28,6 @@ interface SidebarProps {
 const dailyItems = [
   { href: "/dashboard", label: messages.nav.dashboard, icon: LayoutDashboard },
   { href: "/dashboard/survey-start", label: messages.nav.surveyStart, icon: Smartphone },
-  { href: "/dashboard/tally", label: messages.nav.tally, icon: ClipboardPen },
 ]
 
 const analyticsItems = [
