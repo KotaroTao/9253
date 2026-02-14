@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   LogOut,
 } from "lucide-react"
+import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
 import { messages } from "@/lib/messages"
 import { AdminUnlockDialog } from "@/components/layout/admin-unlock-dialog"
