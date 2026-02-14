@@ -82,8 +82,6 @@ export const TEMPLATE_SELECTION_MAP: Record<string, { visitType: string; treatme
 export const ADMIN_MODE_COOKIE = "mieru-admin"
 export const ADMIN_MODE_MAX_AGE = 60 * 60 * 8 // 8 hours
 export const DEFAULT_ADMIN_PASSWORD = "1111"
-export const ADMIN_MODE_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000 // 15 minutes
-export const ADMIN_MODE_RATE_LIMIT_MAX = 5 // max attempts per window
 
 export const DENTAL_TIPS = [
   // 基本のブラッシング（1-10）

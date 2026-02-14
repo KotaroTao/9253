@@ -164,7 +164,6 @@ export const messages = {
     password: "管理者パスワード",
     unlockButton: "解除する",
     wrongPassword: "パスワードが正しくありません",
-    rateLimited: "試行回数の上限に達しました。しばらく時間をおいてから再度お試しください",
     noPasswordSet: "管理者パスワードが未設定です",
     setupPrompt: "設定画面で管理者パスワードを設定してください",
     active: "管理者モード有効",
