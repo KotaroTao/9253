@@ -67,6 +67,7 @@ function generateInsights({
       text: messages.dashboard.insightLowQuestion
         .replace("{question}", q.text.length > 20 ? q.text.slice(0, 20) + "…" : q.text)
         .replace("{score}", String(q.avgScore)),
+      action: { label: messages.improvementActions.fromInsight, href: "/dashboard/actions" },
     })
   }
 
