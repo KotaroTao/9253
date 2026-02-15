@@ -1,5 +1,18 @@
 export type UserRole = "system_admin" | "clinic_admin" | "staff"
 
+/** Clinic.settings JSONB の型定義 */
+export interface ClinicSettings {
+  adminPassword?: string
+  dailyGoal?: number
+  workingDaysPerWeek?: number
+  closedDates?: string[]
+  dailyTip?: {
+    category: string
+    title: string
+    content: string
+  }
+}
+
 
 export interface RecentResponse {
   id: string

@@ -6,14 +6,15 @@ import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { setAdminModeCookie, clearAdminModeCookie } from "@/lib/admin-mode"
 import { messages } from "@/lib/messages"
 import { DEFAULT_ADMIN_PASSWORD } from "@/lib/constants"
+import type { ClinicSettings } from "@/types"
 
 async function getClinicPassword(clinicId: string) {
   const clinic = await prisma.clinic.findUnique({
     where: { id: clinicId },
     select: { settings: true },
   })
-  const settings = clinic?.settings as Record<string, unknown> | null
-  return settings?.adminPassword as string | undefined
+  const settings = (clinic?.settings ?? {}) as ClinicSettings
+  return settings.adminPassword
 }
 
 async function verifyPassword(password: string, hashedPassword: string | undefined): Promise<boolean> {
@@ -82,7 +83,7 @@ export async function PATCH(request: NextRequest) {
     where: { id: clinicId },
     select: { settings: true },
   })
-  const existingSettings = (existingClinic?.settings as Record<string, unknown>) ?? {}
+  const existingSettings = (existingClinic?.settings ?? {}) as ClinicSettings
 
   await prisma.clinic.update({
     where: { id: clinicId },
@@ -90,6 +91,9 @@ export async function PATCH(request: NextRequest) {
       settings: { ...existingSettings, adminPassword: newHashedPassword },
     },
   })
+
+  // パスワード変更後はセッションを無効化（再認証を要求）
+  clearAdminModeCookie()
 
   return successResponse({ success: true })
 }

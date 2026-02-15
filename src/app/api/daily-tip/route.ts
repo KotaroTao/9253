@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
+import type { ClinicSettings } from "@/types"
 
 export async function GET() {
   const authResult = await requireRole("clinic_admin", "system_admin")
@@ -19,8 +20,8 @@ export async function GET() {
     select: { settings: true },
   })
 
-  const settings = (clinic?.settings as Record<string, unknown>) ?? {}
-  const dailyTip = settings.dailyTip as { category: string; title: string; content: string } | undefined
+  const settings = (clinic?.settings ?? {}) as ClinicSettings
+  const dailyTip = settings.dailyTip
 
   return successResponse({ dailyTip: dailyTip ?? null })
 }
@@ -41,7 +42,7 @@ export async function PATCH(request: NextRequest) {
       where: { id: clinicId },
       select: { settings: true },
     })
-    const existingSettings = (clinic?.settings as Record<string, unknown>) ?? {}
+    const existingSettings = (clinic?.settings ?? {}) as ClinicSettings
 
     // body.dailyTip が null の場合はリセット（デフォルトに戻す）
     if (body.dailyTip === null) {

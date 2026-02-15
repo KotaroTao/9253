@@ -5,6 +5,7 @@ import { updateClinicSchema } from "@/lib/validations/clinic"
 import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
+import type { ClinicSettings } from "@/types"
 
 export async function PATCH(request: NextRequest) {
   const authResult = await requireRole("clinic_admin", "system_admin")
@@ -36,7 +37,7 @@ export async function PATCH(request: NextRequest) {
         where: { id: clinicId },
         select: { settings: true },
       })
-      const existingSettings = (existingClinic?.settings as Record<string, unknown>) ?? {}
+      const existingSettings = (existingClinic?.settings ?? {}) as ClinicSettings
       const newSettings = { ...existingSettings }
 
       if (adminPassword && typeof adminPassword === "string" && adminPassword.length >= 6) {

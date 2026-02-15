@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
+import type { ClinicSettings } from "@/types"
 
 /**
  * POST /api/closed-dates
@@ -23,8 +24,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { date } = body
 
-    // Validate date format (YYYY-MM-DD)
+    // Validate date format (YYYY-MM-DD) and actual calendar validity
     if (!date || typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return errorResponse(messages.errors.invalidInput, 400)
+    }
+    // Reject non-existent dates like "2024-02-30"
+    const [y, m, d] = date.split("-").map(Number)
+    const parsed = new Date(y, m - 1, d)
+    if (parsed.getFullYear() !== y || parsed.getMonth() !== m - 1 || parsed.getDate() !== d) {
       return errorResponse(messages.errors.invalidInput, 400)
     }
 
@@ -43,8 +50,8 @@ export async function POST(request: NextRequest) {
       where: { id: clinicId },
       select: { settings: true },
     })
-    const settings = (clinic?.settings as Record<string, unknown>) ?? {}
-    const closedDates = Array.isArray(settings.closedDates) ? (settings.closedDates as string[]) : []
+    const settings = (clinic?.settings ?? {}) as ClinicSettings
+    const closedDates = [...(settings.closedDates ?? [])]
 
     // Add date if not already present (max 90 entries to prevent bloat)
     if (!closedDates.includes(date)) {

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { DEFAULTS, MILESTONES, getRank, getNextRank } from "@/lib/constants"
 import type { Rank } from "@/lib/constants"
+import type { ClinicSettings } from "@/types"
 
 export interface StreakBreakInfo {
   date: string // YYYY-MM-DD
@@ -97,18 +98,10 @@ export async function getStaffEngagementData(
     ])
 
   // Extract settings
-  const settings = clinic?.settings as Record<string, unknown> | null
-  const dailyGoal =
-    typeof settings?.dailyGoal === "number"
-      ? settings.dailyGoal
-      : DEFAULTS.DAILY_SURVEY_GOAL
-  const workingDaysPerWeek =
-    typeof settings?.workingDaysPerWeek === "number"
-      ? settings.workingDaysPerWeek
-      : 6
-  const closedDates = new Set<string>(
-    Array.isArray(settings?.closedDates) ? (settings.closedDates as string[]) : []
-  )
+  const settings = (clinic?.settings ?? {}) as ClinicSettings
+  const dailyGoal = settings.dailyGoal ?? DEFAULTS.DAILY_SURVEY_GOAL
+  const workingDaysPerWeek = settings.workingDaysPerWeek ?? 6
+  const closedDates = new Set<string>(settings.closedDates ?? [])
 
   // Build date set for streak + weekly activity
   const dateSet = new Set<string>()
@@ -179,7 +172,7 @@ export async function getStaffEngagementData(
   if (nextRankObj) {
     const currentMin = rank.minCount
     const nextMin = nextRankObj.minCount
-    rankProgress = Math.round(((totalCount - currentMin) / (nextMin - currentMin)) * 100)
+    rankProgress = Math.min(Math.round(((totalCount - currentMin) / (nextMin - currentMin)) * 100), 100)
   }
 
   return {

@@ -3,6 +3,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { isAdminMode } from "@/lib/admin-mode"
 import { DashboardShell } from "@/components/layout/dashboard-shell"
+import type { ClinicSettings } from "@/types"
 
 export default async function DashboardLayout({
   children,
@@ -33,8 +34,8 @@ export default async function DashboardLayout({
     })
     clinicName = clinic?.name ?? undefined
     clinicSlug = clinic?.slug ?? undefined
-    const settings = clinic?.settings as Record<string, unknown> | null
-    hasAdminPassword = !!settings?.adminPassword
+    const settings = (clinic?.settings ?? {}) as ClinicSettings
+    hasAdminPassword = !!settings.adminPassword
   }
 
   const adminMode = isAdminMode()
