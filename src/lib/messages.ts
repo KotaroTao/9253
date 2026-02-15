@@ -184,6 +184,9 @@ export const messages = {
     scoreChange: "スコア変化",
     createFailed: "アクションの作成に失敗しました",
     updateFailed: "アクションの更新に失敗しました",
+    scoreOutOfRange: "スコアは1〜5の範囲で入力してください",
+    saveFailed: "保存に失敗しました。もう一度お試しください",
+    statusChangeFailed: "ステータスの変更に失敗しました",
     fromInsight: "この質問の改善アクションを作成",
   },
   staffLeaderboard: {

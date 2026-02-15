@@ -3,31 +3,36 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
-import { Users, Star, Trophy } from "lucide-react"
+import { Users, Trophy, ClipboardList } from "lucide-react"
 
 interface StaffPerformance {
   id: string
   name: string
   role: string
   totalCount: number
-  totalAvgScore: number | null
   monthCount: number
-  monthAvgScore: number | null
 }
 
 export function StaffLeaderboard() {
   const [data, setData] = useState<StaffPerformance[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const [period, setPeriod] = useState<"month" | "total">("month")
 
   useEffect(() => {
     fetch("/api/staff-leaderboard")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error()
+        return res.json()
+      })
       .then((d) => {
         setData(d)
         setLoading(false)
       })
-      .catch(() => setLoading(false))
+      .catch(() => {
+        setError(true)
+        setLoading(false)
+      })
   }, [])
 
   if (loading) {
@@ -40,23 +45,33 @@ export function StaffLeaderboard() {
     )
   }
 
-  const hasData = data.some(
-    (s) => (period === "month" ? s.monthCount : s.totalCount) > 0
-  )
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="py-6 text-center text-sm text-muted-foreground">
+          {messages.common.error}
+        </CardContent>
+      </Card>
+    )
+  }
 
-  // Sort by selected period
+  // Sort by selected period, stable sort by name
   const sorted = [...data].sort((a, b) => {
     const aCount = period === "month" ? a.monthCount : a.totalCount
     const bCount = period === "month" ? b.monthCount : b.totalCount
-    return bCount - aCount
+    return bCount - aCount || a.name.localeCompare(b.name)
   })
+
+  const visible = sorted.filter(
+    (s) => (period === "month" ? s.monthCount : s.totalCount) > 0
+  )
 
   return (
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <ClipboardList className="h-4 w-4 text-muted-foreground" />
             <CardTitle className="text-base">
               {messages.staffLeaderboard.title}
             </CardTitle>
@@ -86,7 +101,7 @@ export function StaffLeaderboard() {
         </div>
       </CardHeader>
       <CardContent>
-        {!hasData ? (
+        {visible.length === 0 ? (
           <div className="py-4 text-center">
             <Users className="mx-auto h-8 w-8 text-muted-foreground/30" />
             <p className="mt-2 text-sm text-muted-foreground">
@@ -98,11 +113,8 @@ export function StaffLeaderboard() {
           </div>
         ) : (
           <div className="space-y-2">
-            {sorted.map((staff, index) => {
+            {visible.map((staff, index) => {
               const count = period === "month" ? staff.monthCount : staff.totalCount
-              const avgScore = period === "month" ? staff.monthAvgScore : staff.totalAvgScore
-              if (count === 0) return null
-
               return (
                 <div
                   key={staff.id}
@@ -124,14 +136,6 @@ export function StaffLeaderboard() {
                     <p className="text-sm font-medium truncate">{staff.name}</p>
                     <p className="text-[10px] text-muted-foreground">{staff.role}</p>
                   </div>
-
-                  {/* Score */}
-                  {avgScore != null && (
-                    <div className="flex items-center gap-0.5">
-                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm font-medium">{avgScore}</span>
-                    </div>
-                  )}
 
                   {/* Count */}
                   <div className="text-right">

@@ -30,45 +30,39 @@ export async function GET() {
 
   const staffIds = staffList.map((s) => s.id)
 
-  // Aggregate per-staff: total count + avg, this month count + avg
+  // Aggregate per-staff: count only (score is clinic-wide, not attributable to individual staff)
   const [totalStats, monthStats] = await Promise.all([
     prisma.surveyResponse.groupBy({
       by: ["staffId"],
       where: { clinicId, staffId: { in: staffIds } },
       _count: { _all: true },
-      _avg: { overallScore: true },
     }),
     prisma.surveyResponse.groupBy({
       by: ["staffId"],
       where: { clinicId, staffId: { in: staffIds }, respondedAt: { gte: monthStart } },
       _count: { _all: true },
-      _avg: { overallScore: true },
     }),
   ])
 
   const totalMap = new Map(totalStats.map((s) => [s.staffId, s]))
   const monthMap = new Map(monthStats.map((s) => [s.staffId, s]))
 
-  const leaderboard = staffList.map((staff) => {
-    const total = totalMap.get(staff.id)
-    const month = monthMap.get(staff.id)
-    return {
-      id: staff.id,
-      name: staff.name,
-      role: staff.role,
-      totalCount: total?._count._all ?? 0,
-      totalAvgScore: total?._avg.overallScore
-        ? Math.round(total._avg.overallScore * 10) / 10
-        : null,
-      monthCount: month?._count._all ?? 0,
-      monthAvgScore: month?._avg.overallScore
-        ? Math.round(month._avg.overallScore * 10) / 10
-        : null,
-    }
-  })
+  const leaderboard = staffList
+    .map((staff) => {
+      const total = totalMap.get(staff.id)
+      const month = monthMap.get(staff.id)
+      return {
+        id: staff.id,
+        name: staff.name,
+        role: staff.role,
+        totalCount: total?._count._all ?? 0,
+        monthCount: month?._count._all ?? 0,
+      }
+    })
+    .filter((s) => s.totalCount > 0 || s.monthCount > 0)
 
-  // Sort by month count descending
-  leaderboard.sort((a, b) => b.monthCount - a.monthCount)
+  // Sort by month count descending, then by name for stability
+  leaderboard.sort((a, b) => b.monthCount - a.monthCount || a.name.localeCompare(b.name))
 
   return successResponse(leaderboard)
 }

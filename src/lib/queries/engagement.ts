@@ -131,14 +131,13 @@ export async function getStaffEngagementData(
   let streak = 0
   let streakBreak: StreakBreakInfo | null = null
   const checkDate = new Date(todayStart)
+  const todayKey = formatDateKey(checkDate)
 
   // If today has no surveys yet, start counting from yesterday
-  if (!dateSet.has(formatDateKey(checkDate))) {
+  // (today is still in progress, not a "missed" day)
+  if (!dateSet.has(todayKey)) {
     checkDate.setDate(checkDate.getDate() - 1)
   }
-
-  let consecutiveGaps = 0
-  const MAX_GRACE_DAYS = 1
 
   for (let i = 0; i < 90; i++) {
     const key = formatDateKey(checkDate)
@@ -149,18 +148,15 @@ export async function getStaffEngagementData(
     }
     if (dateSet.has(key)) {
       streak++
-      consecutiveGaps = 0
       checkDate.setDate(checkDate.getDate() - 1)
     } else {
-      consecutiveGaps++
-      if (consecutiveGaps > MAX_GRACE_DAYS) {
-        // Streak broke here — record for recovery UI
-        if (streak > 0 || consecutiveGaps === MAX_GRACE_DAYS + 1) {
-          streakBreak = { date: key, dayOfWeek: getDayOfWeekJa(checkDate) }
-        }
-        break
+      // Only show streak break if:
+      // 1. The day is NOT today (today is still in progress)
+      // 2. There was a prior streak (don't show break if brand new)
+      if (key !== todayKey && streak > 0) {
+        streakBreak = { date: key, dayOfWeek: getDayOfWeekJa(checkDate) }
       }
-      checkDate.setDate(checkDate.getDate() - 1)
+      break
     }
   }
 

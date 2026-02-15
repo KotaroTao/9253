@@ -29,10 +29,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Only allow dates within the last 14 days (prevent abuse)
-    const targetDate = new Date(date + "T00:00:00")
+    // Use string-based comparison to avoid timezone issues
     const now = new Date()
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
     const fourteenDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 14)
-    if (targetDate > now || targetDate < fourteenDaysAgo) {
+    const fourteenDaysAgoStr = `${fourteenDaysAgo.getFullYear()}-${String(fourteenDaysAgo.getMonth() + 1).padStart(2, "0")}-${String(fourteenDaysAgo.getDate()).padStart(2, "0")}`
+    if (date > todayStr || date < fourteenDaysAgoStr) {
       return errorResponse(messages.errors.invalidInput, 400)
     }
 
