@@ -70,6 +70,8 @@ export const messages = {
     tipLabel: "歯の豆知識",
     backToTop: "TOPに戻る",
     allRequiredHint: "すべての質問にご回答ください",
+    progressLabel: "質問",
+    progressOf: "/",
   },
   dashboard: {
     title: "ダッシュボード",
@@ -118,6 +120,30 @@ export const messages = {
     onboardingStep1: "下の「アンケート案内」をタップして、キオスクモードを起動します",
     onboardingStep2: "会計待ちの患者さまにタブレットをお渡しください",
     onboardingStep3: "回答が蓄積されると、このページに満足度データが表示されます",
+    // Rank system
+    rankLabel: "ランク",
+    rankProgress: "次のランクまで",
+    rankUp: "ランクアップ！",
+    // Goal celebration
+    goalCelebration: "素晴らしい！本日の目標を達成しました",
+    goalKeepGoing: "あと{remaining}件で目標達成です",
+    // Enhanced streak
+    streakRecord: "最長記録更新中！",
+    streakEncourage: "今日のアンケートでストリーク継続！",
+    // Week summary
+    weekSummary: "今週の実績",
+    weekResponses: "今週の回答",
+    weekAvgScore: "今週の平均",
+    // Insights
+    insightTitle: "改善アクション",
+    insightScoreUp: "先月より{delta}ポイント上昇",
+    insightScoreDown: "先月より{delta}ポイント低下",
+    insightScoreStable: "前月と同水準を維持",
+    insightLowQuestion: "「{question}」のスコアが{score}と低めです",
+    insightNoData: "データが蓄積されると改善提案が表示されます",
+    insightMissingMetrics: "月次レポートを入力すると経営指標との相関が見えます",
+    insightHighSatisfaction: "患者満足度が高水準です。この調子を維持しましょう",
+    insightResponseRate: "今月の回答ペース: {count}件",
   },
   monthlyMetrics: {
     title: "月次レポート",

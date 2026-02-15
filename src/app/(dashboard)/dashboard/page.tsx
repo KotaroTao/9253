@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation"
-import Link from "next/link"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { isAdminMode } from "@/lib/admin-mode"
@@ -15,8 +14,9 @@ import { AdminInlineAuth } from "@/components/dashboard/admin-inline-auth"
 import { QuestionBreakdown } from "@/components/dashboard/question-breakdown"
 import { StaffEngagement } from "@/components/dashboard/staff-engagement"
 import { ClinicBenchmark } from "@/components/dashboard/clinic-benchmark"
+import { InsightCards } from "@/components/dashboard/insight-cards"
 import { messages } from "@/lib/messages"
-import { Smartphone, ArrowRight } from "lucide-react"
+import { Smartphone, ArrowRight, TrendingUp, TrendingDown } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { DailyTip } from "@/components/dashboard/daily-tip"
 import { getTodayTip, getCurrentTip } from "@/lib/patient-tips"
@@ -90,6 +90,7 @@ export default async function DashboardPage() {
     showSummaryBanner: boolean
     summaryBannerLabel: string
     benchmark: Awaited<ReturnType<typeof getClinicBenchmark>>
+    lowScoreQuestions: Array<{ text: string; avgScore: number }>
   } | null = null
 
   if (adminMode) {
@@ -111,6 +112,17 @@ export default async function DashboardPage() {
         getClinicBenchmark(clinicId),
       ])
 
+    // Collect low-score questions for insights
+    const lowScoreQuestions: Array<{ text: string; avgScore: number }> = []
+    for (const template of questionBreakdown) {
+      for (const q of template.questions) {
+        if (q.avgScore > 0 && q.avgScore < 4.0) {
+          lowScoreQuestions.push({ text: q.text, avgScore: q.avgScore })
+        }
+      }
+    }
+    lowScoreQuestions.sort((a, b) => a.avgScore - b.avgScore)
+
     adminData = {
       stats,
       monthlyTrend,
@@ -119,6 +131,7 @@ export default async function DashboardPage() {
       showSummaryBanner: lastMonthSummary == null,
       summaryBannerLabel: `${prevYear}年${prevMonth}月`,
       benchmark,
+      lowScoreQuestions,
     }
   }
 
@@ -197,44 +210,64 @@ export default async function DashboardPage() {
       {/* Admin analytics - only when admin mode is active */}
       {adminData && (
         <>
-          {adminData.showSummaryBanner && (
-            <div className="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
-              <p className="text-sm text-amber-800">
-                {adminData.summaryBannerLabel}の{messages.monthlyMetrics.summaryNotEntered}
-              </p>
-              <Link
-                href="/dashboard/metrics"
-                className="shrink-0 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700"
-              >
-                {messages.monthlyMetrics.enterSummary}
-              </Link>
-            </div>
-          )}
-
-          {/* Patient Experience Section */}
+          {/* Score overview + trend indicator */}
           <div className="space-y-4">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
               {messages.dashboard.sectionPatientExperience}
             </h2>
 
+            {/* Score hero card with trend */}
             <Card className="border-blue-200 bg-gradient-to-r from-blue-50/50 to-white">
-              <CardContent className="flex items-center gap-6 py-6">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">{messages.dashboard.satisfaction}</p>
-                  <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-4xl font-bold text-blue-600">
-                      {adminData.stats.averageScore > 0 ? adminData.stats.averageScore.toFixed(1) : "-"}
-                    </span>
-                    {adminData.stats.averageScore > 0 && (
-                      <span className="text-lg text-muted-foreground">/ 5.0</span>
-                    )}
+              <CardContent className="py-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">{messages.dashboard.satisfaction}</p>
+                    <div className="mt-1 flex items-baseline gap-2">
+                      <span className="text-4xl font-bold text-blue-600">
+                        {adminData.stats.averageScore > 0 ? adminData.stats.averageScore.toFixed(1) : "-"}
+                      </span>
+                      {adminData.stats.averageScore > 0 && (
+                        <span className="text-lg text-muted-foreground">/ 5.0</span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {messages.dashboard.thisMonth}: {adminData.stats.totalResponses}{messages.common.countSuffix}
+                    </p>
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {messages.dashboard.thisMonth}: {adminData.stats.totalResponses}{messages.common.countSuffix}
-                  </p>
+                  {/* Trend badge */}
+                  {adminData.stats.prevAverageScore != null && adminData.stats.averageScore > 0 && (
+                    <div className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
+                      adminData.stats.averageScore > adminData.stats.prevAverageScore
+                        ? "bg-green-100 text-green-700"
+                        : adminData.stats.averageScore < adminData.stats.prevAverageScore
+                          ? "bg-red-100 text-red-700"
+                          : "bg-gray-100 text-gray-600"
+                    }`}>
+                      {adminData.stats.averageScore > adminData.stats.prevAverageScore ? (
+                        <TrendingUp className="h-3 w-3" />
+                      ) : adminData.stats.averageScore < adminData.stats.prevAverageScore ? (
+                        <TrendingDown className="h-3 w-3" />
+                      ) : null}
+                      {adminData.stats.prevAverageScore > 0 && (
+                        <span>
+                          {adminData.stats.averageScore > adminData.stats.prevAverageScore ? "+" : ""}
+                          {(adminData.stats.averageScore - adminData.stats.prevAverageScore).toFixed(1)}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
+
+            {/* Insights — auto-generated action cards */}
+            <InsightCards
+              averageScore={adminData.stats.averageScore}
+              prevAverageScore={adminData.stats.prevAverageScore ?? null}
+              totalResponses={adminData.stats.totalResponses}
+              lowScoreQuestions={adminData.lowScoreQuestions}
+              showSummaryBanner={adminData.showSummaryBanner}
+            />
 
             {/* Question-level breakdown chart + improvement advice */}
             <QuestionBreakdown data={adminData.questionBreakdown} />

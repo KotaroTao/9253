@@ -35,6 +35,35 @@ export const DEFAULTS = {
 
 export const MILESTONES = [50, 100, 250, 500, 1000, 2000, 5000, 10000] as const
 
+// Rank system based on total survey count
+export const RANKS = [
+  { name: "ルーキー", minCount: 0, color: "slate", emoji: "🌱" },
+  { name: "ブロンズ", minCount: 50, color: "amber", emoji: "🥉" },
+  { name: "シルバー", minCount: 100, color: "gray", emoji: "🥈" },
+  { name: "ゴールド", minCount: 250, color: "yellow", emoji: "🥇" },
+  { name: "プラチナ", minCount: 500, color: "cyan", emoji: "💎" },
+  { name: "ダイヤモンド", minCount: 1000, color: "blue", emoji: "👑" },
+  { name: "マスター", minCount: 2000, color: "purple", emoji: "🏆" },
+  { name: "レジェンド", minCount: 5000, color: "rose", emoji: "⭐" },
+] as const
+
+export type Rank = (typeof RANKS)[number]
+
+export function getRank(totalCount: number): Rank {
+  let rank: Rank = RANKS[0]
+  for (const r of RANKS) {
+    if (totalCount >= r.minCount) rank = r
+  }
+  return rank
+}
+
+export function getNextRank(totalCount: number): Rank | null {
+  for (const r of RANKS) {
+    if (totalCount < r.minCount) return r
+  }
+  return null
+}
+
 // Patient attribute options for staff setup screen
 export const VISIT_TYPES = [
   { value: "first_visit", label: "初診" },
