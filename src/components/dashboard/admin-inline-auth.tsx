@@ -158,17 +158,20 @@ export function AdminInlineAuth({ isAdminMode, hasAdminPassword }: AdminInlineAu
   // Not admin mode: show password input
   return (
     <div className="rounded-xl border border-muted bg-muted/30 p-5">
-      <form onSubmit={handleUnlock} className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <form onSubmit={handleUnlock} className="space-y-3">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
             <Lock className="h-4 w-4 text-muted-foreground" />
           </div>
-          <span className="text-sm text-muted-foreground">{messages.adminMode.unlock}</span>
+          <div>
+            <span className="text-sm font-medium text-foreground">{messages.adminMode.unlock}</span>
+            <p className="text-xs text-muted-foreground">{messages.adminMode.unlockDesc}</p>
+          </div>
         </div>
-        <div className="flex flex-1 gap-2">
+        <div className="flex gap-2">
           <input
             type="password"
-            className="flex h-9 w-full max-w-[200px] rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex h-9 w-full max-w-xs rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             placeholder={messages.adminMode.password}
             value={password}
             onChange={(e) => setPassword(e.target.value)}

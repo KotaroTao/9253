@@ -78,6 +78,9 @@ export default async function DashboardPage() {
   // Staff engagement data (always fetched for staff home screen)
   const engagement = await getStaffEngagementData(clinicId)
 
+  // Check if clinic has any responses (for first-use guidance)
+  const hasResponses = engagement.totalCount > 0
+
   // Admin analytics data (only fetch when admin mode is active)
   let adminData: {
     stats: Awaited<ReturnType<typeof getDashboardStats>>
@@ -128,6 +131,43 @@ export default async function DashboardPage() {
           {messages.dashboard.staffDashboardMessage}
         </p>
       </div>
+
+      {/* Admin mode banner - shown when admin mode is active */}
+      {adminMode && (
+        <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-emerald-500" />
+            <span className="text-sm font-medium text-emerald-700">{messages.adminMode.active}</span>
+            <span className="hidden text-xs text-emerald-600/70 sm:inline">{messages.dashboard.adminModeDesc}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Admin unlock - shown prominently when NOT in admin mode */}
+      {!adminMode && hasAdminPassword && (
+        <AdminInlineAuth isAdminMode={false} hasAdminPassword={hasAdminPassword} />
+      )}
+
+      {/* First-use guidance - shown when no responses yet and NOT in admin mode */}
+      {!adminMode && !hasResponses && (
+        <div className="rounded-xl border-2 border-dashed border-blue-300 bg-blue-50/50 p-5">
+          <h3 className="text-sm font-bold text-blue-900">{messages.dashboard.onboardingTitle}</h3>
+          <div className="mt-3 space-y-2.5">
+            <div className="flex items-start gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500 text-xs font-bold text-white">1</span>
+              <p className="text-sm text-blue-800">{messages.dashboard.onboardingStep1}</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500 text-xs font-bold text-white">2</span>
+              <p className="text-sm text-blue-800">{messages.dashboard.onboardingStep2}</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500 text-xs font-bold text-white">3</span>
+              <p className="text-sm text-blue-800">{messages.dashboard.onboardingStep3}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Daily patient satisfaction tip */}
       <DailyTip tip={dailyTip} canEdit={canEditTip} isCustom={isCustomTip} />
@@ -227,8 +267,10 @@ export default async function DashboardPage() {
         </>
       )}
 
-      {/* Admin password section - always at bottom */}
-      <AdminInlineAuth isAdminMode={adminMode} hasAdminPassword={hasAdminPassword} />
+      {/* Admin mode controls at bottom - only for admin mode active state */}
+      {adminMode && (
+        <AdminInlineAuth isAdminMode={adminMode} hasAdminPassword={hasAdminPassword} />
+      )}
     </div>
   )
 }
