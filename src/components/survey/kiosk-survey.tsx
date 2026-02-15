@@ -11,6 +11,7 @@ import {
   Lightbulb,
   RotateCcw,
   ArrowRight,
+  User,
 } from "lucide-react"
 import { Confetti } from "@/components/survey/confetti"
 import {
@@ -20,14 +21,16 @@ import {
   CHIEF_COMPLAINTS,
   AGE_GROUPS,
   GENDERS,
+  STAFF_ROLE_LABELS,
 } from "@/lib/constants"
-import type { SurveyPageData, SurveyTemplateInfo, PatientAttributes } from "@/types/survey"
+import type { SurveyPageData, SurveyTemplateInfo, PatientAttributes, KioskStaffInfo } from "@/types/survey"
 
 interface KioskSurveyProps {
   clinicName: string
   clinicSlug: string
   templates: SurveyTemplateInfo[]
   initialTodayCount: number
+  staff: KioskStaffInfo[]
 }
 
 type KioskState = "setup" | "survey" | "thanks"
@@ -91,6 +94,7 @@ export function KioskSurvey({
   clinicSlug,
   templates,
   initialTodayCount,
+  staff,
 }: KioskSurveyProps) {
   const router = useRouter()
   const [state, setState] = useState<KioskState>("setup")
@@ -103,6 +107,7 @@ export function KioskSurvey({
   const [showConfetti, setShowConfetti] = useState(false)
 
   // Staff setup state
+  const [selectedStaffId, setSelectedStaffId] = useState("")
   const [visitType, setVisitType] = useState("")
   const [treatmentType, setTreatmentType] = useState("")
   const [chiefComplaint, setChiefComplaint] = useState("")
@@ -117,6 +122,7 @@ export function KioskSurvey({
     setFormKey((k) => k + 1)
     setState("setup")
     setShowConfetti(false)
+    // Keep selectedStaffId across patients (same staff hands tablet)
     setVisitType("")
     setTreatmentType("")
     setChiefComplaint("")
@@ -176,6 +182,35 @@ export function KioskSurvey({
                 {todayCount}{messages.common.countSuffix}
               </div>
             </div>
+
+            {/* Staff selector */}
+            {staff.length > 0 && (
+              <div>
+                <p className="mb-2 text-xs font-semibold text-muted-foreground">
+                  {messages.patientSetup.staffSelect}
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {staff.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setSelectedStaffId(selectedStaffId === s.id ? "" : s.id)}
+                      className={`flex flex-col items-center gap-1 rounded-xl border-2 px-2 py-3 transition-all active:scale-95 ${
+                        selectedStaffId === s.id
+                          ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                          : "border-muted bg-card text-foreground hover:border-primary/30"
+                      }`}
+                    >
+                      <User className="h-4 w-4" />
+                      <span className="text-sm font-bold">{s.name}</span>
+                      <span className={`text-[10px] ${selectedStaffId === s.id ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                        {STAFF_ROLE_LABELS[s.role] ?? s.role}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Visit type */}
             <PillSelector
@@ -310,6 +345,7 @@ export function KioskSurvey({
           data={selectedData}
           onComplete={handleSurveyComplete}
           patientAttributes={patientAttrs ?? undefined}
+          staffId={selectedStaffId || undefined}
           kioskMode
         />
       </div>

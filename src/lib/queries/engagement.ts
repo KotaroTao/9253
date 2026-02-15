@@ -17,6 +17,7 @@ export interface EngagementData {
   // Week data
   weekCount: number
   weekAvgScore: number | null
+  weekActiveDays: number
   // Today's mood
   todayAvgScore: number | null
 }
@@ -49,6 +50,7 @@ export async function getStaffEngagementData(
         where: { clinicId },
       }),
 
+      // Only fetch respondedAt for streak calculation (minimal data)
       prisma.surveyResponse.findMany({
         where: { clinicId, respondedAt: { gte: streakStart } },
         select: { respondedAt: true },
@@ -86,14 +88,27 @@ export async function getStaffEngagementData(
       }),
     ])
 
-  // Calculate streak: consecutive days with surveys
+  // Build date set for streak + weekly activity
   const dateSet = new Set<string>()
   for (const r of streakResponses) {
     const d = new Date(r.respondedAt)
     dateSet.add(formatDateKey(d))
   }
 
+  // Calculate weekly active days (Mon-Sun)
+  let weekActiveDays = 0
+  const weekCheck = new Date(weekStart)
+  for (let i = 0; i < 7; i++) {
+    if (dateSet.has(formatDateKey(weekCheck))) {
+      weekActiveDays++
+    }
+    weekCheck.setDate(weekCheck.getDate() + 1)
+  }
+
+  // Calculate streak with 1-day grace (2+ consecutive missing days = break)
   let streak = 0
+  let consecutiveGaps = 0
+  const MAX_GRACE_DAYS = 1
   const checkDate = new Date(todayStart)
 
   // If today has no surveys yet, start counting from yesterday
@@ -104,9 +119,14 @@ export async function getStaffEngagementData(
   for (let i = 0; i < 90; i++) {
     if (dateSet.has(formatDateKey(checkDate))) {
       streak++
+      consecutiveGaps = 0
       checkDate.setDate(checkDate.getDate() - 1)
     } else {
-      break
+      consecutiveGaps++
+      if (consecutiveGaps > MAX_GRACE_DAYS) {
+        break
+      }
+      checkDate.setDate(checkDate.getDate() - 1)
     }
   }
 
@@ -154,6 +174,7 @@ export async function getStaffEngagementData(
     weekAvgScore: weekData._avg.overallScore
       ? Math.round(weekData._avg.overallScore * 10) / 10
       : null,
+    weekActiveDays,
     todayAvgScore: todayData._avg.overallScore
       ? Math.round(todayData._avg.overallScore * 10) / 10
       : null,

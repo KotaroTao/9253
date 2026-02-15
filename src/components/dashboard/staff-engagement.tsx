@@ -3,7 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
 import { STREAK_MILESTONES } from "@/lib/constants"
-import { Flame, MessageCircle, Trophy, Star, TrendingUp, ClipboardList } from "lucide-react"
+import { Flame, MessageCircle, Trophy, Star, TrendingUp, ClipboardList, CalendarDays } from "lucide-react"
 import { Confetti } from "@/components/survey/confetti"
 import type { EngagementData } from "@/lib/queries/engagement"
 
@@ -88,6 +88,7 @@ export function StaffEngagement({ data }: StaffEngagementProps) {
     rankProgress,
     weekCount,
     weekAvgScore,
+    weekActiveDays,
     todayAvgScore,
   } = data
 
@@ -162,12 +163,18 @@ export function StaffEngagement({ data }: StaffEngagementProps) {
                 <p className="text-xs font-medium">{messages.dashboard.weekSummary}</p>
               </div>
               <p className="mt-2 text-2xl font-bold">{weekCount}<span className="text-sm font-normal text-muted-foreground">{messages.common.countSuffix}</span></p>
-              {weekAvgScore && (
-                <div className="mt-1 flex items-center gap-1">
-                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                  <span className="text-xs text-muted-foreground">{weekAvgScore} / 5.0</span>
+              <div className="mt-1 flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <CalendarDays className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">{weekActiveDays}{messages.dashboard.weekActiveDaysOf}</span>
                 </div>
-              )}
+                {weekAvgScore && (
+                  <div className="flex items-center gap-1">
+                    <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                    <span className="text-xs text-muted-foreground">{weekAvgScore} / 5.0</span>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         )}
@@ -182,6 +189,10 @@ export function StaffEngagement({ data }: StaffEngagementProps) {
               <p className="text-xs font-medium">{messages.dashboard.weekSummary}</p>
             </div>
             <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1">
+                <CalendarDays className="h-3 w-3 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">{weekActiveDays}{messages.dashboard.weekActiveDaysOf}</span>
+              </div>
               <span className="text-sm font-bold">{weekCount}<span className="text-xs font-normal text-muted-foreground">{messages.common.countSuffix}</span></span>
               {weekAvgScore && (
                 <div className="flex items-center gap-1">

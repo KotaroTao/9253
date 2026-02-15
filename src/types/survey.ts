@@ -24,3 +24,9 @@ export interface PatientAttributes {
   ageGroup: string
   gender: string
 }
+
+export interface KioskStaffInfo {
+  id: string
+  name: string
+  role: string
+}

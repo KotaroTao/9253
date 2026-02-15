@@ -95,6 +95,9 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE() {
+  const authResult = await requireAuth()
+  if (isAuthError(authResult)) return authResult
+
   clearAdminModeCookie()
   return successResponse({ success: true })
 }

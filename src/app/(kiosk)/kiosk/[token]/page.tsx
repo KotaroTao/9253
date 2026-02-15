@@ -3,7 +3,7 @@ import { getClinicBySlug } from "@/lib/queries/surveys"
 import { prisma } from "@/lib/prisma"
 import { KioskSurvey } from "@/components/survey/kiosk-survey"
 import { messages } from "@/lib/messages"
-import type { SurveyPageData, SurveyTemplateInfo } from "@/types/survey"
+import type { SurveyPageData, SurveyTemplateInfo, KioskStaffInfo } from "@/types/survey"
 
 interface KioskPageProps {
   params: { token: string }
@@ -28,21 +28,34 @@ export default async function KioskPage({ params }: KioskPageProps) {
     return notFound()
   }
 
-  // Count today's responses for this clinic
+  // Count today's responses and load active staff for this clinic
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
 
-  const todayCount = await prisma.surveyResponse.count({
-    where: {
-      clinicId: clinic.id,
-      respondedAt: { gte: todayStart },
-    },
-  })
+  const [todayCount, staffList] = await Promise.all([
+    prisma.surveyResponse.count({
+      where: {
+        clinicId: clinic.id,
+        respondedAt: { gte: todayStart },
+      },
+    }),
+    prisma.staff.findMany({
+      where: { clinicId: clinic.id, isActive: true },
+      select: { id: true, name: true, role: true },
+      orderBy: { createdAt: "asc" },
+    }),
+  ])
 
   const templates: SurveyTemplateInfo[] = clinic.surveyTemplates.map((t) => ({
     id: t.id,
     name: t.name,
     questions: t.questions as SurveyPageData["questions"],
+  }))
+
+  const staff: KioskStaffInfo[] = staffList.map((s) => ({
+    id: s.id,
+    name: s.name,
+    role: s.role,
   }))
 
   return (
@@ -51,6 +64,7 @@ export default async function KioskPage({ params }: KioskPageProps) {
       clinicSlug={clinic.slug}
       templates={templates}
       initialTodayCount={todayCount}
+      staff={staff}
     />
   )
 }

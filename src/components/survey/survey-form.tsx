@@ -15,11 +15,12 @@ interface SurveyFormProps {
   onComplete?: () => void
   kioskMode?: boolean
   patientAttributes?: PatientAttributes
+  staffId?: string
 }
 
 type Step = "welcome" | "survey" | "submitting" | "thanks"
 
-export function SurveyForm({ data, onComplete, kioskMode = false, patientAttributes }: SurveyFormProps) {
+export function SurveyForm({ data, onComplete, kioskMode = false, patientAttributes, staffId }: SurveyFormProps) {
   const [step, setStep] = useState<Step>(kioskMode ? "survey" : "welcome")
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [freeText, setFreeText] = useState("")
@@ -60,6 +61,7 @@ export function SurveyForm({ data, onComplete, kioskMode = false, patientAttribu
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           clinicSlug: data.clinicSlug,
+          staffId: staffId || undefined,
           templateId: data.templateId,
           answers,
           freeText: freeText || undefined,

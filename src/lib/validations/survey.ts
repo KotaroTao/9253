@@ -11,6 +11,7 @@ export const patientAttributesSchema = z.object({
 
 export const surveySubmissionSchema = z.object({
   clinicSlug: z.string().min(1),
+  staffId: z.string().uuid().optional(),
   templateId: z.string().uuid(messages.validations.invalidTemplateId),
   answers: z.record(
     z.string(),
