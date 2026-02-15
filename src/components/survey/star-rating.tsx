@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { Star } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { messages } from "@/lib/messages"
@@ -15,10 +15,25 @@ interface StarRatingProps {
 export function StarRating({ value, onChange, disabled, large }: StarRatingProps) {
   const [hovering, setHovering] = useState(0)
 
+  // Only show hover on mouse (not touch) to prevent stars appearing selected on iPad
+  const handlePointerEnter = useCallback((star: number, e: React.PointerEvent) => {
+    if (e.pointerType === "mouse") {
+      setHovering(star)
+    }
+  }, [])
+
+  const handlePointerLeave = useCallback((e: React.PointerEvent) => {
+    if (e.pointerType === "mouse") {
+      setHovering(0)
+    }
+  }, [])
+
+  const displayValue = hovering || value
+
   return (
     <div className={cn("flex", large ? "gap-3" : "gap-2")} role="radiogroup" aria-label={messages.survey.scoreSuffix}>
       {[1, 2, 3, 4, 5].map((star) => {
-        const isActive = star <= (hovering || value)
+        const isActive = displayValue > 0 && star <= displayValue
         return (
           <button
             key={star}
@@ -26,14 +41,14 @@ export function StarRating({ value, onChange, disabled, large }: StarRatingProps
             role="radio"
             aria-checked={value === star}
             onClick={() => onChange(star)}
-            onPointerEnter={() => setHovering(star)}
-            onPointerLeave={() => setHovering(0)}
+            onPointerEnter={(e) => handlePointerEnter(star, e)}
+            onPointerLeave={handlePointerLeave}
             disabled={disabled}
             className={cn(
               "rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               large ? "p-3" : "p-2.5",
               isActive ? "bg-yellow-50 scale-110" : "bg-transparent scale-100",
-              star === value && "scale-125",
+              value > 0 && star === value && "scale-125",
               disabled && "cursor-not-allowed opacity-50",
               "active:scale-90"
             )}
