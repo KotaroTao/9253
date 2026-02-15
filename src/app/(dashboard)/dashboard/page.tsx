@@ -20,6 +20,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { DailyTip } from "@/components/dashboard/daily-tip"
 import { getTodayTip, getCurrentTip } from "@/lib/patient-tips"
 import type { PatientTip } from "@/lib/patient-tips"
+import type { ClinicSettings } from "@/types"
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -40,12 +41,12 @@ export default async function DashboardPage() {
     where: { id: clinicId },
     select: { slug: true, settings: true },
   })
-  const settings = clinic?.settings as Record<string, unknown> | null
-  const hasAdminPassword = !!settings?.adminPassword
+  const settings = (clinic?.settings ?? {}) as ClinicSettings
+  const hasAdminPassword = !!settings.adminPassword
   const kioskUrl = clinic ? `/kiosk/${encodeURIComponent(clinic.slug)}` : "/dashboard/survey-start"
 
   // Daily tip: clinic custom > platform tips (with rotation) > hardcoded fallback
-  const customDailyTip = settings?.dailyTip as PatientTip | undefined
+  const customDailyTip = settings.dailyTip as PatientTip | undefined
   let dailyTip: PatientTip
   const isCustomTip = !!customDailyTip
   if (customDailyTip) {

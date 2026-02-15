@@ -1,10 +1,12 @@
 import { NextRequest } from "next/server"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
+import { updateClinicSettings } from "@/lib/queries/clinics"
 import { updateClinicSchema } from "@/lib/validations/clinic"
 import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
+import type { ClinicSettings } from "@/types"
 
 export async function PATCH(request: NextRequest) {
   const authResult = await requireRole("clinic_admin", "system_admin")
@@ -32,21 +34,15 @@ export async function PATCH(request: NextRequest) {
       (typeof workingDaysPerWeek === "number" && [5, 6, 7].includes(workingDaysPerWeek))
 
     if (needsSettingsUpdate) {
-      const existingClinic = await prisma.clinic.findUnique({
-        where: { id: clinicId },
-        select: { settings: true },
-      })
-      const existingSettings = (existingClinic?.settings as Record<string, unknown>) ?? {}
-      const newSettings = { ...existingSettings }
-
+      const patch: Partial<ClinicSettings> = {}
       if (adminPassword && typeof adminPassword === "string" && adminPassword.length >= 6) {
-        newSettings.adminPassword = await bcrypt.hash(adminPassword, 10)
+        patch.adminPassword = await bcrypt.hash(adminPassword, 10)
       }
       if (typeof workingDaysPerWeek === "number" && [5, 6, 7].includes(workingDaysPerWeek)) {
-        newSettings.workingDaysPerWeek = workingDaysPerWeek
+        patch.workingDaysPerWeek = workingDaysPerWeek
       }
-
-      updateData.settings = newSettings
+      const merged = await updateClinicSettings(clinicId, patch)
+      updateData.settings = merged
     }
 
     const clinic = await prisma.clinic.update({

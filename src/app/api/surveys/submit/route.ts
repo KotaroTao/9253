@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       ipHash,
     })
 
-    return successResponse({ id: response.id })
+    return successResponse({ id: response.id }, 201)
   } catch {
     return errorResponse(messages.common.error, 500)
   }

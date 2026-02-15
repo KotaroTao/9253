@@ -1,19 +1,21 @@
 import { NextRequest } from "next/server"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
+import { updateClinicSettings } from "@/lib/queries/clinics"
 import { requireAuth, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { setAdminModeCookie, clearAdminModeCookie } from "@/lib/admin-mode"
 import { messages } from "@/lib/messages"
 import { DEFAULT_ADMIN_PASSWORD } from "@/lib/constants"
+import type { ClinicSettings } from "@/types"
 
 async function getClinicPassword(clinicId: string) {
   const clinic = await prisma.clinic.findUnique({
     where: { id: clinicId },
     select: { settings: true },
   })
-  const settings = clinic?.settings as Record<string, unknown> | null
-  return settings?.adminPassword as string | undefined
+  const settings = (clinic?.settings ?? {}) as ClinicSettings
+  return settings.adminPassword
 }
 
 async function verifyPassword(password: string, hashedPassword: string | undefined): Promise<boolean> {
@@ -78,18 +80,10 @@ export async function PATCH(request: NextRequest) {
   }
 
   const newHashedPassword = await bcrypt.hash(newPassword, 10)
-  const existingClinic = await prisma.clinic.findUnique({
-    where: { id: clinicId },
-    select: { settings: true },
-  })
-  const existingSettings = (existingClinic?.settings as Record<string, unknown>) ?? {}
+  await updateClinicSettings(clinicId, { adminPassword: newHashedPassword })
 
-  await prisma.clinic.update({
-    where: { id: clinicId },
-    data: {
-      settings: { ...existingSettings, adminPassword: newHashedPassword },
-    },
-  })
+  // パスワード変更後はセッションを無効化（再認証を要求）
+  clearAdminModeCookie()
 
   return successResponse({ success: true })
 }

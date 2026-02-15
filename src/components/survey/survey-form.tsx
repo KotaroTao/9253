@@ -41,6 +41,7 @@ export function SurveyForm({ data, onComplete, kioskMode = false, patientAttribu
 
   function handleRating(questionId: string, value: number) {
     setAnswers((prev) => ({ ...prev, [questionId]: value }))
+    if (error) setError("")
   }
 
   function handleReset() {

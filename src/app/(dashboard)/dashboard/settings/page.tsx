@@ -4,6 +4,7 @@ import { isAdminMode } from "@/lib/admin-mode"
 import { getClinicById } from "@/lib/queries/clinics"
 import { SettingsForm } from "@/components/settings/settings-form"
 import { messages } from "@/lib/messages"
+import type { ClinicSettings } from "@/types"
 
 export default async function SettingsPage() {
   const session = await auth()
@@ -22,9 +23,9 @@ export default async function SettingsPage() {
     redirect("/dashboard")
   }
 
-  const settings = (clinic as { settings?: Record<string, unknown> }).settings
-  const hasAdminPassword = !!settings?.adminPassword
-  const workingDaysPerWeek = typeof settings?.workingDaysPerWeek === "number" ? settings.workingDaysPerWeek : 6
+  const settings = ((clinic as { settings?: unknown }).settings ?? {}) as ClinicSettings
+  const hasAdminPassword = !!settings.adminPassword
+  const workingDaysPerWeek = settings.workingDaysPerWeek ?? 6
 
   return (
     <div className="space-y-6">

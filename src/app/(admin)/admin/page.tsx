@@ -3,11 +3,17 @@ import { getAllClinics } from "@/lib/queries/clinics"
 import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
-import { Lightbulb, ArrowRight } from "lucide-react"
+import { Lightbulb, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react"
 
-export default async function AdminPage() {
-  const [{ clinics, total }, totalResponses] = await Promise.all([
-    getAllClinics(),
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>
+}) {
+  const params = await searchParams
+  const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1)
+  const [{ clinics, total, totalPages }, totalResponses] = await Promise.all([
+    getAllClinics({ page, limit: 20 }),
     prisma.surveyResponse.count(),
   ])
 
@@ -97,6 +103,37 @@ export default async function AdminPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between border-t pt-4">
+              <p className="text-xs text-muted-foreground">
+                {total}件中 {(page - 1) * 20 + 1}〜{Math.min(page * 20, total)}件
+              </p>
+              <div className="flex gap-2">
+                {page > 1 && (
+                  <Link
+                    href={`/admin?page=${page - 1}`}
+                    className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-xs hover:bg-muted"
+                  >
+                    <ChevronLeft className="h-3 w-3" />
+                    前へ
+                  </Link>
+                )}
+                <span className="inline-flex items-center px-2 text-xs text-muted-foreground">
+                  {page} / {totalPages}
+                </span>
+                {page < totalPages && (
+                  <Link
+                    href={`/admin?page=${page + 1}`}
+                    className="inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-xs hover:bg-muted"
+                  >
+                    次へ
+                    <ChevronRight className="h-3 w-3" />
+                  </Link>
+                )}
+              </div>
             </div>
           )}
         </CardContent>

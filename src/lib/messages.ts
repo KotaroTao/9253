@@ -45,7 +45,7 @@ export const messages = {
     email: "メールアドレス",
     password: "パスワード",
     loginButton: "ログインする",
-    loginError: "メールアドレスまたはパスワードが正しくありません",
+    loginError: "ログイン情報が正しくありません",
     emailRequired: "有効なメールアドレスを入力してください",
     passwordRequired: "パスワードは6文字以上で入力してください",
   },
