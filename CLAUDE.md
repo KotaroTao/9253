@@ -172,6 +172,25 @@ https://app.mieru-clinic.com/s/{clinicSlug}
 - **口コミ導線は非搭載**: 患者満足度改善に特化。口コミ依頼・誘導機能は意図的に排除
 - **他院比較（ベンチマーク）は削除**: MVP段階ではクリニック数不足で機能しない。カテゴリ分類なしの比較は不公平。将来的にクリニック数・カテゴリ分類が揃った段階で再検討
 
+## パフォーマンス最適化（1000医院×1万回答規模対応）
+
+### クエリ統合・最適化
+- **getDashboardStats()**: count + avg + prevAvg を1本の raw SQL に統合（FILTER句使用）。従来の4クエリ→2クエリに削減
+- **getStaffEngagementData()**: totalCount / todayCount / weekData を1本の raw SQL FILTER句で統合。7並列クエリ→4並列クエリに削減
+- **getCombinedMonthlyTrends()**: getMonthlyTrend（6ヶ月）と getSatisfactionTrend（12ヶ月）を統合。12ヶ月分を1クエリで取得し、JS側で6ヶ月/12ヶ月に分離
+- **getQuestionBreakdown()**: JSONB展開（jsonb_each_text）を直近3ヶ月に限定。全件走査を排除
+- **ダッシュボード合計**: DBラウンドトリップ 9本→5本に削減
+
+### 安全制限
+- `/api/improvement-actions`: `take: 100` 追加（無制限fetch防止）
+- `/api/staff-leaderboard`: スタッフ取得に `take: 100` 追加
+- `/admin` 全回答数: `COUNT(*)` → `pg_class.reltuples` 推定値に変更（1千万行の全件カウント回避）
+
+### DBインデックス
+- `survey_responses` に複合インデックス追加:
+  - `(clinic_id, responded_at, overall_score)` — ダッシュボード統計クエリ用
+  - `(clinic_id, template_id, responded_at)` — 質問別分析クエリ用
+
 ## 先送り機能（MVPに含めない）
 - カスタム質問編集UI / メール通知 / Google口コミスクレイピング
 - CSV/PDFエクスポート / OAuth認証 / 自動テスト / 料金ページ
