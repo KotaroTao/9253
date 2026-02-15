@@ -2,18 +2,15 @@
 # Cloud Run 自動デプロイ - mainブランチへのマージ時
 # =============================================================
 # 【有効化の手順】
-# 1. GCPプロジェクトを作成し、以下のサービスを有効化:
-#    - Cloud Run, Artifact Registry, Cloud SQL, Cloud Build
-# 2. GCPのサービスアカウントを作成し、以下の権限を付与:
-#    - Cloud Run 管理者
-#    - Artifact Registry 書き込み
-#    - Cloud Build 編集者
-#    - サービスアカウントユーザー
-# 3. GitHubリポジトリの Settings → Secrets and variables → Actions に以下を登録:
-#    - GCP_PROJECT_ID: GCPのプロジェクトID
-#    - GCP_SA_KEY: サービスアカウントのJSONキー（中身をそのまま貼付）
-#    - GCP_REGION: asia-northeast1
-# 4. このファイル名を deploy-cloudrun.yml → deploy.yml にリネーム
+# 1. GCPプロジェクトを作成し、deploy/gcp-setup.sh を実行
+# 2. GitHubリポジトリの Settings → Secrets and variables → Actions に以下を登録:
+#    - GCP_PROJECT_ID:       GCPプロジェクトID
+#    - GCP_SA_KEY:           サービスアカウントのJSONキー（中身をそのまま貼付）
+#    - GCP_REGION:           asia-northeast1
+#    - DATABASE_URL:         Cloud SQL接続用URL（Unix Socket形式）
+#    - AUTH_SECRET:          Auth.js用シークレットキー
+#    - CLOUD_SQL_CONNECTION: Cloud SQL接続名（project:region:instance）
+# 3. このファイル名を deploy-cloudrun.yml → deploy.yml にリネーム
 #    （既存の deploy.yml は deploy-vps.yml にリネーム）
 # =============================================================
 
@@ -76,7 +73,14 @@ jobs:
             --cpu 1 \
             --min-instances 0 \
             --max-instances 3 \
-            --set-env-vars "NODE_ENV=production"
+            --service-account "cloud-run-mieru@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com" \
+            --add-cloudsql-instances ${{ secrets.CLOUD_SQL_CONNECTION }} \
+            --set-env-vars "NODE_ENV=production" \
+            --set-env-vars "DATABASE_URL=${{ secrets.DATABASE_URL }}" \
+            --set-env-vars "AUTH_SECRET=${{ secrets.AUTH_SECRET }}" \
+            --set-env-vars "AUTH_URL=https://mieru-clinic.com" \
+            --set-env-vars "NEXT_PUBLIC_APP_URL=https://mieru-clinic.com" \
+            --set-env-vars "RUN_MIGRATIONS=true"
 
       # --- 7. デプロイ結果表示 ---
       - name: デプロイURL表示

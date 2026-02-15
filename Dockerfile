@@ -1,6 +1,6 @@
 # =============================================================
 # MIERU Clinic - Docker マルチステージビルド
-# Cloud Run + Next.js 14 (standalone) + Prisma
+# Cloud Run + Next.js 14 (standalone) + Prisma + Cloud SQL
 # =============================================================
 
 # --- ステージ1: 依存関係のインストール ---
@@ -45,10 +45,14 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Prisma スキーマ（マイグレーション用）
+# Prisma スキーマ（マイグレーション用）& クライアント
 COPY --from=builder /app/prisma ./prisma
 COPY --from=deps /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=deps /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=deps /app/node_modules/prisma ./node_modules/prisma
+
+# エントリポイントスクリプト
+COPY deploy/docker-entrypoint.sh ./docker-entrypoint.sh
 
 USER nextjs
 
@@ -57,4 +61,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"]
+ENTRYPOINT ["sh", "docker-entrypoint.sh"]

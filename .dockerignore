@@ -19,8 +19,9 @@ node_modules
 *.swp
 .DS_Store
 
-# VPSデプロイ関連（Docker不要）
-deploy/
+# デプロイスクリプト（エントリポイント以外はDocker不要）
+deploy/*
+!deploy/docker-entrypoint.sh
 
 # ドキュメント
 *.md
