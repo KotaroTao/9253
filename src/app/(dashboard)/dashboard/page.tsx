@@ -2,8 +2,9 @@ import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { isAdminMode } from "@/lib/admin-mode"
-import { getDashboardStats, getMonthlyTrend, getSatisfactionTrend, getQuestionBreakdown } from "@/lib/queries/stats"
+import { getDashboardStats, getCombinedMonthlyTrends, getQuestionBreakdown } from "@/lib/queries/stats"
 import type { TemplateQuestionScores } from "@/lib/queries/stats"
+import type { SatisfactionTrend } from "@/types"
 import { getStaffEngagementData } from "@/lib/queries/engagement"
 import { SatisfactionCards } from "@/components/dashboard/satisfaction-cards"
 import { SatisfactionTrendChart } from "@/components/dashboard/satisfaction-trend"
@@ -84,8 +85,8 @@ export default async function DashboardPage() {
   // Admin analytics data (only fetch when admin mode is active)
   let adminData: {
     stats: Awaited<ReturnType<typeof getDashboardStats>>
-    monthlyTrend: Awaited<ReturnType<typeof getMonthlyTrend>>
-    satisfactionTrend: Awaited<ReturnType<typeof getSatisfactionTrend>>
+    monthlyTrend: Array<{ month: string; avgScore: number; count: number }>
+    satisfactionTrend: SatisfactionTrend[]
     questionBreakdown: TemplateQuestionScores[]
     showSummaryBanner: boolean
     summaryBannerLabel: string
@@ -98,17 +99,17 @@ export default async function DashboardPage() {
     const prevYear = prevDate.getFullYear()
     const prevMonth = prevDate.getMonth() + 1
 
-    const [stats, monthlyTrend, satisfactionTrend, questionBreakdown, lastMonthSummary] =
+    const [stats, trends, questionBreakdown, lastMonthSummary] =
       await Promise.all([
         getDashboardStats(clinicId),
-        getMonthlyTrend(clinicId),
-        getSatisfactionTrend(clinicId),
+        getCombinedMonthlyTrends(clinicId),
         getQuestionBreakdown(clinicId),
         prisma.monthlyClinicMetrics.findUnique({
           where: { clinicId_year_month: { clinicId, year: prevYear, month: prevMonth } },
           select: { totalVisits: true },
         }),
       ])
+    const { monthlyTrend, satisfactionTrend } = trends
 
     // Collect low-score questions for insights
     const lowScoreQuestions: Array<{ text: string; avgScore: number }> = []

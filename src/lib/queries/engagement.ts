@@ -49,15 +49,26 @@ export async function getStaffEngagementData(
   const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1
   weekStart.setDate(weekStart.getDate() - daysToMonday)
 
-  const [todayCount, totalCount, streakResponses, positiveComments, clinic, weekData, todayData] =
+  // Consolidate count/avg queries into a single raw SQL to reduce round-trips (7→4)
+  interface AggRow {
+    total_count: bigint
+    today_count: bigint
+    today_avg: number | null
+    week_count: bigint
+    week_avg: number | null
+  }
+  const [aggRows, streakResponses, positiveComments, clinic] =
     await Promise.all([
-      prisma.surveyResponse.count({
-        where: { clinicId, respondedAt: { gte: todayStart } },
-      }),
-
-      prisma.surveyResponse.count({
-        where: { clinicId },
-      }),
+      prisma.$queryRaw<AggRow[]>`
+        SELECT
+          COUNT(*) AS total_count,
+          COUNT(*) FILTER (WHERE responded_at >= ${todayStart}) AS today_count,
+          ROUND(AVG(overall_score) FILTER (WHERE responded_at >= ${todayStart})::numeric, 1)::float AS today_avg,
+          COUNT(*) FILTER (WHERE responded_at >= ${weekStart}) AS week_count,
+          ROUND(AVG(overall_score) FILTER (WHERE responded_at >= ${weekStart})::numeric, 1)::float AS week_avg
+        FROM survey_responses
+        WHERE clinic_id = ${clinicId}::uuid
+      `,
 
       // Only fetch respondedAt for streak calculation (minimal data)
       prisma.surveyResponse.findMany({
@@ -82,20 +93,14 @@ export async function getStaffEngagementData(
         where: { id: clinicId },
         select: { settings: true },
       }),
-
-      // Week aggregate
-      prisma.surveyResponse.aggregate({
-        where: { clinicId, respondedAt: { gte: weekStart } },
-        _count: { _all: true },
-        _avg: { overallScore: true },
-      }),
-
-      // Today's average score for happiness meter
-      prisma.surveyResponse.aggregate({
-        where: { clinicId, respondedAt: { gte: todayStart } },
-        _avg: { overallScore: true },
-      }),
     ])
+
+  const agg = aggRows[0]
+  const totalCount = Number(agg.total_count)
+  const todayCount = Number(agg.today_count)
+  const weekCount = Number(agg.week_count)
+  const weekAvgScore = agg.week_avg
+  const todayAvgScore = agg.today_avg
 
   // Extract settings
   const settings = (clinic?.settings ?? {}) as ClinicSettings
@@ -186,15 +191,11 @@ export async function getStaffEngagementData(
     rank,
     nextRank: nextRankObj,
     rankProgress,
-    weekCount: weekData._count._all,
-    weekAvgScore: weekData._avg.overallScore
-      ? Math.round(weekData._avg.overallScore * 10) / 10
-      : null,
+    weekCount,
+    weekAvgScore: weekAvgScore ?? null,
     weekActiveDays,
     workingDaysPerWeek,
-    todayAvgScore: todayData._avg.overallScore
-      ? Math.round(todayData._avg.overallScore * 10) / 10
-      : null,
+    todayAvgScore: todayAvgScore ?? null,
     streakBreak,
   }
 }

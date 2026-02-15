@@ -12,10 +12,17 @@ export default async function AdminPage({
 }) {
   const params = await searchParams
   const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1)
-  const [{ clinics, total, totalPages }, totalResponses] = await Promise.all([
+  const [{ clinics, total, totalPages }, totalResponsesResult] = await Promise.all([
     getAllClinics({ page, limit: 20 }),
-    prisma.surveyResponse.count(),
+    // Use reltuples estimate for platform-wide count (avoids full table scan on 10M+ rows)
+    prisma.$queryRaw<Array<{ estimate: bigint }>>`
+      SELECT GREATEST(
+        (SELECT reltuples::bigint FROM pg_class WHERE relname = 'survey_responses'),
+        0
+      ) AS estimate
+    `,
   ])
+  const totalResponses = Number(totalResponsesResult[0]?.estimate ?? 0)
 
   return (
     <div className="space-y-6">

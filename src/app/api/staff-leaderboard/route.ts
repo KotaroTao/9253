@@ -22,6 +22,7 @@ export async function GET() {
     where: { clinicId, isActive: true },
     select: { id: true, name: true, role: true },
     orderBy: { createdAt: "asc" },
+    take: 100,
   })
 
   if (staffList.length === 0) {
