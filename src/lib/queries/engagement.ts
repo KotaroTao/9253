@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
-import { DEFAULTS, MILESTONES } from "@/lib/constants"
+import { DEFAULTS, MILESTONES, getRank, getNextRank } from "@/lib/constants"
+import type { Rank } from "@/lib/constants"
 
 export interface EngagementData {
   todayCount: number
@@ -9,6 +10,13 @@ export interface EngagementData {
   currentMilestone: number | null
   nextMilestone: number | null
   positiveComment: string | null
+  // New: rank system
+  rank: Rank
+  nextRank: Rank | null
+  rankProgress: number // 0-100
+  // New: week data
+  weekCount: number
+  weekAvgScore: number | null
 }
 
 export async function getStaffEngagementData(
@@ -23,7 +31,13 @@ export async function getStaffEngagementData(
   const commentStart = new Date(todayStart)
   commentStart.setDate(commentStart.getDate() - 30)
 
-  const [todayCount, totalCount, streakResponses, positiveComments, clinic] =
+  // Week start (Monday)
+  const weekStart = new Date(todayStart)
+  const dayOfWeek = weekStart.getDay()
+  const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+  weekStart.setDate(weekStart.getDate() - daysToMonday)
+
+  const [todayCount, totalCount, streakResponses, positiveComments, clinic, weekData] =
     await Promise.all([
       prisma.surveyResponse.count({
         where: { clinicId, respondedAt: { gte: todayStart } },
@@ -54,6 +68,13 @@ export async function getStaffEngagementData(
       prisma.clinic.findUnique({
         where: { id: clinicId },
         select: { settings: true },
+      }),
+
+      // Week aggregate
+      prisma.surveyResponse.aggregate({
+        where: { clinicId, respondedAt: { gte: weekStart } },
+        _count: { _all: true },
+        _avg: { overallScore: true },
       }),
     ])
 
@@ -100,6 +121,16 @@ export async function getStaffEngagementData(
       ? candidates[Math.floor(Math.random() * candidates.length)].freeText
       : null
 
+  // Rank system
+  const rank = getRank(totalCount)
+  const nextRankObj = getNextRank(totalCount)
+  let rankProgress = 100
+  if (nextRankObj) {
+    const currentMin = rank.minCount
+    const nextMin = nextRankObj.minCount
+    rankProgress = Math.round(((totalCount - currentMin) / (nextMin - currentMin)) * 100)
+  }
+
   return {
     todayCount,
     dailyGoal,
@@ -108,6 +139,13 @@ export async function getStaffEngagementData(
     currentMilestone,
     nextMilestone,
     positiveComment,
+    rank,
+    nextRank: nextRankObj,
+    rankProgress,
+    weekCount: weekData._count._all,
+    weekAvgScore: weekData._avg.overallScore
+      ? Math.round(weekData._avg.overallScore * 10) / 10
+      : null,
   }
 }
 

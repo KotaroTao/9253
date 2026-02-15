@@ -1,12 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StarRating } from "@/components/survey/star-rating"
 import { messages } from "@/lib/messages"
 import { DEFAULTS, DENTAL_TIPS } from "@/lib/constants"
-import { Lightbulb, RotateCcw } from "lucide-react"
+import { Lightbulb, RotateCcw, ExternalLink } from "lucide-react"
 import { Confetti } from "@/components/survey/confetti"
 import type { SurveyPageData, PatientAttributes } from "@/types/survey"
 
@@ -15,11 +15,12 @@ interface SurveyFormProps {
   onComplete?: () => void
   kioskMode?: boolean
   patientAttributes?: PatientAttributes
+  googlePlaceId?: string | null
 }
 
 type Step = "welcome" | "survey" | "submitting" | "thanks"
 
-export function SurveyForm({ data, onComplete, kioskMode = false, patientAttributes }: SurveyFormProps) {
+export function SurveyForm({ data, onComplete, kioskMode = false, patientAttributes, googlePlaceId }: SurveyFormProps) {
   const [step, setStep] = useState<Step>(kioskMode ? "survey" : "welcome")
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [freeText, setFreeText] = useState("")
@@ -28,6 +29,20 @@ export function SurveyForm({ data, onComplete, kioskMode = false, patientAttribu
 
   const ratingQuestions = data.questions.filter((q) => q.type === "rating")
   const allAnswered = ratingQuestions.every((q) => answers[q.id] && answers[q.id] > 0)
+  const answeredCount = ratingQuestions.filter((q) => answers[q.id] && answers[q.id] > 0).length
+  const totalQuestions = ratingQuestions.length
+
+  // Calculate average score for the thank you page
+  const avgScore = useMemo(() => {
+    const scores = Object.values(answers)
+    if (scores.length === 0) return 0
+    return Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10
+  }, [answers])
+
+  // Google review URL
+  const googleReviewUrl = googlePlaceId
+    ? `https://search.google.com/local/writereview?placeid=${googlePlaceId}`
+    : null
 
   function handleRating(questionId: string, value: number) {
     setAnswers((prev) => ({ ...prev, [questionId]: value }))
@@ -94,11 +109,25 @@ export function SurveyForm({ data, onComplete, kioskMode = false, patientAttribu
   }
 
   if (step === "survey") {
+    const progressPercent = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0
+
     return (
       <Card className="overflow-hidden">
-        <div className="h-1.5 bg-primary" />
+        {/* Animated progress bar */}
+        <div className="h-1.5 bg-muted">
+          <div
+            className="h-full bg-primary transition-all duration-300 ease-out"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
         <CardHeader className="pb-2 text-center">
-          <p className="text-sm text-muted-foreground">{data.clinicName}</p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">{data.clinicName}</p>
+            {/* Progress counter */}
+            <p className="text-xs font-medium text-primary">
+              {messages.survey.progressLabel} {answeredCount}{messages.survey.progressOf}{totalQuestions}
+            </p>
+          </div>
           <CardTitle className={kioskMode ? "text-xl" : "text-lg"}>
             {messages.survey.welcome}
           </CardTitle>
@@ -109,21 +138,31 @@ export function SurveyForm({ data, onComplete, kioskMode = false, patientAttribu
           )}
         </CardHeader>
         <CardContent className="space-y-5 pb-8">
-          {ratingQuestions.map((q, index) => (
-            <div key={q.id} className="space-y-2">
-              <p className={`font-medium ${kioskMode ? "text-base" : "text-sm"}`}>
-                <span className="mr-1.5 text-muted-foreground">{index + 1}.</span>
-                {q.text}
-              </p>
-              <div className="flex justify-center">
-                <StarRating
-                  value={answers[q.id] || 0}
-                  onChange={(v) => handleRating(q.id, v)}
-                  large={kioskMode}
-                />
+          {ratingQuestions.map((q, index) => {
+            const isAnswered = answers[q.id] && answers[q.id] > 0
+            return (
+              <div
+                key={q.id}
+                className={`space-y-2 rounded-xl p-3 transition-colors ${
+                  isAnswered ? "bg-primary/5" : ""
+                }`}
+              >
+                <p className={`font-medium ${kioskMode ? "text-base" : "text-sm"}`}>
+                  <span className={`mr-1.5 ${isAnswered ? "text-primary" : "text-muted-foreground"}`}>
+                    {index + 1}.
+                  </span>
+                  {q.text}
+                </p>
+                <div className="flex justify-center">
+                  <StarRating
+                    value={answers[q.id] || 0}
+                    onChange={(v) => handleRating(q.id, v)}
+                    large={kioskMode}
+                  />
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
 
           <div className="space-y-2 pt-2">
             <p className={`font-medium ${kioskMode ? "text-base" : "text-sm"}`}>
@@ -182,13 +221,40 @@ export function SurveyForm({ data, onComplete, kioskMode = false, patientAttribu
     <>
       <Confetti />
       <Card className="overflow-hidden">
-        <div className="h-1.5 bg-primary" />
+        <div className="h-1.5 bg-green-500" />
         <CardHeader className="text-center pt-8">
           <div className="mb-3 text-5xl">🎉</div>
           <CardTitle className="text-xl">{messages.survey.thankYou}</CardTitle>
           <p className="text-sm text-muted-foreground">{messages.survey.thankYouSub}</p>
+          {/* Score display */}
+          {avgScore > 0 && (
+            <div className="mx-auto mt-3 flex items-center justify-center gap-1">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <span key={s} className={`text-lg ${s <= Math.round(avgScore) ? "text-yellow-400" : "text-gray-200"}`}>
+                  ★
+                </span>
+              ))}
+            </div>
+          )}
         </CardHeader>
         <CardContent className="space-y-4 pb-8 text-center">
+          {/* Google review CTA (shown to all patients equally per compliance) */}
+          {googleReviewUrl && (
+            <a
+              href={googleReviewUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mx-auto flex max-w-xs items-center justify-center gap-2 rounded-xl border-2 border-blue-200 bg-blue-50 px-5 py-3.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 active:scale-[0.98]"
+            >
+              <ExternalLink className="h-4 w-4" />
+              {messages.survey.googleReviewCta}
+            </a>
+          )}
+          {googleReviewUrl && (
+            <p className="text-[10px] text-muted-foreground">{messages.survey.reviewPrompt}</p>
+          )}
+
+          {/* Dental tip */}
           <div className="mx-auto max-w-xs rounded-xl bg-blue-50 p-4 text-left">
             <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-blue-600">
               <Lightbulb className="h-3.5 w-3.5" />

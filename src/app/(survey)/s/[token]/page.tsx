@@ -45,7 +45,7 @@ export default async function SurveyPage({ params, searchParams }: SurveyPagePro
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-8">
       <div className="w-full max-w-md">
-        <SurveyForm data={pageData} />
+        <SurveyForm data={pageData} googlePlaceId={clinic.googlePlaceId} />
       </div>
     </div>
   )
