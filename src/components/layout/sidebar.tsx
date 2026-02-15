@@ -11,6 +11,7 @@ import {
   Shield,
   BarChart3,
   Smartphone,
+  Target,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
@@ -30,6 +31,7 @@ const dailyItems = [
 ]
 
 const analyticsItems = [
+  { href: "/dashboard/actions", label: messages.improvementActions.title, icon: Target },
   { href: "/dashboard/metrics", label: messages.nav.monthlyMetrics, icon: BarChart3 },
   { href: "/dashboard/surveys", label: messages.nav.surveys, icon: ClipboardList },
 ]

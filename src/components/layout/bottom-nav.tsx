@@ -7,6 +7,7 @@ import {
   Smartphone,
   BarChart3,
   ClipboardList,
+  Target,
   LogOut,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
@@ -45,6 +46,13 @@ export function BottomNav({ clinicSlug, isAdminMode = false }: BottomNavProps) {
       label: messages.nav.surveys,
       icon: ClipboardList,
       isActive: pathname.startsWith("/dashboard/surveys"),
+      show: isAdminMode,
+    },
+    {
+      href: "/dashboard/actions",
+      label: messages.improvementActions.title,
+      icon: Target,
+      isActive: pathname.startsWith("/dashboard/actions"),
       show: isAdminMode,
     },
     {

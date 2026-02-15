@@ -21,6 +21,7 @@ model Clinic {
   surveyTemplates      SurveyTemplate[]
   surveyResponses      SurveyResponse[]
   monthlyClinicMetrics MonthlyClinicMetrics[]
+  improvementActions   ImprovementAction[]
 
   @@map("clinics")
 }
@@ -110,6 +111,28 @@ model PlatformSetting {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("platform_settings")
+}
+
+model ImprovementAction {
+  id            String    @id @default(uuid()) @db.Uuid
+  clinicId      String    @map("clinic_id") @db.Uuid
+  title         String
+  description   String?
+  targetQuestion String?  @map("target_question")
+  baselineScore Float?    @map("baseline_score")
+  targetScore   Float?    @map("target_score")
+  resultScore   Float?    @map("result_score")
+  status        String    @default("active") // active, completed, cancelled
+  startedAt     DateTime  @default(now()) @map("started_at")
+  completedAt   DateTime? @map("completed_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@index([clinicId, status])
+  @@map("improvement_actions")
 }
 
 model MonthlyClinicMetrics {

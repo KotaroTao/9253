@@ -13,6 +13,7 @@ import { AdminInlineAuth } from "@/components/dashboard/admin-inline-auth"
 import { QuestionBreakdown } from "@/components/dashboard/question-breakdown"
 import { StaffEngagement } from "@/components/dashboard/staff-engagement"
 import { InsightCards } from "@/components/dashboard/insight-cards"
+import { StaffLeaderboard } from "@/components/dashboard/staff-leaderboard"
 import { messages } from "@/lib/messages"
 import { Smartphone, ArrowRight, TrendingUp, TrendingDown } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
@@ -289,6 +290,9 @@ export default async function DashboardPage() {
 
             <SatisfactionTrendChart data={adminData.satisfactionTrend} />
           </div>
+
+          {/* Staff Leaderboard */}
+          <StaffLeaderboard />
 
         </>
       )}
