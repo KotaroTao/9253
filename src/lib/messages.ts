@@ -141,6 +141,8 @@ export const messages = {
     weekSummary: "今週の実績",
     weekResponses: "今週の回答",
     weekAvgScore: "今週の平均",
+    weekActiveDays: "今週の活動",
+    weekActiveDaysOf: "/7日",
     // Insights
     insightTitle: "改善アクション",
     insightScoreUp: "先月より{delta}ポイント上昇",
@@ -230,6 +232,7 @@ export const messages = {
   },
   patientSetup: {
     title: "患者情報",
+    staffSelect: "担当スタッフ",
     visitType: "来院区分",
     treatmentType: "診療内容",
     chiefComplaint: "主訴",

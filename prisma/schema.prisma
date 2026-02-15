@@ -97,8 +97,10 @@ model SurveyResponse {
 
   @@index([clinicId])
   @@index([staffId])
+  @@index([templateId])
   @@index([respondedAt])
   @@index([clinicId, respondedAt])
+  @@index([ipHash, respondedAt])
   @@map("survey_responses")
 }
 
