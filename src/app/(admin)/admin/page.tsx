@@ -3,7 +3,7 @@ import { getAllClinics } from "@/lib/queries/clinics"
 import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
-import { Lightbulb, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react"
+import { Lightbulb, HardDrive, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react"
 
 export default async function AdminPage({
   searchParams,
@@ -54,22 +54,40 @@ export default async function AdminPage({
         </Card>
       </div>
 
-      {/* Tip Management link */}
-      <Link
-        href="/admin/tips"
-        className="flex items-center justify-between rounded-lg border border-amber-200 bg-gradient-to-r from-amber-50/80 to-white p-4 transition-colors hover:border-amber-300 hover:shadow-sm"
-      >
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
-            <Lightbulb className="h-4 w-4" />
+      {/* Management links */}
+      <div className="space-y-3">
+        <Link
+          href="/admin/tips"
+          className="flex items-center justify-between rounded-lg border border-amber-200 bg-gradient-to-r from-amber-50/80 to-white p-4 transition-colors hover:border-amber-300 hover:shadow-sm"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+              <Lightbulb className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">{messages.tipManager.title}</p>
+              <p className="text-xs text-muted-foreground">{messages.tipManager.description}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-medium">{messages.tipManager.title}</p>
-            <p className="text-xs text-muted-foreground">{messages.tipManager.description}</p>
+          <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </Link>
+
+        <Link
+          href="/admin/backups"
+          className="flex items-center justify-between rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50/80 to-white p-4 transition-colors hover:border-blue-300 hover:shadow-sm"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+              <HardDrive className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">{messages.backup.title}</p>
+              <p className="text-xs text-muted-foreground">{messages.backup.description}</p>
+            </div>
           </div>
-        </div>
-        <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-      </Link>
+          <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </Link>
+      </div>
 
       {/* Clinic list */}
       <Card>

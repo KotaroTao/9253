@@ -243,16 +243,22 @@ async function main() {
     { category: "待ち時間", title: "予約枠にバッファを持たせる", content: "急患対応用に1日2〜3枠のバッファを確保すると、予約患者の待ち時間が減ります。待ち時間の長さは満足度を下げる最大の要因の一つです。" },
   ]
 
-  const tipSettingValue = { tips: defaultTips, rotationMinutes: 1440 }
-  await prisma.platformSetting.upsert({
+  // 既存設定がある場合は上書きしない（管理画面で変更した値を保持）
+  const existingTipSetting = await prisma.platformSetting.findUnique({
     where: { key: "patientTips" },
-    update: { value: tipSettingValue as unknown as Prisma.InputJsonValue },
-    create: {
-      key: "patientTips",
-      value: tipSettingValue as unknown as Prisma.InputJsonValue,
-    },
   })
-  console.log(`Platform tips seeded: ${defaultTips.length} tips (rotation: 1440 min)`)
+  if (!existingTipSetting) {
+    const tipSettingValue = { tips: defaultTips, rotationMinutes: 1440 }
+    await prisma.platformSetting.create({
+      data: {
+        key: "patientTips",
+        value: tipSettingValue as unknown as Prisma.InputJsonValue,
+      },
+    })
+    console.log(`Platform tips seeded: ${defaultTips.length} tips (rotation: 1440 min)`)
+  } else {
+    console.log("Platform tips already exist, skipping (preserving custom settings)")
+  }
 
   console.log("\nSeed completed!")
   console.log("\n--- Login Credentials ---")
