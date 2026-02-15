@@ -130,6 +130,21 @@ export const messages = {
     // Enhanced streak
     streakRecord: "最長記録更新中！",
     streakEncourage: "今日のアンケートでストリーク継続！",
+    streakMilestone: "ストリーク達成！",
+    // Happiness meter
+    happinessMeterLabel: "本日の患者満足度",
+    happinessExcellent: "とても良い！",
+    happinessGood: "良好です",
+    happinessOkay: "まずまず",
+    happinessLow: "改善のチャンス",
+    // Encouragement messages
+    encourageGoalClose: "あと少し！目標達成まで頑張りましょう",
+    encourageStreak: "連続記録を更新中！この調子です",
+    encourageHighScore: "患者さまの笑顔が増えています",
+    encourageMorning: "今日も患者さまの声を届けましょう",
+    encourageAfternoon: "午後も引き続きよろしくお願いします",
+    encourageEvening: "今日もお疲れさまでした。明日も頑張りましょう",
+    encourageFirstToday: "最初の1件をお待ちしています！",
     // Week summary
     weekSummary: "今週の実績",
     weekResponses: "今週の回答",
