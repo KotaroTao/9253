@@ -142,7 +142,12 @@ export const messages = {
     weekResponses: "今週の回答",
     weekAvgScore: "今週の平均",
     weekActiveDays: "今週の活動",
-    weekActiveDaysOf: "/7日",
+    weekActiveDaysOf: "日",
+    // Streak recovery
+    streakBroken: "ストリークが途切れました",
+    streakBrokenDate: "{date}（{dayOfWeek}）",
+    markAsClosed: "休診日だった",
+    streakRecovered: "ストリークを復活しました",
     // Insights
     insightTitle: "改善アクション",
     insightScoreUp: "先月より{delta}ポイント上昇",
@@ -289,6 +294,10 @@ export const messages = {
     adminPasswordSet: "管理者パスワードが設定されています",
     adminPasswordChange: "パスワードを変更",
     adminPasswordNew: "新しいパスワードを設定",
+    workingDays: "営業日数",
+    workingDaysLabel: "週の営業日数",
+    workingDaysDesc: "ストリークや週間活動日数の計算に使用します",
+    workingDaysSuffix: "日/週",
   },
   nav: {
     dashboard: "ホーム",

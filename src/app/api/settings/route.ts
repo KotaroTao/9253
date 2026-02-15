@@ -17,7 +17,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { adminPassword, ...rest } = body
+    const { adminPassword, workingDaysPerWeek, ...rest } = body
     const parsed = updateClinicSchema.safeParse(rest)
 
     if (!parsed.success) {
@@ -26,14 +26,27 @@ export async function PATCH(request: NextRequest) {
 
     const updateData: Record<string, unknown> = { ...parsed.data }
 
-    if (adminPassword && typeof adminPassword === "string" && adminPassword.length >= 6) {
-      const hashedPassword = await bcrypt.hash(adminPassword, 10)
+    // Merge settings fields (adminPassword, workingDaysPerWeek, closedDates, etc.)
+    const needsSettingsUpdate =
+      (adminPassword && typeof adminPassword === "string" && adminPassword.length >= 6) ||
+      (typeof workingDaysPerWeek === "number" && [5, 6, 7].includes(workingDaysPerWeek))
+
+    if (needsSettingsUpdate) {
       const existingClinic = await prisma.clinic.findUnique({
         where: { id: clinicId },
         select: { settings: true },
       })
       const existingSettings = (existingClinic?.settings as Record<string, unknown>) ?? {}
-      updateData.settings = { ...existingSettings, adminPassword: hashedPassword }
+      const newSettings = { ...existingSettings }
+
+      if (adminPassword && typeof adminPassword === "string" && adminPassword.length >= 6) {
+        newSettings.adminPassword = await bcrypt.hash(adminPassword, 10)
+      }
+      if (typeof workingDaysPerWeek === "number" && [5, 6, 7].includes(workingDaysPerWeek)) {
+        newSettings.workingDaysPerWeek = workingDaysPerWeek
+      }
+
+      updateData.settings = newSettings
     }
 
     const clinic = await prisma.clinic.update({
