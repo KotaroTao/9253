@@ -51,7 +51,6 @@ export default async function KioskPage({ params }: KioskPageProps) {
       clinicSlug={clinic.slug}
       templates={templates}
       initialTodayCount={todayCount}
-      googlePlaceId={clinic.googlePlaceId}
     />
   )
 }

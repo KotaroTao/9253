@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StarRating } from "@/components/survey/star-rating"
 import { messages } from "@/lib/messages"
 import { DEFAULTS, DENTAL_TIPS } from "@/lib/constants"
-import { Lightbulb, RotateCcw, ExternalLink } from "lucide-react"
+import { Lightbulb, RotateCcw } from "lucide-react"
 import { Confetti } from "@/components/survey/confetti"
 import type { SurveyPageData, PatientAttributes } from "@/types/survey"
 
@@ -15,12 +15,11 @@ interface SurveyFormProps {
   onComplete?: () => void
   kioskMode?: boolean
   patientAttributes?: PatientAttributes
-  googlePlaceId?: string | null
 }
 
 type Step = "welcome" | "survey" | "submitting" | "thanks"
 
-export function SurveyForm({ data, onComplete, kioskMode = false, patientAttributes, googlePlaceId }: SurveyFormProps) {
+export function SurveyForm({ data, onComplete, kioskMode = false, patientAttributes }: SurveyFormProps) {
   const [step, setStep] = useState<Step>(kioskMode ? "survey" : "welcome")
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [freeText, setFreeText] = useState("")
@@ -38,11 +37,6 @@ export function SurveyForm({ data, onComplete, kioskMode = false, patientAttribu
     if (scores.length === 0) return 0
     return Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10
   }, [answers])
-
-  // Google review URL
-  const googleReviewUrl = googlePlaceId
-    ? `https://search.google.com/local/writereview?placeid=${googlePlaceId}`
-    : null
 
   function handleRating(questionId: string, value: number) {
     setAnswers((prev) => ({ ...prev, [questionId]: value }))
@@ -238,22 +232,6 @@ export function SurveyForm({ data, onComplete, kioskMode = false, patientAttribu
           )}
         </CardHeader>
         <CardContent className="space-y-4 pb-8 text-center">
-          {/* Google review CTA (shown to all patients equally per compliance) */}
-          {googleReviewUrl && (
-            <a
-              href={googleReviewUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mx-auto flex max-w-xs items-center justify-center gap-2 rounded-xl border-2 border-blue-200 bg-blue-50 px-5 py-3.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100 active:scale-[0.98]"
-            >
-              <ExternalLink className="h-4 w-4" />
-              {messages.survey.googleReviewCta}
-            </a>
-          )}
-          {googleReviewUrl && (
-            <p className="text-[10px] text-muted-foreground">{messages.survey.reviewPrompt}</p>
-          )}
-
           {/* Dental tip */}
           <div className="mx-auto max-w-xs rounded-xl bg-blue-50 p-4 text-left">
             <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-blue-600">

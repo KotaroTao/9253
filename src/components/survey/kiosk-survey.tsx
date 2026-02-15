@@ -28,7 +28,6 @@ interface KioskSurveyProps {
   clinicSlug: string
   templates: SurveyTemplateInfo[]
   initialTodayCount: number
-  googlePlaceId?: string | null
 }
 
 type KioskState = "setup" | "survey" | "thanks"
@@ -92,7 +91,6 @@ export function KioskSurvey({
   clinicSlug,
   templates,
   initialTodayCount,
-  googlePlaceId,
 }: KioskSurveyProps) {
   const router = useRouter()
   const [state, setState] = useState<KioskState>("setup")
@@ -312,7 +310,6 @@ export function KioskSurvey({
           data={selectedData}
           onComplete={handleSurveyComplete}
           patientAttributes={patientAttrs ?? undefined}
-          googlePlaceId={googlePlaceId}
           kioskMode
         />
       </div>

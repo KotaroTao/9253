@@ -72,8 +72,6 @@ export const messages = {
     allRequiredHint: "すべての質問にご回答ください",
     progressLabel: "質問",
     progressOf: "/",
-    reviewPrompt: "※ご投稿は任意です",
-    googleReviewCta: "Googleで口コミを書く",
   },
   dashboard: {
     title: "ダッシュボード",
