@@ -42,6 +42,7 @@ export function ImprovementActionsView({ initialActions }: Props) {
   const [showForm, setShowForm] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   // Form state
   const [title, setTitle] = useState("")
@@ -53,6 +54,7 @@ export function ImprovementActionsView({ initialActions }: Props) {
   async function handleCreate() {
     if (!title.trim() || loading) return
     setLoading(true)
+    setErrorMsg(null)
     try {
       const res = await fetch("/api/improvement-actions", {
         method: "POST",
@@ -75,7 +77,12 @@ export function ImprovementActionsView({ initialActions }: Props) {
         router.refresh()
         const data = await res.json()
         setActions([data, ...actions])
+      } else {
+        const err = await res.json().catch(() => null)
+        setErrorMsg(err?.error || messages.improvementActions.saveFailed)
       }
+    } catch {
+      setErrorMsg(messages.improvementActions.saveFailed)
     } finally {
       setLoading(false)
     }
@@ -83,6 +90,7 @@ export function ImprovementActionsView({ initialActions }: Props) {
 
   async function handleStatusChange(id: string, status: string, resultScore?: number) {
     setLoading(true)
+    setErrorMsg(null)
     try {
       const body: Record<string, unknown> = { status }
       if (typeof resultScore === "number") {
@@ -97,7 +105,12 @@ export function ImprovementActionsView({ initialActions }: Props) {
         router.refresh()
         const updated = await res.json()
         setActions(actions.map((a) => (a.id === id ? updated : a)))
+      } else {
+        const err = await res.json().catch(() => null)
+        setErrorMsg(err?.error || messages.improvementActions.statusChangeFailed)
       }
+    } catch {
+      setErrorMsg(messages.improvementActions.statusChangeFailed)
     } finally {
       setLoading(false)
     }
@@ -114,6 +127,13 @@ export function ImprovementActionsView({ initialActions }: Props) {
           <Plus className="mr-2 h-4 w-4" />
           {messages.improvementActions.addAction}
         </Button>
+      )}
+
+      {/* Error message */}
+      {errorMsg && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {errorMsg}
+        </div>
       )}
 
       {/* Create form */}

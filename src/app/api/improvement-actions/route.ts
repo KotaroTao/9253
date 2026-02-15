@@ -42,14 +42,24 @@ export async function POST(request: NextRequest) {
       return errorResponse(messages.errors.invalidInput, 400)
     }
 
+    // Validate score range (1-5)
+    const isValidScore = (v: unknown): v is number =>
+      typeof v === "number" && v >= 1 && v <= 5
+    const parsedBaseline = typeof baselineScore === "number" ? baselineScore : null
+    const parsedTarget = typeof targetScore === "number" ? targetScore : null
+    if ((parsedBaseline !== null && !isValidScore(parsedBaseline)) ||
+        (parsedTarget !== null && !isValidScore(parsedTarget))) {
+      return errorResponse(messages.improvementActions.scoreOutOfRange, 400)
+    }
+
     const action = await prisma.improvementAction.create({
       data: {
         clinicId,
         title: title.trim(),
         description: description?.trim() || null,
         targetQuestion: targetQuestion?.trim() || null,
-        baselineScore: typeof baselineScore === "number" ? baselineScore : null,
-        targetScore: typeof targetScore === "number" ? targetScore : null,
+        baselineScore: parsedBaseline,
+        targetScore: parsedTarget,
       },
     })
 

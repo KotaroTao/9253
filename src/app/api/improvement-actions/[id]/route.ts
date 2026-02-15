@@ -39,6 +39,9 @@ export async function PATCH(
       updateData.description = body.description.trim() || null
     }
     if (typeof body.resultScore === "number") {
+      if (body.resultScore < 1 || body.resultScore > 5) {
+        return errorResponse(messages.improvementActions.scoreOutOfRange, 400)
+      }
       updateData.resultScore = body.resultScore
     }
     if (typeof body.status === "string" && ["active", "completed", "cancelled"].includes(body.status)) {
