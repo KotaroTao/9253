@@ -2,7 +2,9 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
+import { STREAK_MILESTONES } from "@/lib/constants"
 import { Flame, MessageCircle, Trophy, Star, TrendingUp, ClipboardList } from "lucide-react"
+import { Confetti } from "@/components/survey/confetti"
 import type { EngagementData } from "@/lib/queries/engagement"
 
 interface StaffEngagementProps {
@@ -21,6 +23,58 @@ const RANK_STYLES: Record<string, { bg: string; text: string; border: string; pr
   rose: { bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-200", progressBg: "bg-rose-100", progressBar: "bg-rose-500" },
 }
 
+// Happiness meter: emoji + label based on average score
+function getHappinessMood(score: number): { emoji: string; label: string; color: string } {
+  if (score >= 4.5) return { emoji: "😄", label: messages.dashboard.happinessExcellent, color: "text-green-600" }
+  if (score >= 4.0) return { emoji: "😊", label: messages.dashboard.happinessGood, color: "text-blue-600" }
+  if (score >= 3.0) return { emoji: "🙂", label: messages.dashboard.happinessOkay, color: "text-yellow-600" }
+  return { emoji: "😐", label: messages.dashboard.happinessLow, color: "text-orange-600" }
+}
+
+// Get current streak milestone (highest achieved)
+function getCurrentStreakMilestone(streak: number) {
+  let milestone = null
+  for (const m of STREAK_MILESTONES) {
+    if (streak >= m.days) milestone = m
+  }
+  return milestone
+}
+
+// Get next streak milestone
+function getNextStreakMilestone(streak: number) {
+  for (const m of STREAK_MILESTONES) {
+    if (streak < m.days) return m
+  }
+  return null
+}
+
+// Pick an encouragement message based on context
+function getEncouragement(todayCount: number, dailyGoal: number, streak: number, todayAvgScore: number | null): string {
+  const hour = new Date().getHours()
+  const remaining = dailyGoal - todayCount
+
+  // Priority 1: Goal almost reached
+  if (remaining > 0 && remaining <= 3 && todayCount > 0) {
+    return messages.dashboard.encourageGoalClose
+  }
+  // Priority 2: High score today
+  if (todayAvgScore && todayAvgScore >= 4.5) {
+    return messages.dashboard.encourageHighScore
+  }
+  // Priority 3: Active streak
+  if (streak >= 3) {
+    return messages.dashboard.encourageStreak
+  }
+  // Priority 4: No responses yet today
+  if (todayCount === 0) {
+    return messages.dashboard.encourageFirstToday
+  }
+  // Fallback: time-based
+  if (hour < 12) return messages.dashboard.encourageMorning
+  if (hour < 17) return messages.dashboard.encourageAfternoon
+  return messages.dashboard.encourageEvening
+}
+
 export function StaffEngagement({ data }: StaffEngagementProps) {
   const {
     todayCount,
@@ -34,16 +88,28 @@ export function StaffEngagement({ data }: StaffEngagementProps) {
     rankProgress,
     weekCount,
     weekAvgScore,
+    todayAvgScore,
   } = data
 
   const progress = Math.min((todayCount / dailyGoal) * 100, 100)
   const goalReached = todayCount >= dailyGoal
   const remaining = dailyGoal - todayCount
   const style = RANK_STYLES[rank.color] ?? RANK_STYLES.slate
+  const streakMilestone = getCurrentStreakMilestone(streak)
+  const nextStreakMilestone = getNextStreakMilestone(streak)
+  const encouragement = getEncouragement(todayCount, dailyGoal, streak, todayAvgScore)
 
   return (
     <div className="space-y-4">
-      {/* Rank badge + Week summary */}
+      {/* Confetti when goal reached */}
+      {goalReached && <Confetti />}
+
+      {/* Encouragement message */}
+      <div className="rounded-xl bg-gradient-to-r from-indigo-50 to-blue-50 px-4 py-3">
+        <p className="text-sm font-medium text-indigo-700">{encouragement}</p>
+      </div>
+
+      {/* Rank badge + Happiness meter */}
       <div className="grid grid-cols-2 gap-3">
         {/* Rank card */}
         <Card className={`${style.border} ${style.bg}`}>
@@ -66,23 +132,67 @@ export function StaffEngagement({ data }: StaffEngagementProps) {
           </CardContent>
         </Card>
 
-        {/* Week summary card */}
+        {/* Happiness meter (today's avg score) */}
+        {todayAvgScore ? (
+          <Card className="border-transparent bg-gradient-to-br from-white to-slate-50">
+            <CardContent className="flex flex-col items-center justify-center py-4">
+              {(() => {
+                const mood = getHappinessMood(todayAvgScore)
+                return (
+                  <>
+                    <div className="text-3xl">{mood.emoji}</div>
+                    <p className={`mt-1 text-xs font-bold ${mood.color}`}>{mood.label}</p>
+                    <div className="mt-1.5 flex items-center gap-1">
+                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                      <span className="text-sm font-bold">{todayAvgScore}</span>
+                      <span className="text-[10px] text-muted-foreground">/ 5.0</span>
+                    </div>
+                    <p className="mt-0.5 text-[10px] text-muted-foreground">{messages.dashboard.happinessMeterLabel}</p>
+                  </>
+                )
+              })()}
+            </CardContent>
+          </Card>
+        ) : (
+          /* Week summary card (when no today data) */
+          <Card>
+            <CardContent className="py-4">
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <ClipboardList className="h-3.5 w-3.5" />
+                <p className="text-xs font-medium">{messages.dashboard.weekSummary}</p>
+              </div>
+              <p className="mt-2 text-2xl font-bold">{weekCount}<span className="text-sm font-normal text-muted-foreground">{messages.common.countSuffix}</span></p>
+              {weekAvgScore && (
+                <div className="mt-1 flex items-center gap-1">
+                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                  <span className="text-xs text-muted-foreground">{weekAvgScore} / 5.0</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Week summary (shown below when happiness meter is active) */}
+      {todayAvgScore && (
         <Card>
-          <CardContent className="py-4">
+          <CardContent className="flex items-center justify-between py-3">
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <ClipboardList className="h-3.5 w-3.5" />
               <p className="text-xs font-medium">{messages.dashboard.weekSummary}</p>
             </div>
-            <p className="mt-2 text-2xl font-bold">{weekCount}<span className="text-sm font-normal text-muted-foreground">{messages.common.countSuffix}</span></p>
-            {weekAvgScore && (
-              <div className="mt-1 flex items-center gap-1">
-                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                <span className="text-xs text-muted-foreground">{weekAvgScore} / 5.0</span>
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-bold">{weekCount}<span className="text-xs font-normal text-muted-foreground">{messages.common.countSuffix}</span></span>
+              {weekAvgScore && (
+                <div className="flex items-center gap-1">
+                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                  <span className="text-xs text-muted-foreground">{weekAvgScore}</span>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
-      </div>
+      )}
 
       {/* Daily goal + streak */}
       <Card className={goalReached ? "border-green-200 bg-gradient-to-r from-green-50/50 to-white" : undefined}>
@@ -92,6 +202,13 @@ export function StaffEngagement({ data }: StaffEngagementProps) {
               {messages.dashboard.dailyGoal}
             </p>
             <div className="flex items-center gap-3">
+              {/* Streak milestone badge */}
+              {streakMilestone && (
+                <div className="flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5">
+                  <span className="text-xs">{streakMilestone.emoji}</span>
+                  <span className="text-[10px] font-bold text-orange-700">{streakMilestone.label}</span>
+                </div>
+              )}
               {streak > 0 && (
                 <div className="flex items-center gap-1 text-orange-500">
                   <Flame className="h-4 w-4" />
@@ -106,6 +223,7 @@ export function StaffEngagement({ data }: StaffEngagementProps) {
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-3xl font-bold">{todayCount}</span>
             <span className="text-lg text-muted-foreground">/ {dailyGoal}{messages.common.countSuffix}</span>
+            {goalReached && <span className="text-lg">🎉</span>}
           </div>
 
           {/* Progress bar */}
@@ -129,6 +247,13 @@ export function StaffEngagement({ data }: StaffEngagementProps) {
           ) : (
             <p className="mt-2 text-xs text-muted-foreground">
               {messages.dashboard.goalKeepGoing.replace("{remaining}", String(remaining))}
+            </p>
+          )}
+
+          {/* Next streak milestone hint */}
+          {nextStreakMilestone && streak > 0 && (
+            <p className="mt-1 text-[10px] text-orange-500/70">
+              {nextStreakMilestone.emoji} {nextStreakMilestone.label}まであと{nextStreakMilestone.days - streak}日
             </p>
           )}
         </CardContent>

@@ -35,6 +35,16 @@ export const DEFAULTS = {
 
 export const MILESTONES = [50, 100, 250, 500, 1000, 2000, 5000, 10000] as const
 
+// Streak milestones for badge display
+export const STREAK_MILESTONES = [
+  { days: 3, label: "3日連続", emoji: "🔥" },
+  { days: 7, label: "1週間", emoji: "⚡" },
+  { days: 14, label: "2週間", emoji: "💪" },
+  { days: 30, label: "1ヶ月", emoji: "🌟" },
+  { days: 60, label: "2ヶ月", emoji: "🎯" },
+  { days: 90, label: "3ヶ月", emoji: "👑" },
+] as const
+
 // Rank system based on total survey count
 export const RANKS = [
   { name: "ルーキー", minCount: 0, color: "slate", emoji: "🌱" },

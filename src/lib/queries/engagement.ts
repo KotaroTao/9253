@@ -10,13 +10,15 @@ export interface EngagementData {
   currentMilestone: number | null
   nextMilestone: number | null
   positiveComment: string | null
-  // New: rank system
+  // Rank system
   rank: Rank
   nextRank: Rank | null
   rankProgress: number // 0-100
-  // New: week data
+  // Week data
   weekCount: number
   weekAvgScore: number | null
+  // Today's mood
+  todayAvgScore: number | null
 }
 
 export async function getStaffEngagementData(
@@ -37,7 +39,7 @@ export async function getStaffEngagementData(
   const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1
   weekStart.setDate(weekStart.getDate() - daysToMonday)
 
-  const [todayCount, totalCount, streakResponses, positiveComments, clinic, weekData] =
+  const [todayCount, totalCount, streakResponses, positiveComments, clinic, weekData, todayData] =
     await Promise.all([
       prisma.surveyResponse.count({
         where: { clinicId, respondedAt: { gte: todayStart } },
@@ -74,6 +76,12 @@ export async function getStaffEngagementData(
       prisma.surveyResponse.aggregate({
         where: { clinicId, respondedAt: { gte: weekStart } },
         _count: { _all: true },
+        _avg: { overallScore: true },
+      }),
+
+      // Today's average score for happiness meter
+      prisma.surveyResponse.aggregate({
+        where: { clinicId, respondedAt: { gte: todayStart } },
         _avg: { overallScore: true },
       }),
     ])
@@ -145,6 +153,9 @@ export async function getStaffEngagementData(
     weekCount: weekData._count._all,
     weekAvgScore: weekData._avg.overallScore
       ? Math.round(weekData._avg.overallScore * 10) / 10
+      : null,
+    todayAvgScore: todayData._avg.overallScore
+      ? Math.round(todayData._avg.overallScore * 10) / 10
       : null,
   }
 }

@@ -5,7 +5,6 @@ import { isAdminMode } from "@/lib/admin-mode"
 import { getDashboardStats, getMonthlyTrend, getSatisfactionTrend, getQuestionBreakdown } from "@/lib/queries/stats"
 import type { TemplateQuestionScores } from "@/lib/queries/stats"
 import { getStaffEngagementData } from "@/lib/queries/engagement"
-import { getClinicBenchmark } from "@/lib/queries/benchmark"
 import { SatisfactionCards } from "@/components/dashboard/satisfaction-cards"
 import { SatisfactionTrendChart } from "@/components/dashboard/satisfaction-trend"
 import { MonthlyChart } from "@/components/dashboard/monthly-chart"
@@ -13,7 +12,6 @@ import { RecentResponses } from "@/components/dashboard/recent-responses"
 import { AdminInlineAuth } from "@/components/dashboard/admin-inline-auth"
 import { QuestionBreakdown } from "@/components/dashboard/question-breakdown"
 import { StaffEngagement } from "@/components/dashboard/staff-engagement"
-import { ClinicBenchmark } from "@/components/dashboard/clinic-benchmark"
 import { InsightCards } from "@/components/dashboard/insight-cards"
 import { messages } from "@/lib/messages"
 import { Smartphone, ArrowRight, TrendingUp, TrendingDown } from "lucide-react"
@@ -89,7 +87,6 @@ export default async function DashboardPage() {
     questionBreakdown: TemplateQuestionScores[]
     showSummaryBanner: boolean
     summaryBannerLabel: string
-    benchmark: Awaited<ReturnType<typeof getClinicBenchmark>>
     lowScoreQuestions: Array<{ text: string; avgScore: number }>
   } | null = null
 
@@ -99,7 +96,7 @@ export default async function DashboardPage() {
     const prevYear = prevDate.getFullYear()
     const prevMonth = prevDate.getMonth() + 1
 
-    const [stats, monthlyTrend, satisfactionTrend, questionBreakdown, lastMonthSummary, benchmark] =
+    const [stats, monthlyTrend, satisfactionTrend, questionBreakdown, lastMonthSummary] =
       await Promise.all([
         getDashboardStats(clinicId),
         getMonthlyTrend(clinicId),
@@ -109,7 +106,6 @@ export default async function DashboardPage() {
           where: { clinicId_year_month: { clinicId, year: prevYear, month: prevMonth } },
           select: { totalVisits: true },
         }),
-        getClinicBenchmark(clinicId),
       ])
 
     // Collect low-score questions for insights
@@ -130,7 +126,6 @@ export default async function DashboardPage() {
       questionBreakdown,
       showSummaryBanner: lastMonthSummary == null,
       summaryBannerLabel: `${prevYear}年${prevMonth}月`,
-      benchmark,
       lowScoreQuestions,
     }
   }
@@ -295,8 +290,6 @@ export default async function DashboardPage() {
             <SatisfactionTrendChart data={adminData.satisfactionTrend} />
           </div>
 
-          {/* Benchmark Section */}
-          <ClinicBenchmark data={adminData.benchmark} />
         </>
       )}
 
