@@ -18,6 +18,7 @@ export async function GET() {
   const actions = await prisma.improvementAction.findMany({
     where: { clinicId },
     orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+    take: 100,
   })
 
   return successResponse(actions)

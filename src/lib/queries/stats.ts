@@ -6,56 +6,65 @@ export async function getDashboardStats(
   dateFrom?: Date,
   dateTo?: Date
 ) {
-  const where = {
-    clinicId,
-    ...(dateFrom &&
-      dateTo && {
-        respondedAt: { gte: dateFrom, lte: dateTo },
-      }),
-  }
-
-  const [totalResponses, avgScore, recentResponses] =
-    await Promise.all([
-      prisma.surveyResponse.count({ where }),
-
-      prisma.surveyResponse.aggregate({
-        where,
-        _avg: { overallScore: true },
-      }),
-
-      prisma.surveyResponse.findMany({
-        where: { clinicId },
-        orderBy: { respondedAt: "desc" },
-        take: 10,
-        select: {
-          id: true,
-          overallScore: true,
-          freeText: true,
-          patientAttributes: true,
-          respondedAt: true,
-          staff: { select: { name: true, role: true } },
-        },
-      }),
-    ])
-
-  // Previous month avg for comparison
+  // Previous month boundaries
   const prevStart = new Date()
   prevStart.setMonth(prevStart.getMonth() - 1)
   prevStart.setDate(1)
   prevStart.setHours(0, 0, 0, 0)
   const prevEnd = new Date(prevStart.getFullYear(), prevStart.getMonth() + 1, 0, 23, 59, 59)
 
-  const prevAvg = await prisma.surveyResponse.aggregate({
-    where: { clinicId, respondedAt: { gte: prevStart, lte: prevEnd } },
-    _avg: { overallScore: true },
-    _count: { _all: true },
-  })
+  // Consolidate count + avg + prevAvg into single raw SQL (4 queries → 1 + 1)
+  interface StatsRow {
+    total_responses: bigint
+    avg_score: number | null
+    prev_avg_score: number | null
+    prev_count: bigint
+  }
+  const hasDateRange = dateFrom && dateTo
+
+  const [statsRows, recentResponses] = await Promise.all([
+    hasDateRange
+      ? prisma.$queryRaw<StatsRow[]>`
+          SELECT
+            COUNT(*) FILTER (WHERE responded_at >= ${dateFrom} AND responded_at <= ${dateTo}) AS total_responses,
+            ROUND(AVG(overall_score) FILTER (WHERE responded_at >= ${dateFrom} AND responded_at <= ${dateTo})::numeric, 2)::float AS avg_score,
+            ROUND(AVG(overall_score) FILTER (WHERE responded_at >= ${prevStart} AND responded_at <= ${prevEnd})::numeric, 2)::float AS prev_avg_score,
+            COUNT(*) FILTER (WHERE responded_at >= ${prevStart} AND responded_at <= ${prevEnd}) AS prev_count
+          FROM survey_responses
+          WHERE clinic_id = ${clinicId}::uuid
+        `
+      : prisma.$queryRaw<StatsRow[]>`
+          SELECT
+            COUNT(*) AS total_responses,
+            ROUND(AVG(overall_score)::numeric, 2)::float AS avg_score,
+            ROUND(AVG(overall_score) FILTER (WHERE responded_at >= ${prevStart} AND responded_at <= ${prevEnd})::numeric, 2)::float AS prev_avg_score,
+            COUNT(*) FILTER (WHERE responded_at >= ${prevStart} AND responded_at <= ${prevEnd}) AS prev_count
+          FROM survey_responses
+          WHERE clinic_id = ${clinicId}::uuid
+        `,
+
+    prisma.surveyResponse.findMany({
+      where: { clinicId },
+      orderBy: { respondedAt: "desc" },
+      take: 10,
+      select: {
+        id: true,
+        overallScore: true,
+        freeText: true,
+        patientAttributes: true,
+        respondedAt: true,
+        staff: { select: { name: true, role: true } },
+      },
+    }),
+  ])
+
+  const stats = statsRows[0]
 
   return {
-    totalResponses,
-    averageScore: avgScore._avg.overallScore ?? 0,
+    totalResponses: Number(stats.total_responses),
+    averageScore: stats.avg_score ?? 0,
     prevAverageScore:
-      prevAvg._count._all > 0 ? (prevAvg._avg.overallScore ?? null) : null,
+      Number(stats.prev_count) > 0 ? (stats.prev_avg_score ?? null) : null,
     recentResponses,
   }
 }
@@ -128,6 +137,52 @@ export async function getMonthlyTrend(clinicId: string, months: number = 6) {
   }))
 }
 
+/**
+ * Combined monthly trends — fetches 12 months of data in a single query
+ * and returns both monthlyTrend (last 6 months) and satisfactionTrend (last 12 months).
+ * This replaces separate getMonthlyTrend + getSatisfactionTrend calls on the dashboard.
+ */
+export async function getCombinedMonthlyTrends(clinicId: string) {
+  const startDate = new Date()
+  startDate.setMonth(startDate.getMonth() - 12)
+  startDate.setDate(1)
+  startDate.setHours(0, 0, 0, 0)
+
+  const rows = await prisma.$queryRaw<MonthlyTrendRow[]>`
+    SELECT
+      TO_CHAR(responded_at, 'YYYY-MM') as month,
+      ROUND(AVG(overall_score)::numeric, 1)::float as avg_score,
+      COUNT(*) as count
+    FROM survey_responses
+    WHERE clinic_id = ${clinicId}::uuid
+      AND responded_at >= ${startDate}
+    GROUP BY TO_CHAR(responded_at, 'YYYY-MM')
+    ORDER BY month ASC
+  `
+
+  // satisfactionTrend = full 12 months
+  const satisfactionTrend: SatisfactionTrend[] = rows.map((r) => ({
+    month: r.month,
+    patientSatisfaction: r.avg_score ?? null,
+  }))
+
+  // monthlyTrend = last 6 months only
+  const sixMonthsAgo = new Date()
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+  sixMonthsAgo.setDate(1)
+  const sixMonthKey = `${sixMonthsAgo.getFullYear()}-${String(sixMonthsAgo.getMonth() + 1).padStart(2, "0")}`
+
+  const monthlyTrend = rows
+    .filter((r) => r.month >= sixMonthKey)
+    .map((r) => ({
+      month: r.month,
+      avgScore: r.avg_score ?? 0,
+      count: Number(r.count),
+    }))
+
+  return { monthlyTrend, satisfactionTrend }
+}
+
 export interface QuestionScore {
   questionId: string
   text: string
@@ -149,7 +204,8 @@ interface QuestionBreakdownRow {
 }
 
 export async function getQuestionBreakdown(
-  clinicId: string
+  clinicId: string,
+  months: number = 3
 ): Promise<TemplateQuestionScores[]> {
   // Get active templates with question definitions
   const templates = await prisma.surveyTemplate.findMany({
@@ -158,6 +214,12 @@ export async function getQuestionBreakdown(
   })
 
   if (templates.length === 0) return []
+
+  // Limit to recent N months to avoid full table scan on JSONB expansion
+  const sinceDate = new Date()
+  sinceDate.setMonth(sinceDate.getMonth() - months)
+  sinceDate.setDate(1)
+  sinceDate.setHours(0, 0, 0, 0)
 
   // Aggregate scores per template + question key in DB
   const templateIds = templates.map((t) => t.id)
@@ -171,13 +233,14 @@ export async function getQuestionBreakdown(
       jsonb_each_text(answers)
     WHERE clinic_id = ${clinicId}::uuid
       AND template_id = ANY(${templateIds}::uuid[])
+      AND responded_at >= ${sinceDate}
     GROUP BY template_id, key
   `
 
-  // Count responses per template
+  // Count responses per template (same date range)
   const responseCounts = await prisma.surveyResponse.groupBy({
     by: ["templateId"],
-    where: { clinicId, templateId: { in: templateIds } },
+    where: { clinicId, templateId: { in: templateIds }, respondedAt: { gte: sinceDate } },
     _count: { _all: true },
   })
   const countMap = new Map(responseCounts.map((r) => [r.templateId, r._count._all]))
