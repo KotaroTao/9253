@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { updateClinicSettings } from "@/lib/queries/clinics"
 import { requireAuth, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
       return errorResponse(messages.errors.invalidInput, 400)
     }
 
-    // Get existing settings
+    // Get existing closedDates via settings helper
     const clinic = await prisma.clinic.findUnique({
       where: { id: clinicId },
       select: { settings: true },
@@ -53,20 +54,16 @@ export async function POST(request: NextRequest) {
     const settings = (clinic?.settings ?? {}) as ClinicSettings
     const closedDates = [...(settings.closedDates ?? [])]
 
-    // Add date if not already present (max 90 entries to prevent bloat)
+    // Add date if not already present (max 365 entries to cover ~1 year)
     if (!closedDates.includes(date)) {
       closedDates.push(date)
-      // Keep only the most recent 90 entries
-      if (closedDates.length > 90) {
+      if (closedDates.length > 365) {
         closedDates.sort()
-        closedDates.splice(0, closedDates.length - 90)
+        closedDates.splice(0, closedDates.length - 365)
       }
     }
 
-    await prisma.clinic.update({
-      where: { id: clinicId },
-      data: { settings: { ...settings, closedDates } },
-    })
+    await updateClinicSettings(clinicId, { closedDates })
 
     return successResponse({ success: true })
   } catch {

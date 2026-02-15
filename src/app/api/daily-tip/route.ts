@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server"
-import type { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
+import { updateClinicSettings } from "@/lib/queries/clinics"
 import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
@@ -38,19 +38,9 @@ export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json()
 
-    const clinic = await prisma.clinic.findUnique({
-      where: { id: clinicId },
-      select: { settings: true },
-    })
-    const existingSettings = (clinic?.settings ?? {}) as ClinicSettings
-
     // body.dailyTip が null の場合はリセット（デフォルトに戻す）
     if (body.dailyTip === null) {
-      const { dailyTip: _, ...rest } = existingSettings
-      await prisma.clinic.update({
-        where: { id: clinicId },
-        data: { settings: rest as Prisma.InputJsonValue },
-      })
+      await updateClinicSettings(clinicId, { dailyTip: undefined })
       return successResponse({ dailyTip: null })
     }
 
@@ -65,13 +55,7 @@ export async function PATCH(request: NextRequest) {
       content: String(content).slice(0, 500),
     }
 
-    await prisma.clinic.update({
-      where: { id: clinicId },
-      data: {
-        settings: { ...existingSettings, dailyTip } as Prisma.InputJsonValue,
-      },
-    })
-
+    await updateClinicSettings(clinicId, { dailyTip })
     return successResponse({ dailyTip })
   } catch {
     return errorResponse(messages.dailyTip.saveFailed, 500)

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
+import { updateClinicSettings } from "@/lib/queries/clinics"
 import { requireAuth, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { setAdminModeCookie, clearAdminModeCookie } from "@/lib/admin-mode"
@@ -79,18 +80,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   const newHashedPassword = await bcrypt.hash(newPassword, 10)
-  const existingClinic = await prisma.clinic.findUnique({
-    where: { id: clinicId },
-    select: { settings: true },
-  })
-  const existingSettings = (existingClinic?.settings ?? {}) as ClinicSettings
-
-  await prisma.clinic.update({
-    where: { id: clinicId },
-    data: {
-      settings: { ...existingSettings, adminPassword: newHashedPassword },
-    },
-  })
+  await updateClinicSettings(clinicId, { adminPassword: newHashedPassword })
 
   // パスワード変更後はセッションを無効化（再認証を要求）
   clearAdminModeCookie()
