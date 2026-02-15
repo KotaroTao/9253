@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
-import { Shield, Check } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Shield, Check, CalendarDays } from "lucide-react"
 
 interface SettingsFormProps {
   clinic: {
@@ -15,12 +16,14 @@ interface SettingsFormProps {
     name: string
   }
   hasAdminPassword?: boolean
+  workingDaysPerWeek?: number
 }
 
-export function SettingsForm({ clinic, hasAdminPassword = false }: SettingsFormProps) {
+export function SettingsForm({ clinic, hasAdminPassword = false, workingDaysPerWeek = 6 }: SettingsFormProps) {
   const router = useRouter()
   const [name, setName] = useState(clinic.name)
   const [adminPassword, setAdminPassword] = useState("")
+  const [workingDays, setWorkingDays] = useState(String(workingDaysPerWeek))
   const [showPasswordField, setShowPasswordField] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -33,7 +36,7 @@ export function SettingsForm({ clinic, hasAdminPassword = false }: SettingsFormP
     setSaved(false)
 
     try {
-      const body: Record<string, string> = { name }
+      const body: Record<string, string | number> = { name, workingDaysPerWeek: Number(workingDays) }
       if (adminPassword.length >= 6) {
         body.adminPassword = adminPassword
       }
@@ -80,6 +83,32 @@ export function SettingsForm({ clinic, hasAdminPassword = false }: SettingsFormP
               disabled={isLoading}
             />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <CalendarDays className="h-5 w-5 text-primary" />
+            <div>
+              <CardTitle className="text-base">{messages.settings.workingDaysLabel}</CardTitle>
+              <CardDescription>{messages.settings.workingDaysDesc}</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Select value={workingDays} onValueChange={setWorkingDays} disabled={isLoading}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[5, 6, 7].map((d) => (
+                <SelectItem key={d} value={String(d)}>
+                  {d}{messages.settings.workingDaysSuffix}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </CardContent>
       </Card>
 

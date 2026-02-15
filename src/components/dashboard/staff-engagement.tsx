@@ -1,9 +1,12 @@
 "use client"
 
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { messages } from "@/lib/messages"
 import { STREAK_MILESTONES } from "@/lib/constants"
-import { Flame, MessageCircle, Trophy, Star, TrendingUp, ClipboardList, CalendarDays } from "lucide-react"
+import { Flame, MessageCircle, Trophy, Star, TrendingUp, ClipboardList, CalendarDays, CalendarOff } from "lucide-react"
 import { Confetti } from "@/components/survey/confetti"
 import type { EngagementData } from "@/lib/queries/engagement"
 
@@ -89,8 +92,14 @@ export function StaffEngagement({ data }: StaffEngagementProps) {
     weekCount,
     weekAvgScore,
     weekActiveDays,
+    workingDaysPerWeek,
     todayAvgScore,
+    streakBreak,
   } = data
+
+  const router = useRouter()
+  const [recovering, setRecovering] = useState(false)
+  const [recovered, setRecovered] = useState(false)
 
   const progress = Math.min((todayCount / dailyGoal) * 100, 100)
   const goalReached = todayCount >= dailyGoal
@@ -99,6 +108,24 @@ export function StaffEngagement({ data }: StaffEngagementProps) {
   const streakMilestone = getCurrentStreakMilestone(streak)
   const nextStreakMilestone = getNextStreakMilestone(streak)
   const encouragement = getEncouragement(todayCount, dailyGoal, streak, todayAvgScore)
+
+  async function handleStreakRecovery() {
+    if (!streakBreak || recovering) return
+    setRecovering(true)
+    try {
+      const res = await fetch("/api/closed-dates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: streakBreak.date }),
+      })
+      if (res.ok) {
+        setRecovered(true)
+        router.refresh()
+      }
+    } finally {
+      setRecovering(false)
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -166,7 +193,7 @@ export function StaffEngagement({ data }: StaffEngagementProps) {
               <div className="mt-1 flex items-center gap-2">
                 <div className="flex items-center gap-1">
                   <CalendarDays className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">{weekActiveDays}{messages.dashboard.weekActiveDaysOf}</span>
+                  <span className="text-xs text-muted-foreground">{weekActiveDays}/{workingDaysPerWeek}{messages.dashboard.weekActiveDaysOf}</span>
                 </div>
                 {weekAvgScore && (
                   <div className="flex items-center gap-1">
@@ -191,7 +218,7 @@ export function StaffEngagement({ data }: StaffEngagementProps) {
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1">
                 <CalendarDays className="h-3 w-3 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">{weekActiveDays}{messages.dashboard.weekActiveDaysOf}</span>
+                <span className="text-xs text-muted-foreground">{weekActiveDays}/{workingDaysPerWeek}{messages.dashboard.weekActiveDaysOf}</span>
               </div>
               <span className="text-sm font-bold">{weekCount}<span className="text-xs font-normal text-muted-foreground">{messages.common.countSuffix}</span></span>
               {weekAvgScore && (
@@ -269,6 +296,43 @@ export function StaffEngagement({ data }: StaffEngagementProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Streak break recovery */}
+      {streakBreak && !recovered && streak === 0 && (
+        <Card className="border-orange-200 bg-gradient-to-r from-orange-50/50 to-white">
+          <CardContent className="py-4">
+            <div className="flex items-start gap-3">
+              <CalendarOff className="mt-0.5 h-5 w-5 shrink-0 text-orange-500" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-orange-700">
+                  {messages.dashboard.streakBroken}
+                </p>
+                <p className="mt-0.5 text-xs text-orange-600/70">
+                  {messages.dashboard.streakBrokenDate
+                    .replace("{date}", streakBreak.date)
+                    .replace("{dayOfWeek}", streakBreak.dayOfWeek)}
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2 border-orange-300 text-orange-700 hover:bg-orange-100"
+                  onClick={handleStreakRecovery}
+                  disabled={recovering}
+                >
+                  {recovering ? messages.common.loading : messages.dashboard.markAsClosed}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Streak recovered confirmation */}
+      {recovered && (
+        <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+          <p className="text-sm font-medium text-green-700">{messages.dashboard.streakRecovered}</p>
+        </div>
+      )}
 
       {/* Positive patient comment */}
       {positiveComment && (

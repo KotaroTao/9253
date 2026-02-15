@@ -24,11 +24,12 @@ export default async function SettingsPage() {
 
   const settings = (clinic as { settings?: Record<string, unknown> }).settings
   const hasAdminPassword = !!settings?.adminPassword
+  const workingDaysPerWeek = typeof settings?.workingDaysPerWeek === "number" ? settings.workingDaysPerWeek : 6
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">{messages.settings.title}</h1>
-      <SettingsForm clinic={clinic} hasAdminPassword={hasAdminPassword} />
+      <SettingsForm clinic={clinic} hasAdminPassword={hasAdminPassword} workingDaysPerWeek={workingDaysPerWeek} />
     </div>
   )
 }

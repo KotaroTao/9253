@@ -2,6 +2,11 @@ import { prisma } from "@/lib/prisma"
 import { DEFAULTS, MILESTONES, getRank, getNextRank } from "@/lib/constants"
 import type { Rank } from "@/lib/constants"
 
+export interface StreakBreakInfo {
+  date: string // YYYY-MM-DD
+  dayOfWeek: string // 月, 火, 水...
+}
+
 export interface EngagementData {
   todayCount: number
   dailyGoal: number
@@ -18,8 +23,11 @@ export interface EngagementData {
   weekCount: number
   weekAvgScore: number | null
   weekActiveDays: number
+  workingDaysPerWeek: number
   // Today's mood
   todayAvgScore: number | null
+  // Streak break recovery
+  streakBreak: StreakBreakInfo | null
 }
 
 export async function getStaffEngagementData(
@@ -88,6 +96,20 @@ export async function getStaffEngagementData(
       }),
     ])
 
+  // Extract settings
+  const settings = clinic?.settings as Record<string, unknown> | null
+  const dailyGoal =
+    typeof settings?.dailyGoal === "number"
+      ? settings.dailyGoal
+      : DEFAULTS.DAILY_SURVEY_GOAL
+  const workingDaysPerWeek =
+    typeof settings?.workingDaysPerWeek === "number"
+      ? settings.workingDaysPerWeek
+      : 6
+  const closedDates = new Set<string>(
+    Array.isArray(settings?.closedDates) ? (settings.closedDates as string[]) : []
+  )
+
   // Build date set for streak + weekly activity
   const dateSet = new Set<string>()
   for (const r of streakResponses) {
@@ -105,10 +127,9 @@ export async function getStaffEngagementData(
     weekCheck.setDate(weekCheck.getDate() + 1)
   }
 
-  // Calculate streak with 1-day grace (2+ consecutive missing days = break)
+  // Calculate streak: skip closed dates (treat as non-existent days)
   let streak = 0
-  let consecutiveGaps = 0
-  const MAX_GRACE_DAYS = 1
+  let streakBreak: StreakBreakInfo | null = null
   const checkDate = new Date(todayStart)
 
   // If today has no surveys yet, start counting from yesterday
@@ -116,26 +137,32 @@ export async function getStaffEngagementData(
     checkDate.setDate(checkDate.getDate() - 1)
   }
 
+  let consecutiveGaps = 0
+  const MAX_GRACE_DAYS = 1
+
   for (let i = 0; i < 90; i++) {
-    if (dateSet.has(formatDateKey(checkDate))) {
+    const key = formatDateKey(checkDate)
+    if (closedDates.has(key)) {
+      // Closed day — skip entirely, doesn't count as gap or active
+      checkDate.setDate(checkDate.getDate() - 1)
+      continue
+    }
+    if (dateSet.has(key)) {
       streak++
       consecutiveGaps = 0
       checkDate.setDate(checkDate.getDate() - 1)
     } else {
       consecutiveGaps++
       if (consecutiveGaps > MAX_GRACE_DAYS) {
+        // Streak broke here — record for recovery UI
+        if (streak > 0 || consecutiveGaps === MAX_GRACE_DAYS + 1) {
+          streakBreak = { date: key, dayOfWeek: getDayOfWeekJa(checkDate) }
+        }
         break
       }
       checkDate.setDate(checkDate.getDate() - 1)
     }
   }
-
-  // Daily goal from clinic settings or default
-  const settings = clinic?.settings as Record<string, unknown> | null
-  const dailyGoal =
-    typeof settings?.dailyGoal === "number"
-      ? settings.dailyGoal
-      : DEFAULTS.DAILY_SURVEY_GOAL
 
   // Milestones
   const currentMilestone =
@@ -175,12 +202,19 @@ export async function getStaffEngagementData(
       ? Math.round(weekData._avg.overallScore * 10) / 10
       : null,
     weekActiveDays,
+    workingDaysPerWeek,
     todayAvgScore: todayData._avg.overallScore
       ? Math.round(todayData._avg.overallScore * 10) / 10
       : null,
+    streakBreak,
   }
 }
 
 function formatDateKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+}
+
+const DAY_NAMES_JA = ["日", "月", "火", "水", "木", "金", "土"]
+function getDayOfWeekJa(date: Date): string {
+  return DAY_NAMES_JA[date.getDay()]
 }
