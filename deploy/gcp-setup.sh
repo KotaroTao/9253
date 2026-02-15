@@ -18,7 +18,7 @@
 set -e
 
 # --- 設定値（環境に合わせて変更） ---
-PROJECT_ID="mieru-9253"              # GCPプロジェクトID
+PROJECT_ID="mieru-clinic"            # GCPプロジェクトID
 REGION="asia-northeast1"            # 東京リージョン
 ZONE="asia-northeast1-a"
 

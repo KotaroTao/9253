@@ -12,7 +12,7 @@
 #
 # 【使い方】
 # 1. 環境変数を設定:
-#    export GCP_PROJECT_ID="mieru-9253"
+#    export GCP_PROJECT_ID="mieru-clinic"
 #    export SQL_INSTANCE="mieru-clinic-db"
 #    export DB_USER="mieru"
 #    export DB_PASSWORD="your-password"
@@ -24,7 +24,7 @@
 set -e
 
 # --- 設定値 ---
-PROJECT_ID="${GCP_PROJECT_ID:-mieru-9253}"
+PROJECT_ID="${GCP_PROJECT_ID:-mieru-clinic}"
 REGION="${GCP_REGION:-asia-northeast1}"
 SQL_INSTANCE="${SQL_INSTANCE:-mieru-clinic-db}"
 DB_NAME="${DB_NAME:-mieru_clinic}"
