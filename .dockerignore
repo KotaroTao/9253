@@ -1,0 +1,30 @@
+# 依存関係（Docker内で新規インストール）
+node_modules
+
+# ビルド成果物
+.next
+
+# Git
+.git
+.gitignore
+
+# 環境変数（Dockerに含めない）
+.env
+.env.*
+!.env.example
+
+# エディタ・OS
+.vscode
+.idea
+*.swp
+.DS_Store
+
+# VPSデプロイ関連（Docker不要）
+deploy/
+
+# ドキュメント
+*.md
+LICENSE
+
+# デバッグ
+npm-debug.log*
