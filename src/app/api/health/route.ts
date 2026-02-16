@@ -5,7 +5,8 @@ export async function GET() {
   try {
     await prisma.$queryRaw`SELECT 1`
     return NextResponse.json({ status: "ok" })
-  } catch {
+  } catch (error) {
+    console.error("Health check failed:", error)
     return NextResponse.json({ status: "error" }, { status: 503 })
   }
 }
