@@ -17,7 +17,7 @@ if [ "${RUN_MIGRATIONS}" = "true" ]; then
   MAX_RETRIES=5
   RETRY_DELAY=5
   for i in $(seq 1 $MAX_RETRIES); do
-    if npx prisma db push --skip-generate --accept-data-loss; then
+    if node node_modules/prisma/build/index.js db push --skip-generate --accept-data-loss; then
       echo "  ✓ スキーマ同期完了"
       break
     fi
