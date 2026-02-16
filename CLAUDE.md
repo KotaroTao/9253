@@ -5,7 +5,8 @@
 - **目的**: 医療機関専用 患者体験改善プラットフォーム
 - **開発主体**: 株式会社ファンクション・ティ
 - **ドメイン**: mieru-clinic.com（取得済み）
-- **本番サーバー**: プロジェクトディレクトリは `/var/www/9253`
+- **本番環境**: Google Cloud Run（asia-northeast1）
+- **旧VPS**: Xserver VPS `/var/www/9253`（Cloud Runに移行済み、VPSデプロイは無効化）
 
 ## 本ツールの価値定義
 
@@ -190,6 +191,103 @@ https://app.mieru-clinic.com/s/{clinicSlug}
 - `survey_responses` に複合インデックス追加:
   - `(clinic_id, responded_at, overall_score)` — ダッシュボード統計クエリ用
   - `(clinic_id, template_id, responded_at)` — 質問別分析クエリ用
+
+## GCPインフラ構成
+
+### GCPプロジェクト
+- **プロジェクトID**: `mieru-clinic`
+- **リージョン**: `asia-northeast1`（東京）
+
+### 使用サービス一覧
+| サービス | リソース名 | 用途 |
+|----------|-----------|------|
+| Cloud Run | `mieru-clinic` | アプリケーション実行（Next.js standalone） |
+| Cloud SQL | `mieru-clinic-db` (PostgreSQL 15, db-f1-micro) | データベース |
+| Artifact Registry | `mieru-clinic` | Dockerイメージ保管 |
+| VPC Connector | `mieru-vpc-connector` | Cloud Run ↔ Cloud SQL 内部接続 |
+
+### Cloud Run 設定
+- **メモリ**: 512Mi / **CPU**: 1
+- **インスタンス数**: 0〜3（リクエストなし時は0でコスト最適化）
+- **ポート**: 3000
+- **サービスアカウント**: `cloud-run-mieru@mieru-clinic.iam.gserviceaccount.com`
+- **Cloud SQL接続**: `mieru-clinic:asia-northeast1:mieru-clinic-db`（Unix Socket経由）
+- **VPC**: `mieru-vpc-connector`（private-ranges-only）
+
+### Cloud SQL 設定
+- **インスタンス**: `mieru-clinic-db`
+- **バージョン**: PostgreSQL 15
+- **ティア**: db-f1-micro（SSD 10GB、自動拡張）
+- **バックアップ**: 毎日 03:00 JST
+- **DB名**: `mieru_clinic` / **ユーザー**: `mieru`
+
+### ドメイン・DNS
+- **ドメイン**: `mieru-clinic.com`（Cloud Run にマッピング済み）
+- **SSL**: Google マネージド証明書（自動発行・更新）
+- **DNS**: A/AAAA レコードで Google のサーバー（216.239.32/34/36/38.21）に向けている
+
+### 環境変数（Cloud Run に設定済み）
+| 変数名 | 値 |
+|--------|-----|
+| `NODE_ENV` | `production` |
+| `DATABASE_URL` | Cloud SQL Unix Socket形式（Secrets管理） |
+| `AUTH_SECRET` | ランダム生成（Secrets管理） |
+| `AUTH_URL` | `https://mieru-clinic.com` |
+| `NEXT_PUBLIC_APP_URL` | `https://mieru-clinic.com` |
+| `RUN_MIGRATIONS` | `true`（コンテナ起動時にPrisma db push実行） |
+
+### デプロイフロー（CI/CD）
+```
+main ブランチに push
+  → GitHub Actions (.github/workflows/deploy.yml)
+  → Docker build & push (Artifact Registry)
+  → gcloud run deploy
+  → 自動デプロイ完了
+```
+
+### GitHub Secrets（必要）
+| Secret名 | 内容 |
+|-----------|------|
+| `GCP_PROJECT_ID` | `mieru-clinic` |
+| `GCP_SA_KEY` | GitHub Actions用サービスアカウントのJSONキー |
+| `GCP_REGION` | `asia-northeast1` |
+| `DATABASE_URL` | PostgreSQL接続URL（Unix Socket形式） |
+| `AUTH_SECRET` | Auth.js用シークレットキー |
+| `CLOUD_SQL_CONNECTION` | `mieru-clinic:asia-northeast1:mieru-clinic-db` |
+
+### デプロイ関連ファイル
+| ファイル | 用途 |
+|----------|------|
+| `Dockerfile` | マルチステージビルド（deps → builder → runner） |
+| `.dockerignore` | Docker除外ファイル定義 |
+| `deploy/gcp-setup.sh` | GCP環境初期構築スクリプト（初回のみ） |
+| `deploy/docker-entrypoint.sh` | コンテナ起動時スクリプト（マイグレーション+起動） |
+| `deploy/migrate-cloud-sql.sh` | Cloud SQL Auth Proxy経由の手動マイグレーション |
+| `.github/workflows/deploy.yml` | Cloud Run 自動デプロイ（main push時） |
+| `.github/workflows/deploy-vps.yml` | 旧VPSデプロイ（無効化済み、手動実行のみ） |
+
+### 運用コマンド集
+```bash
+# --- デプロイ状態確認 ---
+gcloud run services describe mieru-clinic --region asia-northeast1
+
+# --- ログ確認 ---
+gcloud run services logs read mieru-clinic --region asia-northeast1 --limit 50
+
+# --- Cloud SQL接続（Cloud Shell経由） ---
+gcloud sql connect mieru-clinic-db --user=mieru --database=mieru_clinic
+
+# --- 手動デプロイ（緊急時） ---
+IMAGE="asia-northeast1-docker.pkg.dev/mieru-clinic/mieru-clinic/mieru-clinic:manual"
+gcloud builds submit --tag "${IMAGE}" .
+gcloud run deploy mieru-clinic --image "${IMAGE}" --region asia-northeast1
+
+# --- ローカルからDBマイグレーション ---
+# deploy/migrate-cloud-sql.sh を参照（Cloud SQL Auth Proxy経由）
+
+# --- ドメインマッピング状態確認 ---
+gcloud beta run domain-mappings describe --domain mieru-clinic.com --region asia-northeast1
+```
 
 ## 先送り機能（MVPに含めない）
 - カスタム質問編集UI / メール通知 / Google口コミスクレイピング
