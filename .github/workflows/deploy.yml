@@ -1,26 +1,89 @@
 # =============================================================
-# 自動デプロイ - mainブランチへのマージ時にVPSへデプロイ
+# Cloud Run 自動デプロイ - mainブランチへのマージ時
 # =============================================================
-name: Deploy to VPS
+# 【必要なGitHub Secrets】
+#    - GCP_PROJECT_ID:       GCPプロジェクトID
+#    - GCP_SA_KEY:           サービスアカウントのJSONキー
+#    - GCP_REGION:           asia-northeast1
+#    - DATABASE_URL:         Cloud SQL接続用URL（Unix Socket形式）
+#    - AUTH_SECRET:          Auth.js用シークレットキー
+#    - CLOUD_SQL_CONNECTION: Cloud SQL接続名（project:region:instance）
+# =============================================================
 
-# いつ実行するか: mainブランチにpushされた時
+name: Deploy to Cloud Run
+
 on:
   push:
     branches:
       - main
 
+env:
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GCP_REGION: ${{ secrets.GCP_REGION }}
+  SERVICE_NAME: mieru-clinic
+  REPOSITORY: mieru-clinic
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      # SSHでVPSに接続してdeploy.shを実行
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
+      # --- 1. コード取得 ---
+      - name: コード取得
+        uses: actions/checkout@v4
+
+      # --- 2. GCP認証 ---
+      - name: GCP認証
+        uses: google-github-actions/auth@v2
         with:
-          host: 210.131.223.161
-          username: root
-          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
-          script: |
-            cd /var/www/9253
-            git stash --include-untracked || true
-            bash deploy/deploy.sh
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      # --- 3. Google Cloud SDK セットアップ ---
+      - name: gcloud セットアップ
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      # --- 4. Docker認証（Artifact Registry） ---
+      - name: Docker認証
+        run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev --quiet
+
+      # --- 5. Dockerイメージをビルド & プッシュ ---
+      - name: Dockerイメージのビルド & プッシュ
+        run: |
+          IMAGE="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+
+      # --- 6. Cloud Runにデプロイ ---
+      - name: Cloud Runにデプロイ
+        run: |
+          IMAGE="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image "$IMAGE" \
+            --region ${{ env.GCP_REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 3000 \
+            --memory 512Mi \
+            --cpu 1 \
+            --min-instances 0 \
+            --max-instances 3 \
+            --service-account "cloud-run-mieru@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com" \
+            --add-cloudsql-instances ${{ secrets.CLOUD_SQL_CONNECTION }} \
+            --vpc-connector "mieru-vpc-connector" \
+            --vpc-egress "private-ranges-only" \
+            --set-env-vars "NODE_ENV=production" \
+            --set-env-vars "DATABASE_URL=${{ secrets.DATABASE_URL }}" \
+            --set-env-vars "AUTH_SECRET=${{ secrets.AUTH_SECRET }}" \
+            --set-env-vars "AUTH_URL=https://mieru-clinic.com" \
+            --set-env-vars "NEXT_PUBLIC_APP_URL=https://mieru-clinic.com" \
+            --set-env-vars "RUN_MIGRATIONS=true"
+
+      # --- 7. デプロイ結果表示 ---
+      - name: デプロイURL表示
+        run: |
+          URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region ${{ env.GCP_REGION }} \
+            --format 'value(status.url)')
+          echo "::notice::デプロイ完了: $URL"
