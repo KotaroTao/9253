@@ -199,6 +199,23 @@ done
 
 echo "  ✓ サービスアカウント: ${SA_EMAIL}"
 
+# =============================================================
+# ステップ7.5: VPCコネクタ作成（Cloud Run ↔ Cloud SQL接続用）
+# =============================================================
+echo ""
+echo "[7.5/9] VPCコネクタ作成..."
+
+gcloud compute networks vpc-access connectors create mieru-vpc-connector \
+  --region="${REGION}" \
+  --network=default \
+  --range=10.8.0.0/28 \
+  --machine-type=e2-micro \
+  --min-instances=2 \
+  --max-instances=10 \
+  || echo "  (既に存在します)"
+
+echo "  ✓ VPCコネクタ: mieru-vpc-connector"
+
 # JSONキー生成（Cloud Shellのホームに出力）
 KEY_FILE="${HOME}/github-actions-key.json"
 gcloud iam service-accounts keys create "${KEY_FILE}" \
@@ -267,6 +284,8 @@ echo "    --min-instances ${MIN_INSTANCES} \\"
 echo "    --max-instances ${MAX_INSTANCES} \\"
 echo "    --service-account ${CLOUD_RUN_SA_EMAIL} \\"
 echo "    --add-cloudsql-instances ${CONNECTION_NAME} \\"
+echo "    --vpc-connector mieru-vpc-connector \\"
+echo "    --vpc-egress private-ranges-only \\"
 echo "    --set-env-vars \"NODE_ENV=production\" \\"
 echo "    --set-env-vars \"DATABASE_URL=${DATABASE_URL}\" \\"
 echo "    --set-env-vars \"AUTH_SECRET=${AUTH_SECRET}\" \\"
