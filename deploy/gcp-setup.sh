@@ -26,7 +26,7 @@ ZONE="asia-northeast1-a"
 SQL_INSTANCE="mieru-clinic-db"
 DB_NAME="mieru_clinic"
 DB_USER="mieru"
-DB_PASSWORD=""                      # ← 実行前に強力なパスワードを設定
+DB_PASSWORD="${DB_PASSWORD:-$(openssl rand -base64 24)}"  # 未設定なら自動生成
 
 # Cloud Run
 SERVICE_NAME="mieru-clinic"
@@ -49,14 +49,33 @@ echo " MIERU Clinic GCP環境構築"
 echo "=========================================="
 echo "プロジェクト: ${PROJECT_ID}"
 echo "リージョン:   ${REGION}"
+echo "DB パスワード: ${DB_PASSWORD}"
+echo ""
+echo "  ⚠ DB パスワードを安全な場所に保存してください"
 echo ""
 
 # =============================================================
-# ステップ1: GCPプロジェクトの設定
+# ステップ1: GCPプロジェクトの設定 & 課金リンク
 # =============================================================
 echo "[1/9] GCPプロジェクトの設定..."
 
 gcloud config set project "${PROJECT_ID}"
+
+# 課金アカウントのリンク（既にリンク済みの場合はスキップ）
+BILLING_LINKED=$(gcloud billing projects describe "${PROJECT_ID}" --format='value(billingAccountName)' 2>/dev/null || true)
+if [ -z "${BILLING_LINKED}" ]; then
+  echo "  課金アカウントをリンクします..."
+  BILLING_ACCOUNT=$(gcloud billing accounts list --filter='open=true' --format='value(ACCOUNT_ID)' --limit=1)
+  if [ -n "${BILLING_ACCOUNT}" ]; then
+    gcloud billing projects link "${PROJECT_ID}" --billing-account="${BILLING_ACCOUNT}"
+    echo "  ✓ 課金アカウント ${BILLING_ACCOUNT} をリンクしました"
+  else
+    echo "  ❌ 有効な課金アカウントが見つかりません。GCPコンソールで設定してください"
+    exit 1
+  fi
+else
+  echo "  ✓ 課金アカウントはリンク済み"
+fi
 
 # =============================================================
 # ステップ2: 必要なAPIの有効化
@@ -180,8 +199,25 @@ done
 
 echo "  ✓ サービスアカウント: ${SA_EMAIL}"
 
-# JSONキー生成
-KEY_FILE="deploy/github-actions-key.json"
+# =============================================================
+# ステップ7.5: VPCコネクタ作成（Cloud Run ↔ Cloud SQL接続用）
+# =============================================================
+echo ""
+echo "[7.5/9] VPCコネクタ作成..."
+
+gcloud compute networks vpc-access connectors create mieru-vpc-connector \
+  --region="${REGION}" \
+  --network=default \
+  --range=10.8.0.0/28 \
+  --machine-type=e2-micro \
+  --min-instances=2 \
+  --max-instances=10 \
+  || echo "  (既に存在します)"
+
+echo "  ✓ VPCコネクタ: mieru-vpc-connector"
+
+# JSONキー生成（Cloud Shellのホームに出力）
+KEY_FILE="${HOME}/github-actions-key.json"
 gcloud iam service-accounts keys create "${KEY_FILE}" \
   --iam-account="${SA_EMAIL}"
 
@@ -229,11 +265,14 @@ echo "[9/9] 初回デプロイの手順"
 echo ""
 echo "  GitHub Actionsの自動デプロイの前に、手動で初回デプロイを行います:"
 echo ""
-echo "  # 1. Dockerイメージのビルド & プッシュ"
+echo "  # 1. Cloud Build でビルド & プッシュ（推奨）"
 echo "  IMAGE=\"${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}/${SERVICE_NAME}:initial\""
-echo "  docker build -t \"\${IMAGE}\" ."
-echo "  gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet"
-echo "  docker push \"\${IMAGE}\""
+echo "  gcloud builds submit --tag \"\${IMAGE}\" ."
+echo ""
+echo "  # ※ docker build + push でも可（Cloud Shellでは接続エラーが出る場合あり）"
+echo "  # docker build -t \"\${IMAGE}\" ."
+echo "  # gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet"
+echo "  # docker push \"\${IMAGE}\""
 echo ""
 echo "  # 2. Cloud Runにデプロイ"
 echo "  gcloud run deploy ${SERVICE_NAME} \\"
@@ -248,11 +287,17 @@ echo "    --min-instances ${MIN_INSTANCES} \\"
 echo "    --max-instances ${MAX_INSTANCES} \\"
 echo "    --service-account ${CLOUD_RUN_SA_EMAIL} \\"
 echo "    --add-cloudsql-instances ${CONNECTION_NAME} \\"
+echo "    --vpc-connector mieru-vpc-connector \\"
+echo "    --vpc-egress private-ranges-only \\"
 echo "    --set-env-vars \"NODE_ENV=production\" \\"
 echo "    --set-env-vars \"DATABASE_URL=${DATABASE_URL}\" \\"
 echo "    --set-env-vars \"AUTH_SECRET=${AUTH_SECRET}\" \\"
 echo "    --set-env-vars \"AUTH_URL=https://mieru-clinic.com\" \\"
-echo "    --set-env-vars \"NEXT_PUBLIC_APP_URL=https://mieru-clinic.com\""
+echo "    --set-env-vars \"NEXT_PUBLIC_APP_URL=https://mieru-clinic.com\" \\"
+echo "    --set-env-vars \"RUN_MIGRATIONS=false\""
+echo ""
+echo "  # ※ 初回はRUN_MIGRATIONS=falseでデプロイし、"
+echo "  #   deploy/migrate-cloud-sql.sh で手動マイグレーション推奨"
 echo ""
 echo "  # 3. DBマイグレーション & シード（初回のみ）"
 echo "  # Cloud Run Jobs または Cloud SQL Auth Proxyを使用："
