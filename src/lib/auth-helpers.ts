@@ -1,6 +1,8 @@
 import { auth } from "@/auth"
 import { errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
+import { getOperatorClinicId } from "@/lib/admin-mode"
+import { ROLES } from "@/lib/constants"
 import type { UserRole } from "@/types"
 
 interface AuthResult {
@@ -16,12 +18,26 @@ interface AuthResult {
 /**
  * API Route用の認証チェック。
  * 認証されていない場合は401エラーレスポンスを返す。
+ * system_adminの運営モード時はoperator cookieのclinicIdを使用。
  */
 export async function requireAuth(): Promise<AuthResult | Response> {
   const session = await auth()
 
   if (!session?.user) {
     return errorResponse(messages.errors.authRequired, 401)
+  }
+
+  // 運営モード: system_adminが特定クリニックとして操作
+  if (session.user.role === ROLES.SYSTEM_ADMIN) {
+    const operatorClinicId = getOperatorClinicId()
+    if (operatorClinicId) {
+      return {
+        user: {
+          ...session.user,
+          clinicId: operatorClinicId,
+        },
+      }
+    }
   }
 
   return { user: session.user }

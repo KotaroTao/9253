@@ -45,13 +45,25 @@ export async function getClinicById(clinicId: string) {
 export async function getAllClinics(options?: {
   page?: number
   limit?: number
+  search?: string
 }) {
   const page = options?.page ?? 1
   const limit = options?.limit ?? 20
   const skip = (page - 1) * limit
+  const search = options?.search?.trim()
+
+  const where: Prisma.ClinicWhereInput = search
+    ? {
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { slug: { contains: search, mode: "insensitive" } },
+        ],
+      }
+    : {}
 
   const [clinics, total] = await Promise.all([
     prisma.clinic.findMany({
+      where,
       orderBy: { createdAt: "desc" },
       skip,
       take: limit,
@@ -64,7 +76,7 @@ export async function getAllClinics(options?: {
         },
       },
     }),
-    prisma.clinic.count(),
+    prisma.clinic.count({ where }),
   ])
 
   return { clinics, total, page, limit, totalPages: Math.ceil(total / limit) }

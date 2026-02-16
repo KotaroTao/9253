@@ -1,14 +1,21 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
-import { isAdminMode } from "@/lib/admin-mode"
+import { isAdminMode, getOperatorClinicId } from "@/lib/admin-mode"
 import { prisma } from "@/lib/prisma"
 import { messages } from "@/lib/messages"
 import { ImprovementActionsView } from "@/components/dashboard/improvement-actions"
+import { ROLES } from "@/lib/constants"
 
 export default async function ActionsPage() {
   const session = await auth()
 
-  if (!session?.user?.clinicId) {
+  if (!session?.user) {
+    redirect("/login")
+  }
+
+  const operatorClinicId = session.user.role === ROLES.SYSTEM_ADMIN ? getOperatorClinicId() : null
+  const clinicId = operatorClinicId ?? session.user.clinicId
+  if (!clinicId) {
     redirect("/login")
   }
 
@@ -18,7 +25,7 @@ export default async function ActionsPage() {
   }
 
   const actions = await prisma.improvementAction.findMany({
-    where: { clinicId: session.user.clinicId },
+    where: { clinicId },
     orderBy: [{ status: "asc" }, { createdAt: "desc" }],
   })
 

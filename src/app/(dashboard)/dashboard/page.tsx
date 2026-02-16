@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
-import { isAdminMode } from "@/lib/admin-mode"
+import { isAdminMode, getOperatorClinicId } from "@/lib/admin-mode"
 import { getDashboardStats, getCombinedMonthlyTrends, getQuestionBreakdown } from "@/lib/queries/stats"
 import type { TemplateQuestionScores } from "@/lib/queries/stats"
 import type { SatisfactionTrend } from "@/types"
@@ -22,6 +22,7 @@ import { DailyTip } from "@/components/dashboard/daily-tip"
 import { getTodayTip, getCurrentTip } from "@/lib/patient-tips"
 import type { PatientTip } from "@/lib/patient-tips"
 import type { ClinicSettings } from "@/types"
+import { ROLES } from "@/lib/constants"
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -30,7 +31,9 @@ export default async function DashboardPage() {
     redirect("/login")
   }
 
-  const clinicId = session.user.clinicId
+  // 運営モード: system_adminが特定クリニックとして操作
+  const operatorClinicId = session.user.role === ROLES.SYSTEM_ADMIN ? getOperatorClinicId() : null
+  const clinicId = operatorClinicId ?? session.user.clinicId
   if (!clinicId) {
     redirect("/login")
   }

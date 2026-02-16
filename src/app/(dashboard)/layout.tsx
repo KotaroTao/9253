@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
-import { isAdminMode } from "@/lib/admin-mode"
+import { isAdminMode, getOperatorClinicId } from "@/lib/admin-mode"
 import { DashboardShell } from "@/components/layout/dashboard-shell"
+import { ROLES } from "@/lib/constants"
 import type { ClinicSettings } from "@/types"
 
 export default async function DashboardLayout({
@@ -16,7 +17,15 @@ export default async function DashboardLayout({
     redirect("/login")
   }
 
-  const { role, clinicId } = session.user
+  const { role } = session.user
+  let { clinicId } = session.user
+
+  // 運営モード: system_adminが特定クリニックとして操作
+  const operatorClinicId = role === ROLES.SYSTEM_ADMIN ? getOperatorClinicId() : null
+  const isOperatorMode = !!operatorClinicId
+  if (operatorClinicId) {
+    clinicId = operatorClinicId
+  }
 
   // system_admin with no clinicId can still access dashboard
   // clinic_admin and staff must have a clinicId
@@ -48,6 +57,7 @@ export default async function DashboardLayout({
       clinicSlug={clinicSlug}
       isAdminMode={adminMode}
       hasAdminPassword={hasAdminPassword}
+      isOperatorMode={isOperatorMode}
     >
       {children}
     </DashboardShell>
