@@ -23,6 +23,7 @@ interface SidebarProps {
   role: string
   isAdminMode?: boolean
   hasAdminPassword?: boolean
+  isOperatorMode?: boolean
 }
 
 const dailyItems = [
@@ -78,13 +79,14 @@ function NavSection({ label, items, pathname }: { label: string; items: NavItem[
   )
 }
 
-export function Sidebar({ role, isAdminMode = false, hasAdminPassword = false }: SidebarProps) {
+export function Sidebar({ role, isAdminMode = false, hasAdminPassword = false, isOperatorMode = false }: SidebarProps) {
   const pathname = usePathname()
 
   // Show admin menu when:
   // 1. Admin mode is active (password unlocked), OR
-  // 2. No admin password set yet AND user is clinic_admin/system_admin (legacy/setup)
-  const showAdminMenu = isAdminMode || (!hasAdminPassword && (role === "clinic_admin" || role === "system_admin"))
+  // 2. Operator mode is active (always show all menus), OR
+  // 3. No admin password set yet AND user is clinic_admin/system_admin (legacy/setup)
+  const showAdminMenu = isAdminMode || isOperatorMode || (!hasAdminPassword && (role === "clinic_admin" || role === "system_admin"))
 
   return (
     <aside className="flex h-screen w-60 flex-col border-r bg-card">
@@ -119,7 +121,10 @@ export function Sidebar({ role, isAdminMode = false, hasAdminPassword = false }:
         )}
       </nav>
       <div className="space-y-1 border-t p-2">
-        <AdminUnlockDialog isAdminMode={isAdminMode} hasAdminPassword={hasAdminPassword} />
+        {/* 運営モードでは管理者ロック/アンロックは不要 */}
+        {!isOperatorMode && (
+          <AdminUnlockDialog isAdminMode={isAdminMode} hasAdminPassword={hasAdminPassword} />
+        )}
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
           className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"

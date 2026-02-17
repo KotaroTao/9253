@@ -33,12 +33,14 @@ export default async function DashboardPage() {
 
   // 運営モード: system_adminが特定クリニックとして操作
   const operatorClinicId = session.user.role === ROLES.SYSTEM_ADMIN ? getOperatorClinicId() : null
+  const isOperatorMode = !!operatorClinicId
   const clinicId = operatorClinicId ?? session.user.clinicId
   if (!clinicId) {
     redirect("/login")
   }
 
-  const adminMode = isAdminMode()
+  // 運営モードでは常に管理者ビューを表示（パスワード不要）
+  const adminMode = isOperatorMode || isAdminMode()
 
   // Check if clinic has admin password set + get slug for kiosk link
   const clinic = await prisma.clinic.findUnique({
@@ -146,8 +148,8 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* Admin mode banner - shown when admin mode is active */}
-      {adminMode && (
+      {/* Admin mode banner - shown when admin mode is active (non-operator) */}
+      {adminMode && !isOperatorMode && (
         <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5">
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-emerald-500" />
@@ -157,7 +159,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* Admin unlock - shown prominently when NOT in admin mode */}
+      {/* Admin unlock - shown prominently when NOT in admin mode (never in operator mode) */}
       {!adminMode && hasAdminPassword && (
         <AdminInlineAuth isAdminMode={false} hasAdminPassword={hasAdminPassword} />
       )}
@@ -183,8 +185,10 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* Daily patient satisfaction tip */}
-      <DailyTip tip={dailyTip} canEdit={canEditTip} isCustom={isCustomTip} />
+      {/* Daily patient satisfaction tip (not shown in operator mode) */}
+      {!isOperatorMode && (
+        <DailyTip tip={dailyTip} canEdit={canEditTip} isCustom={isCustomTip} />
+      )}
 
       {/* Action card - only shown when NOT in admin mode */}
       {!adminMode && (
@@ -302,8 +306,8 @@ export default async function DashboardPage() {
         </>
       )}
 
-      {/* Admin mode controls at bottom - only for admin mode active state */}
-      {adminMode && (
+      {/* Admin mode controls at bottom - only for admin mode active state (not operator) */}
+      {adminMode && !isOperatorMode && (
         <AdminInlineAuth isAdminMode={adminMode} hasAdminPassword={hasAdminPassword} />
       )}
     </div>
