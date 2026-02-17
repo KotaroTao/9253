@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
-import { isAdminMode, getOperatorClinicId } from "@/lib/admin-mode"
+import { getOperatorClinicId } from "@/lib/admin-mode"
 import { prisma } from "@/lib/prisma"
 import { messages } from "@/lib/messages"
 import { ImprovementActionsView } from "@/components/dashboard/improvement-actions"
@@ -30,8 +30,7 @@ export default async function ActionsPage() {
     redirect("/login")
   }
 
-  const adminMode = isAdminMode()
-  if (!adminMode && session.user.role !== "system_admin") {
+  if (session.user.role === "staff") {
     redirect("/dashboard")
   }
 

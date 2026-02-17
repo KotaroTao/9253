@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
-import { isAdminMode, getOperatorClinicId } from "@/lib/admin-mode"
+import { getOperatorClinicId } from "@/lib/admin-mode"
 import { getStaffWithStats } from "@/lib/queries/staff"
 import { StaffList } from "@/components/staff/staff-list"
 import { messages } from "@/lib/messages"
@@ -19,8 +19,8 @@ export default async function StaffPage() {
     redirect("/login")
   }
 
-  const adminMode = isAdminMode()
-  if (!adminMode && session.user.role !== "system_admin") {
+  // ロールベースでアクセス制御（clinic_admin / system_admin のみ）
+  if (session.user.role === "staff") {
     redirect("/dashboard")
   }
 

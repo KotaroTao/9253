@@ -8,23 +8,20 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Shield, Check, CalendarDays } from "lucide-react"
+import { CalendarDays } from "lucide-react"
 
 interface SettingsFormProps {
   clinic: {
     id: string
     name: string
   }
-  hasAdminPassword?: boolean
   workingDaysPerWeek?: number
 }
 
-export function SettingsForm({ clinic, hasAdminPassword = false, workingDaysPerWeek = 6 }: SettingsFormProps) {
+export function SettingsForm({ clinic, workingDaysPerWeek = 6 }: SettingsFormProps) {
   const router = useRouter()
   const [name, setName] = useState(clinic.name)
-  const [adminPassword, setAdminPassword] = useState("")
   const [workingDays, setWorkingDays] = useState(String(workingDaysPerWeek))
-  const [showPasswordField, setShowPasswordField] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState("")
@@ -37,9 +34,6 @@ export function SettingsForm({ clinic, hasAdminPassword = false, workingDaysPerW
 
     try {
       const body: Record<string, string | number> = { name, workingDaysPerWeek: Number(workingDays) }
-      if (adminPassword.length >= 6) {
-        body.adminPassword = adminPassword
-      }
 
       const res = await fetch("/api/settings", {
         method: "PATCH",
@@ -54,8 +48,6 @@ export function SettingsForm({ clinic, hasAdminPassword = false, workingDaysPerW
       }
 
       setSaved(true)
-      setAdminPassword("")
-      setShowPasswordField(false)
       router.refresh()
       setTimeout(() => setSaved(false), 2000)
     } catch {
@@ -109,60 +101,6 @@ export function SettingsForm({ clinic, hasAdminPassword = false, workingDaysPerW
               ))}
             </SelectContent>
           </Select>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <Shield className="h-5 w-5 text-primary" />
-            <div>
-              <CardTitle className="text-base">{messages.settings.adminPassword}</CardTitle>
-              <CardDescription>{messages.settings.adminPasswordDesc}</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {hasAdminPassword && !showPasswordField ? (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-green-600">
-                <Check className="h-4 w-4" />
-                {messages.settings.adminPasswordSet}
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowPasswordField(true)}
-              >
-                {messages.settings.adminPasswordChange}
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <Label htmlFor="adminPassword">
-                {hasAdminPassword ? messages.settings.adminPasswordChange : messages.settings.adminPasswordNew}
-              </Label>
-              <Input
-                id="adminPassword"
-                type="password"
-                placeholder={messages.settings.adminPasswordPlaceholder}
-                value={adminPassword}
-                onChange={(e) => setAdminPassword(e.target.value)}
-                disabled={isLoading}
-              />
-              {showPasswordField && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => { setShowPasswordField(false); setAdminPassword("") }}
-                >
-                  {messages.common.cancel}
-                </Button>
-              )}
-            </div>
-          )}
         </CardContent>
       </Card>
 

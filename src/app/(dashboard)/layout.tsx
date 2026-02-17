@@ -1,10 +1,9 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
-import { isAdminMode, getOperatorClinicId } from "@/lib/admin-mode"
+import { isStaffViewOverride, getOperatorClinicId } from "@/lib/admin-mode"
 import { DashboardShell } from "@/components/layout/dashboard-shell"
 import { ROLES } from "@/lib/constants"
-import type { ClinicSettings } from "@/types"
 
 export default async function DashboardLayout({
   children,
@@ -35,20 +34,21 @@ export default async function DashboardLayout({
 
   let clinicName: string | undefined
   let clinicSlug: string | undefined
-  let hasAdminPassword = false
   if (clinicId) {
     const clinic = await prisma.clinic.findUnique({
       where: { id: clinicId },
-      select: { name: true, slug: true, settings: true },
+      select: { name: true, slug: true },
     })
     clinicName = clinic?.name ?? undefined
     clinicSlug = clinic?.slug ?? undefined
-    const settings = (clinic?.settings ?? {}) as ClinicSettings
-    hasAdminPassword = !!settings.adminPassword
   }
 
-  // 運営モードでは常に管理者ビュー（サイドバー付きレイアウト）を使用
-  const adminMode = isOperatorMode || isAdminMode()
+  // ロールベースで管理者ビューを判定
+  // clinic_admin / system_admin は管理者ビュー（スタッフビュー切替オーバーライドがない限り）
+  // 運営モードでは常に管理者ビュー
+  const isAdmin = role === "clinic_admin" || role === "system_admin"
+  const staffViewOverride = isAdmin && !isOperatorMode && isStaffViewOverride()
+  const adminMode = isOperatorMode || (isAdmin && !staffViewOverride)
 
   // クリニック一覧（運営モードのクリニック切り替え用）
   let allClinics: Array<{ id: string; name: string }> = []
@@ -67,7 +67,6 @@ export default async function DashboardLayout({
       clinicName={clinicName}
       clinicSlug={clinicSlug}
       isAdminMode={adminMode}
-      hasAdminPassword={hasAdminPassword}
       isOperatorMode={isOperatorMode}
       operatorClinicId={operatorClinicId ?? undefined}
       allClinics={allClinics}

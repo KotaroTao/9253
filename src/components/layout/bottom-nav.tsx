@@ -9,6 +9,7 @@ import {
   ClipboardList,
   Target,
   LogOut,
+  Shield,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
@@ -17,10 +18,11 @@ import { messages } from "@/lib/messages"
 interface BottomNavProps {
   clinicSlug?: string
   isAdminMode?: boolean
-  hasAdminPassword?: boolean
+  canToggleView?: boolean
+  onToggleView?: () => void
 }
 
-export function BottomNav({ clinicSlug, isAdminMode = false }: BottomNavProps) {
+export function BottomNav({ clinicSlug, isAdminMode = false, canToggleView = false, onToggleView }: BottomNavProps) {
   const pathname = usePathname()
 
   const kioskUrl = clinicSlug ? `/kiosk/${encodeURIComponent(clinicSlug)}` : "/dashboard/survey-start"
@@ -101,6 +103,15 @@ export function BottomNav({ clinicSlug, isAdminMode = false }: BottomNavProps) {
             </Link>
           )
         })}
+        {canToggleView && onToggleView && (
+          <button
+            onClick={onToggleView}
+            className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-muted-foreground transition-colors active:bg-muted"
+          >
+            <Shield className="h-5 w-5" />
+            <span className="text-[10px] font-medium">{messages.dashboard.switchToAdminView}</span>
+          </button>
+        )}
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
           className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-muted-foreground transition-colors active:bg-muted"

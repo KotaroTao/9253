@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation"
 import { Sidebar } from "@/components/layout/sidebar"
 import { DashboardHeader } from "@/components/layout/dashboard-header"
 import { BottomNav } from "@/components/layout/bottom-nav"
-import { AdminFooter } from "@/components/layout/admin-footer"
 import { cn } from "@/lib/utils"
-import { Shield, X, ChevronDown, ArrowLeftRight, Search } from "lucide-react"
+import { Shield, X, ChevronDown, ArrowLeftRight, Search, LogOut, Eye } from "lucide-react"
+import { signOut } from "next-auth/react"
+import { messages } from "@/lib/messages"
 
 interface DashboardShellProps {
   children: React.ReactNode
@@ -16,7 +17,6 @@ interface DashboardShellProps {
   clinicName?: string
   clinicSlug?: string
   isAdminMode?: boolean
-  hasAdminPassword?: boolean
   isOperatorMode?: boolean
   operatorClinicId?: string
   allClinics?: Array<{ id: string; name: string }>
@@ -29,7 +29,6 @@ export function DashboardShell({
   clinicName,
   clinicSlug,
   isAdminMode = false,
-  hasAdminPassword = false,
   isOperatorMode = false,
   operatorClinicId,
   allClinics = [],
@@ -46,10 +45,22 @@ export function DashboardShell({
     return allClinics.filter((c) => c.name.toLowerCase().includes(q))
   }, [allClinics, switcherSearch])
 
+  const canToggleView = (role === "clinic_admin" || role === "system_admin") && !isOperatorMode
+
+  async function handleToggleView() {
+    if (isAdminMode) {
+      // 管理者ビュー → スタッフビューに切替
+      await fetch("/api/admin-mode", { method: "POST" })
+    } else {
+      // スタッフビュー → 管理者ビューに戻す
+      await fetch("/api/admin-mode", { method: "DELETE" })
+    }
+    router.refresh()
+  }
+
   async function handleExitOperatorMode() {
     await fetch("/api/admin/operator-login", { method: "DELETE" })
     window.close()
-    // フォールバック: ウィンドウが閉じない場合は管理画面に戻る
     setTimeout(() => {
       router.push("/admin")
       router.refresh()
@@ -80,7 +91,6 @@ export function DashboardShell({
 
   const operatorBanner = isOperatorMode && (
     <div className="bg-violet-600 text-white">
-      {/* Main banner row */}
       <div className="flex items-center justify-between px-4 py-2">
         <div className="flex items-center gap-2 min-w-0">
           <Shield className="h-4 w-4 shrink-0" />
@@ -90,7 +100,6 @@ export function DashboardShell({
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {/* Clinic switcher toggle */}
           {allClinics.length > 1 && (
             <button
               onClick={() => {
@@ -104,7 +113,6 @@ export function DashboardShell({
               <ChevronDown className={cn("h-3 w-3 transition-transform", switcherOpen && "rotate-180")} />
             </button>
           )}
-          {/* Exit button */}
           <button
             onClick={handleExitOperatorMode}
             className="flex items-center gap-1 rounded-md bg-violet-500 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-violet-400"
@@ -114,7 +122,6 @@ export function DashboardShell({
           </button>
         </div>
       </div>
-      {/* Clinic switcher dropdown */}
       {switcherOpen && allClinics.length > 1 && (
         <div className="border-t border-violet-500/50 bg-violet-700 px-4 py-2">
           <div className="mb-1.5 flex items-center justify-between">
@@ -176,8 +183,9 @@ export function DashboardShell({
         </main>
         <BottomNav
           clinicSlug={clinicSlug}
-          isAdminMode={isAdminMode}
-          hasAdminPassword={hasAdminPassword}
+          isAdminMode={false}
+          canToggleView={canToggleView}
+          onToggleView={handleToggleView}
         />
       </div>
     )
@@ -186,14 +194,12 @@ export function DashboardShell({
   // Admin mode: full sidebar + header layout
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Mobile overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
-      {/* Sidebar */}
       <div
         className={cn(
           "fixed inset-y-0 left-0 z-50 transition-transform lg:static lg:translate-x-0",
@@ -202,12 +208,12 @@ export function DashboardShell({
       >
         <Sidebar
           role={role}
-          isAdminMode={isAdminMode}
-          hasAdminPassword={hasAdminPassword}
+          isAdminMode={true}
           isOperatorMode={isOperatorMode}
+          canToggleView={canToggleView}
+          onToggleView={handleToggleView}
         />
       </div>
-      {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {operatorBanner}
         <DashboardHeader
@@ -218,7 +224,30 @@ export function DashboardShell({
         <main className="flex-1 overflow-y-auto bg-muted/40 p-4 lg:p-6">
           {children}
         </main>
-        <AdminFooter />
+        <footer className="flex items-center justify-between border-t bg-card px-4 py-2">
+          <div className="flex items-center gap-2 text-sm text-primary">
+            <Shield className="h-4 w-4" />
+            <span className="font-medium">{messages.dashboard.adminViewLabel}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            {canToggleView && (
+              <button
+                onClick={handleToggleView}
+                className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <Eye className="h-3.5 w-3.5" />
+                {messages.dashboard.switchToStaffView}
+              </button>
+            )}
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              {messages.common.logout}
+            </button>
+          </div>
+        </footer>
       </div>
     </div>
   )

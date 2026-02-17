@@ -1,5 +1,4 @@
 import { NextRequest } from "next/server"
-import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
 import { updateClinicSettings } from "@/lib/queries/clinics"
 import { updateClinicSchema } from "@/lib/validations/clinic"
@@ -19,7 +18,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { adminPassword, workingDaysPerWeek, ...rest } = body
+    const { workingDaysPerWeek, ...rest } = body
     const parsed = updateClinicSchema.safeParse(rest)
 
     if (!parsed.success) {
@@ -28,19 +27,9 @@ export async function PATCH(request: NextRequest) {
 
     const updateData: Record<string, unknown> = { ...parsed.data }
 
-    // Merge settings fields (adminPassword, workingDaysPerWeek, closedDates, etc.)
-    const needsSettingsUpdate =
-      (adminPassword && typeof adminPassword === "string" && adminPassword.length >= 6) ||
-      (typeof workingDaysPerWeek === "number" && [5, 6, 7].includes(workingDaysPerWeek))
-
-    if (needsSettingsUpdate) {
-      const patch: Partial<ClinicSettings> = {}
-      if (adminPassword && typeof adminPassword === "string" && adminPassword.length >= 6) {
-        patch.adminPassword = await bcrypt.hash(adminPassword, 10)
-      }
-      if (typeof workingDaysPerWeek === "number" && [5, 6, 7].includes(workingDaysPerWeek)) {
-        patch.workingDaysPerWeek = workingDaysPerWeek
-      }
+    // Merge settings fields (workingDaysPerWeek, closedDates, etc.)
+    if (typeof workingDaysPerWeek === "number" && [5, 6, 7].includes(workingDaysPerWeek)) {
+      const patch: Partial<ClinicSettings> = { workingDaysPerWeek }
       const merged = await updateClinicSettings(clinicId, patch)
       updateData.settings = merged
     }

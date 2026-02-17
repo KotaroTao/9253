@@ -305,10 +305,6 @@ export const IMPROVEMENT_SUGGESTIONS: Record<string, ImprovementSuggestion[]> = 
   ],
 }
 
-export const ADMIN_MODE_COOKIE = "mieru-admin"
-export const ADMIN_MODE_MAX_AGE = 60 * 60 * 8 // 8 hours
-export const DEFAULT_ADMIN_PASSWORD = "1111"
-
 export const OPERATOR_CLINIC_COOKIE = "mieru-operator-clinic"
 export const OPERATOR_MODE_MAX_AGE = 60 * 60 * 8 // 8 hours
 

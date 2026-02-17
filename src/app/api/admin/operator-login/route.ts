@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
-import { setAdminModeCookie, setOperatorClinicCookie, clearOperatorClinicCookie, clearAdminModeCookie } from "@/lib/admin-mode"
+import { setOperatorClinicCookie, clearOperatorClinicCookie } from "@/lib/admin-mode"
 import { ROLES } from "@/lib/constants"
 import { errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
@@ -33,7 +33,6 @@ export async function POST(request: NextRequest) {
 
   // 運営モードCookieをセット
   setOperatorClinicCookie(clinicId)
-  setAdminModeCookie()
 
   return NextResponse.json({ ok: true })
 }
@@ -43,7 +42,6 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE() {
   clearOperatorClinicCookie()
-  clearAdminModeCookie()
 
   return NextResponse.json({ ok: true })
 }
