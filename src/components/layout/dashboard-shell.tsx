@@ -6,8 +6,7 @@ import { Sidebar } from "@/components/layout/sidebar"
 import { DashboardHeader } from "@/components/layout/dashboard-header"
 import { BottomNav } from "@/components/layout/bottom-nav"
 import { cn } from "@/lib/utils"
-import { Shield, X, ChevronDown, ArrowLeftRight, Search, LogOut, Eye } from "lucide-react"
-import { signOut } from "next-auth/react"
+import { Shield, X, ChevronDown, ArrowLeftRight, Search, Eye } from "lucide-react"
 import { messages } from "@/lib/messages"
 
 interface DashboardShellProps {
@@ -224,30 +223,17 @@ export function DashboardShell({
         <main className="flex-1 overflow-y-auto bg-muted/40 p-4 lg:p-6">
           {children}
         </main>
-        <footer className="flex items-center justify-between border-t bg-card px-4 py-2">
-          <div className="flex items-center gap-2 text-sm text-primary">
-            <Shield className="h-4 w-4" />
-            <span className="font-medium">{messages.dashboard.adminViewLabel}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            {canToggleView && (
-              <button
-                onClick={handleToggleView}
-                className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
-                <Eye className="h-3.5 w-3.5" />
-                {messages.dashboard.switchToStaffView}
-              </button>
-            )}
+        {canToggleView && (
+          <footer className="flex items-center justify-end border-t bg-card px-4 py-2">
             <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
+              onClick={handleToggleView}
               className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
-              <LogOut className="h-3.5 w-3.5" />
-              {messages.common.logout}
+              <Eye className="h-3.5 w-3.5" />
+              {messages.dashboard.switchToStaffView}
             </button>
-          </div>
-        </footer>
+          </footer>
+        )}
       </div>
     </div>
   )

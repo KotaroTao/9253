@@ -8,8 +8,8 @@ import {
   BarChart3,
   ClipboardList,
   Target,
-  LogOut,
   Shield,
+  LogOut,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
@@ -72,11 +72,14 @@ export function BottomNav({ clinicSlug, isAdminMode = false, canToggleView = fal
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card safe-area-pb">
       <div className="flex items-stretch">
         {visibleItems.map((item) => {
-          const className = cn(
-            "flex flex-1 flex-col items-center justify-center gap-0.5 py-2 transition-colors active:bg-muted",
+          const itemClassName = cn(
+            "relative flex flex-1 flex-col items-center justify-center gap-0.5 py-2.5 transition-colors active:bg-muted",
             item.isActive
               ? "text-primary"
               : "text-muted-foreground"
+          )
+          const activeBar = item.isActive && (
+            <span className="absolute top-0 left-1/4 right-1/4 h-0.5 rounded-full bg-primary" />
           )
           if (item.external) {
             return (
@@ -85,10 +88,11 @@ export function BottomNav({ clinicSlug, isAdminMode = false, canToggleView = fal
                 href={item.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={className}
+                className={itemClassName}
               >
+                {activeBar}
                 <item.icon className="h-5 w-5" />
-                <span className="text-[10px] font-medium">{item.label}</span>
+                <span className="text-[11px] font-medium">{item.label}</span>
               </a>
             )
           }
@@ -96,28 +100,28 @@ export function BottomNav({ clinicSlug, isAdminMode = false, canToggleView = fal
             <Link
               key={item.href}
               href={item.href}
-              className={className}
+              className={itemClassName}
             >
+              {activeBar}
               <item.icon className="h-5 w-5" />
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <span className="text-[11px] font-medium">{item.label}</span>
             </Link>
           )
         })}
         {canToggleView && onToggleView && (
           <button
             onClick={onToggleView}
-            className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-muted-foreground transition-colors active:bg-muted"
+            className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2.5 text-muted-foreground transition-colors active:bg-muted"
           >
             <Shield className="h-5 w-5" />
-            <span className="text-[10px] font-medium">{messages.dashboard.switchToAdminView}</span>
+            <span className="text-[11px] font-medium">{messages.dashboard.switchToAdminView}</span>
           </button>
         )}
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-muted-foreground transition-colors active:bg-muted"
+          className="flex flex-col items-center justify-center gap-0.5 px-3 py-2.5 text-muted-foreground/60 transition-colors active:bg-muted"
         >
-          <LogOut className="h-5 w-5" />
-          <span className="text-[10px] font-medium">{messages.common.logout}</span>
+          <LogOut className="h-4 w-4" />
         </button>
       </div>
     </nav>

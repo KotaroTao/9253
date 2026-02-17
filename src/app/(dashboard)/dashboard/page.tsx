@@ -6,9 +6,7 @@ import { getDashboardStats, getCombinedMonthlyTrends, getQuestionBreakdown } fro
 import type { TemplateQuestionScores } from "@/lib/queries/stats"
 import type { SatisfactionTrend } from "@/types"
 import { getStaffEngagementData } from "@/lib/queries/engagement"
-import { SatisfactionCards } from "@/components/dashboard/satisfaction-cards"
 import { SatisfactionTrendChart } from "@/components/dashboard/satisfaction-trend"
-import { MonthlyChart } from "@/components/dashboard/monthly-chart"
 import { RecentResponses } from "@/components/dashboard/recent-responses"
 import { QuestionBreakdown } from "@/components/dashboard/question-breakdown"
 import { StaffEngagement } from "@/components/dashboard/staff-engagement"
@@ -40,10 +38,10 @@ export default async function DashboardPage() {
   const staffViewOverride = isAdmin && !isOperatorMode && isStaffViewOverride()
   const adminMode = isOperatorMode || (isAdmin && !staffViewOverride)
 
-  // Get clinic slug for kiosk link
+  // Get clinic info for kiosk link and admin greeting
   const clinic = await prisma.clinic.findUnique({
     where: { id: clinicId },
-    select: { slug: true },
+    select: { slug: true, name: true },
   })
   const kioskUrl = clinic ? `/kiosk/${encodeURIComponent(clinic.slug)}` : "/dashboard/survey-start"
 
@@ -53,7 +51,6 @@ export default async function DashboardPage() {
 
   let adminData: {
     stats: Awaited<ReturnType<typeof getDashboardStats>>
-    monthlyTrend: Array<{ month: string; avgScore: number; count: number }>
     satisfactionTrend: SatisfactionTrend[]
     questionBreakdown: TemplateQuestionScores[]
     showSummaryBanner: boolean
@@ -77,7 +74,7 @@ export default async function DashboardPage() {
           select: { totalVisits: true },
         }),
       ])
-    const { monthlyTrend, satisfactionTrend } = trends
+    const { satisfactionTrend } = trends
 
     const lowScoreQuestions: Array<{ questionId: string; text: string; avgScore: number }> = []
     for (const template of questionBreakdown) {
@@ -91,7 +88,6 @@ export default async function DashboardPage() {
 
     adminData = {
       stats,
-      monthlyTrend,
       satisfactionTrend,
       questionBreakdown,
       showSummaryBanner: lastMonthSummary == null,
@@ -116,101 +112,84 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* ① Greeting + encouragement */}
-      <div>
-        <h1 className="text-2xl font-bold">お疲れさまです</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {messages.dashboard.staffDashboardMessage}
-        </p>
-      </div>
+      {/* Greeting — view-specific */}
+      {adminMode ? (
+        <div>
+          <h1 className="text-2xl font-bold">{clinic?.name ?? messages.dashboard.satisfaction}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {messages.dashboard.thisMonth}: {adminData?.stats.totalResponses ?? 0}{messages.common.countSuffix}
+          </p>
+        </div>
+      ) : (
+        <div>
+          <h1 className="text-2xl font-bold">{messages.dashboard.staffDashboardGreeting}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {messages.dashboard.staffDashboardMessage}
+          </p>
+        </div>
+      )}
 
       {/* Staff view */}
       {!adminMode && engagement && (
         <StaffEngagement data={engagement} kioskUrl={kioskUrl} activeActions={activeActions} />
       )}
 
-      {/* Admin analytics */}
+      {/* Admin analytics — single consolidated section */}
       {adminData && (
-        <>
-          <div className="space-y-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
-              {messages.dashboard.sectionPatientExperience}
-            </h2>
-
-            <Card className="border-blue-200 bg-gradient-to-r from-blue-50/50 to-white">
-              <CardContent className="py-6">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">{messages.dashboard.satisfaction}</p>
-                    <div className="mt-1 flex items-baseline gap-2">
-                      <span className="text-4xl font-bold text-blue-600">
-                        {adminData.stats.averageScore > 0 ? adminData.stats.averageScore.toFixed(1) : "-"}
-                      </span>
-                      {adminData.stats.averageScore > 0 && (
-                        <span className="text-lg text-muted-foreground">/ 5.0</span>
-                      )}
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {messages.dashboard.thisMonth}: {adminData.stats.totalResponses}{messages.common.countSuffix}
-                    </p>
+        <div className="space-y-4">
+          {/* Hero score card */}
+          <Card className="border-blue-200 bg-gradient-to-r from-blue-50/50 to-white">
+            <CardContent className="py-6">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">{messages.dashboard.satisfaction}</p>
+                  <div className="mt-1 flex items-baseline gap-2">
+                    <span className="text-4xl font-bold text-blue-600">
+                      {adminData.stats.averageScore > 0 ? adminData.stats.averageScore.toFixed(1) : "-"}
+                    </span>
+                    {adminData.stats.averageScore > 0 && (
+                      <span className="text-lg text-muted-foreground">/ 5.0</span>
+                    )}
                   </div>
-                  {adminData.stats.prevAverageScore != null && adminData.stats.averageScore > 0 && (
-                    <div className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
-                      adminData.stats.averageScore > adminData.stats.prevAverageScore
-                        ? "bg-green-100 text-green-700"
-                        : adminData.stats.averageScore < adminData.stats.prevAverageScore
-                          ? "bg-red-100 text-red-700"
-                          : "bg-gray-100 text-gray-600"
-                    }`}>
-                      {adminData.stats.averageScore > adminData.stats.prevAverageScore ? (
-                        <TrendingUp className="h-3 w-3" />
-                      ) : adminData.stats.averageScore < adminData.stats.prevAverageScore ? (
-                        <TrendingDown className="h-3 w-3" />
-                      ) : null}
-                      {adminData.stats.prevAverageScore > 0 && (
-                        <span>
-                          {adminData.stats.averageScore > adminData.stats.prevAverageScore ? "+" : ""}
-                          {(adminData.stats.averageScore - adminData.stats.prevAverageScore).toFixed(1)}
-                        </span>
-                      )}
-                    </div>
-                  )}
                 </div>
-              </CardContent>
-            </Card>
+                {adminData.stats.prevAverageScore != null && adminData.stats.averageScore > 0 && (
+                  <div className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
+                    adminData.stats.averageScore > adminData.stats.prevAverageScore
+                      ? "bg-green-100 text-green-700"
+                      : adminData.stats.averageScore < adminData.stats.prevAverageScore
+                        ? "bg-red-100 text-red-700"
+                        : "bg-gray-100 text-gray-600"
+                  }`}>
+                    {adminData.stats.averageScore > adminData.stats.prevAverageScore ? (
+                      <TrendingUp className="h-3 w-3" />
+                    ) : adminData.stats.averageScore < adminData.stats.prevAverageScore ? (
+                      <TrendingDown className="h-3 w-3" />
+                    ) : null}
+                    {adminData.stats.prevAverageScore > 0 && (
+                      <span>
+                        {adminData.stats.averageScore > adminData.stats.prevAverageScore ? "+" : ""}
+                        {(adminData.stats.averageScore - adminData.stats.prevAverageScore).toFixed(1)}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-            <InsightCards
-              averageScore={adminData.stats.averageScore}
-              prevAverageScore={adminData.stats.prevAverageScore ?? null}
-              totalResponses={adminData.stats.totalResponses}
-              lowScoreQuestions={adminData.lowScoreQuestions}
-              showSummaryBanner={adminData.showSummaryBanner}
-            />
+          <InsightCards
+            averageScore={adminData.stats.averageScore}
+            prevAverageScore={adminData.stats.prevAverageScore ?? null}
+            totalResponses={adminData.stats.totalResponses}
+            lowScoreQuestions={adminData.lowScoreQuestions}
+            showSummaryBanner={adminData.showSummaryBanner}
+          />
 
-            <QuestionBreakdown data={adminData.questionBreakdown} />
-            <MonthlyChart data={adminData.monthlyTrend} />
-            <RecentResponses responses={adminData.stats.recentResponses} />
-          </div>
-
-          <div className="space-y-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
-              {messages.dashboard.sectionSatisfaction}
-            </h2>
-
-            <SatisfactionCards
-              data={{
-                patientSatisfaction: {
-                  current: adminData.stats.averageScore,
-                  prev: adminData.stats.prevAverageScore ?? null,
-                },
-              }}
-            />
-
-            <SatisfactionTrendChart data={adminData.satisfactionTrend} />
-          </div>
-
+          <QuestionBreakdown data={adminData.questionBreakdown} />
+          <SatisfactionTrendChart data={adminData.satisfactionTrend} />
+          <RecentResponses responses={adminData.stats.recentResponses} />
           <StaffLeaderboard />
-        </>
+        </div>
       )}
     </div>
   )
