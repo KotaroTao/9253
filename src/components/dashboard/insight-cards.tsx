@@ -15,7 +15,7 @@ interface InsightCardsProps {
   averageScore: number
   prevAverageScore: number | null
   totalResponses: number
-  lowScoreQuestions: Array<{ text: string; avgScore: number }>
+  lowScoreQuestions: Array<{ questionId: string; text: string; avgScore: number }>
   showSummaryBanner: boolean
 }
 
@@ -67,7 +67,7 @@ function generateInsights({
       text: messages.dashboard.insightLowQuestion
         .replace("{question}", q.text.length > 20 ? q.text.slice(0, 20) + "…" : q.text)
         .replace("{score}", String(q.avgScore)),
-      action: { label: messages.improvementActions.fromInsight, href: "/dashboard/actions" },
+      action: { label: messages.improvementActions.fromInsight, href: `/dashboard/actions?question=${q.questionId}` },
     })
   }
 
