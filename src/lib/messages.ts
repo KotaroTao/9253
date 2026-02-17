@@ -362,6 +362,15 @@ export const messages = {
     clinicCount: "登録クリニック数",
     totalResponses: "総回答数",
     navTitle: "MIERU Admin",
+    operatorLogin: "ログイン",
+    operatorLoginDesc: "運営モードでダッシュボードを開く",
+    searchPlaceholder: "クリニック名・スラッグで検索",
+  },
+  operatorMode: {
+    banner: "運営モード",
+    bannerDesc: "全ての操作が可能です",
+    exit: "運営モードを終了",
+    backToAdmin: "管理画面に戻る",
   },
   backup: {
     title: "バックアップ管理",

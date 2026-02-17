@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { auth } from "@/auth"
-import { isAdminMode } from "@/lib/admin-mode"
+import { isAdminMode, getOperatorClinicId } from "@/lib/admin-mode"
 import { getSurveyResponses } from "@/lib/queries/surveys"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
-import { STAFF_ROLE_LABELS, VISIT_TYPES, TREATMENT_TYPES, AGE_GROUPS, GENDERS } from "@/lib/constants"
+import { STAFF_ROLE_LABELS, VISIT_TYPES, TREATMENT_TYPES, AGE_GROUPS, GENDERS, ROLES } from "@/lib/constants"
 
 const LABEL_MAP: Record<string, string> = Object.fromEntries([
   ...VISIT_TYPES.map((v) => [v.value, v.label]),
@@ -22,7 +22,13 @@ interface SurveysPageProps {
 export default async function SurveysPage({ searchParams }: SurveysPageProps) {
   const session = await auth()
 
-  if (!session?.user?.clinicId) {
+  if (!session?.user) {
+    redirect("/login")
+  }
+
+  const operatorClinicId = session.user.role === ROLES.SYSTEM_ADMIN ? getOperatorClinicId() : null
+  const clinicId = operatorClinicId ?? session.user.clinicId
+  if (!clinicId) {
     redirect("/login")
   }
 
@@ -33,7 +39,7 @@ export default async function SurveysPage({ searchParams }: SurveysPageProps) {
 
   const page = Number(searchParams.page) || 1
   const { responses, total, totalPages } = await getSurveyResponses(
-    session.user.clinicId,
+    clinicId,
     { page, limit: 20 }
   )
 

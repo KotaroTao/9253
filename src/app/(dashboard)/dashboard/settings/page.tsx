@@ -1,15 +1,22 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
-import { isAdminMode } from "@/lib/admin-mode"
+import { isAdminMode, getOperatorClinicId } from "@/lib/admin-mode"
 import { getClinicById } from "@/lib/queries/clinics"
 import { SettingsForm } from "@/components/settings/settings-form"
 import { messages } from "@/lib/messages"
+import { ROLES } from "@/lib/constants"
 import type { ClinicSettings } from "@/types"
 
 export default async function SettingsPage() {
   const session = await auth()
 
-  if (!session?.user?.clinicId) {
+  if (!session?.user) {
+    redirect("/login")
+  }
+
+  const operatorClinicId = session.user.role === ROLES.SYSTEM_ADMIN ? getOperatorClinicId() : null
+  const clinicId = operatorClinicId ?? session.user.clinicId
+  if (!clinicId) {
     redirect("/login")
   }
 
@@ -18,7 +25,7 @@ export default async function SettingsPage() {
     redirect("/dashboard")
   }
 
-  const clinic = await getClinicById(session.user.clinicId)
+  const clinic = await getClinicById(clinicId)
   if (!clinic) {
     redirect("/dashboard")
   }

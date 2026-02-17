@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
-import { isAdminMode } from "@/lib/admin-mode"
+import { isAdminMode, getOperatorClinicId } from "@/lib/admin-mode"
 import { prisma } from "@/lib/prisma"
 import { getMonthlySurveyCount, getMonthlySurveyQuality } from "@/lib/queries/stats"
 import { MonthlyMetricsView } from "@/components/dashboard/monthly-metrics-view"
 import { messages } from "@/lib/messages"
+import { ROLES } from "@/lib/constants"
 
 export default async function MetricsPage() {
   const session = await auth()
@@ -18,7 +19,8 @@ export default async function MetricsPage() {
     redirect("/dashboard")
   }
 
-  const clinicId = session.user.clinicId
+  const operatorClinicId = session.user.role === ROLES.SYSTEM_ADMIN ? getOperatorClinicId() : null
+  const clinicId = operatorClinicId ?? session.user.clinicId
   if (!clinicId) {
     redirect("/login")
   }
