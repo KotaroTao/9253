@@ -37,3 +37,6 @@ next-env.d.ts
 # prisma
 prisma/migrations/*/migration_lock.toml
 prisma/dist/
+
+# claude code (session-specific, auto-generated)
+.claude/dev-context.md
