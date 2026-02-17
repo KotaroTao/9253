@@ -47,7 +47,18 @@ export default async function DashboardLayout({
     hasAdminPassword = !!settings.adminPassword
   }
 
-  const adminMode = isAdminMode()
+  // 運営モードでは常に管理者ビュー（サイドバー付きレイアウト）を使用
+  const adminMode = isOperatorMode || isAdminMode()
+
+  // クリニック一覧（運営モードのクリニック切り替え用）
+  let allClinics: Array<{ id: string; name: string }> = []
+  if (isOperatorMode) {
+    allClinics = await prisma.clinic.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+      take: 100,
+    })
+  }
 
   return (
     <DashboardShell
@@ -58,6 +69,8 @@ export default async function DashboardLayout({
       isAdminMode={adminMode}
       hasAdminPassword={hasAdminPassword}
       isOperatorMode={isOperatorMode}
+      operatorClinicId={operatorClinicId ?? undefined}
+      allClinics={allClinics}
     >
       {children}
     </DashboardShell>

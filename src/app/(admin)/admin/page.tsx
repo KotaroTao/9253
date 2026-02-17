@@ -1,12 +1,97 @@
 import Link from "next/link"
 import { Suspense } from "react"
-import { getAllClinics } from "@/lib/queries/clinics"
+import { getAllClinics, getClinicHealthBatch } from "@/lib/queries/clinics"
 import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
-import { Lightbulb, HardDrive, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react"
+import { Lightbulb, HardDrive, ArrowRight, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, AlertTriangle, Activity } from "lucide-react"
 import { ClinicSearch } from "@/components/admin/clinic-search"
 import { OperatorLoginButton } from "@/components/admin/operator-login-button"
+
+function ScoreBadge({ score, prevScore }: { score: number | null; prevScore: number | null }) {
+  if (score == null) {
+    return <span className="text-xs text-muted-foreground">—</span>
+  }
+
+  const scoreColor = score >= 4.0
+    ? "text-emerald-700 bg-emerald-50"
+    : score >= 3.0
+      ? "text-amber-700 bg-amber-50"
+      : "text-red-700 bg-red-50"
+
+  const delta = prevScore != null ? score - prevScore : null
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className={`rounded-md px-2 py-0.5 text-sm font-bold ${scoreColor}`}>
+        {score.toFixed(1)}
+      </span>
+      {delta != null && delta !== 0 && (
+        <span className={`flex items-center text-[10px] font-medium ${delta > 0 ? "text-emerald-600" : "text-red-500"}`}>
+          {delta > 0 ? <TrendingUp className="mr-0.5 h-3 w-3" /> : <TrendingDown className="mr-0.5 h-3 w-3" />}
+          {delta > 0 ? "+" : ""}{delta.toFixed(1)}
+        </span>
+      )}
+    </div>
+  )
+}
+
+function ClinicStatusIndicator({ todayCount, lastResponseAt, avgScore }: {
+  todayCount: number
+  lastResponseAt: Date | null
+  avgScore: number | null
+}) {
+  // No data at all
+  if (!lastResponseAt) {
+    return (
+      <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+        <div className="h-1.5 w-1.5 rounded-full bg-gray-300" />
+        未稼働
+      </div>
+    )
+  }
+
+  const daysSinceLastResponse = Math.floor(
+    (Date.now() - new Date(lastResponseAt).getTime()) / (1000 * 60 * 60 * 24)
+  )
+
+  // Inactive for 7+ days
+  if (daysSinceLastResponse >= 7) {
+    return (
+      <div className="flex items-center gap-1 text-[10px] text-red-500">
+        <AlertTriangle className="h-3 w-3" />
+        {daysSinceLastResponse}日間停止
+      </div>
+    )
+  }
+
+  // Low score warning
+  if (avgScore != null && avgScore < 3.5) {
+    return (
+      <div className="flex items-center gap-1 text-[10px] text-amber-600">
+        <AlertTriangle className="h-3 w-3" />
+        要注意
+      </div>
+    )
+  }
+
+  // Active today
+  if (todayCount > 0) {
+    return (
+      <div className="flex items-center gap-1 text-[10px] text-emerald-600">
+        <Activity className="h-3 w-3" />
+        稼働中
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+      <div className="h-1.5 w-1.5 rounded-full bg-gray-300" />
+      本日未稼働
+    </div>
+  )
+}
 
 export default async function AdminPage({
   searchParams,
@@ -27,6 +112,10 @@ export default async function AdminPage({
     `,
   ])
   const totalResponses = Number(totalResponsesResult[0]?.estimate ?? 0)
+
+  // Batch fetch health stats for all clinics on this page
+  const clinicIds = clinics.map((c) => c.id)
+  const healthMap = await getClinicHealthBatch(clinicIds)
 
   // ページネーションURLヘルパー（検索パラメータを保持）
   function paginationHref(targetPage: number) {
@@ -122,35 +211,75 @@ export default async function AdminPage({
               {search ? `「${search}」に一致するクリニックはありません` : messages.common.noData}
             </p>
           ) : (
-            <div className="space-y-3">
-              {clinics.map((clinic) => (
-                <div
-                  key={clinic.id}
-                  className="flex items-center justify-between rounded-md border p-4"
-                >
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-medium">{clinic.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      /{clinic.slug}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="hidden gap-6 text-right text-sm sm:flex">
+            <div className="space-y-2">
+              {clinics.map((clinic) => {
+                const health = healthMap.get(clinic.id)
+                return (
+                  <div
+                    key={clinic.id}
+                    className="rounded-lg border p-4 transition-colors hover:bg-muted/30"
+                  >
+                    {/* Row 1: Clinic name + login button */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium">{clinic.name}</h3>
+                          {health && (
+                            <ClinicStatusIndicator
+                              todayCount={health.todayCount}
+                              lastResponseAt={health.lastResponseAt}
+                              avgScore={health.avgScore}
+                            />
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">/{clinic.slug}</p>
+                      </div>
+                      <OperatorLoginButton clinicId={clinic.id} />
+                    </div>
+
+                    {/* Row 2: Metrics grid */}
+                    <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
                       <div>
-                        <p className="font-medium">{clinic._count.staff}</p>
-                        <p className="text-xs text-muted-foreground">{messages.common.staffLabel}</p>
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">満足度</p>
+                        <div className="mt-0.5">
+                          <ScoreBadge
+                            score={health?.avgScore ?? null}
+                            prevScore={health?.prevMonthAvg ?? null}
+                          />
+                        </div>
                       </div>
                       <div>
-                        <p className="font-medium">
-                          {clinic._count.surveyResponses}
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">本日</p>
+                        <p className="mt-0.5 text-sm font-bold">
+                          {health?.todayCount ?? 0}
+                          <span className="text-xs font-normal text-muted-foreground">件</span>
                         </p>
-                        <p className="text-xs text-muted-foreground">{messages.common.responseCount}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">今月</p>
+                        <p className="mt-0.5 text-sm font-bold">
+                          {health?.thisMonthCount ?? 0}
+                          <span className="text-xs font-normal text-muted-foreground">件</span>
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{messages.common.staffLabel}</p>
+                        <p className="mt-0.5 text-sm font-bold">
+                          {clinic._count.staff}
+                          <span className="text-xs font-normal text-muted-foreground">人</span>
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">総回答</p>
+                        <p className="mt-0.5 text-sm font-bold">
+                          {clinic._count.surveyResponses.toLocaleString()}
+                          <span className="text-xs font-normal text-muted-foreground">件</span>
+                        </p>
                       </div>
                     </div>
-                    <OperatorLoginButton clinicId={clinic.id} />
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
           {/* Pagination */}
