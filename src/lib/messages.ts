@@ -199,7 +199,7 @@ export const messages = {
     customActionDesc: "独自の改善施策を登録",
   },
   staffLeaderboard: {
-    title: "スタッフパフォーマンス",
+    title: "アンケート回収件数",
     name: "名前",
     responses: "回答数",
     avgScore: "平均スコア",

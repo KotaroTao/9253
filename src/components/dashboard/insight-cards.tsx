@@ -35,6 +35,8 @@ function generateInsights({
 }: InsightCardsProps): Insight[] {
   const insights: Insight[] = []
 
+  const actionsLink = { label: messages.improvementActions.fromInsight, href: "/dashboard/actions" }
+
   // Score trend
   if (prevAverageScore != null && averageScore > 0) {
     const delta = Math.round((averageScore - prevAverageScore) * 10) / 10
@@ -43,18 +45,21 @@ function generateInsights({
         type: "success",
         icon: <TrendingUp className="h-4 w-4" />,
         text: messages.dashboard.insightScoreUp.replace("{delta}", String(Math.abs(delta))),
+        action: actionsLink,
       })
     } else if (delta < 0) {
       insights.push({
         type: "warning",
         icon: <TrendingDown className="h-4 w-4" />,
         text: messages.dashboard.insightScoreDown.replace("{delta}", String(Math.abs(delta))),
+        action: actionsLink,
       })
     } else {
       insights.push({
         type: "info",
         icon: <Minus className="h-4 w-4" />,
         text: messages.dashboard.insightScoreStable,
+        action: actionsLink,
       })
     }
   }
@@ -77,6 +82,7 @@ function generateInsights({
       type: "success",
       icon: <Lightbulb className="h-4 w-4" />,
       text: messages.dashboard.insightHighSatisfaction,
+      action: actionsLink,
     })
   }
 
@@ -96,6 +102,7 @@ function generateInsights({
       type: "info",
       icon: <FileText className="h-4 w-4" />,
       text: messages.dashboard.insightResponseRate.replace("{count}", String(totalResponses)),
+      action: actionsLink,
     })
   }
 
@@ -105,6 +112,7 @@ function generateInsights({
       type: "info",
       icon: <Lightbulb className="h-4 w-4" />,
       text: messages.dashboard.insightNoData,
+      action: actionsLink,
     })
   }
 
