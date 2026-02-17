@@ -2,8 +2,8 @@ import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { isStaffViewOverride, getOperatorClinicId } from "@/lib/admin-mode"
-import { getDashboardStats, getCombinedMonthlyTrends, getQuestionBreakdown } from "@/lib/queries/stats"
-import type { TemplateQuestionScores } from "@/lib/queries/stats"
+import { getDashboardStats, getCombinedMonthlyTrends, getQuestionBreakdown, getHourlyHeatmapData } from "@/lib/queries/stats"
+import type { TemplateQuestionScores, HeatmapCell } from "@/lib/queries/stats"
 import type { SatisfactionTrend } from "@/types"
 import { getStaffEngagementData } from "@/lib/queries/engagement"
 import { SatisfactionTrendChart } from "@/components/dashboard/satisfaction-trend"
@@ -12,6 +12,7 @@ import { QuestionBreakdown } from "@/components/dashboard/question-breakdown"
 import { StaffEngagement } from "@/components/dashboard/staff-engagement"
 import { InsightCards } from "@/components/dashboard/insight-cards"
 import { StaffLeaderboard } from "@/components/dashboard/staff-leaderboard"
+import { SatisfactionHeatmap } from "@/components/dashboard/satisfaction-heatmap"
 import { messages } from "@/lib/messages"
 import { TrendingUp, TrendingDown } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
@@ -53,6 +54,7 @@ export default async function DashboardPage() {
     stats: Awaited<ReturnType<typeof getDashboardStats>>
     satisfactionTrend: SatisfactionTrend[]
     questionBreakdown: TemplateQuestionScores[]
+    heatmapData: HeatmapCell[]
     showSummaryBanner: boolean
     summaryBannerLabel: string
     lowScoreQuestions: Array<{ questionId: string; text: string; avgScore: number }>
@@ -64,11 +66,12 @@ export default async function DashboardPage() {
     const prevYear = prevDate.getFullYear()
     const prevMonth = prevDate.getMonth() + 1
 
-    const [stats, trends, questionBreakdown, lastMonthSummary] =
+    const [stats, trends, questionBreakdown, heatmapData, lastMonthSummary] =
       await Promise.all([
         getDashboardStats(clinicId),
         getCombinedMonthlyTrends(clinicId),
         getQuestionBreakdown(clinicId),
+        getHourlyHeatmapData(clinicId),
         prisma.monthlyClinicMetrics.findUnique({
           where: { clinicId_year_month: { clinicId, year: prevYear, month: prevMonth } },
           select: { totalVisits: true },
@@ -90,6 +93,7 @@ export default async function DashboardPage() {
       stats,
       satisfactionTrend,
       questionBreakdown,
+      heatmapData,
       showSummaryBanner: lastMonthSummary == null,
       summaryBannerLabel: `${prevYear}年${prevMonth}月`,
       lowScoreQuestions,
@@ -186,6 +190,7 @@ export default async function DashboardPage() {
           />
 
           <QuestionBreakdown data={adminData.questionBreakdown} />
+          <SatisfactionHeatmap data={adminData.heatmapData} />
           <SatisfactionTrendChart data={adminData.satisfactionTrend} />
           <RecentResponses responses={adminData.stats.recentResponses} />
           <StaffLeaderboard />

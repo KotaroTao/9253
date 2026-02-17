@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { messages } from "@/lib/messages"
 
 interface DashboardHeaderProps {
-  userName: string
   clinicName?: string
   isAdminMode?: boolean
   canToggleView?: boolean
@@ -14,7 +13,6 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({
-  userName,
   clinicName,
   isAdminMode = false,
   canToggleView = false,
@@ -55,7 +53,6 @@ export function DashboardHeader({
             )}
           </button>
         )}
-        <span className="text-sm text-muted-foreground">{userName}</span>
       </div>
     </header>
   )

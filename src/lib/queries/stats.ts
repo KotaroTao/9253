@@ -286,6 +286,53 @@ export async function getQuestionBreakdown(
   return result
 }
 
+// --- Hourly heatmap data (day-of-week × hour) ---
+
+export interface HeatmapCell {
+  dayOfWeek: number // 0=Sun, 1=Mon, ..., 6=Sat
+  hour: number      // 0-23
+  avgScore: number
+  count: number
+}
+
+interface HeatmapRow {
+  day_of_week: number
+  hour: number
+  avg_score: number
+  count: bigint
+}
+
+export async function getHourlyHeatmapData(
+  clinicId: string,
+  months: number = 3
+): Promise<HeatmapCell[]> {
+  const sinceDate = new Date()
+  sinceDate.setMonth(sinceDate.getMonth() - months)
+  sinceDate.setDate(1)
+  sinceDate.setHours(0, 0, 0, 0)
+
+  const rows = await prisma.$queryRaw<HeatmapRow[]>`
+    SELECT
+      EXTRACT(DOW FROM responded_at AT TIME ZONE 'Asia/Tokyo')::int AS day_of_week,
+      EXTRACT(HOUR FROM responded_at AT TIME ZONE 'Asia/Tokyo')::int AS hour,
+      ROUND(AVG(overall_score)::numeric, 2)::float AS avg_score,
+      COUNT(*) AS count
+    FROM survey_responses
+    WHERE clinic_id = ${clinicId}::uuid
+      AND responded_at >= ${sinceDate}
+      AND overall_score IS NOT NULL
+    GROUP BY day_of_week, hour
+    ORDER BY day_of_week, hour
+  `
+
+  return rows.map((r) => ({
+    dayOfWeek: r.day_of_week,
+    hour: r.hour,
+    avgScore: r.avg_score,
+    count: Number(r.count),
+  }))
+}
+
 interface SatisfactionTrendRow {
   month: string
   patient_satisfaction: number | null
