@@ -6,7 +6,7 @@ import { Sidebar } from "@/components/layout/sidebar"
 import { DashboardHeader } from "@/components/layout/dashboard-header"
 import { BottomNav } from "@/components/layout/bottom-nav"
 import { cn } from "@/lib/utils"
-import { Shield, X, ChevronDown, ArrowLeftRight, Search, Eye } from "lucide-react"
+import { Shield, X, ChevronDown, ArrowLeftRight, Search } from "lucide-react"
 import { messages } from "@/lib/messages"
 
 interface DashboardShellProps {
@@ -172,19 +172,32 @@ export function DashboardShell({
     </div>
   )
 
-  // Staff mode: no sidebar/header, bottom nav only
+  const footer = (
+    <footer className="flex items-center justify-center border-t bg-card px-4 py-2">
+      <span className="text-[10px] text-muted-foreground/40">{messages.common.poweredBy}</span>
+    </footer>
+  )
+
+  // Staff mode: header + bottom nav
   if (!isAdminMode) {
     return (
       <div className="flex min-h-screen flex-col">
         {operatorBanner}
+        <DashboardHeader
+          userName={userName}
+          clinicName={clinicName}
+          isAdminMode={false}
+          canToggleView={canToggleView}
+          onMenuToggle={() => {}}
+          onToggleView={handleToggleView}
+        />
         <main className="flex-1 bg-muted/40 p-4 pb-20">
           {children}
         </main>
+        {footer}
         <BottomNav
           clinicSlug={clinicSlug}
           isAdminMode={false}
-          canToggleView={canToggleView}
-          onToggleView={handleToggleView}
         />
       </div>
     )
@@ -218,22 +231,15 @@ export function DashboardShell({
         <DashboardHeader
           userName={userName}
           clinicName={clinicName}
+          isAdminMode={true}
+          canToggleView={canToggleView}
           onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
+          onToggleView={handleToggleView}
         />
         <main className="flex-1 overflow-y-auto bg-muted/40 p-4 lg:p-6">
           {children}
         </main>
-        {canToggleView && (
-          <footer className="flex items-center justify-end border-t bg-card px-4 py-2">
-            <button
-              onClick={handleToggleView}
-              className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <Eye className="h-3.5 w-3.5" />
-              {messages.dashboard.switchToStaffView}
-            </button>
-          </footer>
-        )}
+        {footer}
       </div>
     </div>
   )
