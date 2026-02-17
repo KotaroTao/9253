@@ -38,6 +38,9 @@ export default async function ActionsPage() {
     prisma.improvementAction.findMany({
       where: { clinicId },
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+      include: {
+        logs: { orderBy: { createdAt: "asc" } },
+      },
     }),
     prisma.surveyTemplate.findMany({
       where: { clinicId },

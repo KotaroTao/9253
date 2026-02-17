@@ -3,10 +3,11 @@ import { prisma } from "@/lib/prisma"
 import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
+import { getCurrentSatisfactionScore } from "@/lib/queries/stats"
 
 /**
  * GET /api/improvement-actions
- * List improvement actions for the clinic
+ * List improvement actions for the clinic (with logs)
  */
 export async function GET() {
   const authResult = await requireRole("clinic_admin", "system_admin")
@@ -19,6 +20,11 @@ export async function GET() {
     where: { clinicId },
     orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     take: 100,
+    include: {
+      logs: {
+        orderBy: { createdAt: "asc" },
+      },
+    },
   })
 
   return successResponse(actions)
@@ -26,7 +32,7 @@ export async function GET() {
 
 /**
  * POST /api/improvement-actions
- * Create a new improvement action
+ * Create a new improvement action (with auto-captured satisfaction score log)
  */
 export async function POST(request: NextRequest) {
   const authResult = await requireRole("clinic_admin", "system_admin")
@@ -53,6 +59,9 @@ export async function POST(request: NextRequest) {
       return errorResponse(messages.improvementActions.scoreOutOfRange, 400)
     }
 
+    // Auto-capture current satisfaction score
+    const currentScore = await getCurrentSatisfactionScore(clinicId)
+
     const action = await prisma.improvementAction.create({
       data: {
         clinicId,
@@ -61,7 +70,14 @@ export async function POST(request: NextRequest) {
         targetQuestion: targetQuestion?.trim() || null,
         baselineScore: parsedBaseline,
         targetScore: parsedTarget,
+        logs: {
+          create: {
+            action: "started",
+            satisfactionScore: currentScore,
+          },
+        },
       },
+      include: { logs: { orderBy: { createdAt: "asc" } } },
     })
 
     return successResponse(action, 201)

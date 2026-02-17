@@ -132,10 +132,25 @@ model ImprovementAction {
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
   clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  logs   ImprovementActionLog[]
 
   @@index([clinicId])
   @@index([clinicId, status])
   @@map("improvement_actions")
+}
+
+model ImprovementActionLog {
+  id                  String   @id @default(uuid()) @db.Uuid
+  improvementActionId String   @map("improvement_action_id") @db.Uuid
+  action              String   // started, completed, cancelled, reactivated
+  satisfactionScore   Float?   @map("satisfaction_score")
+  note                String?
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  improvementAction ImprovementAction @relation(fields: [improvementActionId], references: [id], onDelete: Cascade)
+
+  @@index([improvementActionId])
+  @@map("improvement_action_logs")
 }
 
 model MonthlyClinicMetrics {
