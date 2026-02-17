@@ -152,61 +152,189 @@ async function main() {
     data: { isActive: false },
   })
 
-  const template = templates[0]
+  // --- 6ヶ月分のリアルなデモアンケートデータを生成 ---
+  // 日曜日は休診、診療時間9-18時、テンプレート比率（初診20%/治療中40%/定期検診40%）
+  // 1日あたり8-15件、スコアは時間帯・曜日・月で変動し導入定着に伴う改善傾向を再現
 
-  // Create sample survey responses (skip if responses already exist)
-  const existingCount = await prisma.surveyResponse.count({
+  const QUESTION_IDS: Record<string, string[]> = {
+    "初診": ["fv1", "fv2", "fv3", "fv4", "fv5", "fv6", "fv7", "fv8"],
+    "治療中": ["tr1", "tr2", "tr3", "tr4", "tr5", "tr6"],
+    "定期検診": ["ck1", "ck2", "ck3", "ck4", "ck5", "ck6"],
+  }
+
+  // 決定的乱数（seedを固定してデータが毎回同じになるように）
+  let rngState = 20260217
+  const rng = () => {
+    rngState = (rngState * 1664525 + 1013904223) & 0x7fffffff
+    return rngState / 0x7fffffff
+  }
+
+  const weightedChoice = <T>(items: T[], weights: number[]): T => {
+    const total = weights.reduce((a, b) => a + b, 0)
+    let r = rng() * total
+    for (let i = 0; i < items.length; i++) {
+      r -= weights[i]
+      if (r <= 0) return items[i]
+    }
+    return items[items.length - 1]
+  }
+
+  const generateScore = (baseQuality: number): number => {
+    const r = rng()
+    const shift = (baseQuality - 0.5) * 0.3
+    if (r < 0.02 - shift) return 1
+    if (r < 0.07 - shift) return 2
+    if (r < 0.25 - shift * 2) return 3
+    if (r < 0.65 - shift) return 4
+    return 5
+  }
+
+  const FREE_TEXTS = [
+    "丁寧に対応していただきありがとうございました。",
+    "説明が分かりやすくて安心しました。",
+    "待ち時間が少し長かったです。",
+    "スタッフの皆さんが優しくて良かったです。",
+    "子どもも怖がらずに治療を受けられました。",
+    "クリーニングがとても丁寧でした。",
+    "院内がきれいで気持ちよかったです。",
+    "次回の治療内容をもう少し詳しく教えてほしかったです。",
+    "予約が取りやすくて助かります。",
+    "痛みへの配慮がとても嬉しかったです。",
+    "治療の説明が専門的で少し難しかったです。",
+    "いつもありがとうございます。安心して通えます。",
+    "受付の対応がとても丁寧で好印象です。",
+    "費用の説明が事前にあって安心しました。",
+  ]
+  const COMPLAINTS = ["pain", "filling_crown", "periodontal", "cosmetic", "prevention", "orthodontics", "other"]
+  const AGE_GROUPS = ["under_20", "20s", "30s", "40s", "50s", "60s_over"]
+  const GENDERS = ["male", "female", "unspecified"]
+
+  const templateConfig = templates.map((t) => ({
+    template: t,
+    questionIds: QUESTION_IDS[t.name] || [],
+    weight: t.name === "初診" ? 20 : 40,
+  }))
+
+  // 既存のデモ回答を削除して再投入
+  const deleted = await prisma.surveyResponse.deleteMany({
     where: { clinicId: clinic.id },
   })
+  if (deleted.count > 0) {
+    console.log(`既存回答を削除: ${deleted.count}件`)
+  }
 
-  if (existingCount === 0) {
-    const now = new Date()
-    const sampleResponses = []
-    for (let i = 0; i < 30; i++) {
-      const daysAgo = Math.floor(Math.random() * 60)
-      const respondedAt = new Date(now.getTime() - daysAgo * 86400000)
+  const now = new Date()
+  const startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1)
+  const allResponses: Array<{
+    clinicId: string
+    staffId: string
+    templateId: string
+    answers: Record<string, number>
+    overallScore: number
+    freeText: string | null
+    patientAttributes: Record<string, string>
+    ipHash: string
+    respondedAt: Date
+  }> = []
 
-      const scores: Record<string, number> = {}
-      // Use template from round-robin across 3 templates
-      const tmplIndex = i % templates.length
-      const tmplQuestions = SURVEY_TEMPLATES[tmplIndex].questions
-      for (const q of tmplQuestions) {
-        scores[q.id] = Math.random() > 0.2 ? Math.ceil(Math.random() * 2) + 3 : Math.ceil(Math.random() * 3)
+  let totalDays = 0
+  const current = new Date(startDate)
+  while (current <= now) {
+    const dayOfWeek = current.getDay()
+    if (dayOfWeek === 0) { // 日曜は休診
+      current.setDate(current.getDate() + 1)
+      continue
+    }
+    totalDays++
+
+    // 1日あたりの回答数（曜日で変動）
+    let baseDailyCount: number
+    if (dayOfWeek === 6) baseDailyCount = 12 + Math.floor(rng() * 6) // 土曜: 12-17
+    else if (dayOfWeek === 1) baseDailyCount = 6 + Math.floor(rng() * 5) // 月曜: 6-10
+    else baseDailyCount = 8 + Math.floor(rng() * 7) // 火-金: 8-14
+
+    // 月ごとのトレンド（導入が定着して微増）
+    const monthsFromStart = (current.getFullYear() - startDate.getFullYear()) * 12 + (current.getMonth() - startDate.getMonth())
+    const dailyCount = Math.round(baseDailyCount * (1.0 + monthsFromStart * 0.05))
+    const dayBaseQuality = 0.55 + monthsFromStart * 0.03 + (rng() - 0.5) * 0.1
+
+    for (let i = 0; i < dailyCount; i++) {
+      const config = weightedChoice(templateConfig, templateConfig.map((c) => c.weight))
+      const staff = staffMembers[Math.floor(rng() * staffMembers.length)]
+
+      // 時間帯（11時・14時ピーク、12時谷）
+      const hour = weightedChoice(
+        [9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+        [8, 15, 18, 5, 10, 16, 14, 12, 8, 4]
+      )
+      const respondedAt = new Date(
+        current.getFullYear(), current.getMonth(), current.getDate(),
+        hour, Math.floor(rng() * 60), Math.floor(rng() * 60)
+      )
+
+      let timeQuality = dayBaseQuality
+      if (hour <= 11) timeQuality += 0.05
+      if (hour >= 17) timeQuality -= 0.05
+      if (dayOfWeek === 6 && hour >= 14) timeQuality -= 0.03
+
+      const answers: Record<string, number> = {}
+      for (const qId of config.questionIds) {
+        const isWaitQuestion = qId === "fv3" || qId === "tr4" || qId === "ck4"
+        answers[qId] = generateScore(Math.max(0.1, Math.min(0.95, isWaitQuestion ? timeQuality - 0.1 : timeQuality)))
       }
-      const scoreValues = Object.values(scores)
-      const overallScore = scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length
+      const scoreValues = Object.values(answers)
+      const overallScore = Math.round((scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length) * 100) / 100
 
-      // Generate sample patient attributes
-      const visitTypes = ["first_visit", "revisit"] as const
-      const treatmentTypes = ["treatment", "checkup", "consultation"] as const
-      const complaints = ["pain", "filling_crown", "periodontal", "cosmetic", "prevention", "orthodontics", "other"]
-      const ageGroups = ["under_20", "30s", "40s", "50s", "60s_over"]
-      const genders = ["male", "female", "unspecified"]
-
-      const patientAttributes = {
-        visitType: tmplIndex === 0 ? "first_visit" : "revisit",
-        treatmentType: tmplIndex === 2 ? "checkup" : tmplIndex === 1 ? "treatment" : "treatment",
-        chiefComplaint: complaints[i % complaints.length],
-        ageGroup: ageGroups[i % ageGroups.length],
-        gender: genders[i % genders.length],
-      }
-
-      sampleResponses.push({
+      const isFirstVisit = config.template.name === "初診"
+      const isCheckup = config.template.name === "定期検診"
+      allResponses.push({
         clinicId: clinic.id,
-        templateId: templates[tmplIndex].id,
-        answers: scores,
+        staffId: staff.id,
+        templateId: config.template.id,
+        answers,
         overallScore,
-        freeText: i % 5 === 0 ? "丁寧に対応していただきありがとうございました。" : null,
-        patientAttributes,
-        ipHash: `sample-hash-${i}`,
+        freeText: rng() < 0.25 ? FREE_TEXTS[Math.floor(rng() * FREE_TEXTS.length)] : null,
+        patientAttributes: {
+          visitType: isFirstVisit ? "first_visit" : "revisit",
+          treatmentType: isCheckup ? "checkup" : "treatment",
+          chiefComplaint: COMPLAINTS[Math.floor(rng() * COMPLAINTS.length)],
+          ageGroup: weightedChoice(AGE_GROUPS, [8, 12, 18, 22, 25, 15]),
+          gender: weightedChoice(GENDERS, [45, 50, 5]),
+        },
+        ipHash: `demo-${respondedAt.getTime()}-${i}`,
         respondedAt,
       })
     }
+    current.setDate(current.getDate() + 1)
+  }
 
-    await prisma.surveyResponse.createMany({ data: sampleResponses })
-    console.log(`Sample responses created: ${sampleResponses.length} records`)
-  } else {
-    console.log(`Sample responses skipped (${existingCount} already exist)`)
+  // バッチ挿入（500件ずつ）
+  const BATCH_SIZE = 500
+  for (let i = 0; i < allResponses.length; i += BATCH_SIZE) {
+    await prisma.surveyResponse.createMany({ data: allResponses.slice(i, i + BATCH_SIZE) })
+  }
+  console.log(`デモ回答作成: ${allResponses.length}件（${totalDays}営業日分）`)
+
+  // 月次レポート（過去5ヶ月分。当月は未入力=InsightBanner表示用）
+  for (let m = 1; m <= 5; m++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - m, 1)
+    const year = d.getFullYear()
+    const month = d.getMonth() + 1
+    const monthResponses = allResponses.filter(
+      (r) => r.respondedAt.getFullYear() === year && r.respondedAt.getMonth() + 1 === month
+    ).length
+    const totalVisits = Math.round(monthResponses * (2.5 + rng() * 0.8))
+    const totalRevenue = Math.round((350 + rng() * 150) * totalVisits / 10000)
+    const selfPayRevenue = Math.round(totalRevenue * (0.15 + rng() * 0.15))
+    const googleReviewCount = 40 + m * 2 + Math.floor(rng() * 5)
+    const googleReviewRating = Math.round((3.8 + rng() * 0.8) * 10) / 10
+
+    await prisma.monthlyClinicMetrics.upsert({
+      where: { clinicId_year_month: { clinicId: clinic.id, year, month } },
+      update: { totalVisits, totalRevenue, selfPayRevenue, googleReviewCount, googleReviewRating },
+      create: { clinicId: clinic.id, year, month, totalVisits, totalRevenue, selfPayRevenue, googleReviewCount, googleReviewRating },
+    })
+    console.log(`月次レポート: ${year}-${String(month).padStart(2, "0")} (来院${totalVisits}人, 売上${totalRevenue}万円)`)
   }
 
   // Seed default patient tips to PlatformSetting

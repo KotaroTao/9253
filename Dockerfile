@@ -28,6 +28,9 @@ ENV NODE_ENV=production
 
 RUN npm run build
 
+# Seed スクリプトをJSにコンパイル（本番コンテナ用）
+RUN npx tsc prisma/seed.ts --outDir prisma/dist --esModuleInterop --module commonjs --target es2020 --resolveJsonModule --skipLibCheck
+
 # --- ステージ3: 本番用の軽量イメージ ---
 FROM node:20-alpine AS runner
 WORKDIR /app
@@ -50,6 +53,10 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=deps /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=deps /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=deps /app/node_modules/prisma ./node_modules/prisma
+
+# Seed用コンパイル済みJSと依存パッケージ
+COPY --from=builder /app/prisma/dist/seed.js ./prisma/seed.js
+COPY --from=deps /app/node_modules/bcryptjs ./node_modules/bcryptjs
 
 # エントリポイントスクリプト
 COPY deploy/docker-entrypoint.sh ./docker-entrypoint.sh
