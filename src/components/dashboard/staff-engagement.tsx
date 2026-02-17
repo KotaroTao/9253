@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
-import { Flame, MessageCircle, Trophy, CalendarOff, Smartphone, ArrowRight } from "lucide-react"
+import { Flame, MessageCircle, Trophy, CalendarOff, Smartphone, ArrowRight, Sparkles } from "lucide-react"
 import { Confetti } from "@/components/survey/confetti"
 import { cn } from "@/lib/utils"
 import type { EngagementData } from "@/lib/queries/engagement"
@@ -68,6 +68,32 @@ export function StaffEngagement({ data, kioskUrl, activeActions = [] }: StaffEng
       {/* Confetti when goal reached */}
       {goalReached && <Confetti />}
 
+      {/* Onboarding for first-time users */}
+      {totalCount === 0 && todayCount === 0 && (
+        <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-white">
+          <CardContent className="py-5">
+            <div className="flex items-center gap-2 text-blue-600 mb-3">
+              <Sparkles className="h-4 w-4" />
+              <p className="text-sm font-bold">{messages.dashboard.onboardingTitle}</p>
+            </div>
+            <ol className="space-y-2 text-sm text-muted-foreground">
+              <li className="flex gap-2">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-600">1</span>
+                {messages.dashboard.onboardingStep1}
+              </li>
+              <li className="flex gap-2">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-600">2</span>
+                {messages.dashboard.onboardingStep2}
+              </li>
+              <li className="flex gap-2">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-600">3</span>
+                {messages.dashboard.onboardingStep3}
+              </li>
+            </ol>
+          </CardContent>
+        </Card>
+      )}
+
       {/* ②③ Daily goal + Week chart combined */}
       <Card>
         <CardContent className="py-5">
@@ -128,81 +154,86 @@ export function StaffEngagement({ data, kioskUrl, activeActions = [] }: StaffEng
             </div>
 
             {/* Bar chart for each day */}
-            <div className="flex items-end gap-1.5">
-              {weekDays.map((day) => {
-                const maxCount = Math.max(...weekDays.map((d) => d.count), dailyGoal)
-                const barHeight = maxCount > 0 ? Math.max((day.count / maxCount) * 80, day.count > 0 ? 8 : 0) : 0
-                const isToggling = togglingDate === day.date
-                const isPast = !day.isToday && day.date < weekDays.find((d) => d.isToday)?.date!
+            {(() => {
+              const maxCount = Math.max(...weekDays.map((d) => d.count), dailyGoal)
+              const todayDate = weekDays.find((d) => d.isToday)?.date
+              return (
+                <div className="flex items-end gap-1.5">
+                  {weekDays.map((day) => {
+                    const barHeight = maxCount > 0 ? Math.max((day.count / maxCount) * 80, day.count > 0 ? 8 : 0) : 0
+                    const isToggling = togglingDate === day.date
+                    const isPast = !day.isToday && todayDate != null && day.date < todayDate
 
-                return (
-                  <div key={day.date} className="flex flex-1 flex-col items-center gap-1">
-                    {/* Count label */}
-                    <span className={cn(
-                      "text-[10px] font-medium",
-                      day.isToday ? "text-blue-600" : day.isClosed ? "text-muted-foreground/40" : "text-muted-foreground"
-                    )}>
-                      {day.isClosed ? "-" : day.count}
-                    </span>
+                    return (
+                      <div key={day.date} className="flex flex-1 flex-col items-center gap-1">
+                        {/* Count label */}
+                        <span className={cn(
+                          "text-[10px] font-medium",
+                          day.isToday ? "text-blue-600" : day.isClosed ? "text-muted-foreground/40" : "text-muted-foreground"
+                        )}>
+                          {day.isClosed ? "-" : day.count}
+                        </span>
 
-                    {/* Bar */}
-                    <div className="relative w-full" style={{ height: 80 }}>
-                      {day.isClosed ? (
-                        <div className="absolute bottom-0 w-full flex items-center justify-center" style={{ height: 80 }}>
-                          <CalendarOff className="h-4 w-4 text-muted-foreground/30" />
-                        </div>
-                      ) : (
-                        <div
-                          className={cn(
-                            "absolute bottom-0 w-full rounded-t-sm transition-all",
-                            day.isToday
-                              ? goalReached ? "bg-green-400" : "bg-blue-400"
-                              : day.count >= dailyGoal
-                                ? "bg-green-300"
-                                : day.count > 0
-                                  ? "bg-blue-200"
-                                  : ""
+                        {/* Bar */}
+                        <div className="relative w-full" style={{ height: 80 }}>
+                          {day.isClosed ? (
+                            <div className="absolute bottom-0 w-full flex items-center justify-center" style={{ height: 80 }}>
+                              <CalendarOff className="h-4 w-4 text-muted-foreground/30" />
+                            </div>
+                          ) : (
+                            <div
+                              className={cn(
+                                "absolute bottom-0 w-full rounded-t-sm transition-all",
+                                day.isToday
+                                  ? goalReached ? "bg-green-400" : "bg-blue-400"
+                                  : day.count >= dailyGoal
+                                    ? "bg-green-300"
+                                    : day.count > 0
+                                      ? "bg-blue-200"
+                                      : ""
+                              )}
+                              style={{ height: barHeight }}
+                            />
                           )}
-                          style={{ height: barHeight }}
-                        />
-                      )}
-                      {/* Goal line */}
-                      {!day.isClosed && maxCount > 0 && (
-                        <div
-                          className="absolute w-full border-t border-dashed border-muted-foreground/20"
-                          style={{ bottom: `${(dailyGoal / maxCount) * 80}px` }}
-                        />
-                      )}
-                    </div>
+                          {/* Goal line */}
+                          {!day.isClosed && maxCount > 0 && (
+                            <div
+                              className="absolute w-full border-t border-dashed border-muted-foreground/20"
+                              style={{ bottom: `${(dailyGoal / maxCount) * 80}px` }}
+                            />
+                          )}
+                        </div>
 
-                    {/* Day label */}
-                    <span className={cn(
-                      "text-[10px]",
-                      day.isToday ? "font-bold text-blue-600" : "text-muted-foreground"
-                    )}>
-                      {day.dayLabel}
-                    </span>
+                        {/* Day label */}
+                        <span className={cn(
+                          "text-[10px]",
+                          day.isToday ? "font-bold text-blue-600" : "text-muted-foreground"
+                        )}>
+                          {day.dayLabel}
+                        </span>
 
-                    {/* Closed day toggle for past days */}
-                    {isPast && (
-                      <button
-                        onClick={() => handleToggleClosed(day.date, day.isClosed)}
-                        disabled={isToggling}
-                        className={cn(
-                          "mt-0.5 rounded-full px-1.5 py-0.5 text-[9px] transition-colors disabled:opacity-50",
-                          day.isClosed
-                            ? "bg-orange-100 text-orange-600 hover:bg-orange-200"
-                            : "bg-muted text-muted-foreground/60 hover:bg-muted/80 hover:text-muted-foreground"
+                        {/* Closed day toggle for past days */}
+                        {isPast && (
+                          <button
+                            onClick={() => handleToggleClosed(day.date, day.isClosed)}
+                            disabled={isToggling}
+                            className={cn(
+                              "min-h-[28px] min-w-[36px] rounded-full px-2 py-1 text-[10px] font-medium transition-colors disabled:opacity-50",
+                              day.isClosed
+                                ? "bg-orange-100 text-orange-600 hover:bg-orange-200"
+                                : "bg-muted text-muted-foreground/60 hover:bg-muted/80 hover:text-muted-foreground"
+                            )}
+                            title={day.isClosed ? "営業日に戻す" : "休診日にする"}
+                          >
+                            {day.isClosed ? "休診" : "休診?"}
+                          </button>
                         )}
-                        title={day.isClosed ? "営業日に戻す" : "休診日にする"}
-                      >
-                        {day.isClosed ? "休診" : "休診?"}
-                      </button>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })()}
           </div>
         </CardContent>
       </Card>
