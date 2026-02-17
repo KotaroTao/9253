@@ -48,7 +48,10 @@
 | 回答一覧 | ✅ | ページネーション、患者属性表示、フリーテキスト |
 | 患者満足度向上のヒント | ✅ | プラットフォーム全体管理（/admin/tips）、クリニック個別カスタム（Clinic.settings JSONB）、ローテーション表示 |
 | 設定 | ✅ | クリニック名、管理者パスワード |
-| 管理者モード | ✅ | パスワード認証、Cookie、8時間セッション |
+| 改善アクション管理 | ✅ | 作成・完了・削除、InsightCardsからの質問プリセレクト遷移、ベースライン/結果スコア記録 |
+| 満足度ヒートマップ | ✅ | 曜日×時間帯の満足度分布を管理者ダッシュボードに表示 |
+| 運営モード | ✅ | system_admin用の全クリニック横断管理ダッシュボード |
+| ビュー切替 | ✅ | ヘッダー右上でスタッフ/管理者ビューをロールベースで切替（旧管理者モード廃止） |
 | システム管理 | ✅ | 全クリニック一覧、プラットフォーム統計、ヒント管理 |
 | ランディングページ | ✅ | ヒーロー、特徴、フロー、FAQ、CTA |
 
@@ -74,6 +77,36 @@
 - Phase 1G: ランディングページ ✅
 - Phase 1H: システム管理 ✅
 - Phase 1Z: ポリッシュ ⏳（継続中）
+
+## 開発ワークフロー
+
+### 検証コマンド（変更後は必ず実行）
+```bash
+npm run typecheck    # TypeScript型チェック（tsc --noEmit）
+npm run lint         # ESLintチェック
+npm run lint:fix     # ESLint自動修正付き
+npm run validate     # typecheck + lint 一括実行（推奨）
+npm run build        # 本番ビルド確認
+```
+
+### DB操作
+```bash
+npm run db:push      # スキーマをDBに反映（prisma db push）
+npm run db:seed      # デモデータ投入（npx tsx prisma/seed.ts）
+npm run db:migrate   # マイグレーション作成（prisma migrate dev）
+npm run db:studio    # Prisma Studio（ブラウザGUI）
+npx prisma generate  # Prismaクライアント再生成（スキーマ変更後）
+```
+
+### 開発の進め方
+1. コード変更後 → `npm run validate` で型エラー・lint違反がないか確認
+2. DBスキーマ変更時 → `npx prisma generate` → `npm run typecheck`
+3. UI変更時 → サーバーコンポーネント優先、"use client" は最小限
+4. API変更時 → `auth()` ガードを忘れずに（`/api/surveys/submit` のみ例外）
+5. テキスト追加時 → `src/lib/messages.ts` に日本語テキストを集約
+
+### Claude Code自動許可設定（`.claude/settings.json`）
+git操作、npm検証コマンド、Prisma操作は承認不要で即実行される設定済み。
 
 ## 技術スタック
 - **フレームワーク**: Next.js 14+ (App Router) + TypeScript
@@ -126,20 +159,53 @@ src/
 └── types/                         # TypeScript 型定義
 ```
 
-## DB設計（7テーブル）
+## DB設計（8テーブル）
 - **Clinic**: UUID主キー、settings: JSONB（adminPasswordハッシュ、dailyGoal、dailyTipカスタム設定を格納）
 - **Staff**: UUID主キー、qrToken (unique UUID) = QRコードURL用
 - **User**: email/password認証、role: system_admin / clinic_admin / staff
 - **SurveyTemplate**: questions: JSONB（初診/治療中/定期検診の3テンプレート）
 - **SurveyResponse**: answers: JSONB、overallScore、freeText、patientAttributes、ipHash
+- **ImprovementAction**: 改善アクション履歴（baselineScore→resultScore、status: active/completed/cancelled）
 - **MonthlyClinicMetrics**: 月次経営指標（来院数、売上、Google口コミ等）
 - **PlatformSetting**: key-value形式のプラットフォーム設定（患者ヒント管理、ローテーション間隔等）
 
-## デモデータ（seed）
-- クリニック: "MIERU デモ歯科クリニック" (slug: demo-dental, パスワード: 1111)
+### DBクエリモジュール（`src/lib/queries/`）
+| ファイル | 内容 |
+|---------|------|
+| `clinics.ts` | クリニック取得・設定更新 |
+| `stats.ts` | ダッシュボード統計（getDashboardStats, getCombinedMonthlyTrends, getQuestionBreakdown等） |
+| `engagement.ts` | スタッフエンゲージメント（getStaffEngagementData — ランク・ストリーク・日次目標） |
+| `staff.ts` | スタッフCRUD・リーダーボード |
+| `surveys.ts` | アンケート回答取得・作成 |
+
+## デモデータ（seed — `prisma/seed.ts`）
+
+### アカウント
+- クリニック: "MIERU デモ歯科クリニック" (slug: demo-dental, 管理者パスワード: 1111)
+- ユーザー: mail@function-t.com / MUNP1687 (system_admin), clinic@demo.com / clinic123 (clinic_admin)
 - スタッフ: 田中花子(衛生士), 佐藤太郎(歯科医師), 鈴木美咲(スタッフ)
 - テンプレート: 初診(8問), 治療中(6問), 定期検診(6問)
-- ユーザー: mail@function-t.com / MUNP1687 (system_admin), clinic@demo.com / clinic123 (clinic_admin)
+
+### 6ヶ月分リアルアンケートデータ（約1,500件）
+決定的乱数（seed固定）により毎回同一データを生成。デモで以下が確認できる:
+- **スコア推移**: 3.5→4.2へS字カーブで半年間に改善
+- **曜日変動**: 土曜（混雑で低め）、月曜（やや低め）、水曜（高め）
+- **時間帯変動**: 午前（高い）、昼（谷）、夕方（低い）
+- **スタッフ差**: 田中花子45%回収/佐藤太郎35%/鈴木美咲20%、スコアにもスタッフ差あり
+- **設問難易度**: 待ち時間・費用説明は低スコア傾向、スタッフ対応・丁寧さは高スコア傾向
+- **フリーテキスト**: 低スコア時はネガティブ、高スコア時はポジティブが出やすい
+
+### 改善アクション6件（4完了 + 2実施中）
+アクション効果がスコアに連動（開始月から2ヶ月かけて最大効果）:
+1. 待ち時間の見える化と声がけ（完了: 月0→月2）
+2. 受付マニュアルの作成と研修（完了: 月1→月3）
+3. 視覚資料を活用した治療説明（完了: 月2→月4）
+4. 接遇マナー研修の定期実施（完了: 月2→月4）
+5. 予約枠にバッファを確保（実施中: 月4→）
+6. 痛みへの配慮を言語化して伝える（実施中: 月4→）
+
+### 月次レポート
+過去5ヶ月分を自動生成（当月は未入力=InsightBanner表示用）
 
 ## QRコードURL
 ```
@@ -155,11 +221,11 @@ https://app.mieru-clinic.com/s/{clinicSlug}
 | clinic_admin | /dashboard/* 自クリニックのみ |
 | staff | ダッシュボード（スタッフビュー）のみ |
 
-## 管理者モード
+## ビュー切替（ロールベース）
 - ダッシュボードはデフォルトで「スタッフビュー」（日次目標、ストリーク、ランク等）
-- 管理者パスワードで「管理者ビュー」に切替（分析、スタッフ管理、設定等）
-- Cookie制御、8時間でセッション切れ
-- デフォルトパスワード: 1111
+- clinic_admin / system_admin はヘッダー右上のトグルで「管理者ビュー」に切替（分析、スタッフ管理、設定等）
+- staff ロールは管理者ビューへの切替不可
+- ※旧パスワード認証方式の管理者モードは廃止済み
 
 ## コーディング規約
 - 言語: TypeScript 厳格モード
@@ -172,6 +238,9 @@ https://app.mieru-clinic.com/s/{clinicSlug}
 ## 設計判断の記録
 - **口コミ導線は非搭載**: 患者満足度改善に特化。口コミ依頼・誘導機能は意図的に排除
 - **他院比較（ベンチマーク）は削除**: MVP段階ではクリニック数不足で機能しない。カテゴリ分類なしの比較は不公平。将来的にクリニック数・カテゴリ分類が揃った段階で再検討
+- **管理者モード→ロールベースビュー切替に変更**: パスワード認証+Cookie方式を廃止し、ユーザーロール（clinic_admin/system_admin）による切替に簡素化
+- **改善アクションとスコアの連動**: seedデータでは改善アクションの開始月からスコアへの効果が徐々に反映される設計。デモ時にスコア推移と改善施策の因果関係を説明可能
+- **決定的乱数によるseedデータ**: rng seed固定により毎回同一データを生成。デモ・スクリーンショットの再現性を保証
 
 ## パフォーマンス最適化（1000医院×1万回答規模対応）
 
