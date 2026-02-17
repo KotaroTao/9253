@@ -1,4 +1,28 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(npm run lint)",
+      "Bash(npm run lint:fix)",
+      "Bash(npm run typecheck)",
+      "Bash(npm run validate)",
+      "Bash(npm run build)",
+      "Bash(npx tsc --noEmit*)",
+      "Bash(npx prisma generate)",
+      "Bash(npx prisma format)",
+      "Bash(npx tsx prisma/seed.ts*)",
+      "Bash(git status*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git branch*)",
+      "Bash(git add *)",
+      "Bash(git commit*)",
+      "Bash(git push*)",
+      "Bash(git fetch*)",
+      "Bash(git pull*)",
+      "Bash(git checkout*)",
+      "Bash(git stash*)"
+    ]
+  },
   "hooks": {
     "SessionStart": [
       {
