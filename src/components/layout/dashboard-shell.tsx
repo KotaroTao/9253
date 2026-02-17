@@ -1,13 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Sidebar } from "@/components/layout/sidebar"
 import { DashboardHeader } from "@/components/layout/dashboard-header"
 import { BottomNav } from "@/components/layout/bottom-nav"
 import { AdminFooter } from "@/components/layout/admin-footer"
 import { cn } from "@/lib/utils"
-import { Shield, X, ChevronDown, ArrowLeftRight } from "lucide-react"
+import { Shield, X, ChevronDown, ArrowLeftRight, Search } from "lucide-react"
 
 interface DashboardShellProps {
   children: React.ReactNode
@@ -36,8 +36,15 @@ export function DashboardShell({
 }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [switcherOpen, setSwitcherOpen] = useState(false)
+  const [switcherSearch, setSwitcherSearch] = useState("")
   const [switching, setSwitching] = useState(false)
   const router = useRouter()
+
+  const filteredClinics = useMemo(() => {
+    if (!switcherSearch) return allClinics
+    const q = switcherSearch.toLowerCase()
+    return allClinics.filter((c) => c.name.toLowerCase().includes(q))
+  }, [allClinics, switcherSearch])
 
   async function handleExitOperatorMode() {
     await fetch("/api/admin/operator-login", { method: "DELETE" })
@@ -86,7 +93,10 @@ export function DashboardShell({
           {/* Clinic switcher toggle */}
           {allClinics.length > 1 && (
             <button
-              onClick={() => setSwitcherOpen(!switcherOpen)}
+              onClick={() => {
+                setSwitcherOpen(!switcherOpen)
+                if (switcherOpen) setSwitcherSearch("")
+              }}
               className="flex items-center gap-1 rounded-md bg-violet-500 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-violet-400"
             >
               <ArrowLeftRight className="h-3 w-3" />
@@ -107,25 +117,49 @@ export function DashboardShell({
       {/* Clinic switcher dropdown */}
       {switcherOpen && allClinics.length > 1 && (
         <div className="border-t border-violet-500/50 bg-violet-700 px-4 py-2">
-          <div className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-violet-300">
-            クリニック切替
+          <div className="mb-1.5 flex items-center justify-between">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-violet-300">
+              クリニック切替
+            </span>
+            <span className="text-[10px] text-violet-400">
+              {filteredClinics.length}/{allClinics.length}件
+            </span>
           </div>
+          {allClinics.length >= 5 && (
+            <div className="relative mb-2">
+              <Search className="absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-violet-400" />
+              <input
+                type="text"
+                value={switcherSearch}
+                onChange={(e) => setSwitcherSearch(e.target.value)}
+                placeholder="クリニック名で検索..."
+                autoFocus
+                className="w-full rounded-md border border-violet-500/50 bg-violet-800 py-1.5 pl-7 pr-3 text-xs text-white placeholder-violet-400 outline-none focus:border-violet-400"
+              />
+            </div>
+          )}
           <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3 max-h-48 overflow-y-auto">
-            {allClinics.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => handleSwitchClinic(c.id)}
-                disabled={switching}
-                className={cn(
-                  "rounded-md px-3 py-1.5 text-left text-xs transition-colors",
-                  c.id === operatorClinicId
-                    ? "bg-violet-500 font-medium text-white"
-                    : "text-violet-200 hover:bg-violet-600 hover:text-white"
-                )}
-              >
-                {c.name}
-              </button>
-            ))}
+            {filteredClinics.length === 0 ? (
+              <p className="col-span-full py-2 text-center text-xs text-violet-400">
+                一致するクリニックがありません
+              </p>
+            ) : (
+              filteredClinics.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => handleSwitchClinic(c.id)}
+                  disabled={switching}
+                  className={cn(
+                    "rounded-md px-3 py-1.5 text-left text-xs transition-colors disabled:opacity-50",
+                    c.id === operatorClinicId
+                      ? "bg-violet-500 font-medium text-white"
+                      : "text-violet-200 hover:bg-violet-600 hover:text-white"
+                  )}
+                >
+                  {c.name}
+                </button>
+              ))
+            )}
           </div>
         </div>
       )}

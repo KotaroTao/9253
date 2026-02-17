@@ -1,12 +1,12 @@
 import Link from "next/link"
 import { Suspense } from "react"
-import { getAllClinics, getClinicHealthBatch } from "@/lib/queries/clinics"
+import { getAllClinics, getClinicHealthBatch, getPlatformTodayStats } from "@/lib/queries/clinics"
 import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
 import { Lightbulb, HardDrive, ArrowRight, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, AlertTriangle, Activity } from "lucide-react"
 import { ClinicSearch } from "@/components/admin/clinic-search"
-import { OperatorLoginButton } from "@/components/admin/operator-login-button"
+import { ClinicRow } from "@/components/admin/clinic-row"
 
 function ScoreBadge({ score, prevScore }: { score: number | null; prevScore: number | null }) {
   if (score == null) {
@@ -41,7 +41,6 @@ function ClinicStatusIndicator({ todayCount, lastResponseAt, avgScore }: {
   lastResponseAt: Date | null
   avgScore: number | null
 }) {
-  // No data at all
   if (!lastResponseAt) {
     return (
       <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
@@ -55,7 +54,6 @@ function ClinicStatusIndicator({ todayCount, lastResponseAt, avgScore }: {
     (Date.now() - new Date(lastResponseAt).getTime()) / (1000 * 60 * 60 * 24)
   )
 
-  // Inactive for 7+ days
   if (daysSinceLastResponse >= 7) {
     return (
       <div className="flex items-center gap-1 text-[10px] text-red-500">
@@ -65,7 +63,6 @@ function ClinicStatusIndicator({ todayCount, lastResponseAt, avgScore }: {
     )
   }
 
-  // Low score warning
   if (avgScore != null && avgScore < 3.5) {
     return (
       <div className="flex items-center gap-1 text-[10px] text-amber-600">
@@ -75,7 +72,6 @@ function ClinicStatusIndicator({ todayCount, lastResponseAt, avgScore }: {
     )
   }
 
-  // Active today
   if (todayCount > 0) {
     return (
       <div className="flex items-center gap-1 text-[10px] text-emerald-600">
@@ -101,23 +97,24 @@ export default async function AdminPage({
   const params = await searchParams
   const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1)
   const search = params.search ?? ""
-  const [{ clinics, total, totalPages }, totalResponsesResult] = await Promise.all([
+
+  // 全クエリを並列実行（3本同時）
+  const [{ clinics, total, totalPages }, totalResponsesResult, platformToday] = await Promise.all([
     getAllClinics({ page, limit: 20, search }),
-    // Use reltuples estimate for platform-wide count (avoids full table scan on 10M+ rows)
     prisma.$queryRaw<Array<{ estimate: bigint }>>`
       SELECT GREATEST(
         (SELECT reltuples::bigint FROM pg_class WHERE relname = 'survey_responses'),
         0
       ) AS estimate
     `,
+    getPlatformTodayStats(),
   ])
   const totalResponses = Number(totalResponsesResult[0]?.estimate ?? 0)
 
-  // Batch fetch health stats for all clinics on this page
+  // クリニック単位のKPIをバッチ取得（クリニック一覧取得後に実行）
   const clinicIds = clinics.map((c) => c.id)
   const healthMap = await getClinicHealthBatch(clinicIds)
 
-  // ページネーションURLヘルパー（検索パラメータを保持）
   function paginationHref(targetPage: number) {
     const params = new URLSearchParams()
     if (targetPage > 1) params.set("page", String(targetPage))
@@ -130,8 +127,8 @@ export default async function AdminPage({
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">{messages.admin.title}</h1>
 
-      {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2">
+      {/* Platform KPIs */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -140,6 +137,35 @@ export default async function AdminPage({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{total}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              本日の回答
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold">{platformToday.todayTotal}</span>
+              <span className="text-xs text-muted-foreground">
+                {platformToday.activeClinicsToday}院稼働
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              本日の平均スコア
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {platformToday.platformAvgScore != null
+                ? platformToday.platformAvgScore.toFixed(1)
+                : "—"}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -215,11 +241,8 @@ export default async function AdminPage({
               {clinics.map((clinic) => {
                 const health = healthMap.get(clinic.id)
                 return (
-                  <div
-                    key={clinic.id}
-                    className="rounded-lg border p-4 transition-colors hover:bg-muted/30"
-                  >
-                    {/* Row 1: Clinic name + login button */}
+                  <ClinicRow key={clinic.id} clinicId={clinic.id} clinicName={clinic.name}>
+                    {/* Row 1: Clinic name + status */}
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
@@ -234,7 +257,6 @@ export default async function AdminPage({
                         </div>
                         <p className="text-xs text-muted-foreground">/{clinic.slug}</p>
                       </div>
-                      <OperatorLoginButton clinicId={clinic.id} />
                     </div>
 
                     {/* Row 2: Metrics grid */}
@@ -277,7 +299,7 @@ export default async function AdminPage({
                         </p>
                       </div>
                     </div>
-                  </div>
+                  </ClinicRow>
                 )
               })}
             </div>
@@ -298,10 +320,8 @@ export default async function AdminPage({
                     前へ
                   </Link>
                 )}
-                {/* ページ番号ボタン */}
                 {Array.from({ length: totalPages }, (_, i) => i + 1)
                   .filter((p) => {
-                    // 最初・最後・現在ページの前後1を表示
                     if (p === 1 || p === totalPages) return true
                     if (Math.abs(p - page) <= 1) return true
                     return false

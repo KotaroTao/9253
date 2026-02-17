@@ -83,6 +83,43 @@ export async function getAllClinics(options?: {
 }
 
 /**
+ * プラットフォーム全体の本日のサマリーKPIを取得する。
+ * 管理画面トップの概況表示用。1クエリで完結。
+ */
+export interface PlatformTodayStats {
+  todayTotal: number
+  activeClinicsToday: number
+  platformAvgScore: number | null
+}
+
+export async function getPlatformTodayStats(): Promise<PlatformTodayStats> {
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+
+  interface Row {
+    today_total: bigint
+    active_clinics: bigint
+    avg_score: number | null
+  }
+
+  const rows = await prisma.$queryRaw<Row[]>`
+    SELECT
+      COUNT(*) AS today_total,
+      COUNT(DISTINCT clinic_id) AS active_clinics,
+      ROUND(AVG(overall_score)::numeric, 2)::float AS avg_score
+    FROM survey_responses
+    WHERE responded_at >= ${todayStart}
+  `
+
+  const row = rows[0]
+  return {
+    todayTotal: Number(row?.today_total ?? 0),
+    activeClinicsToday: Number(row?.active_clinics ?? 0),
+    platformAvgScore: row?.avg_score ?? null,
+  }
+}
+
+/**
  * クリニックIDリストに対して、各クリニックの主要KPIをバッチ取得する。
  * 管理画面の一覧で各クリニックの状態を一目で把握するために使用。
  */
