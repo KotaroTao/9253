@@ -187,6 +187,9 @@ export const messages = {
     scoreOutOfRange: "スコアは1〜5の範囲で入力してください",
     saveFailed: "保存に失敗しました。もう一度お試しください",
     statusChangeFailed: "ステータスの変更に失敗しました",
+    deleteFailed: "アクションの削除に失敗しました",
+    deleteConfirm: "このアクションを削除しますか？",
+    delete: "削除",
     fromInsight: "この質問の改善アクションを作成",
     selectQuestion: "改善したい質問を選択",
     selectQuestionPlaceholder: "質問を選んでください",
@@ -196,7 +199,7 @@ export const messages = {
     customActionDesc: "独自の改善施策を登録",
   },
   staffLeaderboard: {
-    title: "スタッフパフォーマンス",
+    title: "アンケート回収件数",
     name: "名前",
     responses: "回答数",
     avgScore: "平均スコア",

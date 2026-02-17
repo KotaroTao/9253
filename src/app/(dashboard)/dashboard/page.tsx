@@ -82,7 +82,7 @@ export default async function DashboardPage() {
     questionBreakdown: TemplateQuestionScores[]
     showSummaryBanner: boolean
     summaryBannerLabel: string
-    lowScoreQuestions: Array<{ text: string; avgScore: number }>
+    lowScoreQuestions: Array<{ questionId: string; text: string; avgScore: number }>
   } | null = null
 
   if (adminMode) {
@@ -105,11 +105,11 @@ export default async function DashboardPage() {
     const { monthlyTrend, satisfactionTrend } = trends
 
     // Collect low-score questions for insights
-    const lowScoreQuestions: Array<{ text: string; avgScore: number }> = []
+    const lowScoreQuestions: Array<{ questionId: string; text: string; avgScore: number }> = []
     for (const template of questionBreakdown) {
       for (const q of template.questions) {
         if (q.avgScore > 0 && q.avgScore < 4.0) {
-          lowScoreQuestions.push({ text: q.text, avgScore: q.avgScore })
+          lowScoreQuestions.push({ questionId: q.questionId, text: q.text, avgScore: q.avgScore })
         }
       }
     }

@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useMemo, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,6 +24,7 @@ import {
   ChevronUp,
   Lightbulb,
   Pencil,
+  Trash2,
 } from "lucide-react"
 
 interface ImprovementAction {
@@ -57,6 +58,7 @@ interface Props {
 
 export function ImprovementActionsView({ initialActions, templateQuestions = [] }: Props) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [actions, setActions] = useState(initialActions)
   const [showForm, setShowForm] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -81,6 +83,19 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [] 
     }
     return map
   }, [templateQuestions])
+
+  // Auto-open form with pre-selected question from URL param (?question=fv2)
+  useEffect(() => {
+    const questionParam = searchParams.get("question")
+    if (questionParam && allQuestions.has(questionParam)) {
+      setShowForm(true)
+      setSelectedQuestionId(questionParam)
+      const q = allQuestions.get(questionParam)
+      if (q) setTargetQuestion(q.text)
+      // Clean up URL
+      router.replace("/dashboard/actions", { scroll: false })
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Get suggestions for selected question
   const suggestions = useMemo((): ImprovementSuggestion[] => {
@@ -172,6 +187,27 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [] 
       }
     } catch {
       setErrorMsg(messages.improvementActions.statusChangeFailed)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm(messages.improvementActions.deleteConfirm)) return
+    setLoading(true)
+    setErrorMsg(null)
+    try {
+      const res = await fetch(`/api/improvement-actions/${id}`, { method: "DELETE" })
+      if (res.ok) {
+        router.refresh()
+        setActions(actions.filter((a) => a.id !== id))
+        setExpandedId(null)
+      } else {
+        const err = await res.json().catch(() => null)
+        setErrorMsg(err?.error || messages.improvementActions.deleteFailed)
+      }
+    } catch {
+      setErrorMsg(messages.improvementActions.deleteFailed)
     } finally {
       setLoading(false)
     }
@@ -394,6 +430,7 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [] 
               expanded={expandedId === action.id}
               onToggle={() => setExpandedId(expandedId === action.id ? null : action.id)}
               onStatusChange={handleStatusChange}
+              onDelete={handleDelete}
               loading={loading}
             />
           ))}
@@ -413,6 +450,7 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [] 
               expanded={expandedId === action.id}
               onToggle={() => setExpandedId(expandedId === action.id ? null : action.id)}
               onStatusChange={handleStatusChange}
+              onDelete={handleDelete}
               loading={loading}
             />
           ))}
@@ -427,12 +465,14 @@ function ActionCard({
   expanded,
   onToggle,
   onStatusChange,
+  onDelete,
   loading,
 }: {
   action: ImprovementAction
   expanded: boolean
   onToggle: () => void
   onStatusChange: (id: string, status: string, resultScore?: number) => void
+  onDelete: (id: string) => void
   loading: boolean
 }) {
   const [resultInput, setResultInput] = useState(
@@ -626,17 +666,29 @@ function ActionCard({
               </div>
             )}
 
-            {!isActive && (
+            <div className="flex items-center gap-2">
+              {!isActive && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onStatusChange(action.id, "active")}
+                  disabled={loading}
+                >
+                  <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                  {messages.improvementActions.reactivate}
+                </Button>
+              )}
               <Button
                 size="sm"
-                variant="outline"
-                onClick={() => onStatusChange(action.id, "active")}
+                variant="ghost"
+                onClick={() => onDelete(action.id)}
                 disabled={loading}
+                className="text-red-500 hover:text-red-700 hover:bg-red-50 ml-auto"
               >
-                <RotateCcw className="mr-1 h-3.5 w-3.5" />
-                {messages.improvementActions.reactivate}
+                <Trash2 className="mr-1 h-3.5 w-3.5" />
+                {messages.improvementActions.delete}
               </Button>
-            )}
+            </div>
           </div>
         )}
       </CardContent>
