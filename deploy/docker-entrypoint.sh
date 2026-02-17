@@ -30,9 +30,23 @@ if [ "${RUN_MIGRATIONS}" = "true" ]; then
     sleep $RETRY_DELAY
   done
 else
-  echo "[1/2] マイグレーションスキップ（RUN_MIGRATIONS != true）"
+  echo "[1/3] マイグレーションスキップ（RUN_MIGRATIONS != true）"
+fi
+
+# --- Seed（デモデータ投入）---
+# RUN_SEED=true の場合のみ実行（一度きり）
+# Cloud Run の環境変数で RUN_SEED=true を設定→デプロイ→完了後に環境変数を削除
+if [ "${RUN_SEED}" = "true" ]; then
+  echo "[2/3] Seed実行..."
+  if node prisma/seed.js; then
+    echo "  ✓ Seed完了"
+  else
+    echo "  ❌ Seed失敗（アプリ起動は継続します）"
+  fi
+else
+  echo "[2/3] Seedスキップ（RUN_SEED != true）"
 fi
 
 # --- アプリケーション起動 ---
-echo "[2/2] Next.js起動..."
+echo "[3/3] Next.js起動..."
 exec node server.js
