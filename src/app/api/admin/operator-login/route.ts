@@ -3,20 +3,23 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { setAdminModeCookie, setOperatorClinicCookie, clearOperatorClinicCookie, clearAdminModeCookie } from "@/lib/admin-mode"
 import { ROLES } from "@/lib/constants"
+import { errorResponse } from "@/lib/api-helpers"
+import { messages } from "@/lib/messages"
 
 /**
- * GET: 運営モードでクリニックダッシュボードにログイン
- * ?clinicId=xxx → Cookieセット → /dashboard にリダイレクト
+ * POST: 運営モードのCookieをセット
+ * body: { clinicId: string }
  */
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   const session = await auth()
   if (!session?.user || session.user.role !== ROLES.SYSTEM_ADMIN) {
-    return NextResponse.redirect(new URL("/login", request.url))
+    return errorResponse(messages.errors.accessDenied, 403)
   }
 
-  const clinicId = request.nextUrl.searchParams.get("clinicId")
-  if (!clinicId) {
-    return NextResponse.redirect(new URL("/admin", request.url))
+  const body = await request.json().catch(() => null)
+  const clinicId = body?.clinicId
+  if (!clinicId || typeof clinicId !== "string") {
+    return errorResponse(messages.errors.invalidInput, 400)
   }
 
   // クリニックの存在確認
@@ -25,14 +28,14 @@ export async function GET(request: NextRequest) {
     select: { id: true },
   })
   if (!clinic) {
-    return NextResponse.redirect(new URL("/admin", request.url))
+    return errorResponse(messages.errors.invalidInput, 404)
   }
 
   // 運営モードCookieをセット
   setOperatorClinicCookie(clinicId)
   setAdminModeCookie()
 
-  return NextResponse.redirect(new URL("/dashboard", request.url))
+  return NextResponse.json({ ok: true })
 }
 
 /**
