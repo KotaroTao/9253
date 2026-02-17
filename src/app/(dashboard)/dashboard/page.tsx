@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
-import { isAdminMode, getOperatorClinicId } from "@/lib/admin-mode"
+import { isStaffViewOverride, getOperatorClinicId } from "@/lib/admin-mode"
 import { getDashboardStats, getCombinedMonthlyTrends, getQuestionBreakdown } from "@/lib/queries/stats"
 import type { TemplateQuestionScores } from "@/lib/queries/stats"
 import type { SatisfactionTrend } from "@/types"
@@ -10,7 +10,6 @@ import { SatisfactionCards } from "@/components/dashboard/satisfaction-cards"
 import { SatisfactionTrendChart } from "@/components/dashboard/satisfaction-trend"
 import { MonthlyChart } from "@/components/dashboard/monthly-chart"
 import { RecentResponses } from "@/components/dashboard/recent-responses"
-import { AdminInlineAuth } from "@/components/dashboard/admin-inline-auth"
 import { QuestionBreakdown } from "@/components/dashboard/question-breakdown"
 import { StaffEngagement } from "@/components/dashboard/staff-engagement"
 import { InsightCards } from "@/components/dashboard/insight-cards"
@@ -39,19 +38,20 @@ export default async function DashboardPage() {
     redirect("/login")
   }
 
-  // 運営モードでは常に管理者ビューを表示（パスワード不要）
-  const adminMode = isOperatorMode || isAdminMode()
+  // ロールベースで管理者ビューを判定
+  const role = session.user.role
+  const isAdmin = role === "clinic_admin" || role === "system_admin"
+  const staffViewOverride = isAdmin && !isOperatorMode && isStaffViewOverride()
+  const adminMode = isOperatorMode || (isAdmin && !staffViewOverride)
 
-  // Check if clinic has admin password set + get slug for kiosk link
+  // Get clinic settings for kiosk link and daily tip
   const clinic = await prisma.clinic.findUnique({
     where: { id: clinicId },
     select: { slug: true, settings: true },
   })
   const settings = (clinic?.settings ?? {}) as ClinicSettings
-  const hasAdminPassword = !!settings.adminPassword
   const kioskUrl = clinic ? `/kiosk/${encodeURIComponent(clinic.slug)}` : "/dashboard/survey-start"
 
-  const role = session.user.role
   const canEditTip = role === "clinic_admin" || role === "system_admin"
 
   // Time-aware greeting
@@ -63,18 +63,11 @@ export default async function DashboardPage() {
       : messages.dashboard.staffGreetingEvening
 
   // --- Conditional data fetching based on mode ---
-  // 運営モードではスタッフ向けデータ（engagement, daily tip）をスキップし、
-  // 管理者分析データのみ取得する（DBラウンドトリップ削減）
-
-  // Staff engagement data (only for non-operator staff view)
   let engagement: Awaited<ReturnType<typeof getStaffEngagementData>> | null = null
   let hasResponses = false
-
-  // Daily tip data (only for non-operator views)
   let dailyTip: PatientTip | null = null
   let isCustomTip = false
 
-  // Admin analytics data
   let adminData: {
     stats: Awaited<ReturnType<typeof getDashboardStats>>
     monthlyTrend: Array<{ month: string; avgScore: number; count: number }>
@@ -86,7 +79,6 @@ export default async function DashboardPage() {
   } | null = null
 
   if (adminMode) {
-    // Admin/operator: only fetch analytics (skip engagement + tip)
     const now = new Date()
     const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     const prevYear = prevDate.getFullYear()
@@ -104,7 +96,6 @@ export default async function DashboardPage() {
       ])
     const { monthlyTrend, satisfactionTrend } = trends
 
-    // Collect low-score questions for insights
     const lowScoreQuestions: Array<{ questionId: string; text: string; avgScore: number }> = []
     for (const template of questionBreakdown) {
       for (const q of template.questions) {
@@ -125,10 +116,8 @@ export default async function DashboardPage() {
       lowScoreQuestions,
     }
   } else {
-    // Staff view: fetch engagement + daily tip (skip heavy analytics)
     const [engagementData, platformSetting] = await Promise.all([
       getStaffEngagementData(clinicId),
-      // Daily tip
       (async () => {
         const customDailyTip = settings.dailyTip as PatientTip | undefined
         if (customDailyTip) return { tip: customDailyTip, isCustom: true }
@@ -162,23 +151,7 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* Admin mode banner - shown when admin mode is active (non-operator) */}
-      {adminMode && !isOperatorMode && (
-        <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5">
-          <div className="flex items-center gap-2">
-            <div className="h-2 w-2 rounded-full bg-emerald-500" />
-            <span className="text-sm font-medium text-emerald-700">{messages.adminMode.active}</span>
-            <span className="hidden text-xs text-emerald-600/70 sm:inline">{messages.dashboard.adminModeDesc}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Admin unlock - shown prominently when NOT in admin mode (never in operator mode) */}
-      {!adminMode && hasAdminPassword && (
-        <AdminInlineAuth isAdminMode={false} hasAdminPassword={hasAdminPassword} />
-      )}
-
-      {/* First-use guidance - shown when no responses yet and NOT in admin mode */}
+      {/* First-use guidance */}
       {!adminMode && !hasResponses && (
         <div className="rounded-xl border-2 border-dashed border-blue-300 bg-blue-50/50 p-5">
           <h3 className="text-sm font-bold text-blue-900">{messages.dashboard.onboardingTitle}</h3>
@@ -199,12 +172,12 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* Daily patient satisfaction tip (not shown in operator mode) */}
+      {/* Daily patient satisfaction tip */}
       {dailyTip && (
         <DailyTip tip={dailyTip} canEdit={canEditTip} isCustom={isCustomTip} />
       )}
 
-      {/* Action card - only shown when NOT in admin mode */}
+      {/* Kiosk action card */}
       {!adminMode && (
         <a
           href={kioskUrl}
@@ -223,19 +196,17 @@ export default async function DashboardPage() {
         </a>
       )}
 
-      {/* Staff engagement - only shown when NOT in admin mode */}
+      {/* Staff engagement */}
       {!adminMode && engagement && <StaffEngagement data={engagement} />}
 
-      {/* Admin analytics - only when admin mode is active */}
+      {/* Admin analytics */}
       {adminData && (
         <>
-          {/* Score overview + trend indicator */}
           <div className="space-y-4">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
               {messages.dashboard.sectionPatientExperience}
             </h2>
 
-            {/* Score hero card with trend */}
             <Card className="border-blue-200 bg-gradient-to-r from-blue-50/50 to-white">
               <CardContent className="py-6">
                 <div className="flex items-start justify-between">
@@ -253,7 +224,6 @@ export default async function DashboardPage() {
                       {messages.dashboard.thisMonth}: {adminData.stats.totalResponses}{messages.common.countSuffix}
                     </p>
                   </div>
-                  {/* Trend badge */}
                   {adminData.stats.prevAverageScore != null && adminData.stats.averageScore > 0 && (
                     <div className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
                       adminData.stats.averageScore > adminData.stats.prevAverageScore
@@ -279,7 +249,6 @@ export default async function DashboardPage() {
               </CardContent>
             </Card>
 
-            {/* Insights — auto-generated action cards */}
             <InsightCards
               averageScore={adminData.stats.averageScore}
               prevAverageScore={adminData.stats.prevAverageScore ?? null}
@@ -288,15 +257,11 @@ export default async function DashboardPage() {
               showSummaryBanner={adminData.showSummaryBanner}
             />
 
-            {/* Question-level breakdown chart + improvement advice */}
             <QuestionBreakdown data={adminData.questionBreakdown} />
-
             <MonthlyChart data={adminData.monthlyTrend} />
-
             <RecentResponses responses={adminData.stats.recentResponses} />
           </div>
 
-          {/* Satisfaction Section */}
           <div className="space-y-4">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
               {messages.dashboard.sectionSatisfaction}
@@ -314,15 +279,8 @@ export default async function DashboardPage() {
             <SatisfactionTrendChart data={adminData.satisfactionTrend} />
           </div>
 
-          {/* Staff Leaderboard */}
           <StaffLeaderboard />
-
         </>
-      )}
-
-      {/* Admin mode controls at bottom - only for admin mode active state (not operator) */}
-      {adminMode && !isOperatorMode && (
-        <AdminInlineAuth isAdminMode={adminMode} hasAdminPassword={hasAdminPassword} />
       )}
     </div>
   )

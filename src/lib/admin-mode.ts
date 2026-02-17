@@ -1,25 +1,31 @@
 import { cookies } from "next/headers"
-import { ADMIN_MODE_COOKIE, ADMIN_MODE_MAX_AGE, OPERATOR_CLINIC_COOKIE, OPERATOR_MODE_MAX_AGE } from "@/lib/constants"
+import { OPERATOR_CLINIC_COOKIE, OPERATOR_MODE_MAX_AGE } from "@/lib/constants"
 
-export function isAdminMode(): boolean {
+/**
+ * スタッフビュー切替Cookie。
+ * clinic_admin / system_admin がスタッフビューに切り替える際に使用。
+ */
+const STAFF_VIEW_COOKIE = "mieru-staff-view"
+
+export function isStaffViewOverride(): boolean {
   const cookieStore = cookies()
-  return cookieStore.get(ADMIN_MODE_COOKIE)?.value === "1"
+  return cookieStore.get(STAFF_VIEW_COOKIE)?.value === "1"
 }
 
-export function setAdminModeCookie() {
+export function setStaffViewCookie() {
   const cookieStore = cookies()
-  cookieStore.set(ADMIN_MODE_COOKIE, "1", {
+  cookieStore.set(STAFF_VIEW_COOKIE, "1", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: ADMIN_MODE_MAX_AGE,
+    maxAge: 60 * 60 * 24, // 24 hours
     path: "/",
   })
 }
 
-export function clearAdminModeCookie() {
+export function clearStaffViewCookie() {
   const cookieStore = cookies()
-  cookieStore.delete(ADMIN_MODE_COOKIE)
+  cookieStore.delete(STAFF_VIEW_COOKIE)
 }
 
 export function getOperatorClinicId(): string | null {
