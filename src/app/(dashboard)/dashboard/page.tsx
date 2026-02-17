@@ -15,12 +15,8 @@ import { StaffEngagement } from "@/components/dashboard/staff-engagement"
 import { InsightCards } from "@/components/dashboard/insight-cards"
 import { StaffLeaderboard } from "@/components/dashboard/staff-leaderboard"
 import { messages } from "@/lib/messages"
-import { Smartphone, ArrowRight, TrendingUp, TrendingDown } from "lucide-react"
+import { TrendingUp, TrendingDown } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
-import { DailyTip } from "@/components/dashboard/daily-tip"
-import { getTodayTip, getCurrentTip } from "@/lib/patient-tips"
-import type { PatientTip } from "@/lib/patient-tips"
-import type { ClinicSettings } from "@/types"
 import { ROLES } from "@/lib/constants"
 
 export default async function DashboardPage() {
@@ -44,29 +40,16 @@ export default async function DashboardPage() {
   const staffViewOverride = isAdmin && !isOperatorMode && isStaffViewOverride()
   const adminMode = isOperatorMode || (isAdmin && !staffViewOverride)
 
-  // Get clinic settings for kiosk link and daily tip
+  // Get clinic slug for kiosk link
   const clinic = await prisma.clinic.findUnique({
     where: { id: clinicId },
-    select: { slug: true, settings: true },
+    select: { slug: true },
   })
-  const settings = (clinic?.settings ?? {}) as ClinicSettings
   const kioskUrl = clinic ? `/kiosk/${encodeURIComponent(clinic.slug)}` : "/dashboard/survey-start"
-
-  const canEditTip = role === "clinic_admin" || role === "system_admin"
-
-  // Time-aware greeting
-  const hour = new Date().getHours()
-  const greeting = hour < 12
-    ? messages.dashboard.staffGreetingMorning
-    : hour < 17
-      ? messages.dashboard.staffGreetingAfternoon
-      : messages.dashboard.staffGreetingEvening
 
   // --- Conditional data fetching based on mode ---
   let engagement: Awaited<ReturnType<typeof getStaffEngagementData>> | null = null
-  let hasResponses = false
-  let dailyTip: PatientTip | null = null
-  let isCustomTip = false
+  let activeActions: Array<{ id: string; title: string; description: string | null; targetQuestion: string | null }> = []
 
   let adminData: {
     stats: Awaited<ReturnType<typeof getDashboardStats>>
@@ -116,88 +99,35 @@ export default async function DashboardPage() {
       lowScoreQuestions,
     }
   } else {
-    const [engagementData, platformSetting] = await Promise.all([
+    // Staff view: fetch engagement + active improvement actions
+    const [engagementData, actions] = await Promise.all([
       getStaffEngagementData(clinicId),
-      (async () => {
-        const customDailyTip = settings.dailyTip as PatientTip | undefined
-        if (customDailyTip) return { tip: customDailyTip, isCustom: true }
-        const ps = await prisma.platformSetting.findUnique({
-          where: { key: "patientTips" },
-        })
-        if (ps) {
-          const val = ps.value as unknown as { tips: PatientTip[]; rotationMinutes: number }
-          const tip = val.tips.length > 0
-            ? getCurrentTip(val.tips, val.rotationMinutes)
-            : getTodayTip()
-          return { tip, isCustom: false }
-        }
-        return { tip: getTodayTip(), isCustom: false }
-      })(),
+      prisma.improvementAction.findMany({
+        where: { clinicId, status: "active" },
+        select: { id: true, title: true, description: true, targetQuestion: true },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      }),
     ])
 
     engagement = engagementData
-    hasResponses = engagementData.totalCount > 0
-    dailyTip = platformSetting.tip
-    isCustomTip = platformSetting.isCustom
+    activeActions = actions
   }
 
   return (
     <div className="space-y-6">
-      {/* Greeting */}
+      {/* ① Greeting + encouragement */}
       <div>
-        <h1 className="text-2xl font-bold">{greeting}</h1>
+        <h1 className="text-2xl font-bold">お疲れさまです</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {messages.dashboard.staffDashboardMessage}
         </p>
       </div>
 
-      {/* First-use guidance */}
-      {!adminMode && !hasResponses && (
-        <div className="rounded-xl border-2 border-dashed border-blue-300 bg-blue-50/50 p-5">
-          <h3 className="text-sm font-bold text-blue-900">{messages.dashboard.onboardingTitle}</h3>
-          <div className="mt-3 space-y-2.5">
-            <div className="flex items-start gap-3">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500 text-xs font-bold text-white">1</span>
-              <p className="text-sm text-blue-800">{messages.dashboard.onboardingStep1}</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500 text-xs font-bold text-white">2</span>
-              <p className="text-sm text-blue-800">{messages.dashboard.onboardingStep2}</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500 text-xs font-bold text-white">3</span>
-              <p className="text-sm text-blue-800">{messages.dashboard.onboardingStep3}</p>
-            </div>
-          </div>
-        </div>
+      {/* Staff view */}
+      {!adminMode && engagement && (
+        <StaffEngagement data={engagement} kioskUrl={kioskUrl} activeActions={activeActions} />
       )}
-
-      {/* Daily patient satisfaction tip */}
-      {dailyTip && (
-        <DailyTip tip={dailyTip} canEdit={canEditTip} isCustom={isCustomTip} />
-      )}
-
-      {/* Kiosk action card */}
-      {!adminMode && (
-        <a
-          href={kioskUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="group flex items-center gap-4 rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-6 transition-all hover:border-blue-400 hover:shadow-md active:scale-[0.98]"
-        >
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-blue-500 text-white shadow-sm">
-            <Smartphone className="h-8 w-8" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xl font-bold text-blue-900">{messages.dashboard.startSurvey}</p>
-            <p className="text-sm text-blue-600/70">{messages.dashboard.startSurveyDesc}</p>
-          </div>
-          <ArrowRight className="h-5 w-5 shrink-0 text-blue-400 transition-transform group-hover:translate-x-1" />
-        </a>
-      )}
-
-      {/* Staff engagement */}
-      {!adminMode && engagement && <StaffEngagement data={engagement} />}
 
       {/* Admin analytics */}
       {adminData && (

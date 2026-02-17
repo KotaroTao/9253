@@ -70,3 +70,40 @@ export async function POST(request: NextRequest) {
     return errorResponse(messages.errors.settingsUpdateFailed, 500)
   }
 }
+
+/**
+ * DELETE /api/closed-dates
+ * 休診日を解除する（営業日に戻す）
+ * Body: { date: "YYYY-MM-DD" }
+ */
+export async function DELETE(request: NextRequest) {
+  const authResult = await requireAuth()
+  if (isAuthError(authResult)) return authResult
+
+  const clinicId = authResult.user.clinicId
+  if (!clinicId) {
+    return errorResponse(messages.errors.clinicNotAssociated, 400)
+  }
+
+  try {
+    const body = await request.json()
+    const { date } = body
+
+    if (!date || typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return errorResponse(messages.errors.invalidInput, 400)
+    }
+
+    const clinic = await prisma.clinic.findUnique({
+      where: { id: clinicId },
+      select: { settings: true },
+    })
+    const settings = (clinic?.settings ?? {}) as ClinicSettings
+    const closedDates = (settings.closedDates ?? []).filter((d) => d !== date)
+
+    await updateClinicSettings(clinicId, { closedDates })
+
+    return successResponse({ success: true })
+  } catch {
+    return errorResponse(messages.errors.settingsUpdateFailed, 500)
+  }
+}

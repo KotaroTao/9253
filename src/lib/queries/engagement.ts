@@ -8,6 +8,14 @@ export interface StreakBreakInfo {
   dayOfWeek: string // 月, 火, 水...
 }
 
+export interface WeekDayData {
+  date: string // YYYY-MM-DD
+  dayLabel: string // 月, 火, 水...
+  count: number
+  isClosed: boolean
+  isToday: boolean
+}
+
 export interface EngagementData {
   todayCount: number
   dailyGoal: number
@@ -25,6 +33,7 @@ export interface EngagementData {
   weekAvgScore: number | null
   weekActiveDays: number
   workingDaysPerWeek: number
+  weekDays: WeekDayData[]
   // Today's mood
   todayAvgScore: number | null
   // Streak break recovery
@@ -108,6 +117,8 @@ export async function getStaffEngagementData(
   const workingDaysPerWeek = settings.workingDaysPerWeek ?? 6
   const closedDates = new Set<string>(settings.closedDates ?? [])
 
+  const todayKey = formatDateKey(todayStart)
+
   // Build date set for streak + weekly activity
   const dateSet = new Set<string>()
   for (const r of streakResponses) {
@@ -115,13 +126,34 @@ export async function getStaffEngagementData(
     dateSet.add(formatDateKey(d))
   }
 
-  // Calculate weekly active days (Mon-Sun)
+  // Calculate weekly active days (Mon-Sun) and per-day data
   let weekActiveDays = 0
+  const weekDays: WeekDayData[] = []
+
+  // Build per-day count map for the week
+  const weekDayCountMap = new Map<string, number>()
+  for (const r of streakResponses) {
+    const d = new Date(r.respondedAt)
+    const key = formatDateKey(d)
+    if (key >= formatDateKey(weekStart) && key <= todayKey) {
+      weekDayCountMap.set(key, (weekDayCountMap.get(key) ?? 0) + 1)
+    }
+  }
+
   const weekCheck = new Date(weekStart)
   for (let i = 0; i < 7; i++) {
-    if (dateSet.has(formatDateKey(weekCheck))) {
+    const key = formatDateKey(weekCheck)
+    const count = weekDayCountMap.get(key) ?? 0
+    if (count > 0) {
       weekActiveDays++
     }
+    weekDays.push({
+      date: key,
+      dayLabel: getDayOfWeekJa(weekCheck),
+      count,
+      isClosed: closedDates.has(key),
+      isToday: key === todayKey,
+    })
     weekCheck.setDate(weekCheck.getDate() + 1)
   }
 
@@ -129,7 +161,6 @@ export async function getStaffEngagementData(
   let streak = 0
   let streakBreak: StreakBreakInfo | null = null
   const checkDate = new Date(todayStart)
-  const todayKey = formatDateKey(checkDate)
 
   // If today has no surveys yet, start counting from yesterday
   // (today is still in progress, not a "missed" day)
@@ -195,6 +226,7 @@ export async function getStaffEngagementData(
     weekAvgScore: weekAvgScore ?? null,
     weekActiveDays,
     workingDaysPerWeek,
+    weekDays,
     todayAvgScore: todayAvgScore ?? null,
     streakBreak,
   }
