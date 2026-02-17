@@ -51,25 +51,6 @@ export default async function DashboardPage() {
   const hasAdminPassword = !!settings.adminPassword
   const kioskUrl = clinic ? `/kiosk/${encodeURIComponent(clinic.slug)}` : "/dashboard/survey-start"
 
-  // Daily tip: clinic custom > platform tips (with rotation) > hardcoded fallback
-  const customDailyTip = settings.dailyTip as PatientTip | undefined
-  let dailyTip: PatientTip
-  const isCustomTip = !!customDailyTip
-  if (customDailyTip) {
-    dailyTip = customDailyTip
-  } else {
-    const platformSetting = await prisma.platformSetting.findUnique({
-      where: { key: "patientTips" },
-    })
-    if (platformSetting) {
-      const val = platformSetting.value as unknown as { tips: PatientTip[]; rotationMinutes: number }
-      dailyTip = val.tips.length > 0
-        ? getCurrentTip(val.tips, val.rotationMinutes)
-        : getTodayTip()
-    } else {
-      dailyTip = getTodayTip()
-    }
-  }
   const role = session.user.role
   const canEditTip = role === "clinic_admin" || role === "system_admin"
 
@@ -81,13 +62,19 @@ export default async function DashboardPage() {
       ? messages.dashboard.staffGreetingAfternoon
       : messages.dashboard.staffGreetingEvening
 
-  // Staff engagement data (always fetched for staff home screen)
-  const engagement = await getStaffEngagementData(clinicId)
+  // --- Conditional data fetching based on mode ---
+  // 運営モードではスタッフ向けデータ（engagement, daily tip）をスキップし、
+  // 管理者分析データのみ取得する（DBラウンドトリップ削減）
 
-  // Check if clinic has any responses (for first-use guidance)
-  const hasResponses = engagement.totalCount > 0
+  // Staff engagement data (only for non-operator staff view)
+  let engagement: Awaited<ReturnType<typeof getStaffEngagementData>> | null = null
+  let hasResponses = false
 
-  // Admin analytics data (only fetch when admin mode is active)
+  // Daily tip data (only for non-operator views)
+  let dailyTip: PatientTip | null = null
+  let isCustomTip = false
+
+  // Admin analytics data
   let adminData: {
     stats: Awaited<ReturnType<typeof getDashboardStats>>
     monthlyTrend: Array<{ month: string; avgScore: number; count: number }>
@@ -99,6 +86,7 @@ export default async function DashboardPage() {
   } | null = null
 
   if (adminMode) {
+    // Admin/operator: only fetch analytics (skip engagement + tip)
     const now = new Date()
     const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     const prevYear = prevDate.getFullYear()
@@ -136,6 +124,32 @@ export default async function DashboardPage() {
       summaryBannerLabel: `${prevYear}年${prevMonth}月`,
       lowScoreQuestions,
     }
+  } else {
+    // Staff view: fetch engagement + daily tip (skip heavy analytics)
+    const [engagementData, platformSetting] = await Promise.all([
+      getStaffEngagementData(clinicId),
+      // Daily tip
+      (async () => {
+        const customDailyTip = settings.dailyTip as PatientTip | undefined
+        if (customDailyTip) return { tip: customDailyTip, isCustom: true }
+        const ps = await prisma.platformSetting.findUnique({
+          where: { key: "patientTips" },
+        })
+        if (ps) {
+          const val = ps.value as unknown as { tips: PatientTip[]; rotationMinutes: number }
+          const tip = val.tips.length > 0
+            ? getCurrentTip(val.tips, val.rotationMinutes)
+            : getTodayTip()
+          return { tip, isCustom: false }
+        }
+        return { tip: getTodayTip(), isCustom: false }
+      })(),
+    ])
+
+    engagement = engagementData
+    hasResponses = engagementData.totalCount > 0
+    dailyTip = platformSetting.tip
+    isCustomTip = platformSetting.isCustom
   }
 
   return (
@@ -186,7 +200,7 @@ export default async function DashboardPage() {
       )}
 
       {/* Daily patient satisfaction tip (not shown in operator mode) */}
-      {!isOperatorMode && (
+      {dailyTip && (
         <DailyTip tip={dailyTip} canEdit={canEditTip} isCustom={isCustomTip} />
       )}
 
@@ -210,7 +224,7 @@ export default async function DashboardPage() {
       )}
 
       {/* Staff engagement - only shown when NOT in admin mode */}
-      {!adminMode && <StaffEngagement data={engagement} />}
+      {!adminMode && engagement && <StaffEngagement data={engagement} />}
 
       {/* Admin analytics - only when admin mode is active */}
       {adminData && (

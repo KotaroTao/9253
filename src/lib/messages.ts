@@ -188,6 +188,12 @@ export const messages = {
     saveFailed: "保存に失敗しました。もう一度お試しください",
     statusChangeFailed: "ステータスの変更に失敗しました",
     fromInsight: "この質問の改善アクションを作成",
+    selectQuestion: "改善したい質問を選択",
+    selectQuestionPlaceholder: "質問を選んでください",
+    suggestedActions: "おすすめの改善アクション",
+    suggestedActionsDesc: "クリックで自動入力。もちろん自分で作成も可能です",
+    customAction: "自分で作成する",
+    customActionDesc: "独自の改善施策を登録",
   },
   staffLeaderboard: {
     title: "スタッフパフォーマンス",

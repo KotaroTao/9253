@@ -1,12 +1,17 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { messages } from "@/lib/messages"
+import {
+  QUESTION_CATEGORY_MAP,
+  IMPROVEMENT_SUGGESTIONS,
+} from "@/lib/constants"
+import type { ImprovementSuggestion } from "@/lib/constants"
 import {
   Plus,
   Target,
@@ -17,6 +22,8 @@ import {
   RotateCcw,
   ChevronDown,
   ChevronUp,
+  Lightbulb,
+  Pencil,
 } from "lucide-react"
 
 interface ImprovementAction {
@@ -32,11 +39,23 @@ interface ImprovementAction {
   completedAt: string | Date | null
 }
 
-interface Props {
-  initialActions: ImprovementAction[]
+interface TemplateQuestion {
+  id: string
+  text: string
+  type: string
 }
 
-export function ImprovementActionsView({ initialActions }: Props) {
+interface TemplateData {
+  name: string
+  questions: TemplateQuestion[]
+}
+
+interface Props {
+  initialActions: ImprovementAction[]
+  templateQuestions?: TemplateData[]
+}
+
+export function ImprovementActionsView({ initialActions, templateQuestions = [] }: Props) {
   const router = useRouter()
   const [actions, setActions] = useState(initialActions)
   const [showForm, setShowForm] = useState(false)
@@ -45,11 +64,57 @@ export function ImprovementActionsView({ initialActions }: Props) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   // Form state
+  const [selectedQuestionId, setSelectedQuestionId] = useState("")
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [targetQuestion, setTargetQuestion] = useState("")
   const [baselineScore, setBaselineScore] = useState("")
   const [targetScore, setTargetScore] = useState("")
+
+  // All questions flattened for lookup
+  const allQuestions = useMemo(() => {
+    const map = new Map<string, { text: string; templateName: string }>()
+    for (const t of templateQuestions) {
+      for (const q of t.questions) {
+        map.set(q.id, { text: q.text, templateName: t.name })
+      }
+    }
+    return map
+  }, [templateQuestions])
+
+  // Get suggestions for selected question
+  const suggestions = useMemo((): ImprovementSuggestion[] => {
+    if (!selectedQuestionId) return []
+    const category = QUESTION_CATEGORY_MAP[selectedQuestionId]
+    if (!category) return []
+    return IMPROVEMENT_SUGGESTIONS[category] ?? []
+  }, [selectedQuestionId])
+
+  function handleSelectQuestion(questionId: string) {
+    setSelectedQuestionId(questionId)
+    // Set targetQuestion text from the selected question
+    const q = allQuestions.get(questionId)
+    if (q) {
+      setTargetQuestion(q.text)
+    }
+    // Reset title/description when changing question (unless user manually typed)
+    setTitle("")
+    setDescription("")
+  }
+
+  function handleSelectSuggestion(suggestion: ImprovementSuggestion) {
+    setTitle(suggestion.title)
+    setDescription(suggestion.description)
+  }
+
+  function resetForm() {
+    setTitle("")
+    setDescription("")
+    setTargetQuestion("")
+    setBaselineScore("")
+    setTargetScore("")
+    setSelectedQuestionId("")
+  }
 
   async function handleCreate() {
     if (!title.trim() || loading) return
@@ -68,11 +133,7 @@ export function ImprovementActionsView({ initialActions }: Props) {
         }),
       })
       if (res.ok) {
-        setTitle("")
-        setDescription("")
-        setTargetQuestion("")
-        setBaselineScore("")
-        setTargetScore("")
+        resetForm()
         setShowForm(false)
         router.refresh()
         const data = await res.json()
@@ -119,6 +180,8 @@ export function ImprovementActionsView({ initialActions }: Props) {
   const activeActions = actions.filter((a) => a.status === "active")
   const completedActions = actions.filter((a) => a.status !== "active")
 
+  const hasTemplates = templateQuestions.length > 0
+
   return (
     <div className="space-y-4">
       {/* Add action button */}
@@ -142,7 +205,93 @@ export function ImprovementActionsView({ initialActions }: Props) {
           <CardHeader>
             <CardTitle className="text-base">{messages.improvementActions.addAction}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
+            {/* Step 1: Question selector */}
+            {hasTemplates && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  {messages.improvementActions.selectQuestion}
+                </Label>
+                <select
+                  value={selectedQuestionId}
+                  onChange={(e) => handleSelectQuestion(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                >
+                  <option value="">
+                    {messages.improvementActions.selectQuestionPlaceholder}
+                  </option>
+                  {templateQuestions.map((t) => (
+                    <optgroup key={t.name} label={t.name}>
+                      {t.questions.map((q) => (
+                        <option key={q.id} value={q.id}>
+                          {q.text}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Step 2: Suggestion cards (shown when question is selected) */}
+            {selectedQuestionId && suggestions.length > 0 && (
+              <div className="space-y-2">
+                <div>
+                  <p className="text-sm font-medium text-amber-700">
+                    <Lightbulb className="mr-1 inline h-3.5 w-3.5" />
+                    {messages.improvementActions.suggestedActions}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {messages.improvementActions.suggestedActionsDesc}
+                  </p>
+                </div>
+                <div className="grid gap-2">
+                  {suggestions.map((s, i) => {
+                    const isSelected = title === s.title && description === s.description
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => handleSelectSuggestion(s)}
+                        className={`rounded-lg border p-3 text-left transition-all ${
+                          isSelected
+                            ? "border-blue-400 bg-blue-50 ring-1 ring-blue-400"
+                            : "border-gray-200 hover:border-blue-200 hover:bg-blue-50/50"
+                        }`}
+                      >
+                        <p className="text-sm font-medium">{s.title}</p>
+                        <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                          {s.description}
+                        </p>
+                      </button>
+                    )
+                  })}
+                  {/* Custom action option */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTitle("")
+                      setDescription("")
+                    }}
+                    className={`rounded-lg border border-dashed p-3 text-left transition-all ${
+                      title && !suggestions.some((s) => s.title === title)
+                        ? "border-blue-400 bg-blue-50 ring-1 ring-blue-400"
+                        : "border-gray-300 hover:border-blue-200 hover:bg-blue-50/50"
+                    }`}
+                  >
+                    <p className="text-sm font-medium text-muted-foreground">
+                      <Pencil className="mr-1 inline h-3.5 w-3.5" />
+                      {messages.improvementActions.customAction}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {messages.improvementActions.customActionDesc}
+                    </p>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Title & description (always shown, pre-filled from suggestion or manual) */}
             <div className="space-y-1.5">
               <Label>{messages.improvementActions.actionTitle}</Label>
               <Input
@@ -159,14 +308,20 @@ export function ImprovementActionsView({ initialActions }: Props) {
                 placeholder={messages.improvementActions.descriptionPlaceholder}
               />
             </div>
-            <div className="space-y-1.5">
-              <Label>{messages.improvementActions.targetQuestion}</Label>
-              <Input
-                value={targetQuestion}
-                onChange={(e) => setTargetQuestion(e.target.value)}
-                placeholder="例: 受付の対応は丁寧でしたか？"
-              />
-            </div>
+
+            {/* Target question (manual entry if no templates, or hidden since auto-set) */}
+            {!hasTemplates && (
+              <div className="space-y-1.5">
+                <Label>{messages.improvementActions.targetQuestion}</Label>
+                <Input
+                  value={targetQuestion}
+                  onChange={(e) => setTargetQuestion(e.target.value)}
+                  placeholder="例: 受付の対応は丁寧でしたか？"
+                />
+              </div>
+            )}
+
+            {/* Scores */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>{messages.improvementActions.baselineScore}</Label>
@@ -197,7 +352,13 @@ export function ImprovementActionsView({ initialActions }: Props) {
               <Button onClick={handleCreate} disabled={!title.trim() || loading}>
                 {loading ? messages.common.loading : messages.common.save}
               </Button>
-              <Button variant="ghost" onClick={() => setShowForm(false)}>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowForm(false)
+                  resetForm()
+                }}
+              >
                 {messages.common.cancel}
               </Button>
             </div>

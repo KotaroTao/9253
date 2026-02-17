@@ -5,12 +5,14 @@ import { LogIn, Loader2 } from "lucide-react"
 
 interface OperatorLoginButtonProps {
   clinicId: string
+  clinicName?: string
 }
 
 export function OperatorLoginButton({ clinicId }: OperatorLoginButtonProps) {
   const [loading, setLoading] = useState(false)
 
-  async function handleClick() {
+  async function handleClick(e: React.MouseEvent) {
+    e.stopPropagation()
     setLoading(true)
     try {
       const res = await fetch("/api/admin/operator-login", {
