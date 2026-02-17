@@ -12,8 +12,9 @@ echo "=== MIERU Clinic 起動 ==="
 # db push はスキーマの差分を検出して適用する
 # Cloud Run ではコンテナ起動時に毎回実行（冪等）
 # Cloud SQL Auth Proxy サイドカーの起動を待つためリトライ付き
-if [ "${RUN_MIGRATIONS}" = "true" ]; then
-  echo "[1/2] Prismaスキーマ同期..."
+# RUN_SEED=true のときは RUN_MIGRATIONS も自動で有効化（スキーマ同期が前提）
+if [ "${RUN_MIGRATIONS}" = "true" ] || [ "${RUN_SEED}" = "true" ]; then
+  echo "[1/3] Prismaスキーマ同期..."
   MAX_RETRIES=5
   RETRY_DELAY=5
   for i in $(seq 1 $MAX_RETRIES); do
