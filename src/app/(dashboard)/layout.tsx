@@ -63,7 +63,6 @@ export default async function DashboardLayout({
   return (
     <DashboardShell
       role={role}
-      userName={session.user.name ?? ""}
       clinicName={clinicName}
       clinicSlug={clinicSlug}
       isAdminMode={adminMode}

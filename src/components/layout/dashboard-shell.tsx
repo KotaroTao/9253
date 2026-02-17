@@ -12,7 +12,6 @@ import { messages } from "@/lib/messages"
 interface DashboardShellProps {
   children: React.ReactNode
   role: string
-  userName: string
   clinicName?: string
   clinicSlug?: string
   isAdminMode?: boolean
@@ -24,7 +23,6 @@ interface DashboardShellProps {
 export function DashboardShell({
   children,
   role,
-  userName,
   clinicName,
   clinicSlug,
   isAdminMode = false,
@@ -184,7 +182,6 @@ export function DashboardShell({
       <div className="flex min-h-screen flex-col">
         {operatorBanner}
         <DashboardHeader
-          userName={userName}
           clinicName={clinicName}
           isAdminMode={false}
           canToggleView={canToggleView}
@@ -229,7 +226,6 @@ export function DashboardShell({
       <div className="flex flex-1 flex-col overflow-hidden">
         {operatorBanner}
         <DashboardHeader
-          userName={userName}
           clinicName={clinicName}
           isAdminMode={true}
           canToggleView={canToggleView}
