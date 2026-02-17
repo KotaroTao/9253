@@ -118,6 +118,193 @@ export const TEMPLATE_SELECTION_MAP: Record<string, { visitType: string; treatme
   "定期検診": { visitType: "revisit", treatmentType: "checkup" },
 }
 
+// Improvement action suggestions per question category
+// Each question ID maps to a category, and each category has pre-defined suggestions
+export const QUESTION_CATEGORY_MAP: Record<string, string> = {
+  fv1: "clinic_environment",
+  fv2: "reception",
+  fv3: "wait_time",
+  fv4: "hearing",
+  fv5: "explanation",
+  fv6: "cost_explanation",
+  fv7: "comfort",
+  fv8: "loyalty",
+  tr1: "explanation",
+  tr2: "pain_care",
+  tr3: "comfort",
+  tr4: "wait_time",
+  tr5: "staff_courtesy",
+  tr6: "loyalty",
+  ck1: "explanation",
+  ck2: "staff_courtesy",
+  ck3: "comfort",
+  ck4: "wait_time",
+  ck5: "booking",
+  ck6: "loyalty",
+}
+
+export interface ImprovementSuggestion {
+  title: string
+  description: string
+}
+
+export const IMPROVEMENT_SUGGESTIONS: Record<string, ImprovementSuggestion[]> = {
+  clinic_environment: [
+    {
+      title: "待合室の清掃チェックリスト導入",
+      description: "午前・午後の2回、清掃チェックリストで待合室・トイレ・受付周りの清潔さを確認。チェック担当をローテーションで割り当て",
+    },
+    {
+      title: "院内BGM・アロマの見直し",
+      description: "リラックス効果のあるBGMとアロマを導入し、患者が安心できる空間を演出。季節ごとに変更して新鮮さを維持",
+    },
+    {
+      title: "掲示物・インテリアの更新",
+      description: "古くなったポスターや掲示物を整理し、季節の装飾や観葉植物を追加。明るく清潔感のある印象を強化",
+    },
+  ],
+  reception: [
+    {
+      title: "受付時の笑顔と挨拶を徹底",
+      description: "患者来院時に必ず立ち上がり、笑顔でアイコンタクトを取りながら「こんにちは、お待ちしておりました」と声がけ。名前で呼びかける",
+    },
+    {
+      title: "受付マニュアルの作成と研修",
+      description: "来院時・会計時・電話応対の基本フローをマニュアル化。月1回ロールプレイ研修で接遇スキルを向上",
+    },
+    {
+      title: "患者情報の事前確認で待機時間短縮",
+      description: "予約患者の前回カルテを受付前に確認し、来院時にスムーズに案内。初診患者には事前にWeb問診を案内",
+    },
+  ],
+  wait_time: [
+    {
+      title: "予約枠の見直しと時間管理",
+      description: "診療時間の実績データを分析し、予約枠の間隔を最適化。処置内容別に所要時間の目安を設定",
+    },
+    {
+      title: "待ち時間の見える化と声がけ",
+      description: "待ち時間が10分を超える場合はスタッフから一声おかけする。おおよその待ち時間を伝えて不安を解消",
+    },
+    {
+      title: "待合室の快適性向上",
+      description: "Wi-Fi完備、雑誌・タブレットの充実、キッズスペース整備など、待ち時間を快適に過ごせる環境づくり",
+    },
+  ],
+  hearing: [
+    {
+      title: "初診ヒアリングシートの改善",
+      description: "患者の主訴・不安・希望を漏れなく聞き取れるシートに改善。記入しやすい選択式+自由記述形式に",
+    },
+    {
+      title: "カウンセリング時間の確保",
+      description: "初診時に最低10分のカウンセリング時間を設定。患者が話しやすい個室環境で、傾聴姿勢を意識",
+    },
+    {
+      title: "主訴以外の潜在ニーズの確認",
+      description: "「他にも気になることはありますか？」と必ず確認。見た目の悩みや過去のトラウマなど言い出しにくいことも聞き出す",
+    },
+  ],
+  explanation: [
+    {
+      title: "視覚資料を活用した説明",
+      description: "口腔内写真・レントゲン・模型・タブレットのアニメーションを使い、治療内容を視覚的に分かりやすく説明",
+    },
+    {
+      title: "治療計画書の書面交付",
+      description: "治療内容・回数・期間・費用の概要を書面にまとめて患者に渡す。持ち帰って家族と相談できるようにする",
+    },
+    {
+      title: "説明後の理解度確認",
+      description: "説明後に「分からない点はありますか？」と必ず確認。専門用語を避け、平易な言葉で繰り返し説明",
+    },
+  ],
+  cost_explanation: [
+    {
+      title: "費用の事前説明と選択肢の提示",
+      description: "保険診療と自費診療の違い、各選択肢の費用目安を治療前に明確に説明。比較表を用意して患者が選びやすく",
+    },
+    {
+      title: "費用に関するパンフレット作成",
+      description: "よくある治療の費用目安をまとめたパンフレットを作成。待合室に設置し、患者が事前に確認できるようにする",
+    },
+    {
+      title: "会計時の明細説明を丁寧に",
+      description: "会計時に今回の処置内容と費用を簡潔に説明。次回の予想費用も併せて伝え、不意の出費感を軽減",
+    },
+  ],
+  comfort: [
+    {
+      title: "質問しやすい雰囲気づくり",
+      description: "「何でも聞いてくださいね」と最初に声がけ。治療中も「痛くないですか？」「大丈夫ですか？」とこまめに確認",
+    },
+    {
+      title: "患者の不安に寄り添う声がけ研修",
+      description: "患者心理を理解するスタッフ研修を実施。共感的な聞き方・話し方のトレーニングで信頼関係を構築",
+    },
+    {
+      title: "相談専用の時間・チャネルを用意",
+      description: "診療後に質問タイムを設ける、または後日電話・LINEで相談できる窓口を案内。聞きそびれを防止",
+    },
+  ],
+  pain_care: [
+    {
+      title: "痛みへの配慮を言語化して伝える",
+      description: "麻酔前に「表面麻酔をしますので、チクッとしますが痛みは最小限です」等、事前に何をするか説明し安心感を提供",
+    },
+    {
+      title: "痛みのシグナルルールの導入",
+      description: "「痛い時は左手を挙げてください。すぐ止めます」とシグナルを事前に決める。患者がコントロールできる安心感を与える",
+    },
+    {
+      title: "最新の痛み軽減技術の導入",
+      description: "表面麻酔の徹底、電動注射器の活用、細い針の使用など、痛みを最小限にする技術・器具を導入",
+    },
+  ],
+  staff_courtesy: [
+    {
+      title: "接遇マナー研修の定期実施",
+      description: "外部講師による接遇研修を年2回実施。敬語・立ち居振る舞い・声のトーンなど基本マナーを全スタッフで統一",
+    },
+    {
+      title: "スタッフ間の声がけ・チームワーク強化",
+      description: "朝礼で本日の患者情報を共有し、チーム全体で丁寧な対応を意識。スタッフ同士の感謝を伝え合う文化づくり",
+    },
+    {
+      title: "患者名での呼びかけを徹底",
+      description: "「○○さん、お待たせしました」と名前で呼びかけ。一人ひとりを大切にしている姿勢を示す",
+    },
+  ],
+  booking: [
+    {
+      title: "Web予約システムの利便性向上",
+      description: "24時間対応のWeb予約を導入・改善。空き状況がリアルタイムで見え、変更・キャンセルも簡単にできるように",
+    },
+    {
+      title: "予約リマインドの送信",
+      description: "予約前日にSMS・LINEでリマインドを送信し、無断キャンセルを減少。空いた枠を他の患者に活用",
+    },
+    {
+      title: "次回予約の院内案内を徹底",
+      description: "会計時に次回の予約候補を2〜3提示し、その場で確定。帰宅後に電話で予約する手間を省く",
+    },
+  ],
+  loyalty: [
+    {
+      title: "定期検診の重要性をやさしく説明",
+      description: "検診のメリットを数字で示す（早期発見で治療費1/3等）。患者の歯の状態に合わせた検診間隔を個別に提案",
+    },
+    {
+      title: "通院モチベーションの維持",
+      description: "治療の進捗を毎回共有し、ゴールまでの道のりを見える化。改善した点を積極的にフィードバック",
+    },
+    {
+      title: "患者とのリレーション強化",
+      description: "前回の会話内容をカルテにメモし、次回来院時に話題にする。「お子さんの運動会はいかがでしたか？」等",
+    },
+  ],
+}
+
 export const ADMIN_MODE_COOKIE = "mieru-admin"
 export const ADMIN_MODE_MAX_AGE = 60 * 60 * 8 // 8 hours
 export const DEFAULT_ADMIN_PASSWORD = "1111"

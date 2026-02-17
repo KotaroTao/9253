@@ -6,6 +6,17 @@ import { messages } from "@/lib/messages"
 import { ImprovementActionsView } from "@/components/dashboard/improvement-actions"
 import { ROLES } from "@/lib/constants"
 
+interface TemplateQuestion {
+  id: string
+  text: string
+  type: string
+}
+
+interface TemplateData {
+  name: string
+  questions: TemplateQuestion[]
+}
+
 export default async function ActionsPage() {
   const session = await auth()
 
@@ -24,15 +35,33 @@ export default async function ActionsPage() {
     redirect("/dashboard")
   }
 
-  const actions = await prisma.improvementAction.findMany({
-    where: { clinicId },
-    orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-  })
+  const [actions, templates] = await Promise.all([
+    prisma.improvementAction.findMany({
+      where: { clinicId },
+      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+    }),
+    prisma.surveyTemplate.findMany({
+      where: { clinicId },
+      select: { name: true, questions: true },
+      orderBy: { name: "asc" },
+    }),
+  ])
+
+  // Extract question list grouped by template
+  const templateQuestions: TemplateData[] = templates.map((t) => ({
+    name: t.name,
+    questions: ((t.questions as unknown as TemplateQuestion[]) ?? []).filter(
+      (q) => q.type === "rating"
+    ),
+  }))
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">{messages.improvementActions.title}</h1>
-      <ImprovementActionsView initialActions={actions} />
+      <ImprovementActionsView
+        initialActions={actions}
+        templateQuestions={templateQuestions}
+      />
     </div>
   )
 }
