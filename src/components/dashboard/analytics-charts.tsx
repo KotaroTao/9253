@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { createPortal } from "react-dom"
 import { DailyTrendChart } from "@/components/dashboard/daily-trend-chart"
 import { TemplateTrendChart } from "@/components/dashboard/template-trend-chart"
+import { TemplateTrendSmallMultiples } from "@/components/dashboard/template-trend-small-multiples"
 import { QuestionBreakdown } from "@/components/dashboard/question-breakdown"
 import { SatisfactionHeatmap } from "@/components/dashboard/satisfaction-heatmap"
 import { StaffLeaderboard } from "@/components/dashboard/staff-leaderboard"
@@ -33,6 +34,8 @@ export function AnalyticsCharts({
   const [selectedPeriod, setSelectedPeriod] = useState(30)
   const [questionData, setQuestionData] = useState<TemplateQuestionScores[]>(initialQuestionBreakdown)
   const [questionLoading, setQuestionLoading] = useState(false)
+  const [templateTrendData, setTemplateTrendData] = useState<TemplateTrendPoint[]>(initialTemplateTrend)
+  const [templateTrendLoading, setTemplateTrendLoading] = useState(false)
   const isInitialMount = useRef(true)
   const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null)
 
@@ -55,13 +58,29 @@ export function AnalyticsCharts({
     }
   }, [])
 
+  const fetchTemplateTrend = useCallback(async (days: number) => {
+    setTemplateTrendLoading(true)
+    try {
+      const res = await fetch(`/api/template-trend?days=${days}`, {
+        cache: "no-store",
+      })
+      if (res.ok) {
+        const json = await res.json()
+        setTemplateTrendData(json)
+      }
+    } finally {
+      setTemplateTrendLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false
       return
     }
     fetchQuestionBreakdown(selectedPeriod)
-  }, [selectedPeriod, fetchQuestionBreakdown])
+    fetchTemplateTrend(selectedPeriod)
+  }, [selectedPeriod, fetchQuestionBreakdown, fetchTemplateTrend])
 
   const periodLabel = PERIOD_OPTIONS.find((o) => o.value === selectedPeriod)?.label ?? ""
 
@@ -111,9 +130,11 @@ export function AnalyticsCharts({
       />
 
       <TemplateTrendChart
-        initialData={initialTemplateTrend}
-        selectedPeriod={selectedPeriod}
+        data={templateTrendData}
+        loading={templateTrendLoading}
       />
+
+      <TemplateTrendSmallMultiples data={templateTrendData} />
 
       {questionLoading ? (
         <div className="flex h-[200px] items-center justify-center rounded-lg border bg-card">

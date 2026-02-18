@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react"
+import { useMemo } from "react"
 import {
   LineChart,
   Line,
@@ -23,8 +23,8 @@ const TEMPLATE_COLORS: Record<string, string> = {
 const DEFAULT_COLOR = "#6b7280"
 
 interface TemplateTrendChartProps {
-  initialData: TemplateTrendPoint[]
-  selectedPeriod: number
+  data: TemplateTrendPoint[]
+  loading: boolean
 }
 
 interface ChartDataPoint {
@@ -32,34 +32,7 @@ interface ChartDataPoint {
   [templateName: string]: string | number | null
 }
 
-export function TemplateTrendChart({ initialData, selectedPeriod }: TemplateTrendChartProps) {
-  const [data, setData] = useState<TemplateTrendPoint[]>(initialData)
-  const [loading, setLoading] = useState(false)
-  const isInitialMount = useRef(true)
-
-  const fetchData = useCallback(async (days: number) => {
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/template-trend?days=${days}`, {
-        cache: "no-store",
-      })
-      if (res.ok) {
-        const json = await res.json()
-        setData(json)
-      }
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false
-      return
-    }
-    fetchData(selectedPeriod)
-  }, [selectedPeriod, fetchData])
-
+export function TemplateTrendChart({ data, loading }: TemplateTrendChartProps) {
   const { chartData, templateNames } = useMemo(() => {
     const names = new Set<string>()
     const dateMap = new Map<string, Record<string, number | null>>()
