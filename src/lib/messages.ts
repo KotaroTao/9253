@@ -104,7 +104,7 @@ export const messages = {
     patientVoice: "患者さまの声",
     milestonePrefix: "通算",
     milestoneSuffix: "件達成！",
-    milestoneVoicesDelivered: "人の患者さまの声を届けました",
+    milestoneVoicesDelivered: "患者さまから{count}回フィードバックをいただきました",
     nextMilestone: "次の目標",
     milestoneRemaining: "あと",
     adminViewLabel: "管理者ビュー",
@@ -199,6 +199,14 @@ export const messages = {
     suggestedActionsDesc: "クリックで自動入力。もちろん自分で作成も可能です",
     customAction: "自分で作成する",
     customActionDesc: "独自の改善施策を登録",
+    // Log / history
+    history: "実施履歴",
+    logStarted: "実施開始",
+    logCompleted: "完了",
+    logCancelled: "中止",
+    logReactivated: "再開",
+    satisfactionAt: "満足度",
+    noLogs: "履歴はまだありません",
   },
   staffLeaderboard: {
     title: "アンケート回収件数",

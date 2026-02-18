@@ -25,7 +25,19 @@ import {
   Lightbulb,
   Pencil,
   Trash2,
+  Clock,
+  Play,
+  Ban,
+  RefreshCw,
 } from "lucide-react"
+
+interface ActionLog {
+  id: string
+  action: string // started, completed, cancelled, reactivated
+  satisfactionScore: number | null
+  note: string | null
+  createdAt: string | Date
+}
 
 interface ImprovementAction {
   id: string
@@ -38,6 +50,7 @@ interface ImprovementAction {
   status: string
   startedAt: string | Date
   completedAt: string | Date | null
+  logs?: ActionLog[]
 }
 
 interface TemplateQuestion {
@@ -567,6 +580,11 @@ function ActionCard({
               )}
             </div>
 
+            {/* History timeline */}
+            {action.logs && action.logs.length > 0 && (
+              <ActionTimeline logs={action.logs} />
+            )}
+
             {/* Score comparison */}
             {(action.baselineScore != null || action.targetScore != null) && (
               <div className="grid grid-cols-3 gap-2">
@@ -693,5 +711,79 @@ function ActionCard({
         )}
       </CardContent>
     </Card>
+  )
+}
+
+const LOG_ACTION_CONFIG: Record<string, {
+  label: string
+  icon: typeof Play
+  color: string
+  dotColor: string
+}> = {
+  started: {
+    label: messages.improvementActions.logStarted,
+    icon: Play,
+    color: "text-blue-600",
+    dotColor: "bg-blue-500",
+  },
+  completed: {
+    label: messages.improvementActions.logCompleted,
+    icon: CheckCircle2,
+    color: "text-green-600",
+    dotColor: "bg-green-500",
+  },
+  cancelled: {
+    label: messages.improvementActions.logCancelled,
+    icon: Ban,
+    color: "text-gray-500",
+    dotColor: "bg-gray-400",
+  },
+  reactivated: {
+    label: messages.improvementActions.logReactivated,
+    icon: RefreshCw,
+    color: "text-amber-600",
+    dotColor: "bg-amber-500",
+  },
+}
+
+function ActionTimeline({ logs }: { logs: ActionLog[] }) {
+  return (
+    <div className="space-y-1.5">
+      <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+        <Clock className="h-3 w-3" />
+        {messages.improvementActions.history}
+      </p>
+      <div className="relative ml-1.5 border-l-2 border-muted pl-4 space-y-2">
+        {logs.map((log) => {
+          const config = LOG_ACTION_CONFIG[log.action] ?? LOG_ACTION_CONFIG.started
+          const Icon = config.icon
+          return (
+            <div key={log.id} className="relative">
+              {/* Timeline dot */}
+              <div className={`absolute -left-[21px] top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white ${config.dotColor}`} />
+              <div className="flex items-center gap-2">
+                <Icon className={`h-3 w-3 shrink-0 ${config.color}`} />
+                <span className={`text-xs font-medium ${config.color}`}>
+                  {config.label}
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  {new Date(log.createdAt).toLocaleDateString("ja-JP")}
+                </span>
+              </div>
+              {log.satisfactionScore != null && (
+                <p className="mt-0.5 text-[11px] text-muted-foreground ml-5">
+                  {messages.improvementActions.satisfactionAt}: <span className="font-semibold">{log.satisfactionScore}</span>
+                </p>
+              )}
+              {log.note && (
+                <p className="mt-0.5 text-[11px] text-muted-foreground ml-5">
+                  {log.note}
+                </p>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
   )
 }

@@ -468,7 +468,10 @@ async function main() {
     return count > 0 ? Math.round((total / count) * 100) / 100 : 3.5
   }
 
-  // 既存の改善アクションを削除
+  // 既存の改善アクションとログを削除
+  await prisma.improvementActionLog.deleteMany({
+    where: { improvementAction: { clinicId: clinic.id } },
+  })
   await prisma.improvementAction.deleteMany({ where: { clinicId: clinic.id } })
 
   const improvementActions = [
@@ -528,6 +531,18 @@ async function main() {
     },
   ]
 
+  // Helper: get overall satisfaction score at a given month index
+  function getOverallScoreAtMonth(monthIdx: number): number {
+    const monthDate = new Date(startDate.getFullYear(), startDate.getMonth() + monthIdx, 1)
+    const monthEnd = new Date(startDate.getFullYear(), startDate.getMonth() + monthIdx + 1, 0)
+    const monthResponses = allResponses.filter(
+      (r) => r.respondedAt >= monthDate && r.respondedAt <= monthEnd
+    )
+    if (monthResponses.length === 0) return 3.5
+    const sum = monthResponses.reduce((acc, r) => acc + (r.overallScore ?? 0), 0)
+    return Math.round((sum / monthResponses.length) * 100) / 100
+  }
+
   for (const action of improvementActions) {
     const startedAt = new Date(startDate.getFullYear(), startDate.getMonth() + action.startMonthIdx, 10 + Math.floor(rng() * 10))
     const completedAt = action.endMonthIdx !== null
@@ -539,6 +554,29 @@ async function main() {
     const resultScore = action.status === "completed" && action.endMonthIdx !== null
       ? getScoreAtMonth(action.endMonthIdx, action.questions)
       : null
+
+    // Overall satisfaction scores for log entries
+    const startSatisfaction = getOverallScoreAtMonth(action.startMonthIdx)
+    const endSatisfaction = action.endMonthIdx !== null
+      ? getOverallScoreAtMonth(action.endMonthIdx)
+      : null
+
+    // Build log entries
+    const logEntries: Prisma.ImprovementActionLogCreateWithoutImprovementActionInput[] = [
+      {
+        action: "started",
+        satisfactionScore: startSatisfaction,
+        createdAt: startedAt,
+      },
+    ]
+
+    if (action.status === "completed" && completedAt) {
+      logEntries.push({
+        action: "completed",
+        satisfactionScore: endSatisfaction,
+        createdAt: completedAt,
+      })
+    }
 
     await prisma.improvementAction.create({
       data: {
@@ -552,9 +590,12 @@ async function main() {
         status: action.status,
         startedAt,
         completedAt,
+        logs: {
+          create: logEntries,
+        },
       },
     })
-    console.log(`改善アクション: ${action.title}（${action.status}）開始時 ${baselineScore} → ${resultScore !== null ? `完了時 ${resultScore}` : "実施中"}`)
+    console.log(`改善アクション: ${action.title}（${action.status}）開始時 ${baselineScore}（満足度 ${startSatisfaction}）→ ${resultScore !== null ? `完了時 ${resultScore}（満足度 ${endSatisfaction}）` : "実施中"}`)
   }
 
   // 月次レポート（過去5ヶ月分。当月は未入力=InsightBanner表示用）

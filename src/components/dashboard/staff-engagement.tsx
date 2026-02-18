@@ -281,7 +281,7 @@ export function StaffEngagement({ data, kioskUrl, activeActions = [] }: StaffEng
               </p>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              {totalCount.toLocaleString()}{messages.dashboard.milestoneVoicesDelivered}
+              {messages.dashboard.milestoneVoicesDelivered.replace("{count}", totalCount.toLocaleString())}
             </p>
             {nextMilestone && (
               <div className="mt-3">

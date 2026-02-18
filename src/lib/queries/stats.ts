@@ -286,6 +286,24 @@ export async function getQuestionBreakdown(
   return result
 }
 
+/**
+ * Get current overall satisfaction score for a clinic (last 30 days average)
+ */
+export async function getCurrentSatisfactionScore(clinicId: string): Promise<number | null> {
+  const since = new Date()
+  since.setDate(since.getDate() - 30)
+
+  interface ScoreRow { avg_score: number | null }
+  const rows = await prisma.$queryRaw<ScoreRow[]>`
+    SELECT ROUND(AVG(overall_score)::numeric, 2)::float AS avg_score
+    FROM survey_responses
+    WHERE clinic_id = ${clinicId}::uuid
+      AND responded_at >= ${since}
+      AND overall_score IS NOT NULL
+  `
+  return rows[0]?.avg_score ?? null
+}
+
 // --- Hourly heatmap data (day-of-week × hour) ---
 
 export interface HeatmapCell {
