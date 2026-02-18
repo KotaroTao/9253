@@ -363,11 +363,14 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [],
               </div>
             )}
 
-            {/* Current score of selected question (auto-populated) */}
+            {/* Current score of selected question (auto-populated, last 30 days) */}
             {selectedQuestionId && questionScores[selectedQuestionId] != null && (
               <div className="rounded-lg bg-muted/50 px-3 py-2">
                 <p className="text-xs text-muted-foreground">
-                  {messages.improvementActions.currentScore}
+                  {messages.improvementActions.baselineScore}
+                  <span className="ml-1 text-[10px] text-muted-foreground/70">
+                    （{messages.improvementActions.baselineScoreNote}）
+                  </span>
                 </p>
                 <p className="text-lg font-bold">
                   {questionScores[selectedQuestionId]}
@@ -573,6 +576,9 @@ function ActionCard({
                     {messages.improvementActions.baselineScore}
                   </p>
                   <p className="text-lg font-bold">{action.baselineScore}</p>
+                  <p className="text-[9px] text-muted-foreground/60">
+                    {messages.improvementActions.baselineScoreNote}
+                  </p>
                 </div>
                 {isActive && currentQuestionScore != null && (
                   <div className="rounded-lg bg-blue-50 p-2 text-center">
@@ -581,6 +587,9 @@ function ActionCard({
                     </p>
                     <p className="text-lg font-bold text-blue-600">
                       {currentQuestionScore}
+                    </p>
+                    <p className="text-[9px] text-blue-500/60">
+                      {messages.improvementActions.currentScoreNote}
                     </p>
                   </div>
                 )}
@@ -609,6 +618,15 @@ function ActionCard({
                       }`}
                     >
                       {action.resultScore}
+                    </p>
+                    <p
+                      className={`text-[9px] ${
+                        action.resultScore >= action.baselineScore
+                          ? "text-green-500/60"
+                          : "text-orange-500/60"
+                      }`}
+                    >
+                      {messages.improvementActions.completionScoreNote}
                     </p>
                   </div>
                 )}

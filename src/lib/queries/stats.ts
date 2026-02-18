@@ -288,17 +288,14 @@ export async function getCurrentSatisfactionScore(clinicId: string): Promise<num
 }
 
 /**
- * Get current average score for a specific question (last 3 months)
+ * Get current average score for a specific question (last 30 days)
  */
 export async function getQuestionCurrentScore(
   clinicId: string,
   questionId: string,
-  months: number = 3
 ): Promise<number | null> {
   const since = new Date()
-  since.setMonth(since.getMonth() - months)
-  since.setDate(1)
-  since.setHours(0, 0, 0, 0)
+  since.setDate(since.getDate() - 30)
 
   interface QScoreRow { avg_score: number | null }
   const rows = await prisma.$queryRaw<QScoreRow[]>`
@@ -312,19 +309,16 @@ export async function getQuestionCurrentScore(
 }
 
 /**
- * Get current average scores for multiple questions at once (last 3 months)
+ * Get current average scores for multiple questions at once (last 30 days)
  */
 export async function getQuestionCurrentScores(
   clinicId: string,
   questionIds: string[],
-  months: number = 3
 ): Promise<Record<string, number>> {
   if (questionIds.length === 0) return {}
 
   const since = new Date()
-  since.setMonth(since.getMonth() - months)
-  since.setDate(1)
-  since.setHours(0, 0, 0, 0)
+  since.setDate(since.getDate() - 30)
 
   interface QScoresRow { question_id: string; avg_score: number | null }
   const rows = await prisma.$queryRaw<QScoresRow[]>`
