@@ -4,7 +4,6 @@ import { getOperatorClinicId } from "@/lib/admin-mode"
 import { prisma } from "@/lib/prisma"
 import { getMonthlySurveyCount, getMonthlySurveyQuality } from "@/lib/queries/stats"
 import { MonthlyMetricsView } from "@/components/dashboard/monthly-metrics-view"
-import { messages } from "@/lib/messages"
 import { ROLES } from "@/lib/constants"
 
 export default async function MetricsPage() {
@@ -48,7 +47,6 @@ export default async function MetricsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">{messages.monthlyMetrics.title}</h1>
       <MonthlyMetricsView
         initialSummary={summary ?? null}
         initialPrevSummary={prevSummary?.totalVisits != null ? prevSummary : null}

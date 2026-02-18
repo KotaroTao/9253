@@ -2,7 +2,6 @@ import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { getOperatorClinicId } from "@/lib/admin-mode"
 import { prisma } from "@/lib/prisma"
-import { messages } from "@/lib/messages"
 import { ImprovementActionsView } from "@/components/dashboard/improvement-actions"
 import { ROLES } from "@/lib/constants"
 import { getQuestionCurrentScores } from "@/lib/queries/stats"
@@ -74,7 +73,6 @@ export default async function ActionsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">{messages.improvementActions.title}</h1>
       <ImprovementActionsView
         initialActions={actions}
         templateQuestions={templateQuestions}
