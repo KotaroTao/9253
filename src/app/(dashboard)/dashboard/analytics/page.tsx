@@ -2,8 +2,8 @@ import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { getOperatorClinicId } from "@/lib/admin-mode"
-import { getDashboardStats, getCombinedMonthlyTrends, getQuestionBreakdown, getHourlyHeatmapData } from "@/lib/queries/stats"
-import { SatisfactionTrendChart } from "@/components/dashboard/satisfaction-trend"
+import { getDashboardStats, getQuestionBreakdown, getHourlyHeatmapData, getDailyTrend } from "@/lib/queries/stats"
+import { DailyTrendChart } from "@/components/dashboard/daily-trend-chart"
 import { QuestionBreakdown } from "@/components/dashboard/question-breakdown"
 import { InsightCards } from "@/components/dashboard/insight-cards"
 import { StaffLeaderboard } from "@/components/dashboard/staff-leaderboard"
@@ -37,12 +37,12 @@ export default async function AnalyticsPage() {
   const prevYear = prevDate.getFullYear()
   const prevMonth = prevDate.getMonth() + 1
 
-  const [stats, trends, questionBreakdown, heatmapData, lastMonthSummary, clinic] =
+  const [stats, questionBreakdown, heatmapData, dailyTrend, lastMonthSummary, clinic] =
     await Promise.all([
       getDashboardStats(clinicId),
-      getCombinedMonthlyTrends(clinicId),
       getQuestionBreakdown(clinicId),
       getHourlyHeatmapData(clinicId),
+      getDailyTrend(clinicId, 30),
       prisma.monthlyClinicMetrics.findUnique({
         where: { clinicId_year_month: { clinicId, year: prevYear, month: prevMonth } },
         select: { totalVisits: true },
@@ -52,8 +52,6 @@ export default async function AnalyticsPage() {
         select: { name: true },
       }),
     ])
-
-  const { satisfactionTrend } = trends
 
   const lowScoreQuestions: Array<{ questionId: string; text: string; avgScore: number }> = []
   for (const template of questionBreakdown) {
@@ -117,6 +115,8 @@ export default async function AnalyticsPage() {
           </CardContent>
         </Card>
 
+        <DailyTrendChart initialData={dailyTrend} />
+
         <InsightCards
           averageScore={stats.averageScore}
           prevAverageScore={stats.prevAverageScore ?? null}
@@ -127,7 +127,6 @@ export default async function AnalyticsPage() {
 
         <QuestionBreakdown data={questionBreakdown} />
         <SatisfactionHeatmap data={heatmapData} />
-        <SatisfactionTrendChart data={satisfactionTrend} />
         <StaffLeaderboard />
       </div>
     </div>

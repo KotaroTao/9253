@@ -342,6 +342,48 @@ export async function getQuestionCurrentScores(
   return result
 }
 
+// --- Daily trend data (response count + avg score per day) ---
+
+export interface DailyTrendPoint {
+  date: string      // "MM/DD" format
+  count: number
+  avgScore: number | null
+}
+
+interface DailyTrendRow {
+  date_label: string
+  avg_score: number | null
+  count: bigint
+}
+
+export async function getDailyTrend(
+  clinicId: string,
+  days: number = 30,
+): Promise<DailyTrendPoint[]> {
+  const sinceDate = new Date()
+  sinceDate.setDate(sinceDate.getDate() - days)
+  sinceDate.setHours(0, 0, 0, 0)
+
+  const rows = await prisma.$queryRaw<DailyTrendRow[]>`
+    SELECT
+      TO_CHAR(responded_at AT TIME ZONE 'Asia/Tokyo', 'MM/DD') AS date_label,
+      ROUND(AVG(overall_score)::numeric, 2)::float AS avg_score,
+      COUNT(*) AS count
+    FROM survey_responses
+    WHERE clinic_id = ${clinicId}::uuid
+      AND responded_at >= ${sinceDate}
+      AND overall_score IS NOT NULL
+    GROUP BY (responded_at AT TIME ZONE 'Asia/Tokyo')::date, date_label
+    ORDER BY (responded_at AT TIME ZONE 'Asia/Tokyo')::date ASC
+  `
+
+  return rows.map((r) => ({
+    date: r.date_label,
+    count: Number(r.count),
+    avgScore: r.avg_score ?? null,
+  }))
+}
+
 // --- Hourly heatmap data (day-of-week × hour) ---
 
 export interface HeatmapCell {
