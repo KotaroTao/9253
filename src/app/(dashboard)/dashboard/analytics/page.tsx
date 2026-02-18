@@ -26,7 +26,7 @@ export default async function AnalyticsPage() {
 
   const [heatmapData, dailyTrend, templateTrend, questionBreakdown] =
     await Promise.all([
-      getHourlyHeatmapData(clinicId),
+      getHourlyHeatmapData(clinicId, 30),
       getDailyTrend(clinicId, 30),
       getTemplateTrend(clinicId, 30),
       getQuestionBreakdownByDays(clinicId, 30),

@@ -125,7 +125,7 @@ export function AnalyticsCharts({
 
       {/* ヒートマップ + リーダーボード */}
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-        <SatisfactionHeatmap data={heatmapData} />
+        <SatisfactionHeatmap initialData={heatmapData} selectedPeriod={selectedPeriod} />
         <StaffLeaderboard />
       </div>
     </div>
