@@ -19,7 +19,9 @@ import {
   Trophy,
   Globe,
   CircleAlert,
+  ExternalLink,
 } from "lucide-react"
+import Link from "next/link"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
@@ -584,9 +586,13 @@ export default function StrategyPage() {
                   <li>3. International Dental Journal (IF ~3.5)</li>
                   <li>4. 日本歯科医療管理学会雑誌</li>
                 </ul>
-                <p className="mt-4 text-xs text-muted-foreground">
-                  詳細: <code className="rounded bg-muted px-1.5 py-0.5">docs/research-protocol.md</code>
-                </p>
+                <Link
+                  href="/research-protocol"
+                  className="mt-4 inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/10"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  研究計画書（全20章）を見る
+                </Link>
               </div>
             </div>
             {/* 3チャネル募集 */}
