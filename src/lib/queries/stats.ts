@@ -480,9 +480,14 @@ interface TemplateTrendRow {
 export async function getTemplateTrend(
   clinicId: string,
   days: number = 30,
+  offsetDays: number = 0,
 ): Promise<TemplateTrendPoint[]> {
+  const untilDate = new Date()
+  untilDate.setDate(untilDate.getDate() - offsetDays)
+  untilDate.setHours(23, 59, 59, 999)
+
   const sinceDate = new Date()
-  sinceDate.setDate(sinceDate.getDate() - days)
+  sinceDate.setDate(sinceDate.getDate() - offsetDays - days)
   sinceDate.setHours(0, 0, 0, 0)
 
   const rows = await prisma.$queryRaw<TemplateTrendRow[]>`
@@ -495,6 +500,7 @@ export async function getTemplateTrend(
     JOIN survey_templates st ON sr.template_id = st.id
     WHERE sr.clinic_id = ${clinicId}::uuid
       AND sr.responded_at >= ${sinceDate}
+      AND sr.responded_at <= ${untilDate}
       AND sr.overall_score IS NOT NULL
     GROUP BY (sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date, date_label, st.name
     ORDER BY (sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date ASC, st.name

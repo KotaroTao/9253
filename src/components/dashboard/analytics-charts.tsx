@@ -21,6 +21,7 @@ const PERIOD_OPTIONS = [
 interface AnalyticsChartsProps {
   initialDailyTrend: DailyTrendPoint[]
   initialTemplateTrend: TemplateTrendPoint[]
+  initialTemplateTrendPrev: TemplateTrendPoint[]
   initialQuestionBreakdown: TemplateQuestionScores[]
   heatmapData: HeatmapCell[]
 }
@@ -28,6 +29,7 @@ interface AnalyticsChartsProps {
 export function AnalyticsCharts({
   initialDailyTrend,
   initialTemplateTrend,
+  initialTemplateTrendPrev,
   initialQuestionBreakdown,
   heatmapData,
 }: AnalyticsChartsProps) {
@@ -35,6 +37,7 @@ export function AnalyticsCharts({
   const [questionData, setQuestionData] = useState<TemplateQuestionScores[]>(initialQuestionBreakdown)
   const [questionLoading, setQuestionLoading] = useState(false)
   const [templateTrendData, setTemplateTrendData] = useState<TemplateTrendPoint[]>(initialTemplateTrend)
+  const [templateTrendPrevData, setTemplateTrendPrevData] = useState<TemplateTrendPoint[]>(initialTemplateTrendPrev)
   const [templateTrendLoading, setTemplateTrendLoading] = useState(false)
   const isInitialMount = useRef(true)
   const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null)
@@ -61,12 +64,15 @@ export function AnalyticsCharts({
   const fetchTemplateTrend = useCallback(async (days: number) => {
     setTemplateTrendLoading(true)
     try {
-      const res = await fetch(`/api/template-trend?days=${days}`, {
-        cache: "no-store",
-      })
-      if (res.ok) {
-        const json = await res.json()
-        setTemplateTrendData(json)
+      const [currentRes, prevRes] = await Promise.all([
+        fetch(`/api/template-trend?days=${days}`, { cache: "no-store" }),
+        fetch(`/api/template-trend?days=${days}&offset=${days}`, { cache: "no-store" }),
+      ])
+      if (currentRes.ok) {
+        setTemplateTrendData(await currentRes.json())
+      }
+      if (prevRes.ok) {
+        setTemplateTrendPrevData(await prevRes.json())
       }
     } finally {
       setTemplateTrendLoading(false)
@@ -134,7 +140,11 @@ export function AnalyticsCharts({
         loading={templateTrendLoading}
       />
 
-      <TemplateTrendSmallMultiples data={templateTrendData} />
+      <TemplateTrendSmallMultiples
+        data={templateTrendData}
+        prevData={templateTrendPrevData}
+        selectedPeriod={selectedPeriod}
+      />
 
       {questionLoading ? (
         <div className="flex h-[200px] items-center justify-center rounded-lg border bg-card">

@@ -24,11 +24,12 @@ export default async function AnalyticsPage() {
     redirect("/login")
   }
 
-  const [heatmapData, dailyTrend, templateTrend, questionBreakdown] =
+  const [heatmapData, dailyTrend, templateTrend, templateTrendPrev, questionBreakdown] =
     await Promise.all([
       getHourlyHeatmapData(clinicId, 30),
       getDailyTrend(clinicId, 30),
       getTemplateTrend(clinicId, 30),
+      getTemplateTrend(clinicId, 30, 30),
       getQuestionBreakdownByDays(clinicId, 30),
     ])
 
@@ -36,6 +37,7 @@ export default async function AnalyticsPage() {
     <AnalyticsCharts
       initialDailyTrend={dailyTrend}
       initialTemplateTrend={templateTrend}
+      initialTemplateTrendPrev={templateTrendPrev}
       initialQuestionBreakdown={questionBreakdown}
       heatmapData={heatmapData}
     />
