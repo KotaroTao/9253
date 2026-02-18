@@ -104,7 +104,7 @@ export const messages = {
     patientVoice: "患者さまの声",
     milestonePrefix: "通算",
     milestoneSuffix: "件達成！",
-    milestoneVoicesDelivered: "人の患者さまの声を届けました",
+    milestoneVoicesDelivered: "患者さまから{count}回フィードバックをいただきました",
     nextMilestone: "次の目標",
     milestoneRemaining: "あと",
     adminViewLabel: "管理者ビュー",

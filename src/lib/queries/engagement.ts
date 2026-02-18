@@ -52,11 +52,9 @@ export async function getStaffEngagementData(
   const commentStart = new Date(todayStart)
   commentStart.setDate(commentStart.getDate() - 30)
 
-  // Week start (Monday)
+  // Week start (past 7 days: today - 6 days)
   const weekStart = new Date(todayStart)
-  const dayOfWeek = weekStart.getDay()
-  const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1
-  weekStart.setDate(weekStart.getDate() - daysToMonday)
+  weekStart.setDate(weekStart.getDate() - 6)
 
   // Consolidate count/avg queries into a single raw SQL to reduce round-trips (7→4)
   interface AggRow {
@@ -126,7 +124,7 @@ export async function getStaffEngagementData(
     dateSet.add(formatDateKey(d))
   }
 
-  // Calculate weekly active days (Mon-Sun) and per-day data
+  // Calculate weekly active days (past 7 days) and per-day data
   let weekActiveDays = 0
   const weekDays: WeekDayData[] = []
 
