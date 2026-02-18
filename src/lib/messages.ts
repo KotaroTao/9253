@@ -338,6 +338,8 @@ export const messages = {
     workingDaysLabel: "週の営業日数",
     workingDaysDesc: "ストリークや週間活動日数の計算に使用します",
     workingDaysSuffix: "日/週",
+    regularClosedDaysLabel: "定休日",
+    regularClosedDaysDesc: "毎週決まって休診する曜日を選択してください",
   },
   nav: {
     dashboard: "ホーム",

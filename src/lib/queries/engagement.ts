@@ -114,6 +114,12 @@ export async function getStaffEngagementData(
   const dailyGoal = settings.dailyGoal ?? DEFAULTS.DAILY_SURVEY_GOAL
   const workingDaysPerWeek = settings.workingDaysPerWeek ?? 6
   const closedDates = new Set<string>(settings.closedDates ?? [])
+  const regularClosedDays = new Set<number>(settings.regularClosedDays ?? [])
+
+  // Helper: check if a date is closed (ad-hoc or regular)
+  function isClosedDate(dateKey: string, date: Date): boolean {
+    return closedDates.has(dateKey) || regularClosedDays.has(date.getDay())
+  }
 
   const todayKey = formatDateKey(todayStart)
 
@@ -149,7 +155,7 @@ export async function getStaffEngagementData(
       date: key,
       dayLabel: getDayOfWeekJa(weekCheck),
       count,
-      isClosed: closedDates.has(key),
+      isClosed: isClosedDate(key, weekCheck),
       isToday: key === todayKey,
     })
     weekCheck.setDate(weekCheck.getDate() + 1)
@@ -168,7 +174,7 @@ export async function getStaffEngagementData(
 
   for (let i = 0; i < 90; i++) {
     const key = formatDateKey(checkDate)
-    if (closedDates.has(key)) {
+    if (isClosedDate(key, checkDate)) {
       // Closed day — skip entirely, doesn't count as gap or active
       checkDate.setDate(checkDate.getDate() - 1)
       continue
