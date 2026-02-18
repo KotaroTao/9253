@@ -443,15 +443,15 @@ export async function getDailyTrend(
 
   const rows = await prisma.$queryRaw<DailyTrendRow[]>`
     SELECT
-      TO_CHAR(responded_at AT TIME ZONE 'Asia/Tokyo', 'MM/DD') AS date_label,
+      TO_CHAR(responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'MM/DD') AS date_label,
       ROUND(AVG(overall_score)::numeric, 2)::float AS avg_score,
       COUNT(*) AS count
     FROM survey_responses
     WHERE clinic_id = ${clinicId}::uuid
       AND responded_at >= ${sinceDate}
       AND overall_score IS NOT NULL
-    GROUP BY (responded_at AT TIME ZONE 'Asia/Tokyo')::date, date_label
-    ORDER BY (responded_at AT TIME ZONE 'Asia/Tokyo')::date ASC
+    GROUP BY (responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date, date_label
+    ORDER BY (responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date ASC
   `
 
   return rows.map((r) => ({
@@ -487,7 +487,7 @@ export async function getTemplateTrend(
 
   const rows = await prisma.$queryRaw<TemplateTrendRow[]>`
     SELECT
-      TO_CHAR(sr.responded_at AT TIME ZONE 'Asia/Tokyo', 'MM/DD') AS date_label,
+      TO_CHAR(sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'MM/DD') AS date_label,
       st.name AS template_name,
       ROUND(AVG(sr.overall_score)::numeric, 2)::float AS avg_score,
       COUNT(*) AS count
@@ -496,8 +496,8 @@ export async function getTemplateTrend(
     WHERE sr.clinic_id = ${clinicId}::uuid
       AND sr.responded_at >= ${sinceDate}
       AND sr.overall_score IS NOT NULL
-    GROUP BY (sr.responded_at AT TIME ZONE 'Asia/Tokyo')::date, date_label, st.name
-    ORDER BY (sr.responded_at AT TIME ZONE 'Asia/Tokyo')::date ASC, st.name
+    GROUP BY (sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date, date_label, st.name
+    ORDER BY (sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date ASC, st.name
   `
 
   return rows.map((r) => ({
@@ -535,8 +535,8 @@ export async function getHourlyHeatmapData(
 
   const rows = await prisma.$queryRaw<HeatmapRow[]>`
     SELECT
-      EXTRACT(DOW FROM responded_at AT TIME ZONE 'Asia/Tokyo')::int AS day_of_week,
-      EXTRACT(HOUR FROM responded_at AT TIME ZONE 'Asia/Tokyo')::int AS hour,
+      EXTRACT(DOW FROM responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::int AS day_of_week,
+      EXTRACT(HOUR FROM responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::int AS hour,
       ROUND(AVG(overall_score)::numeric, 2)::float AS avg_score,
       COUNT(*) AS count
     FROM survey_responses
