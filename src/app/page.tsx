@@ -17,9 +17,11 @@ import {
   Search,
   Trophy,
   ClipboardCheck,
+  FileBarChart,
   UserPlus,
   Eye,
   Repeat2,
+  TrendingUp,
   ShieldCheck,
   EyeOff,
   Zap,
@@ -59,6 +61,11 @@ const solutionValues = [
     title: messages.landing.solutionValue2Title,
     desc: messages.landing.solutionValue2Desc,
   },
+  {
+    icon: TrendingUp,
+    title: messages.landing.solutionValue3Title,
+    desc: messages.landing.solutionValue3Desc,
+  },
 ]
 
 const features = [
@@ -86,6 +93,11 @@ const features = [
     icon: ClipboardCheck,
     title: messages.landing.feature5Title,
     description: messages.landing.feature5Desc,
+  },
+  {
+    icon: FileBarChart,
+    title: messages.landing.feature6Title,
+    description: messages.landing.feature6Desc,
   },
 ]
 
@@ -279,7 +291,7 @@ export default function HomePage() {
               {messages.landing.solutionDesc}
             </p>
           </div>
-          <div className="grid gap-6 sm:grid-cols-2">
+          <div className="grid gap-6 sm:grid-cols-3">
             {solutionValues.map((val, i) => (
               <div key={i} className="rounded-2xl border bg-card p-7">
                 <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-3">
