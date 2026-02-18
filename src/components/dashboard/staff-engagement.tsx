@@ -156,13 +156,11 @@ export function StaffEngagement({ data, kioskUrl, activeActions = [] }: StaffEng
             {/* Bar chart for each day */}
             {(() => {
               const maxCount = Math.max(...weekDays.map((d) => d.count), dailyGoal)
-              const todayDate = weekDays.find((d) => d.isToday)?.date
               return (
                 <div className="flex items-end gap-1.5">
                   {weekDays.map((day) => {
                     const barHeight = maxCount > 0 ? Math.max((day.count / maxCount) * 80, day.count > 0 ? 8 : 0) : 0
                     const isToggling = togglingDate === day.date
-                    const isPast = !day.isToday && todayDate != null && day.date < todayDate
 
                     return (
                       <div key={day.date} className="flex flex-1 flex-col items-center gap-1">
@@ -212,8 +210,12 @@ export function StaffEngagement({ data, kioskUrl, activeActions = [] }: StaffEng
                           {day.dayLabel}
                         </span>
 
-                        {/* Closed day toggle for past days */}
-                        {isPast && (
+                        {/* Bottom label: "本日" for today, toggle for other days */}
+                        {day.isToday ? (
+                          <span className="min-h-[28px] min-w-[36px] flex items-center justify-center rounded-full bg-blue-100 px-2 py-1 text-[10px] font-bold text-blue-600">
+                            本日
+                          </span>
+                        ) : (
                           <button
                             onClick={() => handleToggleClosed(day.date, day.isClosed)}
                             disabled={isToggling}
