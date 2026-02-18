@@ -9,7 +9,6 @@ import {
   Settings,
   LogOut,
   Shield,
-  BarChart3,
   Smartphone,
   Target,
   PieChart,
@@ -36,7 +35,6 @@ interface NavItem {
 const analyticsItems: NavItem[] = [
   { href: "/dashboard/analytics", label: messages.nav.analytics, icon: PieChart },
   { href: "/dashboard/actions", label: messages.improvementActions.title, icon: Target },
-  { href: "/dashboard/metrics", label: messages.nav.monthlyMetrics, icon: BarChart3 },
   { href: "/dashboard/surveys", label: messages.nav.surveys, icon: ClipboardList },
 ]
 
