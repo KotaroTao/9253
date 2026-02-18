@@ -153,9 +153,12 @@ async function main() {
   })
 
   // --- 6ヶ月分のリアルなデモアンケートデータを生成 ---
-  // 患者満足度: 3.5 → 4.2 に半年で徐々に向上
-  // 曜日・時間帯・スタッフ・設問ごとにメリハリのある差をつける
-  // 改善アクションの実施タイミングと連動してスコアが変化
+  // 設定: 受付の接遇に問題がある歯科医院（鈴木美咲=受付担当が特に低評価）
+  // 患者満足度: 3.5 → 4.2 に半年で徐々に向上（受付研修等の改善アクションと連動）
+  // 曜日差: 土曜=大混雑で受付パンク→大幅低下 / 月曜=少ない / 水曜=余裕あり高め
+  // 時間帯差: 午前=余裕あり高め / 夕方〜19時=受付疲弊で低い
+  // スタッフ差: 田中花子(衛生士)=高評価 / 佐藤太郎(歯科医師)=やや高 / 鈴木美咲(受付)=明確に低評価
+  // 営業時間: 9:00〜19:00
 
   const QUESTION_IDS: Record<string, string[]> = {
     "初診": ["fv1", "fv2", "fv3", "fv4", "fv5", "fv6", "fv7", "fv8"],
@@ -164,47 +167,51 @@ async function main() {
   }
 
   // 設問ごとのベースライン難易度（低い=患者がスコアを低くつけやすい）
-  // 待ち時間・費用説明は低め、スタッフ対応・丁寧さは高め
+  // ★受付の接遇に問題がある医院: 受付対応・相談しやすさが顕著に低い
+  // 一方、衛生士・歯科医師の対応は良好（スタッフ対応・丁寧さは高い）
   const QUESTION_DIFFICULTY: Record<string, number> = {
-    fv1: 0.00,   // 第一印象: 普通
-    fv2: 0.05,   // 受付対応: やや高い
+    fv1: -0.08,  // 第一印象: 受付の雰囲気に引っ張られて低め
+    fv2: -0.35,  // 受付対応: ★大きく低い（最大の問題点）
     fv3: -0.20,  // 待ち時間: 低い（不満が出やすい）
     fv4: -0.05,  // ヒアリング: やや低い
     fv5: -0.10,  // 説明: 低め
     fv6: -0.15,  // 費用説明: 低い
-    fv7: 0.00,   // 相談しやすさ: 普通
-    fv8: 0.05,   // 通いたい: やや高い
+    fv7: -0.22,  // 相談しやすさ: ★受付の雰囲気で低い（声をかけづらい）
+    fv8: -0.06,  // 通いたい: 受付印象に引っ張られてやや低い
     tr1: -0.08,  // 診療説明: やや低め
     tr2: -0.05,  // 痛み配慮: やや低め
-    tr3: 0.03,   // 相談しやすさ: やや高い
+    tr3: -0.15,  // 相談しやすさ: ★受付の雰囲気が影響
     tr4: -0.20,  // 待ち時間: 低い
-    tr5: 0.10,   // スタッフ対応: 高い
-    tr6: 0.05,   // 安心感: やや高い
+    tr5: 0.10,   // スタッフ対応: 高い（衛生士・医師は良好）
+    tr6: 0.00,   // 安心感: 普通
     ck1: -0.05,  // 説明: やや低め
-    ck2: 0.10,   // 丁寧さ: 高い
-    ck3: 0.05,   // 相談しやすさ: やや高い
+    ck2: 0.10,   // 丁寧さ: 高い（衛生士は丁寧）
+    ck3: -0.12,  // 相談しやすさ: ★受付の雰囲気が影響
     ck4: -0.18,  // 待ち時間: 低い
     ck5: -0.12,  // 予約取りやすさ: 低め
-    ck6: 0.08,   // 通いたい: 高い
+    ck6: 0.03,   // 通いたい: 受付が足を引っ張る
   }
 
   // 改善アクションによるスコア押し上げ効果（月index → 対象設問 → 加算）
   // 月0=6ヶ月前, 月5=当月。アクション開始月から徐々に効果が出る
+  // ★受付マニュアル研修のboostを大きく設定（受付接遇問題の改善が主テーマ）
   const ACTION_EFFECTS: Record<string, { startMonth: number; endMonth: number | null; questions: string[]; boost: number }> = {
     "待ち時間の見える化": { startMonth: 0, endMonth: 2, questions: ["fv3", "tr4", "ck4"], boost: 0.12 },
-    "受付マニュアル研修": { startMonth: 1, endMonth: 3, questions: ["fv2", "fv1"], boost: 0.08 },
+    "受付マニュアル研修": { startMonth: 1, endMonth: 3, questions: ["fv2", "fv1", "fv7", "tr3", "ck3"], boost: 0.18 },
     "視覚資料での説明導入": { startMonth: 2, endMonth: 4, questions: ["fv5", "fv6", "tr1", "ck1"], boost: 0.10 },
-    "接遇マナー研修": { startMonth: 2, endMonth: 4, questions: ["tr5", "ck2", "fv7", "tr3", "ck3"], boost: 0.07 },
+    "接遇マナー研修": { startMonth: 2, endMonth: 4, questions: ["tr5", "ck2", "fv7", "tr3", "ck3", "fv8", "ck6"], boost: 0.08 },
     "予約枠バッファ導入": { startMonth: 4, endMonth: null, questions: ["fv3", "tr4", "ck4", "ck5"], boost: 0.08 },
     "痛み配慮の声かけ徹底": { startMonth: 4, endMonth: null, questions: ["tr2", "fv4", "tr6"], boost: 0.06 },
   }
 
   // スタッフごとの回答回収傾向
-  // 田中花子(衛生士): 最も積極的（定期検診を多く担当）、佐藤太郎(歯科医師): 治療中心、鈴木美咲(スタッフ): 受付中心で少なめ
+  // 田中花子(衛生士): 最も積極的で接遇も良好 → 高回収率・高評価
+  // 佐藤太郎(歯科医師): 治療中心で安定 → 中回収率・やや高評価
+  // 鈴木美咲(受付スタッフ): ★受付接遇に問題 → 低回収率・明確に低評価
   const STAFF_WEIGHTS = [
-    { staff: staffMembers[0], weight: 45, scoreBonus: 0.05 },   // 田中花子: 高回収率、やや高評価
-    { staff: staffMembers[1], weight: 35, scoreBonus: 0.00 },   // 佐藤太郎: 中回収率、普通
-    { staff: staffMembers[2], weight: 20, scoreBonus: -0.03 },  // 鈴木美咲: 低回収率、やや低め
+    { staff: staffMembers[0], weight: 45, scoreBonus: 0.08 },   // 田中花子: 高回収率、高評価（接遇良好な衛生士）
+    { staff: staffMembers[1], weight: 35, scoreBonus: 0.03 },   // 佐藤太郎: 中回収率、やや高い（信頼される歯科医師）
+    { staff: staffMembers[2], weight: 20, scoreBonus: -0.15 },  // 鈴木美咲: ★低回収率、明確に低評価（受付接遇の問題）
   ]
 
   // 決定的乱数（seedを固定してデータが毎回同じになるように）
@@ -225,14 +232,15 @@ async function main() {
   }
 
   // スコア生成: baseQuality (0-1) を5段階に変換。3.5→4.2の推移を再現
+  // quality≈0.20 → 平均3.5, quality≈0.80 → 平均4.2 となるよう調整
   const generateScore = (baseQuality: number): number => {
-    const clamped = Math.max(0.05, Math.min(0.95, baseQuality))
+    const clamped = Math.max(0.0, Math.min(1.0, baseQuality))
     const r = rng()
-    // clamped が高いほど 4, 5 が出やすい
-    const p1 = Math.max(0, 0.03 - clamped * 0.03)        // 1の確率
-    const p2 = Math.max(0, 0.08 - clamped * 0.06)        // 2の確率
-    const p3 = Math.max(0.05, 0.35 - clamped * 0.35)     // 3の確率
-    const p4 = 0.35 + (clamped - 0.5) * 0.15             // 4の確率
+    // clamped が高いほど 4, 5 が出やすい。低いと 1, 2, 3 が増える
+    const p1 = Math.max(0, 0.06 - clamped * 0.05)        // 1の確率: 6%→1%
+    const p2 = Math.max(0, 0.16 - clamped * 0.13)        // 2の確率: 16%→3%
+    const p3 = Math.max(0.03, 0.40 - clamped * 0.38)     // 3の確率: 40%→5%
+    const p4 = 0.30 + (clamped - 0.5) * 0.12             // 4の確率: 24%→36%
     // 5 = 残り
     if (r < p1) return 1
     if (r < p1 + p2) return 2
@@ -313,29 +321,34 @@ async function main() {
     const daysInMonth = new Date(current.getFullYear(), current.getMonth() + 1, 0).getDate()
     const monthProgress = dayOfMonth / daysInMonth
 
-    // === 1日あたりの回答数（曜日で大きく変動） ===
+    // === 1日あたりの回答数（曜日で大きく変動）===
+    // 土曜は来院数が非常に多く受付がパンク状態。月曜は閑散。
     let baseDailyCount: number
-    if (dayOfWeek === 6) baseDailyCount = 14 + Math.floor(rng() * 6) // 土曜: 14-19（多い）
-    else if (dayOfWeek === 1) baseDailyCount = 5 + Math.floor(rng() * 4) // 月曜: 5-8（少ない）
-    else if (dayOfWeek === 3) baseDailyCount = 10 + Math.floor(rng() * 6) // 水曜: 10-15（多め）
-    else if (dayOfWeek === 5) baseDailyCount = 9 + Math.floor(rng() * 6) // 金曜: 9-14
-    else baseDailyCount = 7 + Math.floor(rng() * 5) // 火・木: 7-11
+    if (dayOfWeek === 6) baseDailyCount = 16 + Math.floor(rng() * 8) // 土曜: 16-23（非常に多い）
+    else if (dayOfWeek === 1) baseDailyCount = 4 + Math.floor(rng() * 3) // 月曜: 4-6（少ない）
+    else if (dayOfWeek === 3) baseDailyCount = 11 + Math.floor(rng() * 6) // 水曜: 11-16（多め）
+    else if (dayOfWeek === 5) baseDailyCount = 9 + Math.floor(rng() * 5) // 金曜: 9-13
+    else if (dayOfWeek === 2) baseDailyCount = 6 + Math.floor(rng() * 4) // 火曜: 6-9
+    else baseDailyCount = 7 + Math.floor(rng() * 4) // 木曜: 7-10
 
     // 月が進むと回収率が上がる（スタッフの定着）
     const dailyCount = Math.round(baseDailyCount * (1.0 + monthsFromStart * 0.06))
 
     // === ベースクオリティ: 3.5→4.2 への推移を制御 ===
-    // overallScore = 3.5 は baseQuality ≈ 0.42, overallScore = 4.2 は baseQuality ≈ 0.72
-    // 6ヶ月で 0.42 → 0.72 （差分0.30を線形+ややS字で）
+    // 新generateScore: quality≈0.20→平均3.5, quality≈0.80→平均4.2
+    // 設問難易度の平均が約-0.08、改善アクション効果が月末に+0.08〜0.12を考慮
+    // 6ヶ月で 0.28 → 0.74 （差分0.46をS字カーブで）
     const linearProgress = (monthsFromStart + monthProgress) / 6.0  // 0.0〜1.0
     const sCurve = linearProgress * linearProgress * (3 - 2 * linearProgress) // S字カーブ
-    const dayBaseQuality = 0.42 + sCurve * 0.30 + (rng() - 0.5) * 0.06
+    const dayBaseQuality = 0.28 + sCurve * 0.46 + (rng() - 0.5) * 0.08
 
-    // === 曜日によるスコア変動 ===
+    // === 曜日によるスコア変動（受付の負荷と直結）===
     let dayOfWeekBonus = 0
-    if (dayOfWeek === 6) dayOfWeekBonus = -0.04   // 土曜: 混雑で少し低め
-    if (dayOfWeek === 1) dayOfWeekBonus = -0.02   // 月曜: やや低め
-    if (dayOfWeek === 3) dayOfWeekBonus = 0.03    // 水曜: 高め（余裕がある日）
+    if (dayOfWeek === 6) dayOfWeekBonus = -0.12   // 土曜: ★大混雑で受付パンク、大幅低下
+    if (dayOfWeek === 1) dayOfWeekBonus = -0.05   // 月曜: 週明けバタバタ
+    if (dayOfWeek === 2) dayOfWeekBonus = -0.01   // 火曜: やや低め
+    if (dayOfWeek === 3) dayOfWeekBonus = 0.06    // 水曜: 余裕がある日、高め
+    if (dayOfWeek === 5) dayOfWeekBonus = 0.02    // 金曜: やや高い
 
     for (let i = 0; i < dailyCount; i++) {
       const config = weightedChoice(templateConfig, templateConfig.map((c) => c.weight))
@@ -343,23 +356,25 @@ async function main() {
       // スタッフ選択（重み付き）
       const staffChoice = weightedChoice(STAFF_WEIGHTS, STAFF_WEIGHTS.map((s) => s.weight))
 
-      // === 時間帯（11時・14時ピーク、12時谷） ===
+      // === 時間帯（9:00-19:00営業、11時・14時ピーク、12時谷、19時は少数）===
       const hour = weightedChoice(
-        [9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
-        [6, 14, 20, 4, 8, 18, 15, 10, 6, 3]
+        [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+        [5, 12, 18, 3, 7, 16, 14, 10, 8, 5, 2]
       )
       const respondedAt = new Date(
         current.getFullYear(), current.getMonth(), current.getDate(),
         hour, Math.floor(rng() * 60), Math.floor(rng() * 60)
       )
 
-      // === 時間帯によるスコア変動 ===
+      // === 時間帯によるスコア変動（受付の疲弊と直結）===
       let timeBonus = 0
-      if (hour >= 9 && hour <= 11) timeBonus = 0.06     // 午前: 高い（患者も医師も元気）
-      if (hour === 12) timeBonus = -0.04                  // 昼: 低め
-      if (hour >= 14 && hour <= 15) timeBonus = 0.02     // 午後前半: やや高い
-      if (hour >= 17) timeBonus = -0.08                   // 夕方: 低い（疲れ）
-      if (dayOfWeek === 6 && hour >= 15) timeBonus -= 0.05 // 土曜午後: さらに低下
+      if (hour >= 9 && hour <= 11) timeBonus = 0.08      // 午前: 高い（受付も余裕あり）
+      if (hour === 12) timeBonus = -0.06                   // 昼: 低め（バタバタ）
+      if (hour >= 14 && hour <= 15) timeBonus = 0.03      // 午後前半: やや高い
+      if (hour === 16) timeBonus = -0.02                   // 夕方入り: やや低い
+      if (hour >= 17 && hour <= 18) timeBonus = -0.10     // 夕方: ★低い（受付も疲弊、雑になりがち）
+      if (hour >= 19) timeBonus = -0.14                    // 閉院間際: ★非常に低い（早く終わらせたい雰囲気）
+      if (dayOfWeek === 6 && hour >= 14) timeBonus -= 0.06 // 土曜午後: ★さらに低下（混雑ピーク）
 
       const baseForThisResponse = dayBaseQuality + dayOfWeekBonus + timeBonus + staffChoice.scoreBonus
 
@@ -486,12 +501,12 @@ async function main() {
     },
     {
       title: "受付マニュアルの作成と研修",
-      description: "受付時の笑顔・挨拶・名前呼びを統一するマニュアルを作成し、全スタッフで研修を実施。",
+      description: "受付時の笑顔・挨拶・名前呼びを統一するマニュアルを作成し、全スタッフで研修を実施。受付対応が最大の課題であったため重点的に取り組み。",
       targetQuestion: "fv2",
       status: "completed",
       startMonthIdx: 1,
       endMonthIdx: 3,
-      questions: ["fv2", "fv1"],
+      questions: ["fv2", "fv1", "fv7", "tr3", "ck3"],
     },
     {
       title: "視覚資料を活用した治療説明",
