@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { createPortal } from "react-dom"
 import { DailyTrendChart } from "@/components/dashboard/daily-trend-chart"
 import { TemplateTrendChart } from "@/components/dashboard/template-trend-chart"
+import { TemplateTrendSmallMultiples } from "@/components/dashboard/template-trend-small-multiples"
 import { QuestionBreakdown } from "@/components/dashboard/question-breakdown"
 import { SatisfactionHeatmap } from "@/components/dashboard/satisfaction-heatmap"
 import { StaffLeaderboard } from "@/components/dashboard/staff-leaderboard"
@@ -20,6 +21,7 @@ const PERIOD_OPTIONS = [
 interface AnalyticsChartsProps {
   initialDailyTrend: DailyTrendPoint[]
   initialTemplateTrend: TemplateTrendPoint[]
+  initialTemplateTrendPrev: TemplateTrendPoint[]
   initialQuestionBreakdown: TemplateQuestionScores[]
   heatmapData: HeatmapCell[]
 }
@@ -27,12 +29,16 @@ interface AnalyticsChartsProps {
 export function AnalyticsCharts({
   initialDailyTrend,
   initialTemplateTrend,
+  initialTemplateTrendPrev,
   initialQuestionBreakdown,
   heatmapData,
 }: AnalyticsChartsProps) {
   const [selectedPeriod, setSelectedPeriod] = useState(30)
   const [questionData, setQuestionData] = useState<TemplateQuestionScores[]>(initialQuestionBreakdown)
   const [questionLoading, setQuestionLoading] = useState(false)
+  const [templateTrendData, setTemplateTrendData] = useState<TemplateTrendPoint[]>(initialTemplateTrend)
+  const [templateTrendPrevData, setTemplateTrendPrevData] = useState<TemplateTrendPoint[]>(initialTemplateTrendPrev)
+  const [templateTrendLoading, setTemplateTrendLoading] = useState(false)
   const isInitialMount = useRef(true)
   const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null)
 
@@ -55,13 +61,32 @@ export function AnalyticsCharts({
     }
   }, [])
 
+  const fetchTemplateTrend = useCallback(async (days: number) => {
+    setTemplateTrendLoading(true)
+    try {
+      const [currentRes, prevRes] = await Promise.all([
+        fetch(`/api/template-trend?days=${days}`, { cache: "no-store" }),
+        fetch(`/api/template-trend?days=${days}&offset=${days}`, { cache: "no-store" }),
+      ])
+      if (currentRes.ok) {
+        setTemplateTrendData(await currentRes.json())
+      }
+      if (prevRes.ok) {
+        setTemplateTrendPrevData(await prevRes.json())
+      }
+    } finally {
+      setTemplateTrendLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false
       return
     }
     fetchQuestionBreakdown(selectedPeriod)
-  }, [selectedPeriod, fetchQuestionBreakdown])
+    fetchTemplateTrend(selectedPeriod)
+  }, [selectedPeriod, fetchQuestionBreakdown, fetchTemplateTrend])
 
   const periodLabel = PERIOD_OPTIONS.find((o) => o.value === selectedPeriod)?.label ?? ""
 
@@ -111,7 +136,13 @@ export function AnalyticsCharts({
       />
 
       <TemplateTrendChart
-        initialData={initialTemplateTrend}
+        data={templateTrendData}
+        loading={templateTrendLoading}
+      />
+
+      <TemplateTrendSmallMultiples
+        data={templateTrendData}
+        prevData={templateTrendPrevData}
         selectedPeriod={selectedPeriod}
       />
 

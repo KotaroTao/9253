@@ -1,17 +1,24 @@
 import { prisma } from "@/lib/prisma"
 import type { SatisfactionTrend } from "@/types"
+import {
+  jstNowParts,
+  jstDaysAgo,
+  jstEndOfDay,
+  jstStartOfMonth,
+  jstEndOfMonth,
+  jstMonthsAgoStart,
+  jstMonthKey,
+} from "@/lib/date-jst"
 
 export async function getDashboardStats(
   clinicId: string,
   dateFrom?: Date,
   dateTo?: Date
 ) {
-  // Previous month boundaries
-  const prevStart = new Date()
-  prevStart.setMonth(prevStart.getMonth() - 1)
-  prevStart.setDate(1)
-  prevStart.setHours(0, 0, 0, 0)
-  const prevEnd = new Date(prevStart.getFullYear(), prevStart.getMonth() + 1, 0, 23, 59, 59)
+  // Previous month boundaries (JST)
+  const { year, month } = jstNowParts()
+  const prevStart = jstStartOfMonth(year, month - 1)
+  const prevEnd = jstEndOfMonth(year, month - 1)
 
   // Consolidate count + avg + prevAvg into single raw SQL (4 queries → 1 + 1)
   interface StatsRow {
@@ -57,8 +64,8 @@ export async function getMonthlySurveyQuality(
   year: number,
   month: number
 ) {
-  const startDate = new Date(year, month - 1, 1)
-  const endDate = new Date(year, month, 0, 23, 59, 59)
+  const startDate = jstStartOfMonth(year, month)
+  const endDate = jstEndOfMonth(year, month)
   const where = { clinicId, respondedAt: { gte: startDate, lte: endDate } }
 
   const [lowScoreCount, freeTextCount, totalCount] = await Promise.all([
@@ -78,8 +85,8 @@ export async function getMonthlySurveyCount(
   year: number,
   month: number
 ) {
-  const startDate = new Date(year, month - 1, 1)
-  const endDate = new Date(year, month, 0, 23, 59, 59)
+  const startDate = jstStartOfMonth(year, month)
+  const endDate = jstEndOfMonth(year, month)
 
   return prisma.surveyResponse.count({
     where: {
@@ -96,20 +103,17 @@ interface MonthlyTrendRow {
 }
 
 export async function getMonthlyTrend(clinicId: string, months: number = 6) {
-  const startDate = new Date()
-  startDate.setMonth(startDate.getMonth() - months)
-  startDate.setDate(1)
-  startDate.setHours(0, 0, 0, 0)
+  const startDate = jstMonthsAgoStart(months)
 
   const rows = await prisma.$queryRaw<MonthlyTrendRow[]>`
     SELECT
-      TO_CHAR(responded_at, 'YYYY-MM') as month,
+      TO_CHAR(responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'YYYY-MM') as month,
       ROUND(AVG(overall_score)::numeric, 1)::float as avg_score,
       COUNT(*) as count
     FROM survey_responses
     WHERE clinic_id = ${clinicId}::uuid
       AND responded_at >= ${startDate}
-    GROUP BY TO_CHAR(responded_at, 'YYYY-MM')
+    GROUP BY TO_CHAR(responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'YYYY-MM')
     ORDER BY month ASC
   `
 
@@ -126,20 +130,17 @@ export async function getMonthlyTrend(clinicId: string, months: number = 6) {
  * This replaces separate getMonthlyTrend + getSatisfactionTrend calls on the dashboard.
  */
 export async function getCombinedMonthlyTrends(clinicId: string) {
-  const startDate = new Date()
-  startDate.setMonth(startDate.getMonth() - 12)
-  startDate.setDate(1)
-  startDate.setHours(0, 0, 0, 0)
+  const startDate = jstMonthsAgoStart(12)
 
   const rows = await prisma.$queryRaw<MonthlyTrendRow[]>`
     SELECT
-      TO_CHAR(responded_at, 'YYYY-MM') as month,
+      TO_CHAR(responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'YYYY-MM') as month,
       ROUND(AVG(overall_score)::numeric, 1)::float as avg_score,
       COUNT(*) as count
     FROM survey_responses
     WHERE clinic_id = ${clinicId}::uuid
       AND responded_at >= ${startDate}
-    GROUP BY TO_CHAR(responded_at, 'YYYY-MM')
+    GROUP BY TO_CHAR(responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'YYYY-MM')
     ORDER BY month ASC
   `
 
@@ -150,10 +151,7 @@ export async function getCombinedMonthlyTrends(clinicId: string) {
   }))
 
   // monthlyTrend = last 6 months only
-  const sixMonthsAgo = new Date()
-  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
-  sixMonthsAgo.setDate(1)
-  const sixMonthKey = `${sixMonthsAgo.getFullYear()}-${String(sixMonthsAgo.getMonth() + 1).padStart(2, "0")}`
+  const sixMonthKey = jstMonthKey(6)
 
   const monthlyTrend = rows
     .filter((r) => r.month >= sixMonthKey)
@@ -199,10 +197,7 @@ export async function getQuestionBreakdown(
   if (templates.length === 0) return []
 
   // Limit to recent N months to avoid full table scan on JSONB expansion
-  const sinceDate = new Date()
-  sinceDate.setMonth(sinceDate.getMonth() - months)
-  sinceDate.setDate(1)
-  sinceDate.setHours(0, 0, 0, 0)
+  const sinceDate = jstMonthsAgoStart(months)
 
   // Aggregate scores per template + question key in DB
   const templateIds = templates.map((t) => t.id)
@@ -280,9 +275,7 @@ export async function getQuestionBreakdownByDays(
 
   if (templates.length === 0) return []
 
-  const sinceDate = new Date()
-  sinceDate.setDate(sinceDate.getDate() - days)
-  sinceDate.setHours(0, 0, 0, 0)
+  const sinceDate = jstDaysAgo(days)
 
   const templateIds = templates.map((t) => t.id)
   const rows = await prisma.$queryRaw<QuestionBreakdownRow[]>`
@@ -350,8 +343,7 @@ export async function getQuestionBreakdownByDays(
  * Get current overall satisfaction score for a clinic (last 30 days average)
  */
 export async function getCurrentSatisfactionScore(clinicId: string): Promise<number | null> {
-  const since = new Date()
-  since.setDate(since.getDate() - 30)
+  const since = jstDaysAgo(30)
 
   interface ScoreRow { avg_score: number | null }
   const rows = await prisma.$queryRaw<ScoreRow[]>`
@@ -371,8 +363,7 @@ export async function getQuestionCurrentScore(
   clinicId: string,
   questionId: string,
 ): Promise<number | null> {
-  const since = new Date()
-  since.setDate(since.getDate() - 30)
+  const since = jstDaysAgo(30)
 
   interface QScoreRow { avg_score: number | null }
   const rows = await prisma.$queryRaw<QScoreRow[]>`
@@ -394,8 +385,7 @@ export async function getQuestionCurrentScores(
 ): Promise<Record<string, number>> {
   if (questionIds.length === 0) return {}
 
-  const since = new Date()
-  since.setDate(since.getDate() - 30)
+  const since = jstDaysAgo(30)
 
   interface QScoresRow { question_id: string; avg_score: number | null }
   const rows = await prisma.$queryRaw<QScoresRow[]>`
@@ -437,9 +427,7 @@ export async function getDailyTrend(
   clinicId: string,
   days: number = 30,
 ): Promise<DailyTrendPoint[]> {
-  const sinceDate = new Date()
-  sinceDate.setDate(sinceDate.getDate() - days)
-  sinceDate.setHours(0, 0, 0, 0)
+  const sinceDate = jstDaysAgo(days)
 
   const rows = await prisma.$queryRaw<DailyTrendRow[]>`
     SELECT
@@ -480,10 +468,10 @@ interface TemplateTrendRow {
 export async function getTemplateTrend(
   clinicId: string,
   days: number = 30,
+  offsetDays: number = 0,
 ): Promise<TemplateTrendPoint[]> {
-  const sinceDate = new Date()
-  sinceDate.setDate(sinceDate.getDate() - days)
-  sinceDate.setHours(0, 0, 0, 0)
+  const untilDate = jstEndOfDay(offsetDays)
+  const sinceDate = jstDaysAgo(offsetDays + days)
 
   const rows = await prisma.$queryRaw<TemplateTrendRow[]>`
     SELECT
@@ -495,6 +483,7 @@ export async function getTemplateTrend(
     JOIN survey_templates st ON sr.template_id = st.id
     WHERE sr.clinic_id = ${clinicId}::uuid
       AND sr.responded_at >= ${sinceDate}
+      AND sr.responded_at <= ${untilDate}
       AND sr.overall_score IS NOT NULL
     GROUP BY (sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date, date_label, st.name
     ORDER BY (sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date ASC, st.name
@@ -528,9 +517,7 @@ export async function getHourlyHeatmapData(
   clinicId: string,
   days: number = 90
 ): Promise<HeatmapCell[]> {
-  const sinceDate = new Date()
-  sinceDate.setDate(sinceDate.getDate() - days)
-  sinceDate.setHours(0, 0, 0, 0)
+  const sinceDate = jstDaysAgo(days)
 
   const rows = await prisma.$queryRaw<HeatmapRow[]>`
     SELECT
@@ -563,19 +550,16 @@ export async function getSatisfactionTrend(
   clinicId: string,
   months: number = 12
 ): Promise<SatisfactionTrend[]> {
-  const startDate = new Date()
-  startDate.setMonth(startDate.getMonth() - months)
-  startDate.setDate(1)
-  startDate.setHours(0, 0, 0, 0)
+  const startDate = jstMonthsAgoStart(months)
 
   const rows = await prisma.$queryRaw<SatisfactionTrendRow[]>`
     SELECT
-      TO_CHAR(responded_at, 'YYYY-MM') as month,
+      TO_CHAR(responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'YYYY-MM') as month,
       ROUND(AVG(overall_score)::numeric, 1)::float as patient_satisfaction
     FROM survey_responses
     WHERE clinic_id = ${clinicId}::uuid
       AND responded_at >= ${startDate}
-    GROUP BY TO_CHAR(responded_at, 'YYYY-MM')
+    GROUP BY TO_CHAR(responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'YYYY-MM')
     ORDER BY month ASC
   `
 

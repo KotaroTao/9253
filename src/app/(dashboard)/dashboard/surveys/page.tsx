@@ -5,16 +5,9 @@ import { getOperatorClinicId } from "@/lib/admin-mode"
 import { getSurveyResponses } from "@/lib/queries/surveys"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
-import { VISIT_TYPES, TREATMENT_TYPES, AGE_GROUPS, GENDERS, ROLES } from "@/lib/constants"
-import { Star } from "lucide-react"
+import { ROLES } from "@/lib/constants"
 import { PageSizeSelector } from "@/components/dashboard/page-size-selector"
-
-const LABEL_MAP: Record<string, string> = Object.fromEntries([
-  ...VISIT_TYPES.map((v) => [v.value, v.label]),
-  ...TREATMENT_TYPES.map((v) => [v.value, v.label]),
-  ...AGE_GROUPS.map((v) => [v.value, v.label]),
-  ...GENDERS.map((v) => [v.value, v.label]),
-])
+import { SurveyResponseList } from "@/components/dashboard/survey-response-list"
 
 const ALLOWED_LIMITS = [10, 20, 50] as const
 
@@ -77,53 +70,7 @@ export default async function SurveysPage({ searchParams }: SurveysPageProps) {
               {messages.common.noData}
             </p>
           ) : (
-            <div className="space-y-3">
-              {responses.map((r) => (
-                <div
-                  key={r.id}
-                  className="flex items-start justify-between rounded-md border p-3 text-sm"
-                >
-                  <div className="space-y-1">
-                    {(() => {
-                      const pa = r.patientAttributes as Record<string, string> | null
-                      return pa ? (
-                        <div className="flex flex-wrap gap-1">
-                          {["visitType", "treatmentType", "ageGroup", "gender"].map((key) => {
-                            const val = pa[key]
-                            if (!val) return null
-                            return (
-                              <span key={key} className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium">
-                                {LABEL_MAP[val] ?? val}
-                              </span>
-                            )
-                          })}
-                        </div>
-                      ) : null
-                    })()}
-                    {r.freeText && (
-                      <p className="text-muted-foreground">{r.freeText}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      {messages.dashboard.templateLabel}: {r.template.name}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    {r.overallScore !== null && (
-                      <div className="flex items-center gap-1">
-                        <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-                        <span className="font-medium">
-                          {r.overallScore.toFixed(1)}
-                        </span>
-                      </div>
-                    )}
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(r.respondedAt).toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo" })}{" "}
-                      {new Date(r.respondedAt).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Tokyo" })}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <SurveyResponseList responses={responses} />
           )}
 
           {/* Pagination */}

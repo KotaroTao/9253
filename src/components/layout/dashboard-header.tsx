@@ -1,7 +1,8 @@
 "use client"
 
 import { usePathname } from "next/navigation"
-import { Menu } from "lucide-react"
+import { signOut } from "next-auth/react"
+import { Menu, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { messages } from "@/lib/messages"
 
@@ -47,7 +48,18 @@ export function DashboardHeader({
           </span>
         )}
       </div>
-      <div id="header-actions" className="flex shrink-0 items-center" />
+      <div className="flex shrink-0 items-center gap-2">
+        <div id="header-actions" className="flex items-center" />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          title={messages.common.logout}
+        >
+          <LogOut className="h-4 w-4" />
+        </Button>
+      </div>
     </header>
   )
 }
