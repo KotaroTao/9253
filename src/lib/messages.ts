@@ -108,8 +108,6 @@ export const messages = {
     nextMilestone: "次の目標",
     milestoneRemaining: "あと",
     adminViewLabel: "管理者ビュー",
-    switchToStaffView: "スタッフビューに切替",
-    switchToAdminView: "管理者ビュー",
     onboardingTitle: "はじめに — ご利用開始の3ステップ",
     onboardingStep1: "下の「アンケート案内」をタップして、キオスクモードを起動します",
     onboardingStep2: "会計待ちの患者さまにタブレットをお渡しください",
@@ -264,9 +262,6 @@ export const messages = {
     deactivate: "無効化",
     activate: "有効化",
   },
-  adminMode: {
-    wrongPassword: "パスワードが正しくありません",
-  },
   kiosk: {
     nextPatient: "次の患者さまへ",
     exitKiosk: "スタッフ画面に戻る",
@@ -350,6 +345,7 @@ export const messages = {
     systemAdmin: "システム管理",
     monthlyMetrics: "月次レポート",
     surveyStart: "アンケート案内",
+    analytics: "分析レポート",
     selectStaffForSurvey: "スタッフを選んでください",
     noTemplate: "アンケートテンプレートが設定されていません",
     sectionDaily: "日常業務",
