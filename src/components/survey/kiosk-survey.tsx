@@ -9,7 +9,6 @@ import {
   MessageSquare,
   LogOut,
   Lightbulb,
-  RotateCcw,
   ArrowRight,
   User,
 } from "lucide-react"
@@ -304,7 +303,7 @@ export function KioskSurvey({
     )
   }
 
-  // Thanks screen - stays until "TOPに戻る" is pressed
+  // Thanks screen - patient closes the tab when done
   if (state === "thanks") {
     return (
       <>
@@ -323,11 +322,6 @@ export function KioskSurvey({
             </div>
 
             <p className="text-sm text-muted-foreground">{messages.survey.closeMessage}</p>
-
-            <Button className="h-16 w-full text-lg" onClick={resetToSetup}>
-              <RotateCcw className="mr-2 h-5 w-5" />
-              {messages.survey.backToTop}
-            </Button>
           </div>
         </div>
       </>
