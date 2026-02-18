@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { getOperatorClinicId } from "@/lib/admin-mode"
-import { getQuestionBreakdown, getHourlyHeatmapData, getDailyTrend, getQuestionBreakdownByDays } from "@/lib/queries/stats"
+import { getHourlyHeatmapData, getDailyTrend, getQuestionBreakdownByDays } from "@/lib/queries/stats"
 import { AnalyticsCharts } from "@/components/dashboard/analytics-charts"
-import { QuestionBreakdown } from "@/components/dashboard/question-breakdown"
 import { StaffLeaderboard } from "@/components/dashboard/staff-leaderboard"
 import { SatisfactionHeatmap } from "@/components/dashboard/satisfaction-heatmap"
 import { ROLES } from "@/lib/constants"
@@ -27,9 +26,8 @@ export default async function AnalyticsPage() {
     redirect("/login")
   }
 
-  const [questionBreakdown, heatmapData, dailyTrend, questionBreakdownByDays] =
+  const [heatmapData, dailyTrend, questionBreakdown] =
     await Promise.all([
-      getQuestionBreakdown(clinicId),
       getHourlyHeatmapData(clinicId),
       getDailyTrend(clinicId, 30),
       getQuestionBreakdownByDays(clinicId, 30),
@@ -39,10 +37,9 @@ export default async function AnalyticsPage() {
     <div className="space-y-4">
       <AnalyticsCharts
         initialDailyTrend={dailyTrend}
-        initialQuestionBreakdown={questionBreakdownByDays}
+        initialQuestionBreakdown={questionBreakdown}
       />
 
-      <QuestionBreakdown data={questionBreakdown} />
       <SatisfactionHeatmap data={heatmapData} />
       <StaffLeaderboard />
     </div>

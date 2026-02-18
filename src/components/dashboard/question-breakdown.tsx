@@ -14,9 +14,11 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertTriangle, TrendingUp } from "lucide-react"
 import type { TemplateQuestionScores } from "@/lib/queries/stats"
+import { PERIOD_OPTIONS } from "@/components/dashboard/daily-trend-chart"
 
 interface QuestionBreakdownProps {
   data: TemplateQuestionScores[]
+  selectedPeriod?: number
 }
 
 const SCORE_THRESHOLD = 4.0
@@ -82,7 +84,10 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<
   )
 }
 
-export function QuestionBreakdown({ data }: QuestionBreakdownProps) {
+export function QuestionBreakdown({ data, selectedPeriod }: QuestionBreakdownProps) {
+  const periodLabel = selectedPeriod
+    ? PERIOD_OPTIONS.find((o) => o.value === selectedPeriod)?.label
+    : null
   if (data.length === 0) {
     return (
       <Card>
@@ -133,7 +138,7 @@ export function QuestionBreakdown({ data }: QuestionBreakdownProps) {
               <CardTitle className="flex items-center gap-2 text-base">
                 <span>{template.templateName}</span>
                 <span className="text-xs font-normal text-muted-foreground">
-                  （{template.responseCount}件の回答）
+                  （{periodLabel ? `直近${periodLabel} / ` : ""}{template.responseCount}件の回答）
                 </span>
               </CardTitle>
             </CardHeader>
