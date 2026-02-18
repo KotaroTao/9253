@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
-import { getCurrentSatisfactionScore } from "@/lib/queries/stats"
+import { getCurrentSatisfactionScore, getQuestionCurrentScore } from "@/lib/queries/stats"
 
 /**
  * PATCH /api/improvement-actions/[id]
@@ -40,12 +40,6 @@ export async function PATCH(
     if (typeof body.description === "string") {
       updateData.description = body.description.trim() || null
     }
-    if (typeof body.resultScore === "number") {
-      if (body.resultScore < 1 || body.resultScore > 5) {
-        return errorResponse(messages.improvementActions.scoreOutOfRange, 400)
-      }
-      updateData.resultScore = body.resultScore
-    }
 
     let statusChanged = false
     let newStatus: string | null = null
@@ -63,10 +57,20 @@ export async function PATCH(
       }
     }
 
-    // Auto-capture satisfaction score on status change
+    // Auto-capture scores on status change
     let currentScore: number | null = null
     if (statusChanged) {
-      currentScore = await getCurrentSatisfactionScore(clinicId)
+      const [overallScore, questionScore] = await Promise.all([
+        getCurrentSatisfactionScore(clinicId),
+        existing.targetQuestionId
+          ? getQuestionCurrentScore(clinicId, existing.targetQuestionId)
+          : Promise.resolve(null),
+      ])
+      currentScore = overallScore
+      // Auto-capture question score on completion
+      if (newStatus === "completed" && questionScore != null) {
+        updateData.resultScore = questionScore
+      }
     }
 
     // Use transaction to update action and create log atomically

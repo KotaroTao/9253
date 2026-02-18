@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
-import { getCurrentSatisfactionScore } from "@/lib/queries/stats"
+import { getCurrentSatisfactionScore, getQuestionCurrentScore } from "@/lib/queries/stats"
 
 /**
  * GET /api/improvement-actions
@@ -43,24 +43,17 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { title, description, targetQuestion, baselineScore, targetScore } = body
+    const { title, description, targetQuestion, targetQuestionId } = body
 
     if (!title || typeof title !== "string" || title.trim().length === 0) {
       return errorResponse(messages.errors.invalidInput, 400)
     }
 
-    // Validate score range (1-5)
-    const isValidScore = (v: unknown): v is number =>
-      typeof v === "number" && v >= 1 && v <= 5
-    const parsedBaseline = typeof baselineScore === "number" ? baselineScore : null
-    const parsedTarget = typeof targetScore === "number" ? targetScore : null
-    if ((parsedBaseline !== null && !isValidScore(parsedBaseline)) ||
-        (parsedTarget !== null && !isValidScore(parsedTarget))) {
-      return errorResponse(messages.improvementActions.scoreOutOfRange, 400)
-    }
-
-    // Auto-capture current satisfaction score
-    const currentScore = await getCurrentSatisfactionScore(clinicId)
+    // Auto-capture current scores
+    const [currentScore, questionScore] = await Promise.all([
+      getCurrentSatisfactionScore(clinicId),
+      targetQuestionId ? getQuestionCurrentScore(clinicId, targetQuestionId) : Promise.resolve(null),
+    ])
 
     const action = await prisma.improvementAction.create({
       data: {
@@ -68,8 +61,8 @@ export async function POST(request: NextRequest) {
         title: title.trim(),
         description: description?.trim() || null,
         targetQuestion: targetQuestion?.trim() || null,
-        baselineScore: parsedBaseline,
-        targetScore: parsedTarget,
+        targetQuestionId: targetQuestionId?.trim() || null,
+        baselineScore: questionScore,
         logs: {
           create: {
             action: "started",

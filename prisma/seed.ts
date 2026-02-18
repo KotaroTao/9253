@@ -543,6 +543,12 @@ async function main() {
     return Math.round((sum / monthResponses.length) * 100) / 100
   }
 
+  // Question ID → text lookup for targetQuestion field
+  const questionTextMap = new Map<string, string>()
+  for (const q of [...FIRST_VISIT_QUESTIONS, ...TREATMENT_QUESTIONS, ...CHECKUP_QUESTIONS]) {
+    questionTextMap.set(q.id, q.text)
+  }
+
   for (const action of improvementActions) {
     const startedAt = new Date(startDate.getFullYear(), startDate.getMonth() + action.startMonthIdx, 10 + Math.floor(rng() * 10))
     const completedAt = action.endMonthIdx !== null
@@ -550,7 +556,6 @@ async function main() {
       : null
 
     const baselineScore = getScoreAtMonth(action.startMonthIdx, action.questions)
-    const targetScore = Math.round((baselineScore + 0.5) * 100) / 100
     const resultScore = action.status === "completed" && action.endMonthIdx !== null
       ? getScoreAtMonth(action.endMonthIdx, action.questions)
       : null
@@ -583,9 +588,9 @@ async function main() {
         clinicId: clinic.id,
         title: action.title,
         description: action.description,
-        targetQuestion: action.targetQuestion,
+        targetQuestion: questionTextMap.get(action.targetQuestion) ?? action.targetQuestion,
+        targetQuestionId: action.targetQuestion,
         baselineScore,
-        targetScore: Math.min(targetScore, 5.0),
         resultScore,
         status: action.status,
         startedAt,

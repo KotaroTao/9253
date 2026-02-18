@@ -287,6 +287,67 @@ export async function getCurrentSatisfactionScore(clinicId: string): Promise<num
   return rows[0]?.avg_score ?? null
 }
 
+/**
+ * Get current average score for a specific question (last 3 months)
+ */
+export async function getQuestionCurrentScore(
+  clinicId: string,
+  questionId: string,
+  months: number = 3
+): Promise<number | null> {
+  const since = new Date()
+  since.setMonth(since.getMonth() - months)
+  since.setDate(1)
+  since.setHours(0, 0, 0, 0)
+
+  interface QScoreRow { avg_score: number | null }
+  const rows = await prisma.$queryRaw<QScoreRow[]>`
+    SELECT ROUND(AVG((answers->> ${questionId})::numeric), 2)::float AS avg_score
+    FROM survey_responses
+    WHERE clinic_id = ${clinicId}::uuid
+      AND responded_at >= ${since}
+      AND answers ? ${questionId}
+  `
+  return rows[0]?.avg_score ?? null
+}
+
+/**
+ * Get current average scores for multiple questions at once (last 3 months)
+ */
+export async function getQuestionCurrentScores(
+  clinicId: string,
+  questionIds: string[],
+  months: number = 3
+): Promise<Record<string, number>> {
+  if (questionIds.length === 0) return {}
+
+  const since = new Date()
+  since.setMonth(since.getMonth() - months)
+  since.setDate(1)
+  since.setHours(0, 0, 0, 0)
+
+  interface QScoresRow { question_id: string; avg_score: number | null }
+  const rows = await prisma.$queryRaw<QScoresRow[]>`
+    SELECT
+      key AS question_id,
+      ROUND(AVG(value::numeric), 2)::float AS avg_score
+    FROM survey_responses,
+      jsonb_each_text(answers)
+    WHERE clinic_id = ${clinicId}::uuid
+      AND responded_at >= ${since}
+      AND key = ANY(${questionIds}::text[])
+    GROUP BY key
+  `
+
+  const result: Record<string, number> = {}
+  for (const row of rows) {
+    if (row.avg_score != null) {
+      result[row.question_id] = row.avg_score
+    }
+  }
+  return result
+}
+
 // --- Hourly heatmap data (day-of-week × hour) ---
 
 export interface HeatmapCell {
