@@ -5,7 +5,9 @@ import { getOperatorClinicId } from "@/lib/admin-mode"
 import { getSurveyResponses } from "@/lib/queries/surveys"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
-import { STAFF_ROLE_LABELS, VISIT_TYPES, TREATMENT_TYPES, AGE_GROUPS, GENDERS, ROLES } from "@/lib/constants"
+import { VISIT_TYPES, TREATMENT_TYPES, AGE_GROUPS, GENDERS, ROLES } from "@/lib/constants"
+import { Star } from "lucide-react"
+import { PageSizeSelector } from "@/components/dashboard/page-size-selector"
 
 const LABEL_MAP: Record<string, string> = Object.fromEntries([
   ...VISIT_TYPES.map((v) => [v.value, v.label]),
@@ -13,10 +15,11 @@ const LABEL_MAP: Record<string, string> = Object.fromEntries([
   ...AGE_GROUPS.map((v) => [v.value, v.label]),
   ...GENDERS.map((v) => [v.value, v.label]),
 ])
-import { Star } from "lucide-react"
+
+const ALLOWED_LIMITS = [10, 20, 50] as const
 
 interface SurveysPageProps {
-  searchParams: { page?: string }
+  searchParams: { page?: string; limit?: string }
 }
 
 export default async function SurveysPage({ searchParams }: SurveysPageProps) {
@@ -37,10 +40,22 @@ export default async function SurveysPage({ searchParams }: SurveysPageProps) {
   }
 
   const page = Number(searchParams.page) || 1
+  const rawLimit = Number(searchParams.limit) || 20
+  const limit = ALLOWED_LIMITS.includes(rawLimit as typeof ALLOWED_LIMITS[number]) ? rawLimit : 20
+
   const { responses, total, totalPages } = await getSurveyResponses(
     clinicId,
-    { page, limit: 20 }
+    { page, limit }
   )
+
+  function buildUrl(params: { page?: number; limit?: number }) {
+    const p = params.page ?? page
+    const l = params.limit ?? limit
+    const qs = new URLSearchParams()
+    qs.set("page", String(p))
+    if (l !== 20) qs.set("limit", String(l))
+    return `/dashboard/surveys?${qs.toString()}`
+  }
 
   return (
     <div className="space-y-6">
@@ -53,9 +68,12 @@ export default async function SurveysPage({ searchParams }: SurveysPageProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">
-            {messages.dashboard.recentSurveys}
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">
+              {messages.dashboard.recentSurveys}
+            </CardTitle>
+            <PageSizeSelector currentLimit={limit} basePath="/dashboard/surveys" />
+          </div>
         </CardHeader>
         <CardContent>
           {responses.length === 0 ? (
@@ -93,7 +111,7 @@ export default async function SurveysPage({ searchParams }: SurveysPageProps) {
                       {messages.dashboard.templateLabel}: {r.template.name}
                     </p>
                   </div>
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex flex-col items-end gap-1 shrink-0">
                     {r.overallScore !== null && (
                       <div className="flex items-center gap-1">
                         <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
@@ -103,7 +121,8 @@ export default async function SurveysPage({ searchParams }: SurveysPageProps) {
                       </div>
                     )}
                     <span className="text-xs text-muted-foreground">
-                      {new Date(r.respondedAt).toLocaleDateString("ja-JP")}
+                      {new Date(r.respondedAt).toLocaleDateString("ja-JP")}{" "}
+                      {new Date(r.respondedAt).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </div>
                 </div>
@@ -116,7 +135,7 @@ export default async function SurveysPage({ searchParams }: SurveysPageProps) {
             <div className="mt-4 flex items-center justify-center gap-2">
               {page > 1 && (
                 <Link
-                  href={`/dashboard/surveys?page=${page - 1}`}
+                  href={buildUrl({ page: page - 1 })}
                   className="rounded-md border px-3 py-1 text-sm hover:bg-muted"
                 >
                   {messages.common.back}
@@ -127,7 +146,7 @@ export default async function SurveysPage({ searchParams }: SurveysPageProps) {
               </span>
               {page < totalPages && (
                 <Link
-                  href={`/dashboard/surveys?page=${page + 1}`}
+                  href={buildUrl({ page: page + 1 })}
                   className="rounded-md border px-3 py-1 text-sm hover:bg-muted"
                 >
                   {messages.common.next}
