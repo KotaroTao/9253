@@ -18,7 +18,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { workingDaysPerWeek, ...rest } = body
+    const { workingDaysPerWeek, regularClosedDays, ...rest } = body
     const parsed = updateClinicSchema.safeParse(rest)
 
     if (!parsed.success) {
@@ -27,10 +27,16 @@ export async function PATCH(request: NextRequest) {
 
     const updateData: Record<string, unknown> = { ...parsed.data }
 
-    // Merge settings fields (workingDaysPerWeek, closedDates, etc.)
+    // Merge settings fields (workingDaysPerWeek, regularClosedDays, closedDates, etc.)
+    const settingsPatch: Partial<ClinicSettings> = {}
     if (typeof workingDaysPerWeek === "number" && [5, 6, 7].includes(workingDaysPerWeek)) {
-      const patch: Partial<ClinicSettings> = { workingDaysPerWeek }
-      const merged = await updateClinicSettings(clinicId, patch)
+      settingsPatch.workingDaysPerWeek = workingDaysPerWeek
+    }
+    if (Array.isArray(regularClosedDays) && regularClosedDays.every((d: unknown) => typeof d === "number" && d >= 0 && d <= 6)) {
+      settingsPatch.regularClosedDays = regularClosedDays
+    }
+    if (Object.keys(settingsPatch).length > 0) {
+      const merged = await updateClinicSettings(clinicId, settingsPatch)
       updateData.settings = merged
     }
 

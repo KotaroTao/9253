@@ -8,7 +8,10 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CalendarDays } from "lucide-react"
+import { CalendarDays, CalendarOff } from "lucide-react"
+import { cn } from "@/lib/utils"
+
+const DAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"] as const
 
 interface SettingsFormProps {
   clinic: {
@@ -16,15 +19,23 @@ interface SettingsFormProps {
     name: string
   }
   workingDaysPerWeek?: number
+  regularClosedDays?: number[]
 }
 
-export function SettingsForm({ clinic, workingDaysPerWeek = 6 }: SettingsFormProps) {
+export function SettingsForm({ clinic, workingDaysPerWeek = 6, regularClosedDays = [] }: SettingsFormProps) {
   const router = useRouter()
   const [name, setName] = useState(clinic.name)
   const [workingDays, setWorkingDays] = useState(String(workingDaysPerWeek))
+  const [closedDays, setClosedDays] = useState<number[]>(regularClosedDays)
   const [isLoading, setIsLoading] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState("")
+
+  function handleToggleClosedDay(day: number) {
+    setClosedDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    )
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -33,7 +44,11 @@ export function SettingsForm({ clinic, workingDaysPerWeek = 6 }: SettingsFormPro
     setSaved(false)
 
     try {
-      const body: Record<string, string | number> = { name, workingDaysPerWeek: Number(workingDays) }
+      const body: Record<string, string | number | number[]> = {
+        name,
+        workingDaysPerWeek: Number(workingDays),
+        regularClosedDays: closedDays,
+      }
 
       const res = await fetch("/api/settings", {
         method: "PATCH",
@@ -101,6 +116,38 @@ export function SettingsForm({ clinic, workingDaysPerWeek = 6 }: SettingsFormPro
               ))}
             </SelectContent>
           </Select>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <CalendarOff className="h-5 w-5 text-orange-500" />
+            <div>
+              <CardTitle className="text-base">{messages.settings.regularClosedDaysLabel}</CardTitle>
+              <CardDescription>{messages.settings.regularClosedDaysDesc}</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2">
+            {DAY_LABELS.map((label, idx) => (
+              <button
+                key={idx}
+                type="button"
+                disabled={isLoading}
+                onClick={() => handleToggleClosedDay(idx)}
+                className={cn(
+                  "flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium transition-colors disabled:opacity-50",
+                  closedDays.includes(idx)
+                    ? "bg-orange-100 text-orange-600 ring-2 ring-orange-300"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </CardContent>
       </Card>
 

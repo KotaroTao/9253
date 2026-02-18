@@ -6,6 +6,7 @@ export interface ClinicSettings {
   dailyGoal?: number
   workingDaysPerWeek?: number
   closedDates?: string[]
+  regularClosedDays?: number[] // 0=日, 1=月, 2=火, 3=水, 4=木, 5=金, 6=土
   dailyTip?: {
     category: string
     title: string
