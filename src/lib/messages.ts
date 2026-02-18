@@ -339,7 +339,7 @@ export const messages = {
   nav: {
     dashboard: "ホーム",
     staff: "スタッフ管理",
-    surveys: "回答一覧",
+    surveys: "アンケート一覧",
     settings: "設定",
     clinics: "クリニック管理",
     systemAdmin: "システム管理",

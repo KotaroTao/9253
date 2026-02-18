@@ -1,7 +1,11 @@
+"use client"
+
+import { useState, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { messages } from "@/lib/messages"
-import { STAFF_ROLE_LABELS, VISIT_TYPES, TREATMENT_TYPES, AGE_GROUPS, GENDERS } from "@/lib/constants"
-import { Star } from "lucide-react"
+import { VISIT_TYPES, TREATMENT_TYPES, AGE_GROUPS, GENDERS } from "@/lib/constants"
+import { Star, ChevronDown, Loader2 } from "lucide-react"
 
 const LABEL_MAP: Record<string, string> = Object.fromEntries([
   ...VISIT_TYPES.map((v) => [v.value, v.label]),
@@ -10,18 +14,44 @@ const LABEL_MAP: Record<string, string> = Object.fromEntries([
   ...GENDERS.map((v) => [v.value, v.label]),
 ])
 
-interface RecentResponsesProps {
-  responses: {
-    id: string
-    overallScore: number | null
-    freeText: string | null
-    patientAttributes?: unknown
-    respondedAt: Date | string
-    staff: { name: string; role: string } | null
-  }[]
+interface ResponseItem {
+  id: string
+  overallScore: number | null
+  freeText: string | null
+  patientAttributes?: unknown
+  respondedAt: Date | string
+  staff: { name: string; role: string } | null
 }
 
-export function RecentResponses({ responses }: RecentResponsesProps) {
+interface RecentResponsesProps {
+  responses: ResponseItem[]
+  initialHasMore?: boolean
+}
+
+function formatDateTime(date: Date | string): string {
+  const d = new Date(date)
+  return d.toLocaleDateString("ja-JP") + " " + d.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })
+}
+
+export function RecentResponses({ responses: initialResponses, initialHasMore = true }: RecentResponsesProps) {
+  const [responses, setResponses] = useState<ResponseItem[]>(initialResponses)
+  const [hasMore, setHasMore] = useState(initialHasMore)
+  const [loading, setLoading] = useState(false)
+
+  const loadMore = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/recent-responses?offset=${responses.length}`)
+      if (res.ok) {
+        const data = await res.json()
+        setResponses((prev) => [...prev, ...data.items])
+        setHasMore(data.hasMore)
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [responses.length])
+
   return (
     <Card>
       <CardHeader>
@@ -62,7 +92,7 @@ export function RecentResponses({ responses }: RecentResponsesProps) {
                     <p className="text-muted-foreground">{r.freeText}</p>
                   )}
                 </div>
-                <div className="flex flex-col items-end gap-1">
+                <div className="flex flex-col items-end gap-1 shrink-0">
                   {r.overallScore !== null && (
                     <div className="flex items-center gap-1">
                       <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
@@ -72,11 +102,27 @@ export function RecentResponses({ responses }: RecentResponsesProps) {
                     </div>
                   )}
                   <span className="text-xs text-muted-foreground">
-                    {new Date(r.respondedAt).toLocaleDateString("ja-JP")}
+                    {formatDateTime(r.respondedAt)}
                   </span>
                 </div>
               </div>
             ))}
+            {hasMore && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={loadMore}
+                disabled={loading}
+              >
+                {loading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <ChevronDown className="mr-2 h-4 w-4" />
+                )}
+                {loading ? "読み込み中..." : "もっと見る"}
+              </Button>
+            )}
           </div>
         )}
       </CardContent>

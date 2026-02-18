@@ -13,6 +13,7 @@ import {
   Smartphone,
   Target,
   PieChart,
+  ExternalLink,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
@@ -22,30 +23,27 @@ import { APP_NAME } from "@/lib/constants"
 interface SidebarProps {
   role: string
   isOperatorMode?: boolean
+  clinicSlug?: string
 }
 
-const dailyItems = [
-  { href: "/dashboard", label: messages.nav.dashboard, icon: LayoutDashboard },
-  { href: "/dashboard/survey-start", label: messages.nav.surveyStart, icon: Smartphone },
-]
+interface NavItem {
+  href: string
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  external?: boolean
+}
 
-const analyticsItems = [
+const analyticsItems: NavItem[] = [
   { href: "/dashboard/analytics", label: messages.nav.analytics, icon: PieChart },
   { href: "/dashboard/actions", label: messages.improvementActions.title, icon: Target },
   { href: "/dashboard/metrics", label: messages.nav.monthlyMetrics, icon: BarChart3 },
   { href: "/dashboard/surveys", label: messages.nav.surveys, icon: ClipboardList },
 ]
 
-const adminItems = [
+const adminItems: NavItem[] = [
   { href: "/dashboard/staff", label: messages.nav.staff, icon: Users },
   { href: "/dashboard/settings", label: messages.nav.settings, icon: Settings },
 ]
-
-interface NavItem {
-  href: string
-  label: string
-  icon: React.ComponentType<{ className?: string }>
-}
 
 function NavSection({ label, items, pathname }: { label: string; items: NavItem[]; pathname: string }) {
   return (
@@ -54,6 +52,22 @@ function NavSection({ label, items, pathname }: { label: string; items: NavItem[
         {label}
       </p>
       {items.map((item) => {
+        if (item.external) {
+          return (
+            <a
+              key={item.href}
+              href={item.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <item.icon className="h-4 w-4" />
+              {item.label}
+              <ExternalLink className="ml-auto h-3 w-3 opacity-50" />
+            </a>
+          )
+        }
+
         const isActive =
           item.href === "/dashboard"
             ? pathname === "/dashboard"
@@ -78,9 +92,18 @@ function NavSection({ label, items, pathname }: { label: string; items: NavItem[
   )
 }
 
-export function Sidebar({ role, isOperatorMode = false }: SidebarProps) {
+export function Sidebar({ role, isOperatorMode = false, clinicSlug }: SidebarProps) {
   const pathname = usePathname()
   const isAdmin = role === "clinic_admin" || role === "system_admin"
+
+  const kioskUrl = clinicSlug ? `/kiosk/${encodeURIComponent(clinicSlug)}` : null
+
+  const dailyItems: NavItem[] = [
+    { href: "/dashboard", label: messages.nav.dashboard, icon: LayoutDashboard },
+    ...(kioskUrl
+      ? [{ href: kioskUrl, label: messages.nav.surveyStart, icon: Smartphone, external: true }]
+      : []),
+  ]
 
   return (
     <aside className="flex h-screen w-60 flex-col border-r bg-card">

@@ -46,7 +46,7 @@ export async function getDashboardStats(
     prisma.surveyResponse.findMany({
       where: { clinicId },
       orderBy: { respondedAt: "desc" },
-      take: 10,
+      take: 11,
       select: {
         id: true,
         overallScore: true,
@@ -59,13 +59,16 @@ export async function getDashboardStats(
   ])
 
   const stats = statsRows[0]
+  const hasMoreResponses = recentResponses.length > 10
+  const trimmedResponses = hasMoreResponses ? recentResponses.slice(0, 10) : recentResponses
 
   return {
     totalResponses: Number(stats.total_responses),
     averageScore: stats.avg_score ?? 0,
     prevAverageScore:
       Number(stats.prev_count) > 0 ? (stats.prev_avg_score ?? null) : null,
-    recentResponses,
+    recentResponses: trimmedResponses,
+    hasMoreResponses,
   }
 }
 

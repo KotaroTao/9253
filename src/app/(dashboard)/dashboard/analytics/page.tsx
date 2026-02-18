@@ -129,7 +129,7 @@ export default async function AnalyticsPage() {
         <QuestionBreakdown data={questionBreakdown} />
         <SatisfactionHeatmap data={heatmapData} />
         <SatisfactionTrendChart data={satisfactionTrend} />
-        <RecentResponses responses={stats.recentResponses} />
+        <RecentResponses responses={stats.recentResponses} initialHasMore={stats.hasMoreResponses} />
         <StaffLeaderboard />
       </div>
     </div>
