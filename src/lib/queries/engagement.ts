@@ -114,11 +114,13 @@ export async function getStaffEngagementData(
   const settings = (clinic?.settings ?? {}) as ClinicSettings
   const dailyGoal = settings.dailyGoal ?? DEFAULTS.DAILY_SURVEY_GOAL
   const closedDates = new Set<string>(settings.closedDates ?? [])
+  const openDates = new Set<string>(settings.openDates ?? [])
   const regularClosedDays = new Set<number>(settings.regularClosedDays ?? [])
 
-  // Helper: check if a date is closed (ad-hoc or regular)
-  // Uses JST day-of-week for regularClosedDays matching
+  // Helper: check if a date is closed (ad-hoc or regular, with open override)
+  // openDates overrides regularClosedDays for specific dates (e.g. working on a holiday)
   function isClosedDate(dateKey: string, date: Date): boolean {
+    if (openDates.has(dateKey)) return false
     return closedDates.has(dateKey) || regularClosedDays.has(getDayJST(date))
   }
 

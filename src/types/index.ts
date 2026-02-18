@@ -5,6 +5,7 @@ export interface ClinicSettings {
   adminPassword?: string
   dailyGoal?: number
   closedDates?: string[]
+  openDates?: string[] // 定休日の営業日オーバーライド（定休日でも診療する日）
   regularClosedDays?: number[] // 0=日, 1=月, 2=火, 3=水, 4=木, 5=金, 6=土
   dailyTip?: {
     category: string
