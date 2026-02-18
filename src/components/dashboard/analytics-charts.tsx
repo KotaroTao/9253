@@ -3,14 +3,14 @@
 import { useState } from "react"
 import { DailyTrendChart } from "@/components/dashboard/daily-trend-chart"
 import { TemplateTrendChart } from "@/components/dashboard/template-trend-chart"
-import type { DailyTrendPoint, TemplateTrendPoint } from "@/lib/queries/stats"
+import type { DailyTrendPoint, TemplateQuestionScores } from "@/lib/queries/stats"
 
 interface AnalyticsChartsProps {
   initialDailyTrend: DailyTrendPoint[]
-  initialTemplateTrend: TemplateTrendPoint[]
+  initialQuestionBreakdown: TemplateQuestionScores[]
 }
 
-export function AnalyticsCharts({ initialDailyTrend, initialTemplateTrend }: AnalyticsChartsProps) {
+export function AnalyticsCharts({ initialDailyTrend, initialQuestionBreakdown }: AnalyticsChartsProps) {
   const [selectedPeriod, setSelectedPeriod] = useState(30)
 
   return (
@@ -21,7 +21,7 @@ export function AnalyticsCharts({ initialDailyTrend, initialTemplateTrend }: Ana
         onPeriodChange={setSelectedPeriod}
       />
       <TemplateTrendChart
-        initialData={initialTemplateTrend}
+        initialData={initialQuestionBreakdown}
         selectedPeriod={selectedPeriod}
       />
     </>
