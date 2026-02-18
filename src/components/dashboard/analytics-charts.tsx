@@ -2,15 +2,21 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { DailyTrendChart } from "@/components/dashboard/daily-trend-chart"
+import { TemplateTrendChart } from "@/components/dashboard/template-trend-chart"
 import { QuestionBreakdown } from "@/components/dashboard/question-breakdown"
-import type { DailyTrendPoint, TemplateQuestionScores } from "@/lib/queries/stats"
+import type { DailyTrendPoint, TemplateTrendPoint, TemplateQuestionScores } from "@/lib/queries/stats"
 
 interface AnalyticsChartsProps {
   initialDailyTrend: DailyTrendPoint[]
+  initialTemplateTrend: TemplateTrendPoint[]
   initialQuestionBreakdown: TemplateQuestionScores[]
 }
 
-export function AnalyticsCharts({ initialDailyTrend, initialQuestionBreakdown }: AnalyticsChartsProps) {
+export function AnalyticsCharts({
+  initialDailyTrend,
+  initialTemplateTrend,
+  initialQuestionBreakdown,
+}: AnalyticsChartsProps) {
   const [selectedPeriod, setSelectedPeriod] = useState(30)
   const [questionData, setQuestionData] = useState<TemplateQuestionScores[]>(initialQuestionBreakdown)
   const [questionLoading, setQuestionLoading] = useState(false)
@@ -45,6 +51,10 @@ export function AnalyticsCharts({ initialDailyTrend, initialQuestionBreakdown }:
         initialData={initialDailyTrend}
         selectedPeriod={selectedPeriod}
         onPeriodChange={setSelectedPeriod}
+      />
+      <TemplateTrendChart
+        initialData={initialTemplateTrend}
+        selectedPeriod={selectedPeriod}
       />
       {questionLoading ? (
         <div className="flex h-[200px] items-center justify-center rounded-lg border bg-card">
