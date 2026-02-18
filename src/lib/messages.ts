@@ -239,6 +239,8 @@ export const messages = {
     autoSaved: "自動保存しました",
     summaryNotEntered: "先月の月次レポートが未入力です",
     enterSummary: "入力する",
+    returnVisitRate: "再来院率",
+    unitPercent: "%",
     googleReviewCount: "Google口コミ件数",
     googleReviewRating: "Google口コミ平均点",
     unitReviews: "件",

@@ -29,11 +29,11 @@ export async function GET(request: NextRequest) {
     await Promise.all([
       prisma.monthlyClinicMetrics.findUnique({
         where: { clinicId_year_month: { clinicId, year, month } },
-        select: { totalVisits: true, totalRevenue: true, selfPayRevenue: true, googleReviewCount: true, googleReviewRating: true },
+        select: { totalVisits: true, totalRevenue: true, selfPayRevenue: true, returnVisitRate: true, googleReviewCount: true, googleReviewRating: true },
       }),
       prisma.monthlyClinicMetrics.findUnique({
         where: { clinicId_year_month: { clinicId, year: prevYear, month: prevMonth } },
-        select: { totalVisits: true, totalRevenue: true, selfPayRevenue: true, googleReviewCount: true, googleReviewRating: true },
+        select: { totalVisits: true, totalRevenue: true, selfPayRevenue: true, returnVisitRate: true, googleReviewCount: true, googleReviewRating: true },
       }),
       getMonthlySurveyCount(clinicId, year, month),
       getMonthlySurveyQuality(clinicId, year, month),
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { year, month, totalVisits, totalRevenue, selfPayRevenue, googleReviewCount, googleReviewRating } = body
+  const { year, month, totalVisits, totalRevenue, selfPayRevenue, returnVisitRate, googleReviewCount, googleReviewRating } = body
 
   if (typeof year !== "number" || typeof month !== "number" || month < 1 || month > 12 || year < 2000 || year > 2100) {
     return errorResponse(messages.errors.invalidInput, 400)
@@ -70,6 +70,7 @@ export async function POST(request: NextRequest) {
 
   // selfPayRevenue cannot exceed totalRevenue
   const safeSelfPay = revenue != null && selfPay != null ? Math.min(selfPay, revenue) : selfPay
+  const returnRate = returnVisitRate != null ? Math.max(0, Math.min(100, Math.round(returnVisitRate * 10) / 10)) : null
   const reviewCount = googleReviewCount != null ? Math.max(0, Math.round(googleReviewCount)) : null
   const reviewRating = googleReviewRating != null ? Math.max(0, Math.min(5, Math.round(googleReviewRating * 10) / 10)) : null
 
@@ -77,6 +78,7 @@ export async function POST(request: NextRequest) {
     totalVisits: visits,
     totalRevenue: revenue,
     selfPayRevenue: safeSelfPay,
+    returnVisitRate: returnRate,
     googleReviewCount: reviewCount,
     googleReviewRating: reviewRating,
   }
@@ -85,7 +87,7 @@ export async function POST(request: NextRequest) {
     where: { clinicId_year_month: { clinicId, year, month } },
     update: data,
     create: { clinicId, year, month, ...data },
-    select: { totalVisits: true, totalRevenue: true, selfPayRevenue: true, googleReviewCount: true, googleReviewRating: true },
+    select: { totalVisits: true, totalRevenue: true, selfPayRevenue: true, returnVisitRate: true, googleReviewCount: true, googleReviewRating: true },
   })
 
   return successResponse(result)

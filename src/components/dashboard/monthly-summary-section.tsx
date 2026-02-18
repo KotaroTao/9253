@@ -10,6 +10,7 @@ interface MonthlySummary {
   totalVisits: number | null
   totalRevenue: number | null
   selfPayRevenue: number | null
+  returnVisitRate: number | null
   googleReviewCount: number | null
   googleReviewRating: number | null
 }
@@ -52,6 +53,7 @@ export function MonthlySummarySection({
   const [totalVisits, setTotalVisits] = useState(initialSummary?.totalVisits?.toString() ?? "")
   const [totalRevenue, setTotalRevenue] = useState(initialSummary?.totalRevenue?.toString() ?? "")
   const [selfPayRevenue, setSelfPayRevenue] = useState(initialSummary?.selfPayRevenue?.toString() ?? "")
+  const [returnVisitRate, setReturnVisitRate] = useState(initialSummary?.returnVisitRate?.toString() ?? "")
   const [reviewCount, setReviewCount] = useState(initialSummary?.googleReviewCount?.toString() ?? "")
   const [reviewRating, setReviewRating] = useState(initialSummary?.googleReviewRating?.toString() ?? "")
   const [saving, setSaving] = useState(false)
@@ -63,6 +65,7 @@ export function MonthlySummarySection({
     setTotalVisits(initialSummary?.totalVisits?.toString() ?? "")
     setTotalRevenue(initialSummary?.totalRevenue?.toString() ?? "")
     setSelfPayRevenue(initialSummary?.selfPayRevenue?.toString() ?? "")
+    setReturnVisitRate(initialSummary?.returnVisitRate?.toString() ?? "")
     setReviewCount(initialSummary?.googleReviewCount?.toString() ?? "")
     setReviewRating(initialSummary?.googleReviewRating?.toString() ?? "")
     setSaved(false)
@@ -78,9 +81,10 @@ export function MonthlySummarySection({
     const v = totalVisits ? parseInt(totalVisits) : null
     const r = totalRevenue ? parseInt(totalRevenue) : null
     const sp = selfPayRevenue ? parseInt(selfPayRevenue) : null
+    const rvr = returnVisitRate ? parseFloat(returnVisitRate) : null
     const rc = reviewCount ? parseInt(reviewCount) : null
     const rr = reviewRating ? parseFloat(reviewRating) : null
-    if (v == null && r == null && sp == null && rc == null && rr == null) return
+    if (v == null && r == null && sp == null && rvr == null && rc == null && rr == null) return
 
     setSaving(true)
     setSaved(false)
@@ -93,6 +97,7 @@ export function MonthlySummarySection({
           totalVisits: v,
           totalRevenue: r,
           selfPayRevenue: sp,
+          returnVisitRate: rvr,
           googleReviewCount: rc,
           googleReviewRating: rr,
         }),
@@ -106,7 +111,7 @@ export function MonthlySummarySection({
     } finally {
       setSaving(false)
     }
-  }, [year, month, totalVisits, totalRevenue, selfPayRevenue, reviewCount, reviewRating])
+  }, [year, month, totalVisits, totalRevenue, selfPayRevenue, returnVisitRate, reviewCount, reviewRating])
 
   // Auto-save 1.5s after any input change
   useEffect(() => {
@@ -117,7 +122,7 @@ export function MonthlySummarySection({
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => { doSave() }, 1500)
     return () => { if (timerRef.current) clearTimeout(timerRef.current) }
-  }, [totalVisits, totalRevenue, selfPayRevenue, reviewCount, reviewRating, doSave])
+  }, [totalVisits, totalRevenue, selfPayRevenue, returnVisitRate, reviewCount, reviewRating, doSave])
 
   // Derived metrics
   const surveyResponseRate = visits != null && visits > 0 ? Math.round((surveyCount / visits) * 1000) / 10 : null
@@ -132,7 +137,8 @@ export function MonthlySummarySection({
   const prevSelfPayRatio = prevRevenue != null && prevRevenue > 0 && prevSelfPay != null ? Math.round((prevSelfPay / prevRevenue) * 1000) / 10 : null
   const prevRevenuePerVisit = prevVisits != null && prevVisits > 0 && prevRevenue != null ? Math.round((prevRevenue / prevVisits) * 10) / 10 : null
 
-  const hasInput = visits != null || revenue != null || selfPay != null || gReviewCount != null
+  const rvRate = returnVisitRate ? parseFloat(returnVisitRate) : null
+  const hasInput = visits != null || revenue != null || selfPay != null || rvRate != null || gReviewCount != null
 
   const derivedMetrics = [
     { label: messages.monthlyMetrics.surveyResponseRate, value: surveyResponseRate, format: (v: number) => `${v}%`, detail: surveyCount > 0 ? `(${surveyCount}/${visits})` : null, prev: null as number | null },
@@ -184,6 +190,13 @@ export function MonthlySummarySection({
             <div className="flex items-center gap-1">
               <Input type="number" min={0} value={selfPayRevenue} onChange={(e) => setSelfPayRevenue(e.target.value)} placeholder="0" className="text-right" />
               <span className="text-sm text-muted-foreground">{messages.monthlyMetrics.unitMan}</span>
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">{messages.monthlyMetrics.returnVisitRate}</label>
+            <div className="flex items-center gap-1">
+              <Input type="number" min={0} max={100} step={0.1} value={returnVisitRate} onChange={(e) => setReturnVisitRate(e.target.value)} placeholder="0.0" className="text-right" />
+              <span className="text-sm text-muted-foreground">{messages.monthlyMetrics.unitPercent}</span>
             </div>
           </div>
           <div>

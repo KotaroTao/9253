@@ -35,11 +35,11 @@ export default async function MetricsPage() {
     await Promise.all([
       prisma.monthlyClinicMetrics.findUnique({
         where: { clinicId_year_month: { clinicId, year, month } },
-        select: { totalVisits: true, totalRevenue: true, selfPayRevenue: true, googleReviewCount: true, googleReviewRating: true },
+        select: { totalVisits: true, totalRevenue: true, selfPayRevenue: true, returnVisitRate: true, googleReviewCount: true, googleReviewRating: true },
       }),
       prisma.monthlyClinicMetrics.findUnique({
         where: { clinicId_year_month: { clinicId, year: prevYear, month: prevMonth } },
-        select: { totalVisits: true, totalRevenue: true, selfPayRevenue: true, googleReviewCount: true, googleReviewRating: true },
+        select: { totalVisits: true, totalRevenue: true, selfPayRevenue: true, returnVisitRate: true, googleReviewCount: true, googleReviewRating: true },
       }),
       getMonthlySurveyCount(clinicId, year, month),
       getMonthlySurveyQuality(clinicId, year, month),
