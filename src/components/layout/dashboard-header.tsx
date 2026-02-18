@@ -27,6 +27,7 @@ export function DashboardHeader({
           <span className="text-sm text-muted-foreground">{clinicName}</span>
         )}
       </div>
+      <div id="header-actions" className="flex items-center" />
     </header>
   )
 }
