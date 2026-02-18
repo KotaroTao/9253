@@ -54,6 +54,8 @@
 | ビュー切替 | ✅ | ヘッダー右上でスタッフ/管理者ビューをロールベースで切替（旧管理者モード廃止） |
 | システム管理 | ✅ | 全クリニック一覧、プラットフォーム統計、ヒント管理 |
 | ランディングページ | ✅ | ヒーロー、特徴、フロー、FAQ、CTA |
+| 販促戦略共有ページ | ✅ | `/strategy` — 社内・パートナー向け1ページ共有ページ（認証不要、noindex） |
+| 研究計画書Webページ | ✅ | `/research-protocol` — 全20章・スクロール連動目次付き（認証不要、noindex） |
 
 ### スタッフダッシュボードのゲーミフィケーション機能
 - **ランクシステム**: 通算回答数に応じた8段階（ルーキー→ブロンズ→シルバー→ゴールド→プラチナ→ダイヤモンド→マスター→レジェンド）
@@ -145,6 +147,8 @@ src/
 │   │   └── survey-start/          # アンケート開始（→dashboard）
 │   ├── (admin)/admin/             # システム管理者画面
 │   │   └── tips/                  # ヒント管理
+│   ├── strategy/                  # 販促戦略共有ページ（認証不要）
+│   ├── research-protocol/         # 研究計画書Webページ（認証不要）
 │   └── api/                       # API Route Handlers
 ├── components/
 │   ├── ui/                        # shadcn/ui コンポーネント
@@ -153,7 +157,8 @@ src/
 │   ├── dashboard/                 # ダッシュボード関連（InsightCards含む）
 │   ├── staff/                     # スタッフ管理関連
 │   ├── settings/                  # 設定関連
-│   └── landing/                   # LP関連
+│   ├── landing/                   # LP関連
+│   └── research/                  # 研究計画書ページ関連（TOCサイドバー等）
 ├── lib/
 │   ├── prisma.ts                  # Prisma シングルトン
 │   ├── utils.ts                   # cn() ヘルパー
@@ -448,6 +453,9 @@ MIERUの有効性を学術的に検証し、査読付き論文として発表す
 3. 研究計画書の正式版作成（ドラフト: `docs/research-protocol.md`）
 4. UMIN-CTR登録準備
 5. 3チャネル（サロン・LINE・SNS）での募集告知準備
+
+### 研究計画書Webページ
+- `/research-protocol` — 研究計画書のWeb版（全20章・スクロール連動目次付き、noindex）
 
 ### 関連ドキュメント
 - `docs/research-protocol.md` — 研究計画書ドラフト（全20章）
