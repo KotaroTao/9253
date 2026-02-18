@@ -39,19 +39,19 @@
 | 機能 | 状態 | 概要 |
 |------|------|------|
 | 認証 | ✅ | Credentials認証、JWT、ロール別リダイレクト |
-| 患者アンケートフロー | ✅ | QR→ウェルカム→回答（プログレスバー付き）→サンクス→歯の豆知識。未回答時自動スクロール |
+| 患者アンケートフロー | ✅ | URL→ウェルカム→回答（プログレスバー付き）→サンクス→歯の豆知識。未回答時自動スクロール |
 | キオスクモード | ✅ | iPad受付用。患者属性入力→テンプレート自動選択→連続アンケート対応→自動リセット |
 | ダッシュボード（スタッフ） | ✅ | 挨拶、エンカレッジメント、ランクシステム、ハピネスメーター、日次目標（Confetti付き）、ストリーク（休診日スキップ・マイルストーンバッジ付き）、今週の実績（曜日別チャート）、患者の声、通算マイルストーン、実施中の改善アクション（上位5件）、ヒント |
 | ダッシュボード（管理者） | ✅ | 満足度スコア（トレンドバッジ付き）、InsightCards（自動改善提案）、月次サマリー |
 | 分析ページ | ✅ | 期間セレクタ（7/30/90/180/365日）、テンプレート別スモールマルチプル（前期比較）、日次トレンド、質問別分析、満足度ヒートマップ（曜日×時間帯）、スタッフリーダーボード |
-| スタッフ管理 | ✅ | CRUD、QRコード生成・ダウンロード・印刷 |
+| スタッフ管理 | ✅ | CRUD、有効/無効切替 |
 | 月次レポート | ✅ | 来院数・売上・自費率・Google口コミ入力、8+KPI自動算出 |
 | 回答一覧 | ✅ | ページネーション、患者属性表示、フリーテキスト、ページサイズ選択 |
 | 患者満足度向上のヒント | ✅ | プラットフォーム全体管理（/admin/tips）、クリニック個別カスタム（Clinic.settings JSONB）、ローテーション表示 |
 | 設定 | ✅ | クリニック名、日次目標、営業日数/週、定休日、臨時休診日 |
 | 改善アクション管理 | ✅ | 専用ページ（/dashboard/actions）。作成・完了・削除、カテゴリ別提案、ベースライン/結果スコア記録、実施履歴ログ編集 |
 | 運営モード | ✅ | system_admin用の全クリニック横断管理、オペレーターとして特定クリニックに「ログイン」 |
-| ビュー切替 | ✅ | ヘッダー右上でスタッフ/管理者ビューをロールベースで切替（旧管理者モード廃止） |
+| ナビゲーション | ✅ | ロールに応じたサイドバー自動表示（clinic_admin/system_adminは管理者メニューが追加表示） |
 | システム管理 | ✅ | 全クリニック一覧（ヘルスチェック付き）、プラットフォーム統計、ヒント管理、バックアップ管理 |
 | ランディングページ | ✅ | ヒーロー、課題提起、特徴、フロー、実績、コンプライアンス、FAQ、CTA |
 
@@ -133,7 +133,6 @@ git操作、npm検証コマンド、Prisma操作は承認不要で即実行さ�
 - **認証**: Auth.js v5 (Credentials Provider, JWT)
 - **バリデーション**: Zod
 - **チャート**: Recharts
-- **QRコード**: react-qrcode-logo
 - **パスワード**: bcryptjs
 - **日付**: date-fns
 
@@ -143,8 +142,8 @@ src/
 ├── app/
 │   ├── page.tsx                   # ランディングページ
 │   ├── (auth)/login/              # ログイン画面
-│   ├── (survey)/s/[token]/        # 患者向けアンケート（認証不要）
-│   ├── (kiosk)/kiosk/[token]/     # キオスクモード（認証不要）
+│   ├── (survey)/s/[token]/        # 患者向けアンケート（認証不要、実質slugベース）
+│   ├── (kiosk)/kiosk/[token]/     # キオスクモード（認証不要、実質slugベース）
 │   ├── (dashboard)/dashboard/     # ダッシュボード
 │   │   ├── analytics/             # 分析ページ（期間セレクタ付き）
 │   │   ├── actions/               # 改善アクション管理
@@ -161,7 +160,7 @@ src/
 │   ├── ui/                        # shadcn/ui コンポーネント
 │   ├── layout/                    # サイドバー、ヘッダー、ボトムナビ
 │   ├── survey/                    # アンケート関連（Confetti含む）
-│   ├── dashboard/                 # ダッシュボード関連（18コンポーネント）
+│   ├── dashboard/                 # ダッシュボード関連（19コンポーネント）
 │   ├── staff/                     # スタッフ管理関連
 │   ├── settings/                  # 設定関連
 │   └── landing/                   # LP関連
@@ -170,13 +169,14 @@ src/
 │   ├── utils.ts                   # cn() ヘルパー
 │   ├── messages.ts                # 日本語UIテキスト辞書
 │   ├── constants.ts               # アプリ定数（ランク、ストリーク、患者属性、改善提案等）
-│   ├── patient-tips.ts            # 患者満足度向上ヒント（60件・8カテゴリ）+ ローテーション
-│   ├── admin-mode.ts              # 管理者モードCookie制御
+│   ├── patient-tips.ts            # 患者満足度向上ヒント（30件・12カテゴリ）+ ローテーション
+│   ├── api-helpers.ts             # API レスポンスヘルパー（successResponse, errorResponse）
+│   ├── auth-helpers.ts            # API認証ガード（requireAuth, isAuthError）
+│   ├── date-jst.ts                # JST日付ユーティリティ
 │   ├── rate-limit.ts              # IP レート制限
 │   ├── ip.ts                      # IP取得・ハッシュ化
 │   ├── validations/               # Zod スキーマ
 │   └── queries/                   # DB クエリ関数（5モジュール）
-├── hooks/                         # カスタムフック
 └── types/                         # TypeScript 型定義
 ```
 
@@ -202,6 +202,7 @@ src/
 | `recent-responses.tsx` | ページネーション付き回答一覧。患者属性表示 |
 | `page-size-selector.tsx` | ページネーションサイズ制御 |
 | `daily-tip.tsx` | ローテーション表示のヒント（クリニック別カスタム対応） |
+| `survey-response-list.tsx` | 個別回答カード表示コンポーネント |
 
 ## APIルート一覧
 
@@ -232,10 +233,11 @@ src/
 | `/api/staff` | GET/POST | スタッフ一覧取得/新規作成 |
 | `/api/staff/[id]` | PATCH/DELETE | スタッフ更新/削除 |
 
-### アンケート（認証不要）
+### アンケート
 | ルート | メソッド | 概要 |
 |--------|---------|------|
-| `/api/surveys/submit` | POST | アンケート回答送信（IPレート制限あり） |
+| `/api/surveys/submit` | POST | アンケート回答送信（認証不要、IPレート制限あり） |
+| `/api/surveys/[id]` | DELETE | 個別回答削除（管理者認証必須） |
 
 ### システム管理（system_admin認証必須）
 | ルート | メソッド | 概要 |
@@ -283,7 +285,6 @@ src/
 - `weekCount` / `weekAvgScore` / `weekActiveDays` / `weekDays[]`: 今週の実績と曜日別内訳
 - `todayAvgScore`: 本日の平均スコア
 - `positiveComment`: ランダムな高スコアコメント（30日以内）
-- `workingDaysPerWeek`: 週営業日数（設定値、デフォルト6）
 
 ### `clinics.ts` — クリニック管理
 | 関数 | 用途 |
@@ -303,19 +304,20 @@ src/
 ### `surveys.ts` — アンケート
 | 関数 | 用途 |
 |------|------|
-| `getStaffByToken(qrToken)` | QRトークンからスタッフ取得（キオスク用、クリニック・テンプレート含む） |
+| `getStaffByToken(qrToken)` | トークンからスタッフ取得（クリニック・テンプレート含む） |
 | `getClinicBySlug(slug)` | スラッグからクリニック取得（公開アンケート用、アクティブテンプレート含む） |
 | `createSurveyResponse(data)` | 回答の保存 |
 | `hasRecentSubmission(ipHash, clinicId)` | 1日以内の重複チェック（IPハッシュ） |
 | `getSurveyResponses(clinicId, {page, limit, staffId, from, to})` | ページネーション付き回答一覧 |
 
-## DB設計（8テーブル）
-- **Clinic**: UUID主キー、settings: JSONB（dailyGoal、workingDaysPerWeek、regularClosedDays、closedDates、dailyTipカスタム設定を格納）
-- **Staff**: UUID主キー、qrToken (unique UUID) = QRコードURL用、isActive フラグ
+## DB設計（9テーブル）
+- **Clinic**: UUID主キー、settings: JSONB（dailyGoal、regularClosedDays、closedDates、dailyTipカスタム設定を格納）
+- **Staff**: UUID主キー、qrToken (unique UUID)（レガシー、現在未使用）、isActive フラグ
 - **User**: email/password認証、role: system_admin / clinic_admin / staff、isActive フラグ
 - **SurveyTemplate**: questions: JSONB（初診/治療中/定期検診の3テンプレート）、isActive フラグ
 - **SurveyResponse**: answers: JSONB、overallScore、freeText、patientAttributes: JSONB、ipHash、staffId（nullable）
-- **ImprovementAction**: 改善アクション履歴（baselineScore→resultScore、status: active/completed/cancelled、logs: JSONB）
+- **ImprovementAction**: 改善アクション履歴（baselineScore→resultScore、status: active/completed/cancelled）
+- **ImprovementActionLog**: 改善アクションの実施履歴（action, satisfactionScore, note）。ImprovementActionとリレーション
 - **MonthlyClinicMetrics**: 月次経営指標（来院数、売上、自費売上、Google口コミ件数・平均点）。(clinicId, year, month) でユニーク
 - **PlatformSetting**: key-value形式のプラットフォーム設定（患者ヒント管理、ローテーション間隔等）
 
@@ -347,7 +349,7 @@ src/
 - 性別: 男性、女性、未回答
 
 ### 改善アクション提案（11カテゴリ）
-clinic_environment / reception / wait_time / treatment_explanation / pain_management / staff_attitude / hygiene / cost_explanation / appointment / follow_up / other（各3-4件の定型提案）
+clinic_environment / reception / wait_time / hearing / explanation / cost_explanation / comfort / pain_care / staff_courtesy / booking / loyalty（各3件の定型提案）
 
 ## メッセージ辞書（`src/lib/messages.ts`）
 日本語UIテキストを一元管理。以下のセクション:
@@ -361,7 +363,8 @@ clinic_environment / reception / wait_time / treatment_explanation / pain_manage
 - `monthlyMetrics`: KPI、自動算出指標
 - `staff` / `kiosk` / `patientSetup` / `dailyTip` / `tipManager` / `settings` / `nav` / `admin` / `operatorMode` / `backup` / `landing`
 
-**歯の豆知識**: 60件・8カテゴリ（歯磨き、虫歯、歯周病、食生活、検診、習慣、子供）— `src/lib/patient-tips.ts`
+**患者満足度向上ヒント**: 30件・12カテゴリ（接遇、コミュニケーション、不安軽減、院内環境、待ち時間、チーム連携、初診対応、治療説明、フォローアップ、予防指導、小児対応、高齢者対応）— `src/lib/patient-tips.ts`
+**歯の豆知識**: 60件・7カテゴリ（ブラッシング、虫歯予防、歯周病、食事・栄養、定期検診・予防、生活習慣、お子さまの歯）— `src/lib/constants.ts` の `DENTAL_TIPS`
 
 ## デモデータ（seed — `prisma/seed.ts`）
 
@@ -392,26 +395,27 @@ clinic_environment / reception / wait_time / treatment_explanation / pain_manage
 ### 月次レポート
 過去5ヶ月分を自動生成（当月は未入力=InsightBanner表示用）
 
-## QRコードURL
+## アンケートURL
 ```
 https://mieru-clinic.com/s/{clinicSlug}
 ```
-- ラミネートカード（物理固定）なのでURLは静的
+- クリニックのslugベースの固定URL
 - レート制限 + IPハッシュで防御
 
 ## ロール
 | ロール | アクセス範囲 |
 |--------|-------------|
 | system_admin | /admin/* 全クリニック管理 + /dashboard/*（オペレーターモードで任意クリニック操作） |
-| clinic_admin | /dashboard/* 自クリニックのみ（スタッフビュー + 管理者ビュー） |
-| staff | ダッシュボード（スタッフビュー）のみ |
+| clinic_admin | /dashboard/* 自クリニックのみ（全メニュー） |
+| staff | ダッシュボード（ホームのみ） |
 
-## ビュー切替（ロールベース）
-- ダッシュボードはデフォルトで「スタッフビュー」（日次目標、ストリーク、ランク等）
-- clinic_admin / system_admin はヘッダー右上のトグルで「管理者ビュー」に切替
-- 管理者ビュー: ホーム（InsightCards + 月次サマリー）、分析、スタッフ管理、回答一覧、月次レポート、改善アクション、設定
-- staff ロールは管理者ビューへの切替不可
+## ナビゲーション（ロールベース）
+- 全ロール共通: ダッシュボードホーム（スタッフエンゲージメント + 管理者ウィジェット）、キオスクモード起動リンク
+- clinic_admin / system_admin: サイドバーに分析・改善アクション・回答一覧・スタッフ管理・設定メニューが追加表示
+- system_admin: さらにシステム管理（/admin）リンクが表示
+- staff ロールはダッシュボードホームのみ
 - ※旧パスワード認証方式の管理者モードは廃止済み
+- ※旧ビュー切替トグルも廃止済み（ロールで自動的にメニュー項目を制御）
 
 ## コーディング規約
 - 言語: TypeScript 厳格モード
@@ -424,7 +428,7 @@ https://mieru-clinic.com/s/{clinicSlug}
 ## 設計判断の記録
 - **口コミ導線は非搭載**: 患者満足度改善に特化。口コミ依頼・誘導機能は意図的に排除
 - **他院比較（ベンチマーク）は削除**: MVP段階ではクリニック数不足で機能しない。カテゴリ分類なしの比較は不公平。将来的にクリニック数・カテゴリ分類が揃った段階で再検討
-- **管理者モード→ロールベースビュー切替に変更**: パスワード認証+Cookie方式を廃止し、ユーザーロール（clinic_admin/system_admin）による切替に簡素化
+- **管理者モード→ロールベースナビゲーションに変更**: パスワード認証+Cookie方式を廃止。ビュー切替トグルも廃止し、ユーザーロールに応じてサイドバーメニュー項目を自動制御
 - **改善アクションとスコアの連動**: seedデータでは改善アクションの開始月からスコアへの効果が徐々に反映される設計。デモ時にスコア推移と改善施策の因果関係を説明可能
 - **決定的乱数によるseedデータ**: rng seed固定により毎回同一データを生成。デモ・スクリーンショットの再現性を保証
 - **分析ページの期間セレクタ**: 7/30/90/180/365日の5段階。サーバーサイドで初期データ（30日分）をプリフェッチし、クライアント側で期間変更時にAPIを再取得
