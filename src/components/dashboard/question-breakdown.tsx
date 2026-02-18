@@ -59,11 +59,42 @@ function shortenLabel(text: string): string {
   // Remove trailing question marks and common suffixes for brevity
   return text
     .replace(/はいかがでしたか？$/, "")
+    .replace(/と思いますか？$/, "")
     .replace(/でしたか？$/, "")
     .replace(/ですか？$/, "")
     .replace(/ましたか？$/, "")
     .replace(/ありますか？$/, "")
     .replace(/？$/, "")
+}
+
+// Custom Y-axis tick with text wrapping for long Japanese labels
+function CustomYAxisTick({ x, y, payload }: { x?: number; y?: number; payload?: { value: string } }) {
+  if (!x || !y || !payload?.value) return null
+  const text = payload.value
+  const maxChars = 10
+  const lines: string[] = []
+  for (let i = 0; i < text.length; i += maxChars) {
+    lines.push(text.slice(i, i + maxChars))
+  }
+  const lineHeight = 13
+  const offsetY = -((lines.length - 1) * lineHeight) / 2
+
+  return (
+    <g>
+      {lines.map((line, i) => (
+        <text
+          key={i}
+          x={x - 4}
+          y={y + offsetY + i * lineHeight}
+          textAnchor="end"
+          fill="#666"
+          fontSize={11}
+        >
+          {line}
+        </text>
+      ))}
+    </g>
+  )
 }
 
 // Custom tooltip component
@@ -137,7 +168,7 @@ export function QuestionBreakdown({ data }: QuestionBreakdownProps) {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={template.questions.length * 48 + 20}>
+              <ResponsiveContainer width="100%" height={template.questions.length * 52 + 20}>
                 <BarChart
                   data={chartData}
                   layout="vertical"
@@ -148,9 +179,8 @@ export function QuestionBreakdown({ data }: QuestionBreakdownProps) {
                   <YAxis
                     type="category"
                     dataKey="label"
-                    width={200}
-                    fontSize={11}
-                    tick={{ fill: "#666" }}
+                    width={140}
+                    tick={<CustomYAxisTick />}
                   />
                   <Tooltip content={<CustomTooltip />} />
                   <ReferenceLine x={SCORE_THRESHOLD} stroke="#f59e0b" strokeDasharray="4 4" strokeWidth={1.5} />
