@@ -1,7 +1,7 @@
 import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
-import { getQuestionBreakdownByDays } from "@/lib/queries/stats"
+import { getTemplateTrend } from "@/lib/queries/stats"
 import { NextRequest } from "next/server"
 
 export const dynamic = "force-dynamic"
@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic"
 const ALLOWED_DAYS = [7, 30, 90, 180, 365]
 
 /**
- * GET /api/question-breakdown?days=30
- * Returns per-question avg scores grouped by template for the given period
+ * GET /api/template-trend?days=30
+ * Returns daily avg satisfaction score per template type
  */
 export async function GET(request: NextRequest) {
   const authResult = await requireRole("clinic_admin", "system_admin")
@@ -25,6 +25,6 @@ export async function GET(request: NextRequest) {
     return errorResponse("無効な期間です", 400)
   }
 
-  const data = await getQuestionBreakdownByDays(clinicId, days)
+  const data = await getTemplateTrend(clinicId, days)
   return successResponse(data)
 }

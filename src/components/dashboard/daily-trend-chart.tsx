@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import {
   ComposedChart,
   Bar,
@@ -50,17 +50,19 @@ function CustomTooltip({
 interface DailyTrendChartProps {
   initialData: DailyTrendPoint[]
   selectedPeriod: number
-  onPeriodChange: (period: number) => void
 }
 
-export function DailyTrendChart({ initialData, selectedPeriod, onPeriodChange }: DailyTrendChartProps) {
+export function DailyTrendChart({ initialData, selectedPeriod }: DailyTrendChartProps) {
   const [data, setData] = useState<DailyTrendPoint[]>(initialData)
   const [loading, setLoading] = useState(false)
+  const isInitialMount = useRef(true)
 
   const fetchData = useCallback(async (days: number) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/daily-trend?days=${days}`)
+      const res = await fetch(`/api/daily-trend?days=${days}`, {
+        cache: "no-store",
+      })
       if (res.ok) {
         const json = await res.json()
         setData(json)
@@ -71,12 +73,12 @@ export function DailyTrendChart({ initialData, selectedPeriod, onPeriodChange }:
   }, [])
 
   useEffect(() => {
-    if (selectedPeriod !== 30) {
-      fetchData(selectedPeriod)
-    } else {
-      setData(initialData)
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
     }
-  }, [selectedPeriod, initialData, fetchData])
+    fetchData(selectedPeriod)
+  }, [selectedPeriod, fetchData])
 
   const maxCount = Math.max(...data.map((d) => d.count), 1)
   const yCountMax = Math.ceil(maxCount * 1.2)
@@ -95,24 +97,7 @@ export function DailyTrendChart({ initialData, selectedPeriod, onPeriodChange }:
   return (
     <Card>
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base">回答数・満足度推移</CardTitle>
-          <div className="flex gap-1">
-            {PERIOD_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => onPeriodChange(opt.value)}
-                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                  selectedPeriod === opt.value
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <CardTitle className="text-base">回答数・満足度推移</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (

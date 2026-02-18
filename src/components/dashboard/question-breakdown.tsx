@@ -77,7 +77,7 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<
     <div className="rounded-lg border bg-white p-3 shadow-md">
       <p className="mb-1 text-xs font-medium text-gray-900">{data.fullText}</p>
       <p className="text-sm">
-        平均スコア: <span className="font-bold">{data.avgScore}</span> / 5.0
+        平均スコア: <span className="font-bold">{data.avgScore.toFixed(2)}</span> / 5.0
       </p>
       <p className="text-xs text-muted-foreground">{data.count}件の回答</p>
     </div>
@@ -208,7 +208,7 @@ export function QuestionBreakdown({ data, selectedPeriod }: QuestionBreakdownPro
                       )}
                     </div>
                     <span className="shrink-0 rounded-full bg-red-50 px-2 py-0.5 text-sm font-bold text-red-600">
-                      {item.avgScore}
+                      {item.avgScore.toFixed(2)}
                     </span>
                   </div>
                 </div>

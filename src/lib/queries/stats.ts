@@ -289,7 +289,7 @@ export async function getQuestionBreakdownByDays(
     SELECT
       template_id,
       key as question_id,
-      ROUND(AVG(value::numeric), 1)::float as avg_score,
+      ROUND(AVG(value::numeric), 2)::float as avg_score,
       COUNT(*) as count
     FROM survey_responses,
       jsonb_each_text(answers)
@@ -458,6 +458,53 @@ export async function getDailyTrend(
     date: r.date_label,
     count: Number(r.count),
     avgScore: r.avg_score ?? null,
+  }))
+}
+
+// --- Template-wise daily trend (avg score per template per day) ---
+
+export interface TemplateTrendPoint {
+  date: string
+  templateName: string
+  avgScore: number | null
+  count: number
+}
+
+interface TemplateTrendRow {
+  date_label: string
+  template_name: string
+  avg_score: number | null
+  count: bigint
+}
+
+export async function getTemplateTrend(
+  clinicId: string,
+  days: number = 30,
+): Promise<TemplateTrendPoint[]> {
+  const sinceDate = new Date()
+  sinceDate.setDate(sinceDate.getDate() - days)
+  sinceDate.setHours(0, 0, 0, 0)
+
+  const rows = await prisma.$queryRaw<TemplateTrendRow[]>`
+    SELECT
+      TO_CHAR(sr.responded_at AT TIME ZONE 'Asia/Tokyo', 'MM/DD') AS date_label,
+      st.name AS template_name,
+      ROUND(AVG(sr.overall_score)::numeric, 2)::float AS avg_score,
+      COUNT(*) AS count
+    FROM survey_responses sr
+    JOIN survey_templates st ON sr.template_id = st.id
+    WHERE sr.clinic_id = ${clinicId}::uuid
+      AND sr.responded_at >= ${sinceDate}
+      AND sr.overall_score IS NOT NULL
+    GROUP BY (sr.responded_at AT TIME ZONE 'Asia/Tokyo')::date, date_label, st.name
+    ORDER BY (sr.responded_at AT TIME ZONE 'Asia/Tokyo')::date ASC, st.name
+  `
+
+  return rows.map((r) => ({
+    date: r.date_label,
+    templateName: r.template_name,
+    avgScore: r.avg_score ?? null,
+    count: Number(r.count),
   }))
 }
 
