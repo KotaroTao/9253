@@ -8,8 +8,10 @@ import { messages } from "@/lib/messages"
 import { APP_NAME } from "@/lib/constants"
 
 const navLinks = [
+  { href: "#pain", label: messages.landing.painNav },
   { href: "#features", label: messages.landing.features },
   { href: "#flow", label: messages.landing.flow },
+  { href: "#results", label: messages.landing.resultsNav },
   { href: "#faq", label: messages.landing.faq },
 ]
 
