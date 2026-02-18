@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import {
   ComposedChart,
   Bar,
@@ -80,6 +80,17 @@ export function DailyTrendChart({ initialData }: DailyTrendChartProps) {
   const maxCount = Math.max(...data.map((d) => d.count), 1)
   const yCountMax = Math.ceil(maxCount * 1.2)
 
+  const summary = useMemo(() => {
+    const totalCount = data.reduce((sum, d) => sum + d.count, 0)
+    const scoreDays = data.filter((d) => d.avgScore != null)
+    const weightedSum = scoreDays.reduce((sum, d) => sum + d.avgScore! * d.count, 0)
+    const totalWithScore = scoreDays.reduce((sum, d) => sum + d.count, 0)
+    const avgScore = totalWithScore > 0 ? weightedSum / totalWithScore : null
+    return { totalCount, avgScore }
+  }, [data])
+
+  const periodLabel = PERIOD_OPTIONS.find((o) => o.value === selectedPeriod)?.label ?? ""
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -112,58 +123,73 @@ export function DailyTrendChart({ initialData }: DailyTrendChartProps) {
             <p className="text-sm text-muted-foreground">データがありません</p>
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={300}>
-            <ComposedChart data={data} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="date"
-                fontSize={11}
-                interval={data.length > 60 ? Math.floor(data.length / 10) : data.length > 14 ? Math.floor(data.length / 7) : 0}
-                tick={{ fill: "#666" }}
-              />
-              <YAxis
-                yAxisId="count"
-                orientation="left"
-                domain={[0, yCountMax]}
-                fontSize={10}
-                tick={{ fill: "#666" }}
-                label={{ value: "回答数", angle: -90, position: "insideLeft", fontSize: 10, fill: "#666" }}
-              />
-              <YAxis
-                yAxisId="score"
-                orientation="right"
-                domain={[1, 5]}
-                ticks={[1, 2, 3, 4, 5]}
-                fontSize={10}
-                tick={{ fill: "#2563eb" }}
-                label={{ value: "満足度", angle: 90, position: "insideRight", fontSize: 10, fill: "#2563eb" }}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend
-                formatter={(value: string) => {
-                  if (value === "count") return "回答数"
-                  if (value === "avgScore") return "満足度"
-                  return value
-                }}
-              />
-              <Bar
-                yAxisId="count"
-                dataKey="count"
-                fill="#93c5fd"
-                radius={[2, 2, 0, 0]}
-                barSize={data.length > 90 ? 4 : data.length > 30 ? 8 : 16}
-              />
-              <Line
-                yAxisId="score"
-                type="monotone"
-                dataKey="avgScore"
-                stroke="#2563eb"
-                strokeWidth={2}
-                dot={data.length <= 30 ? { r: 3, fill: "#2563eb" } : false}
-                connectNulls
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
+          <>
+            <ResponsiveContainer width="100%" height={300}>
+              <ComposedChart data={data} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="date"
+                  fontSize={11}
+                  interval={data.length > 60 ? Math.floor(data.length / 10) : data.length > 14 ? Math.floor(data.length / 7) : 0}
+                  tick={{ fill: "#666" }}
+                />
+                <YAxis
+                  yAxisId="count"
+                  orientation="left"
+                  domain={[0, yCountMax]}
+                  fontSize={10}
+                  tick={{ fill: "#666" }}
+                  label={{ value: "回答数", angle: -90, position: "insideLeft", fontSize: 10, fill: "#666" }}
+                />
+                <YAxis
+                  yAxisId="score"
+                  orientation="right"
+                  domain={[1, 5]}
+                  ticks={[1, 2, 3, 4, 5]}
+                  fontSize={10}
+                  tick={{ fill: "#2563eb" }}
+                  label={{ value: "満足度", angle: 90, position: "insideRight", fontSize: 10, fill: "#2563eb" }}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend
+                  formatter={(value: string) => {
+                    if (value === "count") return "回答数"
+                    if (value === "avgScore") return "満足度"
+                    return value
+                  }}
+                />
+                <Bar
+                  yAxisId="count"
+                  dataKey="count"
+                  fill="#93c5fd"
+                  radius={[2, 2, 0, 0]}
+                  barSize={data.length > 90 ? 4 : data.length > 30 ? 8 : 16}
+                />
+                <Line
+                  yAxisId="score"
+                  type="monotone"
+                  dataKey="avgScore"
+                  stroke="#2563eb"
+                  strokeWidth={2}
+                  dot={data.length <= 30 ? { r: 3, fill: "#2563eb" } : false}
+                  connectNulls
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+            <div className="mt-4 flex items-center gap-6 border-t pt-3">
+              <div>
+                <p className="text-xs text-muted-foreground">直近{periodLabel}の回答数</p>
+                <p className="text-xl font-bold">{summary.totalCount}<span className="text-sm font-normal text-muted-foreground">件</span></p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">直近{periodLabel}の平均満足度</p>
+                <p className="text-xl font-bold text-blue-600">
+                  {summary.avgScore != null ? summary.avgScore.toFixed(1) : "-"}
+                  <span className="text-sm font-normal text-muted-foreground"> / 5.0</span>
+                </p>
+              </div>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>
