@@ -1,6 +1,12 @@
 import type { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import type { ClinicSettings } from "@/types"
+import {
+  jstToday,
+  jstNowParts,
+  jstStartOfMonth,
+  jstEndOfMonth,
+} from "@/lib/date-jst"
 
 /**
  * Settings JSONB の安全な部分更新
@@ -93,8 +99,7 @@ export interface PlatformTodayStats {
 }
 
 export async function getPlatformTodayStats(): Promise<PlatformTodayStats> {
-  const todayStart = new Date()
-  todayStart.setHours(0, 0, 0, 0)
+  const todayStart = jstToday()
 
   interface Row {
     today_total: bigint
@@ -135,11 +140,11 @@ export interface ClinicHealthStats {
 export async function getClinicHealthBatch(clinicIds: string[]): Promise<Map<string, ClinicHealthStats>> {
   if (clinicIds.length === 0) return new Map()
 
-  const now = new Date()
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-  const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59)
+  const todayStart = jstToday()
+  const { year, month } = jstNowParts()
+  const thisMonthStart = jstStartOfMonth(year, month)
+  const prevMonthStart = jstStartOfMonth(year, month - 1)
+  const prevMonthEnd = jstEndOfMonth(year, month - 1)
 
   interface Row {
     clinic_id: string
