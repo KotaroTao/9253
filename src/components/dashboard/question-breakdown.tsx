@@ -55,16 +55,15 @@ const TEMPLATE_COLORS: Record<string, { bar: string; low: string; bg: string }> 
   "定期検診": { bar: "hsl(262, 83%, 58%)", low: "hsl(0, 84%, 60%)", bg: "from-purple-50/50 to-white" },
 }
 
-function shortenLabel(text: string, maxLen: number = 12): string {
+function shortenLabel(text: string): string {
   // Remove trailing question marks and common suffixes for brevity
-  const cleaned = text
+  return text
     .replace(/はいかがでしたか？$/, "")
     .replace(/でしたか？$/, "")
     .replace(/ですか？$/, "")
     .replace(/ましたか？$/, "")
     .replace(/ありますか？$/, "")
     .replace(/？$/, "")
-  return cleaned.length > maxLen ? cleaned.slice(0, maxLen) + "…" : cleaned
 }
 
 // Custom tooltip component
@@ -149,7 +148,7 @@ export function QuestionBreakdown({ data }: QuestionBreakdownProps) {
                   <YAxis
                     type="category"
                     dataKey="label"
-                    width={130}
+                    width={200}
                     fontSize={11}
                     tick={{ fill: "#666" }}
                   />
