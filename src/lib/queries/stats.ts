@@ -289,7 +289,7 @@ export async function getQuestionBreakdownByDays(
     SELECT
       template_id,
       key as question_id,
-      ROUND(AVG(value::numeric), 1)::float as avg_score,
+      ROUND(AVG(value::numeric), 2)::float as avg_score,
       COUNT(*) as count
     FROM survey_responses,
       jsonb_each_text(answers)

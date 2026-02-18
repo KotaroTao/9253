@@ -4,6 +4,8 @@ import { messages } from "@/lib/messages"
 import { getQuestionBreakdownByDays } from "@/lib/queries/stats"
 import { NextRequest } from "next/server"
 
+export const dynamic = "force-dynamic"
+
 const ALLOWED_DAYS = [7, 30, 90, 180, 365]
 
 /**

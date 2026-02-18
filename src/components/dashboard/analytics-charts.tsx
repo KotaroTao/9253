@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { DailyTrendChart } from "@/components/dashboard/daily-trend-chart"
 import { QuestionBreakdown } from "@/components/dashboard/question-breakdown"
 import type { DailyTrendPoint, TemplateQuestionScores } from "@/lib/queries/stats"
@@ -14,11 +14,14 @@ export function AnalyticsCharts({ initialDailyTrend, initialQuestionBreakdown }:
   const [selectedPeriod, setSelectedPeriod] = useState(30)
   const [questionData, setQuestionData] = useState<TemplateQuestionScores[]>(initialQuestionBreakdown)
   const [questionLoading, setQuestionLoading] = useState(false)
+  const isInitialMount = useRef(true)
 
   const fetchQuestionBreakdown = useCallback(async (days: number) => {
     setQuestionLoading(true)
     try {
-      const res = await fetch(`/api/question-breakdown?days=${days}`)
+      const res = await fetch(`/api/question-breakdown?days=${days}`, {
+        cache: "no-store",
+      })
       if (res.ok) {
         const json = await res.json()
         setQuestionData(json)
@@ -29,12 +32,12 @@ export function AnalyticsCharts({ initialDailyTrend, initialQuestionBreakdown }:
   }, [])
 
   useEffect(() => {
-    if (selectedPeriod !== 30) {
-      fetchQuestionBreakdown(selectedPeriod)
-    } else {
-      setQuestionData(initialQuestionBreakdown)
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
     }
-  }, [selectedPeriod, initialQuestionBreakdown, fetchQuestionBreakdown])
+    fetchQuestionBreakdown(selectedPeriod)
+  }, [selectedPeriod, fetchQuestionBreakdown])
 
   return (
     <>

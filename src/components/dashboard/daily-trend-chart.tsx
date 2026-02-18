@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import {
   ComposedChart,
   Bar,
@@ -56,11 +56,14 @@ interface DailyTrendChartProps {
 export function DailyTrendChart({ initialData, selectedPeriod, onPeriodChange }: DailyTrendChartProps) {
   const [data, setData] = useState<DailyTrendPoint[]>(initialData)
   const [loading, setLoading] = useState(false)
+  const isInitialMount = useRef(true)
 
   const fetchData = useCallback(async (days: number) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/daily-trend?days=${days}`)
+      const res = await fetch(`/api/daily-trend?days=${days}`, {
+        cache: "no-store",
+      })
       if (res.ok) {
         const json = await res.json()
         setData(json)
@@ -71,12 +74,12 @@ export function DailyTrendChart({ initialData, selectedPeriod, onPeriodChange }:
   }, [])
 
   useEffect(() => {
-    if (selectedPeriod !== 30) {
-      fetchData(selectedPeriod)
-    } else {
-      setData(initialData)
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
     }
-  }, [selectedPeriod, initialData, fetchData])
+    fetchData(selectedPeriod)
+  }, [selectedPeriod, fetchData])
 
   const maxCount = Math.max(...data.map((d) => d.count), 1)
   const yCountMax = Math.ceil(maxCount * 1.2)
