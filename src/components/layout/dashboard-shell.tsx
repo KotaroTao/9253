@@ -4,7 +4,6 @@ import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Sidebar } from "@/components/layout/sidebar"
 import { DashboardHeader } from "@/components/layout/dashboard-header"
-import { BottomNav } from "@/components/layout/bottom-nav"
 import { cn } from "@/lib/utils"
 import { Shield, X, ChevronDown, ArrowLeftRight, Search } from "lucide-react"
 import { messages } from "@/lib/messages"
@@ -14,7 +13,6 @@ interface DashboardShellProps {
   role: string
   clinicName?: string
   clinicSlug?: string
-  isAdminMode?: boolean
   isOperatorMode?: boolean
   operatorClinicId?: string
   allClinics?: Array<{ id: string; name: string }>
@@ -25,7 +23,6 @@ export function DashboardShell({
   role,
   clinicName,
   clinicSlug,
-  isAdminMode = false,
   isOperatorMode = false,
   operatorClinicId,
   allClinics = [],
@@ -41,19 +38,6 @@ export function DashboardShell({
     const q = switcherSearch.toLowerCase()
     return allClinics.filter((c) => c.name.toLowerCase().includes(q))
   }, [allClinics, switcherSearch])
-
-  const canToggleView = (role === "clinic_admin" || role === "system_admin") && !isOperatorMode
-
-  async function handleToggleView() {
-    if (isAdminMode) {
-      // 管理者ビュー → スタッフビューに切替
-      await fetch("/api/admin-mode", { method: "POST" })
-    } else {
-      // スタッフビュー → 管理者ビューに戻す
-      await fetch("/api/admin-mode", { method: "DELETE" })
-    }
-    router.refresh()
-  }
 
   async function handleExitOperatorMode() {
     await fetch("/api/admin/operator-login", { method: "DELETE" })
@@ -176,31 +160,6 @@ export function DashboardShell({
     </footer>
   )
 
-  // Staff mode: header + bottom nav
-  if (!isAdminMode) {
-    return (
-      <div className="flex min-h-screen flex-col">
-        {operatorBanner}
-        <DashboardHeader
-          clinicName={clinicName}
-          isAdminMode={false}
-          canToggleView={canToggleView}
-          onMenuToggle={() => {}}
-          onToggleView={handleToggleView}
-        />
-        <main className="flex-1 bg-muted/40 p-4 pb-20">
-          {children}
-        </main>
-        {footer}
-        <BottomNav
-          clinicSlug={clinicSlug}
-          isAdminMode={false}
-        />
-      </div>
-    )
-  }
-
-  // Admin mode: full sidebar + header layout
   return (
     <div className="flex h-screen overflow-hidden">
       {sidebarOpen && (
@@ -217,20 +176,14 @@ export function DashboardShell({
       >
         <Sidebar
           role={role}
-          isAdminMode={true}
           isOperatorMode={isOperatorMode}
-          canToggleView={canToggleView}
-          onToggleView={handleToggleView}
         />
       </div>
       <div className="flex flex-1 flex-col overflow-hidden">
         {operatorBanner}
         <DashboardHeader
           clinicName={clinicName}
-          isAdminMode={true}
-          canToggleView={canToggleView}
           onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
-          onToggleView={handleToggleView}
         />
         <main className="flex-1 overflow-y-auto bg-muted/40 p-4 lg:p-6">
           {children}

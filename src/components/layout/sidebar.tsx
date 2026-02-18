@@ -12,7 +12,7 @@ import {
   BarChart3,
   Smartphone,
   Target,
-  Eye,
+  PieChart,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
@@ -21,10 +21,7 @@ import { APP_NAME } from "@/lib/constants"
 
 interface SidebarProps {
   role: string
-  isAdminMode?: boolean
   isOperatorMode?: boolean
-  canToggleView?: boolean
-  onToggleView?: () => void
 }
 
 const dailyItems = [
@@ -33,6 +30,7 @@ const dailyItems = [
 ]
 
 const analyticsItems = [
+  { href: "/dashboard/analytics", label: messages.nav.analytics, icon: PieChart },
   { href: "/dashboard/actions", label: messages.improvementActions.title, icon: Target },
   { href: "/dashboard/metrics", label: messages.nav.monthlyMetrics, icon: BarChart3 },
   { href: "/dashboard/surveys", label: messages.nav.surveys, icon: ClipboardList },
@@ -80,8 +78,9 @@ function NavSection({ label, items, pathname }: { label: string; items: NavItem[
   )
 }
 
-export function Sidebar({ role, isOperatorMode = false, canToggleView = false, onToggleView }: SidebarProps) {
+export function Sidebar({ role, isOperatorMode = false }: SidebarProps) {
   const pathname = usePathname()
+  const isAdmin = role === "clinic_admin" || role === "system_admin"
 
   return (
     <aside className="flex h-screen w-60 flex-col border-r bg-card">
@@ -92,8 +91,12 @@ export function Sidebar({ role, isOperatorMode = false, canToggleView = false, o
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto p-2">
         <NavSection label={messages.nav.sectionDaily} items={dailyItems} pathname={pathname} />
-        <NavSection label={messages.nav.sectionAnalytics} items={analyticsItems} pathname={pathname} />
-        <NavSection label={messages.nav.sectionAdmin} items={adminItems} pathname={pathname} />
+        {isAdmin && (
+          <>
+            <NavSection label={messages.nav.sectionAnalytics} items={analyticsItems} pathname={pathname} />
+            <NavSection label={messages.nav.sectionAdmin} items={adminItems} pathname={pathname} />
+          </>
+        )}
         {role === "system_admin" && (
           <div className="pt-2">
             <Link
@@ -112,15 +115,6 @@ export function Sidebar({ role, isOperatorMode = false, canToggleView = false, o
         )}
       </nav>
       <div className="space-y-1 border-t p-2">
-        {canToggleView && onToggleView && (
-          <button
-            onClick={onToggleView}
-            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <Eye className="h-4 w-4" />
-            {messages.dashboard.switchToStaffView}
-          </button>
-        )}
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
           className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
