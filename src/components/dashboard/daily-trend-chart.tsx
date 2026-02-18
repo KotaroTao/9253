@@ -15,7 +15,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { DailyTrendPoint } from "@/lib/queries/stats"
 
-const PERIOD_OPTIONS = [
+export const PERIOD_OPTIONS = [
   { label: "7日", value: 7 },
   { label: "30日", value: 30 },
   { label: "90日", value: 90 },
@@ -49,10 +49,11 @@ function CustomTooltip({
 
 interface DailyTrendChartProps {
   initialData: DailyTrendPoint[]
+  selectedPeriod: number
+  onPeriodChange: (period: number) => void
 }
 
-export function DailyTrendChart({ initialData }: DailyTrendChartProps) {
-  const [selectedPeriod, setSelectedPeriod] = useState(30)
+export function DailyTrendChart({ initialData, selectedPeriod, onPeriodChange }: DailyTrendChartProps) {
   const [data, setData] = useState<DailyTrendPoint[]>(initialData)
   const [loading, setLoading] = useState(false)
 
@@ -100,7 +101,7 @@ export function DailyTrendChart({ initialData }: DailyTrendChartProps) {
             {PERIOD_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
-                onClick={() => setSelectedPeriod(opt.value)}
+                onClick={() => onPeriodChange(opt.value)}
                 className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
                   selectedPeriod === opt.value
                     ? "bg-blue-600 text-white"
