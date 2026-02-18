@@ -297,7 +297,7 @@ https://app.mieru-clinic.com/s/{clinicSlug}
 - **インスタンス**: `mieru-clinic-db`
 - **バージョン**: PostgreSQL 15
 - **ティア**: db-f1-micro（SSD 10GB、自動拡張）
-- **バックアップ**: 毎日 03:00 JST
+- **バックアップ**: 毎日 03:00 UTC（JST 12:00）、保持7世代、PITR有効（トランザクションログ7日間保持）
 - **DB名**: `mieru_clinic` / **ユーザー**: `mieru`
 
 ### ドメイン・DNS
