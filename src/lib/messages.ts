@@ -258,6 +258,7 @@ export const messages = {
     download: "ダウンロード",
     print: "印刷",
     surveyCount: "回答数",
+    surveyCollected: "アンケート回収",
     nameRequired: "名前を入力してください",
     deactivate: "無効化",
     activate: "有効化",

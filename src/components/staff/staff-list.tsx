@@ -62,7 +62,7 @@ export function StaffList({ staffList, clinicId }: StaffListProps) {
 
               <div className="mt-3 text-sm">
                 <span className="text-muted-foreground">
-                  {staff.surveyCount} {messages.staff.surveyCount}
+                  {messages.staff.surveyCollected} : {staff.surveyCount}件
                 </span>
               </div>
 
