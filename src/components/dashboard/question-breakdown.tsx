@@ -12,7 +12,8 @@ import {
   ReferenceLine,
 } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertTriangle, TrendingUp } from "lucide-react"
+import { AlertTriangle, TrendingUp, Plus } from "lucide-react"
+import Link from "next/link"
 import type { TemplateQuestionScores } from "@/lib/queries/stats"
 import { PERIOD_OPTIONS } from "@/components/dashboard/daily-trend-chart"
 
@@ -206,6 +207,13 @@ export function QuestionBreakdown({ data, selectedPeriod }: QuestionBreakdownPro
                           {ADVICE_MAP[item.questionId]}
                         </p>
                       )}
+                      <Link
+                        href={`/dashboard/actions?question=${item.questionId}`}
+                        className="mt-2 inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100 transition-colors"
+                      >
+                        <Plus className="h-3 w-3" />
+                        改善アクションを追加
+                      </Link>
                     </div>
                     <span className="shrink-0 rounded-full bg-red-50 px-2 py-0.5 text-sm font-bold text-red-600">
                       {item.avgScore.toFixed(2)}
