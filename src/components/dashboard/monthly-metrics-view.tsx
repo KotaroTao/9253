@@ -10,6 +10,7 @@ interface MonthlySummary {
   totalVisits: number | null
   totalRevenue: number | null
   selfPayRevenue: number | null
+  returnVisitRate: number | null
   googleReviewCount: number | null
   googleReviewRating: number | null
 }

@@ -162,6 +162,7 @@ model MonthlyClinicMetrics {
   totalVisits                Int?     @map("total_visits")
   totalRevenue               Int?     @map("total_revenue")
   selfPayRevenue             Int?     @map("self_pay_revenue")
+  returnVisitRate            Float?   @map("return_visit_rate")
   googleReviewCount          Int?     @map("google_review_count")
   googleReviewRating         Float?   @map("google_review_rating")
   createdAt                  DateTime @default(now()) @map("created_at")
