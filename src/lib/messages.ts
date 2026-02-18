@@ -81,7 +81,7 @@ export const messages = {
     startSurveyDesc: "患者さまの声を集める",
     satisfaction: "患者満足度",
     thisMonth: "今月の回答",
-    recentSurveys: "最近の患者フィードバック",
+    recentSurveys: "最近のアンケート",
     trend: "患者満足度推移",
     avgScore: "平均スコア",
     templateLabel: "テンプレート",
