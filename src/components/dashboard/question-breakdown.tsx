@@ -67,36 +67,6 @@ function shortenLabel(text: string): string {
     .replace(/？$/, "")
 }
 
-// Custom Y-axis tick with text wrapping for long Japanese labels
-function CustomYAxisTick({ x, y, payload }: { x?: number; y?: number; payload?: { value: string } }) {
-  if (!x || !y || !payload?.value) return null
-  const text = payload.value
-  const maxChars = 10
-  const lines: string[] = []
-  for (let i = 0; i < text.length; i += maxChars) {
-    lines.push(text.slice(i, i + maxChars))
-  }
-  const lineHeight = 13
-  const offsetY = -((lines.length - 1) * lineHeight) / 2
-
-  return (
-    <g>
-      {lines.map((line, i) => (
-        <text
-          key={i}
-          x={x - 4}
-          y={y + offsetY + i * lineHeight}
-          textAnchor="end"
-          fill="#666"
-          fontSize={11}
-        >
-          {line}
-        </text>
-      ))}
-    </g>
-  )
-}
-
 // Custom tooltip component
 function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: { fullText: string; avgScore: number; count: number } }> }) {
   if (!active || !payload?.length) return null
@@ -179,8 +149,9 @@ export function QuestionBreakdown({ data }: QuestionBreakdownProps) {
                   <YAxis
                     type="category"
                     dataKey="label"
-                    width={140}
-                    tick={<CustomYAxisTick />}
+                    width={260}
+                    fontSize={11}
+                    tick={{ fill: "#666" }}
                   />
                   <Tooltip content={<CustomTooltip />} />
                   <ReferenceLine x={SCORE_THRESHOLD} stroke="#f59e0b" strokeDasharray="4 4" strokeWidth={1.5} />
