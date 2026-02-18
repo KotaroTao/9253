@@ -2,6 +2,13 @@ import { prisma } from "@/lib/prisma"
 import { DEFAULTS, MILESTONES, getRank, getNextRank } from "@/lib/constants"
 import type { Rank } from "@/lib/constants"
 import type { ClinicSettings } from "@/types"
+import {
+  jstToday,
+  jstDaysAgo,
+  formatDateKeyJST,
+  getDayOfWeekJaJST,
+  getDayJST,
+} from "@/lib/date-jst"
 
 export interface StreakBreakInfo {
   date: string // YYYY-MM-DD
@@ -42,18 +49,13 @@ export interface EngagementData {
 export async function getStaffEngagementData(
   clinicId: string
 ): Promise<EngagementData> {
-  const now = new Date()
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-
-  const streakStart = new Date(todayStart)
-  streakStart.setDate(streakStart.getDate() - 90)
-
-  const commentStart = new Date(todayStart)
-  commentStart.setDate(commentStart.getDate() - 30)
+  // All date boundaries are JST-aware (midnight JST expressed as UTC timestamps)
+  const todayStart = jstToday()
+  const streakStart = jstDaysAgo(90)
+  const commentStart = jstDaysAgo(30)
 
   // Week start (past 7 days: today - 6 days)
-  const weekStart = new Date(todayStart)
-  weekStart.setDate(weekStart.getDate() - 6)
+  const weekStart = jstDaysAgo(6)
 
   // Consolidate count/avg queries into a single raw SQL to reduce round-trips (7→4)
   interface AggRow {
@@ -115,77 +117,80 @@ export async function getStaffEngagementData(
   const regularClosedDays = new Set<number>(settings.regularClosedDays ?? [])
 
   // Helper: check if a date is closed (ad-hoc or regular)
+  // Uses JST day-of-week for regularClosedDays matching
   function isClosedDate(dateKey: string, date: Date): boolean {
-    return closedDates.has(dateKey) || regularClosedDays.has(date.getDay())
+    return closedDates.has(dateKey) || regularClosedDays.has(getDayJST(date))
   }
 
-  const todayKey = formatDateKey(todayStart)
+  const todayKey = formatDateKeyJST(todayStart)
 
-  // Build date set for streak + weekly activity
+  // Build date set for streak + weekly activity (format in JST)
   const dateSet = new Set<string>()
   for (const r of streakResponses) {
-    const d = new Date(r.respondedAt)
-    dateSet.add(formatDateKey(d))
+    dateSet.add(formatDateKeyJST(new Date(r.respondedAt)))
   }
 
   // Calculate weekly active days (past 7 days) and per-day data
   let weekActiveDays = 0
   const weekDays: WeekDayData[] = []
 
-  // Build per-day count map for the week
+  // Build per-day count map for the week (JST date keys)
   const weekDayCountMap = new Map<string, number>()
+  const weekStartKey = formatDateKeyJST(weekStart)
   for (const r of streakResponses) {
-    const d = new Date(r.respondedAt)
-    const key = formatDateKey(d)
-    if (key >= formatDateKey(weekStart) && key <= todayKey) {
+    const key = formatDateKeyJST(new Date(r.respondedAt))
+    if (key >= weekStartKey && key <= todayKey) {
       weekDayCountMap.set(key, (weekDayCountMap.get(key) ?? 0) + 1)
     }
   }
 
-  const weekCheck = new Date(weekStart)
+  // Iterate 7 days from weekStart. Since weekStart is midnight JST (a UTC timestamp),
+  // adding DAY_MS advances exactly one JST day (Japan has no DST).
+  const DAY_MS = 24 * 60 * 60 * 1000
   for (let i = 0; i < 7; i++) {
-    const key = formatDateKey(weekCheck)
+    const dayDate = new Date(weekStart.getTime() + i * DAY_MS)
+    const key = formatDateKeyJST(dayDate)
     const count = weekDayCountMap.get(key) ?? 0
     if (count > 0) {
       weekActiveDays++
     }
     weekDays.push({
       date: key,
-      dayLabel: getDayOfWeekJa(weekCheck),
+      dayLabel: getDayOfWeekJaJST(dayDate),
       count,
-      isClosed: isClosedDate(key, weekCheck),
+      isClosed: isClosedDate(key, dayDate),
       isToday: key === todayKey,
     })
-    weekCheck.setDate(weekCheck.getDate() + 1)
   }
 
   // Calculate streak: skip closed dates (treat as non-existent days)
   let streak = 0
   let streakBreak: StreakBreakInfo | null = null
-  const checkDate = new Date(todayStart)
+  let checkTime = todayStart.getTime()
 
   // If today has no surveys yet, start counting from yesterday
   // (today is still in progress, not a "missed" day)
   if (!dateSet.has(todayKey)) {
-    checkDate.setDate(checkDate.getDate() - 1)
+    checkTime -= DAY_MS
   }
 
   for (let i = 0; i < 90; i++) {
-    const key = formatDateKey(checkDate)
+    const checkDate = new Date(checkTime)
+    const key = formatDateKeyJST(checkDate)
     if (isClosedDate(key, checkDate)) {
       // Closed day — skip entirely, doesn't count as gap or active
-      checkDate.setDate(checkDate.getDate() - 1)
+      checkTime -= DAY_MS
       continue
     }
     if (dateSet.has(key)) {
       streak++
-      checkDate.setDate(checkDate.getDate() - 1)
+      checkTime -= DAY_MS
     } else {
       // Only show streak break if:
       // 1. The day is NOT today (today is still in progress)
       // 2. There was a prior streak (don't show break if brand new)
       if (key !== todayKey && streak > 0) {
-        streakBreak = { date: key, dayOfWeek: getDayOfWeekJa(checkDate) }
+        streakBreak = { date: key, dayOfWeek: getDayOfWeekJaJST(checkDate) }
       }
       break
     }
@@ -231,13 +236,4 @@ export async function getStaffEngagementData(
     todayAvgScore: todayAvgScore ?? null,
     streakBreak,
   }
-}
-
-function formatDateKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-}
-
-const DAY_NAMES_JA = ["日", "月", "火", "水", "木", "金", "土"]
-function getDayOfWeekJa(date: Date): string {
-  return DAY_NAMES_JA[date.getDay()]
 }

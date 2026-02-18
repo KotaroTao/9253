@@ -5,6 +5,7 @@ import { requireAuth, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
 import type { ClinicSettings } from "@/types"
+import { jstTodayStr, jstDaysAgo, formatDateKeyJST } from "@/lib/date-jst"
 
 /**
  * POST /api/closed-dates
@@ -37,11 +38,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Only allow dates within the last 14 days (prevent abuse)
-    // Use string-based comparison to avoid timezone issues
-    const now = new Date()
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
-    const fourteenDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 14)
-    const fourteenDaysAgoStr = `${fourteenDaysAgo.getFullYear()}-${String(fourteenDaysAgo.getMonth() + 1).padStart(2, "0")}-${String(fourteenDaysAgo.getDate()).padStart(2, "0")}`
+    const todayStr = jstTodayStr()
+    const fourteenDaysAgoStr = formatDateKeyJST(jstDaysAgo(14))
     if (date > todayStr || date < fourteenDaysAgoStr) {
       return errorResponse(messages.errors.invalidInput, 400)
     }
