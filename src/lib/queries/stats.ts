@@ -526,11 +526,10 @@ interface HeatmapRow {
 
 export async function getHourlyHeatmapData(
   clinicId: string,
-  months: number = 3
+  days: number = 90
 ): Promise<HeatmapCell[]> {
   const sinceDate = new Date()
-  sinceDate.setMonth(sinceDate.getMonth() - months)
-  sinceDate.setDate(1)
+  sinceDate.setDate(sinceDate.getDate() - days)
   sinceDate.setHours(0, 0, 0, 0)
 
   const rows = await prisma.$queryRaw<HeatmapRow[]>`
