@@ -589,6 +589,30 @@ export default function StrategyPage() {
                 </p>
               </div>
             </div>
+            {/* 3チャネル募集 */}
+            <div className="mt-6 rounded-xl border border-primary/10 bg-primary/[0.02] p-5">
+              <h3 className="mb-3 font-semibold">3チャネル募集戦略（母数7,500名）</h3>
+              <div className="grid gap-3 text-sm sm:grid-cols-3">
+                <div className="rounded-lg bg-card p-3">
+                  <p className="font-medium">サロン</p>
+                  <p className="text-xs text-muted-foreground">500名 → 50-75院応募</p>
+                  <p className="mt-1 text-xs text-primary">主力・脱落率低</p>
+                </div>
+                <div className="rounded-lg bg-card p-3">
+                  <p className="font-medium">LINE</p>
+                  <p className="text-xs text-muted-foreground">2,000名 → 60-100院応募</p>
+                  <p className="mt-1 text-xs text-primary">層別の穴埋め</p>
+                </div>
+                <div className="rounded-lg bg-card p-3">
+                  <p className="font-medium">SNS</p>
+                  <p className="text-xs text-muted-foreground">5,000名 → 50-100院応募</p>
+                  <p className="mt-1 text-xs text-primary">多様性・外的妥当性</p>
+                </div>
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground">
+                選外の応募院（推定130-245院）→ 有料版リリース時の優先案内リスト
+              </p>
+            </div>
           </div>
         </div>
       </section>
