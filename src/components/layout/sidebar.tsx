@@ -12,6 +12,7 @@ import {
   Smartphone,
   Target,
   PieChart,
+  FileBarChart,
   ExternalLink,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
@@ -36,6 +37,7 @@ const analyticsItems: NavItem[] = [
   { href: "/dashboard/analytics", label: messages.nav.analytics, icon: PieChart },
   { href: "/dashboard/actions", label: messages.improvementActions.title, icon: Target },
   { href: "/dashboard/surveys", label: messages.nav.surveys, icon: ClipboardList },
+  { href: "/dashboard/metrics", label: messages.nav.monthlyMetrics, icon: FileBarChart },
 ]
 
 const adminItems: NavItem[] = [
