@@ -1,17 +1,40 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { DailyTrendChart } from "@/components/dashboard/daily-trend-chart"
-import { TemplateTrendChart } from "@/components/dashboard/template-trend-chart"
-import type { DailyTrendPoint, TemplateTrendPoint } from "@/lib/queries/stats"
+import { QuestionBreakdown } from "@/components/dashboard/question-breakdown"
+import type { DailyTrendPoint, TemplateQuestionScores } from "@/lib/queries/stats"
 
 interface AnalyticsChartsProps {
   initialDailyTrend: DailyTrendPoint[]
-  initialTemplateTrend: TemplateTrendPoint[]
+  initialQuestionBreakdown: TemplateQuestionScores[]
 }
 
-export function AnalyticsCharts({ initialDailyTrend, initialTemplateTrend }: AnalyticsChartsProps) {
+export function AnalyticsCharts({ initialDailyTrend, initialQuestionBreakdown }: AnalyticsChartsProps) {
   const [selectedPeriod, setSelectedPeriod] = useState(30)
+  const [questionData, setQuestionData] = useState<TemplateQuestionScores[]>(initialQuestionBreakdown)
+  const [questionLoading, setQuestionLoading] = useState(false)
+
+  const fetchQuestionBreakdown = useCallback(async (days: number) => {
+    setQuestionLoading(true)
+    try {
+      const res = await fetch(`/api/question-breakdown?days=${days}`)
+      if (res.ok) {
+        const json = await res.json()
+        setQuestionData(json)
+      }
+    } finally {
+      setQuestionLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (selectedPeriod !== 30) {
+      fetchQuestionBreakdown(selectedPeriod)
+    } else {
+      setQuestionData(initialQuestionBreakdown)
+    }
+  }, [selectedPeriod, initialQuestionBreakdown, fetchQuestionBreakdown])
 
   return (
     <>
@@ -20,10 +43,13 @@ export function AnalyticsCharts({ initialDailyTrend, initialTemplateTrend }: Ana
         selectedPeriod={selectedPeriod}
         onPeriodChange={setSelectedPeriod}
       />
-      <TemplateTrendChart
-        initialData={initialTemplateTrend}
-        selectedPeriod={selectedPeriod}
-      />
+      {questionLoading ? (
+        <div className="flex h-[200px] items-center justify-center rounded-lg border bg-card">
+          <p className="text-sm text-muted-foreground">読み込み中...</p>
+        </div>
+      ) : (
+        <QuestionBreakdown data={questionData} selectedPeriod={selectedPeriod} />
+      )}
     </>
   )
 }

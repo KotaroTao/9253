@@ -269,6 +269,83 @@ export async function getQuestionBreakdown(
   return result
 }
 
+export async function getQuestionBreakdownByDays(
+  clinicId: string,
+  days: number = 30,
+): Promise<TemplateQuestionScores[]> {
+  const templates = await prisma.surveyTemplate.findMany({
+    where: { clinicId, isActive: true },
+    select: { id: true, name: true, questions: true },
+  })
+
+  if (templates.length === 0) return []
+
+  const sinceDate = new Date()
+  sinceDate.setDate(sinceDate.getDate() - days)
+  sinceDate.setHours(0, 0, 0, 0)
+
+  const templateIds = templates.map((t) => t.id)
+  const rows = await prisma.$queryRaw<QuestionBreakdownRow[]>`
+    SELECT
+      template_id,
+      key as question_id,
+      ROUND(AVG(value::numeric), 1)::float as avg_score,
+      COUNT(*) as count
+    FROM survey_responses,
+      jsonb_each_text(answers)
+    WHERE clinic_id = ${clinicId}::uuid
+      AND template_id = ANY(${templateIds}::uuid[])
+      AND responded_at >= ${sinceDate}
+    GROUP BY template_id, key
+  `
+
+  const responseCounts = await prisma.surveyResponse.groupBy({
+    by: ["templateId"],
+    where: { clinicId, templateId: { in: templateIds }, respondedAt: { gte: sinceDate } },
+    _count: { _all: true },
+  })
+  const countMap = new Map(responseCounts.map((r) => [r.templateId, r._count._all]))
+
+  const scoreMap = new Map<string, Map<string, { avgScore: number; count: number }>>()
+  for (const row of rows) {
+    if (!scoreMap.has(row.template_id)) {
+      scoreMap.set(row.template_id, new Map())
+    }
+    scoreMap.get(row.template_id)!.set(row.question_id, {
+      avgScore: row.avg_score ?? 0,
+      count: Number(row.count),
+    })
+  }
+
+  const result: TemplateQuestionScores[] = []
+
+  for (const template of templates) {
+    const responseCount = countMap.get(template.id) ?? 0
+    if (responseCount === 0) continue
+
+    const questions = template.questions as Array<{ id: string; text: string }>
+    const templateScores = scoreMap.get(template.id)
+
+    const questionScores: QuestionScore[] = questions.map((q) => {
+      const score = templateScores?.get(q.id)
+      return {
+        questionId: q.id,
+        text: q.text,
+        avgScore: score?.avgScore ?? 0,
+        count: score?.count ?? 0,
+      }
+    })
+
+    result.push({
+      templateName: template.name,
+      responseCount,
+      questions: questionScores,
+    })
+  }
+
+  return result
+}
+
 /**
  * Get current overall satisfaction score for a clinic (last 30 days average)
  */
@@ -381,53 +458,6 @@ export async function getDailyTrend(
     date: r.date_label,
     count: Number(r.count),
     avgScore: r.avg_score ?? null,
-  }))
-}
-
-// --- Template-wise daily trend (avg score per template per day) ---
-
-export interface TemplateTrendPoint {
-  date: string
-  templateName: string
-  avgScore: number | null
-  count: number
-}
-
-interface TemplateTrendRow {
-  date_label: string
-  template_name: string
-  avg_score: number | null
-  count: bigint
-}
-
-export async function getTemplateTrend(
-  clinicId: string,
-  days: number = 30,
-): Promise<TemplateTrendPoint[]> {
-  const sinceDate = new Date()
-  sinceDate.setDate(sinceDate.getDate() - days)
-  sinceDate.setHours(0, 0, 0, 0)
-
-  const rows = await prisma.$queryRaw<TemplateTrendRow[]>`
-    SELECT
-      TO_CHAR(sr.responded_at AT TIME ZONE 'Asia/Tokyo', 'MM/DD') AS date_label,
-      st.name AS template_name,
-      ROUND(AVG(sr.overall_score)::numeric, 2)::float AS avg_score,
-      COUNT(*) AS count
-    FROM survey_responses sr
-    JOIN survey_templates st ON sr.template_id = st.id
-    WHERE sr.clinic_id = ${clinicId}::uuid
-      AND sr.responded_at >= ${sinceDate}
-      AND sr.overall_score IS NOT NULL
-    GROUP BY (sr.responded_at AT TIME ZONE 'Asia/Tokyo')::date, date_label, st.name
-    ORDER BY (sr.responded_at AT TIME ZONE 'Asia/Tokyo')::date ASC, st.name
-  `
-
-  return rows.map((r) => ({
-    date: r.date_label,
-    templateName: r.template_name,
-    avgScore: r.avg_score ?? null,
-    count: Number(r.count),
   }))
 }
 
