@@ -117,8 +117,8 @@ export default async function SurveysPage({ searchParams }: SurveysPageProps) {
                       </div>
                     )}
                     <span className="text-xs text-muted-foreground">
-                      {new Date(r.respondedAt).toLocaleDateString("ja-JP")}{" "}
-                      {new Date(r.respondedAt).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}
+                      {new Date(r.respondedAt).toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo" })}{" "}
+                      {new Date(r.respondedAt).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Tokyo" })}
                     </span>
                   </div>
                 </div>
