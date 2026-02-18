@@ -32,7 +32,6 @@ export interface EngagementData {
   weekCount: number
   weekAvgScore: number | null
   weekActiveDays: number
-  workingDaysPerWeek: number
   weekDays: WeekDayData[]
   // Today's mood
   todayAvgScore: number | null
@@ -112,7 +111,6 @@ export async function getStaffEngagementData(
   // Extract settings
   const settings = (clinic?.settings ?? {}) as ClinicSettings
   const dailyGoal = settings.dailyGoal ?? DEFAULTS.DAILY_SURVEY_GOAL
-  const workingDaysPerWeek = settings.workingDaysPerWeek ?? 6
   const closedDates = new Set<string>(settings.closedDates ?? [])
   const regularClosedDays = new Set<number>(settings.regularClosedDays ?? [])
 
@@ -229,7 +227,6 @@ export async function getStaffEngagementData(
     weekCount,
     weekAvgScore: weekAvgScore ?? null,
     weekActiveDays,
-    workingDaysPerWeek,
     weekDays,
     todayAvgScore: todayAvgScore ?? null,
     streakBreak,

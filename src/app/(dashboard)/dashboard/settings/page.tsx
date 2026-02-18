@@ -29,12 +29,11 @@ export default async function SettingsPage() {
   }
 
   const settings = ((clinic as { settings?: unknown }).settings ?? {}) as ClinicSettings
-  const workingDaysPerWeek = settings.workingDaysPerWeek ?? 6
   const regularClosedDays = settings.regularClosedDays ?? []
 
   return (
     <div className="space-y-6">
-      <SettingsForm clinic={clinic} workingDaysPerWeek={workingDaysPerWeek} regularClosedDays={regularClosedDays} />
+      <SettingsForm clinic={clinic} regularClosedDays={regularClosedDays} />
     </div>
   )
 }
