@@ -3,6 +3,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { getOperatorClinicId } from "@/lib/admin-mode"
 import { getStaffEngagementData } from "@/lib/queries/engagement"
+import { getQuestionCurrentScores } from "@/lib/queries/stats"
 import { StaffEngagement } from "@/components/dashboard/staff-engagement"
 import { messages } from "@/lib/messages"
 import { ROLES } from "@/lib/constants"
@@ -33,18 +34,41 @@ export default async function DashboardPage() {
     getStaffEngagementData(clinicId),
     prisma.improvementAction.findMany({
       where: { clinicId, status: "active" },
-      select: { id: true, title: true, description: true, targetQuestion: true },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        targetQuestion: true,
+        targetQuestionId: true,
+        baselineScore: true,
+        resultScore: true,
+        status: true,
+        startedAt: true,
+      },
       orderBy: { createdAt: "desc" },
       take: 5,
     }),
   ])
+
+  // Fetch current question scores for active actions
+  const questionIds = activeActions
+    .map((a) => a.targetQuestionId)
+    .filter((id): id is string => id != null)
+  const questionScores = questionIds.length > 0
+    ? await getQuestionCurrentScores(clinicId, questionIds)
+    : {}
 
   return (
     <div className="space-y-6">
       <p className="text-sm text-muted-foreground">
         {messages.dashboard.staffDashboardMessage}
       </p>
-      <StaffEngagement data={engagement} kioskUrl={kioskUrl} activeActions={activeActions} />
+      <StaffEngagement
+        data={engagement}
+        kioskUrl={kioskUrl}
+        activeActions={activeActions}
+        questionScores={questionScores}
+      />
     </div>
   )
 }

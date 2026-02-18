@@ -4,30 +4,38 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
-import { Flame, MessageCircle, Trophy, CalendarOff, Smartphone, ArrowRight, Sparkles } from "lucide-react"
+import { Flame, Trophy, CalendarOff, Smartphone, ArrowRight, Sparkles, Target, TrendingUp, TrendingDown } from "lucide-react"
+import Link from "next/link"
 import { Confetti } from "@/components/survey/confetti"
 import { cn } from "@/lib/utils"
 import type { EngagementData } from "@/lib/queries/engagement"
 
+interface ActiveAction {
+  id: string
+  title: string
+  description: string | null
+  targetQuestion: string | null
+  targetQuestionId: string | null
+  baselineScore: number | null
+  resultScore: number | null
+  status: string
+  startedAt: string | Date
+}
+
 interface StaffEngagementProps {
   data: EngagementData
   kioskUrl: string
-  activeActions?: Array<{
-    id: string
-    title: string
-    description: string | null
-    targetQuestion: string | null
-  }>
+  activeActions?: ActiveAction[]
+  questionScores?: Record<string, number>
 }
 
-export function StaffEngagement({ data, kioskUrl, activeActions = [] }: StaffEngagementProps) {
+export function StaffEngagement({ data, kioskUrl, activeActions = [], questionScores = {} }: StaffEngagementProps) {
   const {
     todayCount,
     dailyGoal,
     streak,
     totalCount,
     nextMilestone,
-    positiveComment,
     weekDays,
   } = data
 
@@ -257,19 +265,80 @@ export function StaffEngagement({ data, kioskUrl, activeActions = [] }: StaffEng
         <ArrowRight className="h-5 w-5 shrink-0 text-blue-400 transition-transform group-hover:translate-x-1" />
       </a>
 
-      {/* ⑤ Patient voice */}
-      {positiveComment && (
-        <Card className="border-amber-200 bg-gradient-to-r from-amber-50/50 to-white">
-          <CardContent className="py-5">
-            <div className="flex items-center gap-2 text-amber-600">
-              <MessageCircle className="h-4 w-4" />
-              <p className="text-sm font-medium">{messages.dashboard.patientVoice}</p>
-            </div>
-            <p className="mt-2 text-sm leading-relaxed">
-              「{positiveComment}」
-            </p>
-          </CardContent>
-        </Card>
+      {/* ⑤ Active improvement actions (matching /dashboard/actions style) */}
+      {activeActions.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
+            現在取り組んでいる改善アクション
+          </h2>
+          {activeActions.map((action) => {
+            const currentScore = action.targetQuestionId
+              ? questionScores[action.targetQuestionId] ?? null
+              : null
+            const scoreChange =
+              currentScore != null && action.baselineScore != null
+                ? Math.round((currentScore - action.baselineScore) * 10) / 10
+                : null
+
+            return (
+              <Card
+                key={action.id}
+                className="border-blue-200 bg-gradient-to-r from-blue-50/30 to-white"
+              >
+                <CardContent className="py-4">
+                  <div className="flex w-full items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <Target className="h-4 w-4 shrink-0 text-blue-500" />
+                        <p className="text-sm font-medium truncate">{action.title}</p>
+                      </div>
+                      {action.targetQuestion && (
+                        <p className="mt-1 text-xs text-muted-foreground pl-6">
+                          {action.targetQuestion}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      {scoreChange !== null && (
+                        <div
+                          className={cn(
+                            "flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-medium",
+                            scoreChange > 0
+                              ? "bg-green-100 text-green-700"
+                              : scoreChange < 0
+                                ? "bg-red-100 text-red-700"
+                                : "bg-gray-100 text-gray-600"
+                          )}
+                        >
+                          {scoreChange > 0 ? (
+                            <TrendingUp className="h-3 w-3" />
+                          ) : scoreChange < 0 ? (
+                            <TrendingDown className="h-3 w-3" />
+                          ) : null}
+                          {scoreChange > 0 ? "+" : ""}
+                          {scoreChange}
+                        </div>
+                      )}
+                      {action.baselineScore != null && (
+                        <span className="text-xs text-muted-foreground">
+                          {action.baselineScore}
+                          {currentScore != null ? ` → ${currentScore}` : ""}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
+          <Link
+            href="/dashboard/actions"
+            className="flex items-center justify-center gap-1 rounded-lg border border-dashed py-2.5 text-sm text-muted-foreground transition-colors hover:border-blue-300 hover:text-blue-600"
+          >
+            改善アクションを管理
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
       )}
 
       {/* ⑥ Total milestone */}
@@ -305,29 +374,6 @@ export function StaffEngagement({ data, kioskUrl, activeActions = [] }: StaffEng
         </Card>
       )}
 
-      {/* ⑦ Active improvement actions */}
-      {activeActions.length > 0 && (
-        <Card>
-          <CardContent className="py-5">
-            <p className="text-sm font-medium text-muted-foreground mb-3">
-              現在取り組んでいる改善アクション
-            </p>
-            <div className="space-y-2">
-              {activeActions.map((action) => (
-                <div
-                  key={action.id}
-                  className="rounded-lg border bg-blue-50/50 px-3 py-2.5"
-                >
-                  <p className="text-sm font-medium text-blue-900">{action.title}</p>
-                  {action.description && (
-                    <p className="mt-0.5 text-xs text-blue-600/70 line-clamp-2">{action.description}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }
