@@ -361,10 +361,11 @@ async function main() {
         [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
         [5, 12, 18, 3, 7, 16, 14, 10, 8, 5, 2]
       )
-      const respondedAt = new Date(
+      // JST時間をUTCとして保存（DBクエリで AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo' する前提）
+      const respondedAt = new Date(Date.UTC(
         current.getFullYear(), current.getMonth(), current.getDate(),
-        hour, Math.floor(rng() * 60), Math.floor(rng() * 60)
-      )
+        hour - 9, Math.floor(rng() * 60), Math.floor(rng() * 60)
+      ))
 
       // === 時間帯によるスコア変動（受付の疲弊と直結）===
       let timeBonus = 0
