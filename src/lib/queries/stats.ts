@@ -22,53 +22,33 @@ export async function getDashboardStats(
   }
   const hasDateRange = dateFrom && dateTo
 
-  const [statsRows, recentResponses] = await Promise.all([
-    hasDateRange
-      ? prisma.$queryRaw<StatsRow[]>`
-          SELECT
-            COUNT(*) FILTER (WHERE responded_at >= ${dateFrom} AND responded_at <= ${dateTo}) AS total_responses,
-            ROUND(AVG(overall_score) FILTER (WHERE responded_at >= ${dateFrom} AND responded_at <= ${dateTo})::numeric, 2)::float AS avg_score,
-            ROUND(AVG(overall_score) FILTER (WHERE responded_at >= ${prevStart} AND responded_at <= ${prevEnd})::numeric, 2)::float AS prev_avg_score,
-            COUNT(*) FILTER (WHERE responded_at >= ${prevStart} AND responded_at <= ${prevEnd}) AS prev_count
-          FROM survey_responses
-          WHERE clinic_id = ${clinicId}::uuid
-        `
-      : prisma.$queryRaw<StatsRow[]>`
-          SELECT
-            COUNT(*) AS total_responses,
-            ROUND(AVG(overall_score)::numeric, 2)::float AS avg_score,
-            ROUND(AVG(overall_score) FILTER (WHERE responded_at >= ${prevStart} AND responded_at <= ${prevEnd})::numeric, 2)::float AS prev_avg_score,
-            COUNT(*) FILTER (WHERE responded_at >= ${prevStart} AND responded_at <= ${prevEnd}) AS prev_count
-          FROM survey_responses
-          WHERE clinic_id = ${clinicId}::uuid
-        `,
-
-    prisma.surveyResponse.findMany({
-      where: { clinicId },
-      orderBy: { respondedAt: "desc" },
-      take: 11,
-      select: {
-        id: true,
-        overallScore: true,
-        freeText: true,
-        patientAttributes: true,
-        respondedAt: true,
-        staff: { select: { name: true, role: true } },
-      },
-    }),
-  ])
+  const statsRows = await (hasDateRange
+    ? prisma.$queryRaw<StatsRow[]>`
+        SELECT
+          COUNT(*) FILTER (WHERE responded_at >= ${dateFrom} AND responded_at <= ${dateTo}) AS total_responses,
+          ROUND(AVG(overall_score) FILTER (WHERE responded_at >= ${dateFrom} AND responded_at <= ${dateTo})::numeric, 2)::float AS avg_score,
+          ROUND(AVG(overall_score) FILTER (WHERE responded_at >= ${prevStart} AND responded_at <= ${prevEnd})::numeric, 2)::float AS prev_avg_score,
+          COUNT(*) FILTER (WHERE responded_at >= ${prevStart} AND responded_at <= ${prevEnd}) AS prev_count
+        FROM survey_responses
+        WHERE clinic_id = ${clinicId}::uuid
+      `
+    : prisma.$queryRaw<StatsRow[]>`
+        SELECT
+          COUNT(*) AS total_responses,
+          ROUND(AVG(overall_score)::numeric, 2)::float AS avg_score,
+          ROUND(AVG(overall_score) FILTER (WHERE responded_at >= ${prevStart} AND responded_at <= ${prevEnd})::numeric, 2)::float AS prev_avg_score,
+          COUNT(*) FILTER (WHERE responded_at >= ${prevStart} AND responded_at <= ${prevEnd}) AS prev_count
+        FROM survey_responses
+        WHERE clinic_id = ${clinicId}::uuid
+      `)
 
   const stats = statsRows[0]
-  const hasMoreResponses = recentResponses.length > 10
-  const trimmedResponses = hasMoreResponses ? recentResponses.slice(0, 10) : recentResponses
 
   return {
     totalResponses: Number(stats.total_responses),
     averageScore: stats.avg_score ?? 0,
     prevAverageScore:
       Number(stats.prev_count) > 0 ? (stats.prev_avg_score ?? null) : null,
-    recentResponses: trimmedResponses,
-    hasMoreResponses,
   }
 }
 

@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma"
 import { getOperatorClinicId } from "@/lib/admin-mode"
 import { getDashboardStats, getCombinedMonthlyTrends, getQuestionBreakdown, getHourlyHeatmapData } from "@/lib/queries/stats"
 import { SatisfactionTrendChart } from "@/components/dashboard/satisfaction-trend"
-import { RecentResponses } from "@/components/dashboard/recent-responses"
 import { QuestionBreakdown } from "@/components/dashboard/question-breakdown"
 import { InsightCards } from "@/components/dashboard/insight-cards"
 import { StaffLeaderboard } from "@/components/dashboard/staff-leaderboard"
@@ -129,7 +128,6 @@ export default async function AnalyticsPage() {
         <QuestionBreakdown data={questionBreakdown} />
         <SatisfactionHeatmap data={heatmapData} />
         <SatisfactionTrendChart data={satisfactionTrend} />
-        <RecentResponses responses={stats.recentResponses} initialHasMore={stats.hasMoreResponses} />
         <StaffLeaderboard />
       </div>
     </div>
