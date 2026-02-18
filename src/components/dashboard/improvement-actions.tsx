@@ -219,6 +219,16 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [],
     }
   }
 
+  function handleLogUpdated(actionId: string, updatedLog: ActionLog) {
+    setActions(actions.map((a) => {
+      if (a.id !== actionId || !a.logs) return a
+      return {
+        ...a,
+        logs: a.logs.map((l) => (l.id === updatedLog.id ? updatedLog : l)),
+      }
+    }))
+  }
+
   const activeActions = actions.filter((a) => a.status === "active")
   const completedActions = actions.filter((a) => a.status !== "active")
 
@@ -427,6 +437,7 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [],
                 onToggle={() => setExpandedId(expandedId === action.id ? null : action.id)}
                 onStatusChange={handleStatusChange}
                 onDelete={handleDelete}
+                onLogUpdated={handleLogUpdated}
                 loading={loading}
                 currentQuestionScore={action.targetQuestionId ? questionScores[action.targetQuestionId] : undefined}
                 questionLabel={questionLabel}
@@ -453,6 +464,7 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [],
                 onToggle={() => setExpandedId(expandedId === action.id ? null : action.id)}
                 onStatusChange={handleStatusChange}
                 onDelete={handleDelete}
+                onLogUpdated={handleLogUpdated}
                 loading={loading}
                 questionLabel={questionLabel}
               />
@@ -470,6 +482,7 @@ function ActionCard({
   onToggle,
   onStatusChange,
   onDelete,
+  onLogUpdated,
   loading,
   currentQuestionScore,
   questionLabel,
@@ -479,6 +492,7 @@ function ActionCard({
   onToggle: () => void
   onStatusChange: (id: string, status: string) => void
   onDelete: (id: string) => void
+  onLogUpdated: (actionId: string, updatedLog: ActionLog) => void
   loading: boolean
   currentQuestionScore?: number
   questionLabel?: string | null
@@ -577,7 +591,7 @@ function ActionCard({
 
             {/* History timeline */}
             {action.logs && action.logs.length > 0 && (
-              <ActionTimeline logs={action.logs} />
+              <ActionTimeline logs={action.logs} onLogUpdated={(updatedLog) => onLogUpdated(action.id, updatedLog)} />
             )}
 
             {/* Score comparison: baseline → current/completion */}
@@ -731,7 +745,43 @@ const LOG_ACTION_CONFIG: Record<string, {
   },
 }
 
-function ActionTimeline({ logs }: { logs: ActionLog[] }) {
+function ActionTimeline({ logs, onLogUpdated }: { logs: ActionLog[]; onLogUpdated: (updatedLog: ActionLog) => void }) {
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editDate, setEditDate] = useState("")
+  const [editScore, setEditScore] = useState("")
+  const [editNote, setEditNote] = useState("")
+  const [saving, setSaving] = useState(false)
+
+  function startEdit(log: ActionLog) {
+    setEditingId(log.id)
+    const d = new Date(log.createdAt)
+    setEditDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`)
+    setEditScore(log.satisfactionScore != null ? String(log.satisfactionScore) : "")
+    setEditNote(log.note ?? "")
+  }
+
+  async function handleSave(logId: string) {
+    setSaving(true)
+    try {
+      const body: Record<string, unknown> = {}
+      if (editDate) body.createdAt = new Date(editDate).toISOString()
+      body.satisfactionScore = editScore ? Number(editScore) : null
+      body.note = editNote || ""
+      const res = await fetch(`/api/improvement-action-logs/${logId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        onLogUpdated(updated)
+        setEditingId(null)
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <div className="space-y-1.5">
       <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
@@ -742,9 +792,73 @@ function ActionTimeline({ logs }: { logs: ActionLog[] }) {
         {logs.map((log) => {
           const config = LOG_ACTION_CONFIG[log.action] ?? LOG_ACTION_CONFIG.started
           const Icon = config.icon
+          const isEditing = editingId === log.id
+
+          if (isEditing) {
+            return (
+              <div key={log.id} className="relative">
+                <div className={`absolute -left-[21px] top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white ${config.dotColor}`} />
+                <div className="space-y-1.5 rounded-md border bg-muted/30 p-2">
+                  <div className="flex items-center gap-2">
+                    <Icon className={`h-3 w-3 shrink-0 ${config.color}`} />
+                    <span className={`text-xs font-medium ${config.color}`}>{config.label}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <div>
+                      <label className="text-[10px] text-muted-foreground">日付</label>
+                      <input
+                        type="date"
+                        value={editDate}
+                        onChange={(e) => setEditDate(e.target.value)}
+                        className="w-full rounded border bg-background px-2 py-1 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-muted-foreground">{messages.improvementActions.satisfactionAt}</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="1"
+                        max="5"
+                        value={editScore}
+                        onChange={(e) => setEditScore(e.target.value)}
+                        placeholder="例: 3.82"
+                        className="w-full rounded border bg-background px-2 py-1 text-xs"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground">メモ</label>
+                    <input
+                      type="text"
+                      value={editNote}
+                      onChange={(e) => setEditNote(e.target.value)}
+                      placeholder="任意のメモ"
+                      className="w-full rounded border bg-background px-2 py-1 text-xs"
+                    />
+                  </div>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => handleSave(log.id)}
+                      disabled={saving}
+                      className="rounded bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                    >
+                      {saving ? messages.common.loading : messages.common.save}
+                    </button>
+                    <button
+                      onClick={() => setEditingId(null)}
+                      className="rounded px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-muted"
+                    >
+                      {messages.common.cancel}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
           return (
-            <div key={log.id} className="relative">
-              {/* Timeline dot */}
+            <div key={log.id} className="group relative">
               <div className={`absolute -left-[21px] top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white ${config.dotColor}`} />
               <div className="flex items-center gap-2">
                 <Icon className={`h-3 w-3 shrink-0 ${config.color}`} />
@@ -754,6 +868,13 @@ function ActionTimeline({ logs }: { logs: ActionLog[] }) {
                 <span className="text-[10px] text-muted-foreground">
                   {new Date(log.createdAt).toLocaleDateString("ja-JP")}
                 </span>
+                <button
+                  onClick={() => startEdit(log)}
+                  className="ml-auto hidden text-muted-foreground/50 hover:text-muted-foreground group-hover:inline-flex"
+                  title="編集"
+                >
+                  <Pencil className="h-3 w-3" />
+                </button>
               </div>
               {log.satisfactionScore != null && (
                 <p className="mt-0.5 text-[11px] text-muted-foreground ml-5">
