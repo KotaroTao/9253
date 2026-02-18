@@ -59,18 +59,14 @@ export default async function SurveysPage({ searchParams }: SurveysPageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{messages.nav.surveys}</h1>
-        <p className="text-sm text-muted-foreground">
-          {total}{messages.common.countSuffix}
-        </p>
-      </div>
-
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">
               {messages.dashboard.recentSurveys}
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                {total}{messages.common.countSuffix}
+              </span>
             </CardTitle>
             <PageSizeSelector currentLimit={limit} basePath="/dashboard/surveys" />
           </div>

@@ -3,7 +3,6 @@ import { auth } from "@/auth"
 import { getOperatorClinicId } from "@/lib/admin-mode"
 import { getClinicById } from "@/lib/queries/clinics"
 import { SettingsForm } from "@/components/settings/settings-form"
-import { messages } from "@/lib/messages"
 import { ROLES } from "@/lib/constants"
 import type { ClinicSettings } from "@/types"
 
@@ -35,7 +34,6 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">{messages.settings.title}</h1>
       <SettingsForm clinic={clinic} workingDaysPerWeek={workingDaysPerWeek} regularClosedDays={regularClosedDays} />
     </div>
   )
