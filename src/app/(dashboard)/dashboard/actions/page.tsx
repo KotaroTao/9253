@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { messages } from "@/lib/messages"
 import { ImprovementActionsView } from "@/components/dashboard/improvement-actions"
 import { ROLES } from "@/lib/constants"
+import { getQuestionCurrentScores } from "@/lib/queries/stats"
 
 interface TemplateQuestion {
   id: string
@@ -57,12 +58,27 @@ export default async function ActionsPage() {
     ),
   }))
 
+  // Collect all question IDs from templates + active actions' targetQuestionIds
+  const allQuestionIds = new Set<string>()
+  for (const t of templateQuestions) {
+    for (const q of t.questions) {
+      allQuestionIds.add(q.id)
+    }
+  }
+  for (const a of actions) {
+    if (a.targetQuestionId) allQuestionIds.add(a.targetQuestionId)
+  }
+
+  // Fetch current scores for all questions
+  const questionScores = await getQuestionCurrentScores(clinicId, Array.from(allQuestionIds))
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">{messages.improvementActions.title}</h1>
       <ImprovementActionsView
         initialActions={actions}
         templateQuestions={templateQuestions}
+        questionScores={questionScores}
       />
     </div>
   )

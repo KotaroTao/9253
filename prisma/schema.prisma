@@ -121,10 +121,11 @@ model ImprovementAction {
   clinicId      String    @map("clinic_id") @db.Uuid
   title         String
   description   String?
-  targetQuestion String?  @map("target_question")
-  baselineScore Float?    @map("baseline_score")
-  targetScore   Float?    @map("target_score")
-  resultScore   Float?    @map("result_score")
+  targetQuestion   String?  @map("target_question")
+  targetQuestionId String?  @map("target_question_id")
+  baselineScore    Float?   @map("baseline_score")
+  targetScore      Float?   @map("target_score")
+  resultScore      Float?   @map("result_score")
   status        String    @default("active") // active, completed, cancelled
   startedAt     DateTime  @default(now()) @map("started_at")
   completedAt   DateTime? @map("completed_at")

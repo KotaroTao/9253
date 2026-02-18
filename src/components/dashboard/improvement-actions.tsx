@@ -44,8 +44,8 @@ interface ImprovementAction {
   title: string
   description: string | null
   targetQuestion: string | null
+  targetQuestionId: string | null
   baselineScore: number | null
-  targetScore: number | null
   resultScore: number | null
   status: string
   startedAt: string | Date
@@ -67,9 +67,10 @@ interface TemplateData {
 interface Props {
   initialActions: ImprovementAction[]
   templateQuestions?: TemplateData[]
+  questionScores?: Record<string, number>
 }
 
-export function ImprovementActionsView({ initialActions, templateQuestions = [] }: Props) {
+export function ImprovementActionsView({ initialActions, templateQuestions = [], questionScores = {} }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [actions, setActions] = useState(initialActions)
@@ -83,8 +84,6 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [] 
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [targetQuestion, setTargetQuestion] = useState("")
-  const [baselineScore, setBaselineScore] = useState("")
-  const [targetScore, setTargetScore] = useState("")
 
   // All questions flattened for lookup
   const allQuestions = useMemo(() => {
@@ -139,8 +138,6 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [] 
     setTitle("")
     setDescription("")
     setTargetQuestion("")
-    setBaselineScore("")
-    setTargetScore("")
     setSelectedQuestionId("")
   }
 
@@ -156,8 +153,7 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [] 
           title: title.trim(),
           description: description.trim() || undefined,
           targetQuestion: targetQuestion.trim() || undefined,
-          baselineScore: baselineScore ? Number(baselineScore) : undefined,
-          targetScore: targetScore ? Number(targetScore) : undefined,
+          targetQuestionId: selectedQuestionId || undefined,
         }),
       })
       if (res.ok) {
@@ -177,14 +173,11 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [] 
     }
   }
 
-  async function handleStatusChange(id: string, status: string, resultScore?: number) {
+  async function handleStatusChange(id: string, status: string) {
     setLoading(true)
     setErrorMsg(null)
     try {
       const body: Record<string, unknown> = { status }
-      if (typeof resultScore === "number") {
-        body.resultScore = resultScore
-      }
       const res = await fetch(`/api/improvement-actions/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -370,33 +363,17 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [] 
               </div>
             )}
 
-            {/* Scores */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>{messages.improvementActions.baselineScore}</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  min="1"
-                  max="5"
-                  value={baselineScore}
-                  onChange={(e) => setBaselineScore(e.target.value)}
-                  placeholder="3.2"
-                />
+            {/* Current score of selected question (auto-populated) */}
+            {selectedQuestionId && questionScores[selectedQuestionId] != null && (
+              <div className="rounded-lg bg-muted/50 px-3 py-2">
+                <p className="text-xs text-muted-foreground">
+                  {messages.improvementActions.currentScore}
+                </p>
+                <p className="text-lg font-bold">
+                  {questionScores[selectedQuestionId]}
+                </p>
               </div>
-              <div className="space-y-1.5">
-                <Label>{messages.improvementActions.targetScore}</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  min="1"
-                  max="5"
-                  value={targetScore}
-                  onChange={(e) => setTargetScore(e.target.value)}
-                  placeholder="4.0"
-                />
-              </div>
-            </div>
+            )}
             <div className="flex gap-2 pt-2">
               <Button onClick={handleCreate} disabled={!title.trim() || loading}>
                 {loading ? messages.common.loading : messages.common.save}
@@ -445,6 +422,7 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [] 
               onStatusChange={handleStatusChange}
               onDelete={handleDelete}
               loading={loading}
+              currentQuestionScore={action.targetQuestionId ? questionScores[action.targetQuestionId] : undefined}
             />
           ))}
         </div>
@@ -480,23 +458,25 @@ function ActionCard({
   onStatusChange,
   onDelete,
   loading,
+  currentQuestionScore,
 }: {
   action: ImprovementAction
   expanded: boolean
   onToggle: () => void
-  onStatusChange: (id: string, status: string, resultScore?: number) => void
+  onStatusChange: (id: string, status: string) => void
   onDelete: (id: string) => void
   loading: boolean
+  currentQuestionScore?: number
 }) {
-  const [resultInput, setResultInput] = useState(
-    action.resultScore?.toString() ?? ""
-  )
   const isActive = action.status === "active"
   const isCompleted = action.status === "completed"
 
+  // For active: compare baseline vs current question score
+  // For completed: compare baseline vs resultScore (auto-captured at completion)
+  const compareScore = isActive ? (currentQuestionScore ?? null) : (action.resultScore ?? null)
   const scoreChange =
-    action.resultScore != null && action.baselineScore != null
-      ? Math.round((action.resultScore - action.baselineScore) * 10) / 10
+    compareScore != null && action.baselineScore != null
+      ? Math.round((compareScore - action.baselineScore) * 10) / 10
       : null
 
   return (
@@ -550,7 +530,7 @@ function ActionCard({
             {action.baselineScore != null && (
               <span className="text-xs text-muted-foreground">
                 {action.baselineScore}
-                {action.resultScore != null ? ` → ${action.resultScore}` : ""}
+                {compareScore != null ? ` → ${compareScore}` : ""}
               </span>
             )}
             {expanded ? (
@@ -585,47 +565,45 @@ function ActionCard({
               <ActionTimeline logs={action.logs} />
             )}
 
-            {/* Score comparison */}
-            {(action.baselineScore != null || action.targetScore != null) && (
-              <div className="grid grid-cols-3 gap-2">
-                {action.baselineScore != null && (
-                  <div className="rounded-lg bg-muted/50 p-2 text-center">
-                    <p className="text-[10px] text-muted-foreground">
-                      {messages.improvementActions.baselineScore}
-                    </p>
-                    <p className="text-lg font-bold">{action.baselineScore}</p>
-                  </div>
-                )}
-                {action.targetScore != null && (
+            {/* Score comparison: baseline → current/completion */}
+            {action.baselineScore != null && (
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-lg bg-muted/50 p-2 text-center">
+                  <p className="text-[10px] text-muted-foreground">
+                    {messages.improvementActions.baselineScore}
+                  </p>
+                  <p className="text-lg font-bold">{action.baselineScore}</p>
+                </div>
+                {isActive && currentQuestionScore != null && (
                   <div className="rounded-lg bg-blue-50 p-2 text-center">
                     <p className="text-[10px] text-blue-600">
-                      {messages.improvementActions.targetScore}
+                      {messages.improvementActions.currentScore}
                     </p>
                     <p className="text-lg font-bold text-blue-600">
-                      {action.targetScore}
+                      {currentQuestionScore}
                     </p>
                   </div>
                 )}
-                {action.resultScore != null && (
+                {!isActive && action.resultScore != null && (
                   <div
                     className={`rounded-lg p-2 text-center ${
-                      action.resultScore >= (action.targetScore ?? 0)
+                      action.resultScore >= action.baselineScore
                         ? "bg-green-50"
                         : "bg-orange-50"
                     }`}
                   >
                     <p
                       className={`text-[10px] ${
-                        action.resultScore >= (action.targetScore ?? 0)
+                        action.resultScore >= action.baselineScore
                           ? "text-green-600"
                           : "text-orange-600"
                       }`}
                     >
-                      {messages.improvementActions.resultScore}
+                      {messages.improvementActions.completionScore}
                     </p>
                     <p
                       className={`text-lg font-bold ${
-                        action.resultScore >= (action.targetScore ?? 0)
+                        action.resultScore >= action.baselineScore
                           ? "text-green-600"
                           : "text-orange-600"
                       }`}
@@ -639,48 +617,25 @@ function ActionCard({
 
             {/* Actions */}
             {isActive && (
-              <div className="space-y-2">
-                <div className="flex items-end gap-2">
-                  <div className="flex-1 space-y-1">
-                    <Label className="text-xs">
-                      {messages.improvementActions.resultScore}
-                    </Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      min="1"
-                      max="5"
-                      value={resultInput}
-                      onChange={(e) => setResultInput(e.target.value)}
-                      placeholder="4.2"
-                      className="h-8"
-                    />
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() =>
-                      onStatusChange(
-                        action.id,
-                        "completed",
-                        resultInput ? Number(resultInput) : undefined
-                      )
-                    }
-                    disabled={loading}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
-                    {messages.improvementActions.complete}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onStatusChange(action.id, "cancelled")}
-                    disabled={loading}
-                  >
-                    <XCircle className="mr-1 h-3.5 w-3.5" />
-                    {messages.improvementActions.cancel}
-                  </Button>
-                </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => onStatusChange(action.id, "completed")}
+                  disabled={loading}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+                  {messages.improvementActions.complete}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onStatusChange(action.id, "cancelled")}
+                  disabled={loading}
+                >
+                  <XCircle className="mr-1 h-3.5 w-3.5" />
+                  {messages.improvementActions.cancel}
+                </Button>
               </div>
             )}
 
