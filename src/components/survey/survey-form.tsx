@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StarRating } from "@/components/survey/star-rating"
 import { messages } from "@/lib/messages"
 import { DEFAULTS, DENTAL_TIPS } from "@/lib/constants"
-import { Lightbulb, RotateCcw } from "lucide-react"
+import { Lightbulb } from "lucide-react"
 import { Confetti } from "@/components/survey/confetti"
 import type { SurveyPageData, PatientAttributes } from "@/types/survey"
 
@@ -44,15 +44,23 @@ export function SurveyForm({ data, onComplete, kioskMode = false, patientAttribu
     if (error) setError("")
   }
 
-  function handleReset() {
-    setStep(kioskMode ? "survey" : "welcome")
-    setAnswers({})
-    setFreeText("")
-    setError("")
-  }
+  const scrollToFirstUnanswered = useCallback(() => {
+    const firstUnanswered = ratingQuestions.find((q) => !answers[q.id] || answers[q.id] <= 0)
+    if (firstUnanswered) {
+      const el = document.getElementById(`question-${firstUnanswered.id}`)
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" })
+        el.classList.add("ring-2", "ring-destructive/50")
+        setTimeout(() => el.classList.remove("ring-2", "ring-destructive/50"), 2000)
+      }
+    }
+  }, [ratingQuestions, answers])
 
   async function handleSubmit() {
-    if (!allAnswered) return
+    if (!allAnswered) {
+      scrollToFirstUnanswered()
+      return
+    }
     setStep("submitting")
     setError("")
 
@@ -140,7 +148,8 @@ export function SurveyForm({ data, onComplete, kioskMode = false, patientAttribu
             return (
               <div
                 key={q.id}
-                className={`space-y-2 rounded-xl p-3 transition-colors ${
+                id={`question-${q.id}`}
+                className={`space-y-2 rounded-xl p-3 transition-all ${
                   isAnswered ? "bg-primary/5" : ""
                 }`}
               >
@@ -186,14 +195,13 @@ export function SurveyForm({ data, onComplete, kioskMode = false, patientAttribu
           <Button
             className={`w-full ${kioskMode ? "h-16 text-lg" : "h-12 text-base"}`}
             onClick={handleSubmit}
-            disabled={!allAnswered}
           >
             {messages.common.submit}
           </Button>
 
           {!allAnswered && (
             <p className="text-center text-xs text-muted-foreground">
-              {messages.survey.allRequiredHint}
+              {messages.survey.allRequiredHint}（残り{totalQuestions - answeredCount}問）
             </p>
           )}
         </CardContent>
@@ -247,14 +255,6 @@ export function SurveyForm({ data, onComplete, kioskMode = false, patientAttribu
             <p>{messages.survey.closeMessage}</p>
             <p>{messages.survey.visitAgain}</p>
           </div>
-          <Button
-            variant="outline"
-            className="mt-4 h-12 w-full text-base"
-            onClick={handleReset}
-          >
-            <RotateCcw className="mr-2 h-4 w-4" />
-            {messages.survey.backToTop}
-          </Button>
         </CardContent>
       </Card>
     </>

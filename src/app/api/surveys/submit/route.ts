@@ -1,8 +1,7 @@
 import { NextRequest } from "next/server"
 import { surveySubmissionSchema } from "@/lib/validations/survey"
-import { getClinicBySlug, createSurveyResponse, hasRecentSubmission } from "@/lib/queries/surveys"
+import { getClinicBySlug, createSurveyResponse } from "@/lib/queries/surveys"
 import { getClientIp, hashIp } from "@/lib/ip"
-import { checkRateLimit } from "@/lib/rate-limit"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
 import { prisma } from "@/lib/prisma"
@@ -45,21 +44,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // IP hash for rate limiting and audit trail
+    // IP hash for audit trail (rate limiting removed to allow consecutive surveys from same device)
     const ip = getClientIp()
     const ipHash = hashIp(ip)
-
-    // Rate limiting: max 3 submissions per IP per 24h
-    const { allowed } = checkRateLimit(ipHash)
-    if (!allowed) {
-      return errorResponse(messages.survey.rateLimited, 429)
-    }
-
-    // Duplicate check: same IP + clinic within 24h
-    const isDuplicate = await hasRecentSubmission(ipHash, clinic.id)
-    if (isDuplicate) {
-      return errorResponse(messages.survey.alreadySubmitted, 429)
-    }
 
     // Calculate overall score from rating answers
     const ratingValues = Object.values(answers).filter(
