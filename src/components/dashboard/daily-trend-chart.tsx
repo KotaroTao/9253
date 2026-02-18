@@ -50,10 +50,9 @@ function CustomTooltip({
 interface DailyTrendChartProps {
   initialData: DailyTrendPoint[]
   selectedPeriod: number
-  onPeriodChange: (period: number) => void
 }
 
-export function DailyTrendChart({ initialData, selectedPeriod, onPeriodChange }: DailyTrendChartProps) {
+export function DailyTrendChart({ initialData, selectedPeriod }: DailyTrendChartProps) {
   const [data, setData] = useState<DailyTrendPoint[]>(initialData)
   const [loading, setLoading] = useState(false)
   const isInitialMount = useRef(true)
@@ -98,24 +97,7 @@ export function DailyTrendChart({ initialData, selectedPeriod, onPeriodChange }:
   return (
     <Card>
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base">回答数・満足度推移</CardTitle>
-          <div className="flex gap-1">
-            {PERIOD_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => onPeriodChange(opt.value)}
-                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                  selectedPeriod === opt.value
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <CardTitle className="text-base">回答数・満足度推移</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (

@@ -3,8 +3,6 @@ import { auth } from "@/auth"
 import { getOperatorClinicId } from "@/lib/admin-mode"
 import { getHourlyHeatmapData, getDailyTrend, getTemplateTrend, getQuestionBreakdownByDays } from "@/lib/queries/stats"
 import { AnalyticsCharts } from "@/components/dashboard/analytics-charts"
-import { StaffLeaderboard } from "@/components/dashboard/staff-leaderboard"
-import { SatisfactionHeatmap } from "@/components/dashboard/satisfaction-heatmap"
 import { ROLES } from "@/lib/constants"
 
 export default async function AnalyticsPage() {
@@ -35,15 +33,11 @@ export default async function AnalyticsPage() {
     ])
 
   return (
-    <div className="space-y-4">
-      <AnalyticsCharts
-        initialDailyTrend={dailyTrend}
-        initialTemplateTrend={templateTrend}
-        initialQuestionBreakdown={questionBreakdown}
-      />
-
-      <SatisfactionHeatmap data={heatmapData} />
-      <StaffLeaderboard />
-    </div>
+    <AnalyticsCharts
+      initialDailyTrend={dailyTrend}
+      initialTemplateTrend={templateTrend}
+      initialQuestionBreakdown={questionBreakdown}
+      heatmapData={heatmapData}
+    />
   )
 }
