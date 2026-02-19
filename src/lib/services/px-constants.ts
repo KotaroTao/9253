@@ -54,6 +54,18 @@ export const COMPLAINT_WEIGHTS: Record<string, number> = {
 
 export const DEFAULT_COMPLAINT_WEIGHT = 1.0
 
+// ─── Engagement Weight (Free Text) ───
+/** Minimum characters for minimal engagement bonus */
+export const ENGAGEMENT_TEXT_MIN_CHARS = 10
+/** Minimum characters for full engagement bonus */
+export const ENGAGEMENT_TEXT_FULL_CHARS = 30
+/** Weight when free text is absent or < ENGAGEMENT_TEXT_MIN_CHARS */
+export const ENGAGEMENT_WEIGHT_NONE = 1.0
+/** Weight when free text is ENGAGEMENT_TEXT_MIN_CHARS–ENGAGEMENT_TEXT_FULL_CHARS-1 chars */
+export const ENGAGEMENT_WEIGHT_SHORT = 1.05
+/** Weight when free text is >= ENGAGEMENT_TEXT_FULL_CHARS chars */
+export const ENGAGEMENT_WEIGHT_FULL = 1.1
+
 // ─── PX Rank Thresholds ───
 export const PX_RANK_THRESHOLDS = [
   { min: 70, label: "SSS" as const },

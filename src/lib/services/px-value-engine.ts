@@ -7,6 +7,11 @@ import {
   DEVICE_WEIGHTS,
   COMPLAINT_WEIGHTS,
   DEFAULT_COMPLAINT_WEIGHT,
+  ENGAGEMENT_TEXT_MIN_CHARS,
+  ENGAGEMENT_TEXT_FULL_CHARS,
+  ENGAGEMENT_WEIGHT_NONE,
+  ENGAGEMENT_WEIGHT_SHORT,
+  ENGAGEMENT_WEIGHT_FULL,
   PX_RANK_THRESHOLDS,
   PX_MIN_RESPONSES,
   PX_LOOKBACK_DAYS,
@@ -83,8 +88,17 @@ export async function processSubmission(
     ""
   const complaintWeight =
     COMPLAINT_WEIGHTS[weightKey] ?? DEFAULT_COMPLAINT_WEIGHT
+  const textLen = (input.freeText ?? "").trim().length
+  const engagementWeight =
+    textLen >= ENGAGEMENT_TEXT_FULL_CHARS
+      ? ENGAGEMENT_WEIGHT_FULL
+      : textLen >= ENGAGEMENT_TEXT_MIN_CHARS
+        ? ENGAGEMENT_WEIGHT_SHORT
+        : ENGAGEMENT_WEIGHT_NONE
   const weightedScore =
-    Math.round(input.rawScore * deviceWeight * complaintWeight * 100) / 100
+    Math.round(
+      input.rawScore * deviceWeight * complaintWeight * engagementWeight * 100
+    ) / 100
 
   return {
     weightedScore,
