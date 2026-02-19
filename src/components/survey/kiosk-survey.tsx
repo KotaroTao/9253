@@ -302,7 +302,7 @@ export function KioskSurvey({
               options={AGE_GROUPS}
               value={ageGroup}
               onChange={setAgeGroup}
-              columns={5}
+              columns={3}
             />
 
             {/* Gender */}
