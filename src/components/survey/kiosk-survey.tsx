@@ -61,7 +61,7 @@ function PillSelector({
   required = false,
 }: {
   label: string
-  options: readonly { value: string; label: string; subLabel?: string }[]
+  options: readonly { value: string; label: string }[]
   value: string
   onChange: (v: string) => void
   columns?: number
@@ -89,11 +89,6 @@ function PillSelector({
             }`}
           >
             <span className="text-sm font-bold">{opt.label}</span>
-            {"subLabel" in opt && opt.subLabel && (
-              <span className={`text-[10px] ${value === opt.value ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                {opt.subLabel}
-              </span>
-            )}
           </button>
         ))}
       </div>

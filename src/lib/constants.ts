@@ -96,25 +96,27 @@ export const INSURANCE_TYPES = [
 
 // Purpose options conditional on insurance type
 export const INSURANCE_PURPOSES = [
-  { value: "cavity_treatment", label: "虫歯治療", subLabel: "CR等" },
-  { value: "prosthetic_insurance", label: "被せ物・ブリッジ", subLabel: "保険" },
-  { value: "periodontal", label: "歯周病治療", subLabel: "SC・RP等" },
-  { value: "checkup_insurance", label: "定期検診", subLabel: "保険" },
-  { value: "denture_insurance", label: "保険義歯", subLabel: "入れ歯" },
-  { value: "extraction_surgery", label: "抜歯・口腔外科" },
-  { value: "root_canal", label: "根管治療" },
+  { value: "cavity_treatment", label: "う蝕処置" },
+  { value: "periodontal", label: "歯周治療" },
+  { value: "prosthetic_insurance", label: "被せもの・ブリッジ" },
+  { value: "denture_insurance", label: "保険義歯" },
+  { value: "checkup_insurance", label: "保険メンテ" },
+  { value: "extraction_surgery", label: "抜歯" },
   { value: "emergency", label: "急患・応急処置" },
+  { value: "other_insurance", label: "その他" },
 ] as const
 
 export const SELF_PAY_PURPOSES = [
-  { value: "prosthetic_self_pay", label: "被せ物・ブリッジ", subLabel: "自費" },
+  { value: "cavity_treatment_self", label: "う蝕処置" },
+  { value: "periodontal_self", label: "歯周治療" },
+  { value: "prosthetic_self_pay", label: "被せもの・ブリッジ" },
+  { value: "denture_self_pay", label: "自費義歯" },
+  { value: "self_pay_cleaning", label: "自費メンテ" },
   { value: "implant", label: "インプラント" },
-  { value: "denture_self_pay", label: "自費義歯", subLabel: "金属床等" },
   { value: "wire_orthodontics", label: "ワイヤー矯正" },
   { value: "aligner", label: "マウスピース矯正" },
   { value: "whitening", label: "ホワイトニング" },
-  { value: "self_pay_cleaning", label: "自費メンテナンス" },
-  { value: "precision_root_canal", label: "精密根管治療" },
+  { value: "other_self_pay", label: "その他" },
 ] as const
 
 // Legacy constants (kept for backward compatibility with old data)
