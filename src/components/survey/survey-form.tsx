@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useCallback } from "react"
+import { useState, useRef, useMemo, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StarRating } from "@/components/survey/star-rating"
@@ -16,18 +16,38 @@ interface SurveyFormProps {
   kioskMode?: boolean
   patientAttributes?: PatientAttributes
   staffId?: string
+  deviceUuid?: string
 }
 
 type Step = "welcome" | "survey" | "submitting" | "thanks"
 
-export function SurveyForm({ data, onComplete, kioskMode = false, patientAttributes, staffId }: SurveyFormProps) {
+export function SurveyForm({ data, onComplete, kioskMode = false, patientAttributes, staffId, deviceUuid }: SurveyFormProps) {
   const [step, setStep] = useState<Step>(kioskMode ? "survey" : "welcome")
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [freeText, setFreeText] = useState("")
   const [error, setError] = useState("")
   const [randomTip] = useState(() => DENTAL_TIPS[Math.floor(Math.random() * DENTAL_TIPS.length)])
 
-  const ratingQuestions = data.questions.filter((q) => q.type === "rating")
+  // Speed tracking: record when survey step begins
+  const surveyStartTime = useRef<number | null>(null)
+  useEffect(() => {
+    if (step === "survey") {
+      surveyStartTime.current = Date.now()
+    }
+  }, [step])
+
+  // Filter questions by condition (dynamic question set based on patient attributes)
+  const visibleQuestions = useMemo(() => {
+    return data.questions.filter((q) => {
+      if (!q.condition) return true
+      if (q.condition.chiefComplaint && patientAttributes?.chiefComplaint) {
+        return q.condition.chiefComplaint.includes(patientAttributes.chiefComplaint)
+      }
+      return true
+    })
+  }, [data.questions, patientAttributes])
+
+  const ratingQuestions = visibleQuestions.filter((q) => q.type === "rating")
   const allAnswered = ratingQuestions.every((q) => answers[q.id] && answers[q.id] > 0)
   const answeredCount = ratingQuestions.filter((q) => answers[q.id] && answers[q.id] > 0).length
   const totalQuestions = ratingQuestions.length
@@ -64,6 +84,11 @@ export function SurveyForm({ data, onComplete, kioskMode = false, patientAttribu
     setStep("submitting")
     setError("")
 
+    // Calculate response duration
+    const responseDurationMs = surveyStartTime.current
+      ? Date.now() - surveyStartTime.current
+      : undefined
+
     try {
       const res = await fetch("/api/surveys/submit", {
         method: "POST",
@@ -75,6 +100,8 @@ export function SurveyForm({ data, onComplete, kioskMode = false, patientAttribu
           answers,
           freeText: freeText || undefined,
           patientAttributes: patientAttributes || undefined,
+          responseDurationMs,
+          deviceUuid: deviceUuid || undefined,
         }),
       })
 

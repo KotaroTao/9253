@@ -50,11 +50,13 @@ async function main() {
     where: { slug: "demo-dental" },
     update: {
       settings: { adminPassword: defaultAdminPasswordHash },
+      unitCount: 5,
     },
     create: {
       name: "MIERU デモ歯科クリニック",
       slug: "demo-dental",
       settings: { adminPassword: defaultAdminPasswordHash },
+      unitCount: 5,
     },
   })
   console.log(`Clinic: ${clinic.name} (${clinic.id})`)
@@ -116,6 +118,25 @@ async function main() {
     },
   })
   console.log(`Clinic admin: ${clinicAdmin.email}`)
+
+  // Create authorized devices for kiosk demo
+  const deviceData = [
+    { deviceUuid: "d0000000-0000-4000-8000-000000000001", name: "受付iPad 1号" },
+    { deviceUuid: "d0000000-0000-4000-8000-000000000002", name: "待合室タブレット" },
+  ]
+  for (const d of deviceData) {
+    await prisma.authorizedDevice.upsert({
+      where: { deviceUuid: d.deviceUuid },
+      update: { name: d.name, isAuthorized: true },
+      create: {
+        clinicId: clinic.id,
+        deviceUuid: d.deviceUuid,
+        name: d.name,
+        isAuthorized: true,
+      },
+    })
+    console.log(`AuthorizedDevice: ${d.name} (${d.deviceUuid})`)
+  }
 
   // Create or update 3 survey templates (初診・治療中・定期検診)
   const templates = []
@@ -292,12 +313,25 @@ async function main() {
 
   const now = new Date()
   const startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1)
+  // Device types for seed: 70% patient_url, 20% kiosk_authorized, 10% kiosk_unauthorized
+  const DEVICE_TYPES = ["patient_url", "kiosk_authorized", "kiosk_unauthorized"] as const
+  const DEVICE_TYPE_WEIGHTS = [70, 20, 10]
+  // Device weights matching px-constants.ts
+  const SEED_DEVICE_WEIGHTS: Record<string, number> = { patient_url: 1.5, kiosk_authorized: 1.0, kiosk_unauthorized: 0.8 }
+  // Complaint weights matching px-constants.ts
+  const SEED_COMPLAINT_WEIGHTS: Record<string, number> = { pain: 1.2, prevention: 0.8 }
+
   const allResponses: Array<{
     clinicId: string
     staffId: string
     templateId: string
     answers: Record<string, number>
     overallScore: number
+    weightedScore: number
+    trustFactor: number
+    responseDurationMs: number
+    isVerified: boolean
+    deviceType: string
     freeText: string | null
     patientAttributes: Record<string, string>
     ipHash: string
@@ -411,17 +445,47 @@ async function main() {
 
       const isFirstVisit = config.template.name === "初診"
       const isCheckup = config.template.name === "定期検診"
+      const chiefComplaint = COMPLAINTS[Math.floor(rng() * COMPLAINTS.length)]
+
+      // === PX-Value fields ===
+      const deviceType = weightedChoice([...DEVICE_TYPES], DEVICE_TYPE_WEIGHTS)
+      const deviceWeight = SEED_DEVICE_WEIGHTS[deviceType] ?? 1.0
+      const complaintWeight = SEED_COMPLAINT_WEIGHTS[chiefComplaint] ?? 1.0
+      const weightedScore = Math.round(overallScore * deviceWeight * complaintWeight * 100) / 100
+
+      // Response duration: normal responses 25-120s, ~5% speed trap failures (<20s for 10Q)
+      const isSpeedTrapFail = rng() < 0.05
+      const questionCount = config.questionIds.length
+      const responseDurationMs = isSpeedTrapFail
+        ? Math.floor(rng() * questionCount * 1500) // Too fast: 0 to questionCount*1500ms
+        : Math.floor((25000 + rng() * 95000)) // Normal: 25s to 120s
+
+      // Trust factor: 0.0 to 1.0. Most are fully trusted, some have deductions
+      let trustFactor = 1.0
+      if (isSpeedTrapFail) trustFactor -= 0.3 // speed trap weight
+      if (rng() < 0.03) trustFactor -= 0.25  // rare continuity trap
+      if (rng() < 0.02) trustFactor -= 0.20  // rare capacity trap
+      trustFactor = Math.round(Math.max(0, trustFactor) * 100) / 100
+
+      // isVerified: false if trustFactor < 0.7 (any trap significantly failed)
+      const isVerified = trustFactor >= 0.7
+
       allResponses.push({
         clinicId: clinic.id,
         staffId: staffChoice.staff.id,
         templateId: config.template.id,
         answers,
         overallScore,
+        weightedScore,
+        trustFactor,
+        responseDurationMs,
+        isVerified,
+        deviceType,
         freeText,
         patientAttributes: {
           visitType: isFirstVisit ? "first_visit" : "revisit",
           treatmentType: isCheckup ? "checkup" : "treatment",
-          chiefComplaint: COMPLAINTS[Math.floor(rng() * COMPLAINTS.length)],
+          chiefComplaint,
           ageGroup: weightedChoice(AGE_GROUPS, [8, 12, 18, 22, 25, 15]),
           gender: weightedChoice(GENDERS, [45, 50, 5]),
         },
@@ -461,6 +525,21 @@ async function main() {
       const avg = monthResponses.reduce((a, b) => a + b.overallScore, 0) / monthResponses.length
       console.log(`  ${year}-${String(month).padStart(2, "0")}: 平均 ${avg.toFixed(2)}（${monthResponses.length}件）`)
     }
+  }
+
+  // PX-Value stats summary
+  const verifiedCount = allResponses.filter((r) => r.isVerified).length
+  const unverifiedCount = allResponses.length - verifiedCount
+  const avgTrust = Math.round((allResponses.reduce((a, b) => a + b.trustFactor, 0) / allResponses.length) * 100) / 100
+  const deviceCounts: Record<string, number> = {}
+  for (const r of allResponses) {
+    deviceCounts[r.deviceType] = (deviceCounts[r.deviceType] || 0) + 1
+  }
+  console.log(`\nPX-Value stats:`)
+  console.log(`  Verified: ${verifiedCount} / Unverified: ${unverifiedCount} (${Math.round((verifiedCount / allResponses.length) * 100)}%)`)
+  console.log(`  Average trust factor: ${avgTrust}`)
+  for (const [dt, cnt] of Object.entries(deviceCounts)) {
+    console.log(`  ${dt}: ${cnt}件`)
   }
 
   // === 改善アクション履歴（6件: 4完了 + 2実施中） ===

@@ -11,12 +11,19 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 
+interface SegmentInsight {
+  segment: string
+  label: string
+  avgScore: number
+}
+
 interface InsightCardsProps {
   averageScore: number
   prevAverageScore: number | null
   totalResponses: number
   lowScoreQuestions: Array<{ questionId: string; text: string; avgScore: number }>
   showSummaryBanner: boolean
+  segmentInsights?: SegmentInsight[]
 }
 
 interface Insight {
@@ -32,6 +39,7 @@ function generateInsights({
   totalResponses,
   lowScoreQuestions,
   showSummaryBanner,
+  segmentInsights,
 }: InsightCardsProps): Insight[] {
   const insights: Insight[] = []
 
@@ -104,6 +112,29 @@ function generateInsights({
       text: messages.dashboard.insightResponseRate.replace("{count}", String(totalResponses)),
       action: actionsLink,
     })
+  }
+
+  // Segment-specific insights
+  if (segmentInsights) {
+    for (const seg of segmentInsights) {
+      if (seg.avgScore < 3.5) {
+        insights.push({
+          type: "warning",
+          icon: <AlertTriangle className="h-4 w-4" />,
+          text: messages.dashboard.insightSegmentLow
+            .replace("{segment}", seg.label)
+            .replace("{score}", String(seg.avgScore)),
+          action: actionsLink,
+        })
+      } else if (seg.avgScore >= 4.5) {
+        insights.push({
+          type: "success",
+          icon: <Lightbulb className="h-4 w-4" />,
+          text: messages.dashboard.insightSegmentHigh.replace("{segment}", seg.label),
+          action: actionsLink,
+        })
+      }
+    }
   }
 
   // No data

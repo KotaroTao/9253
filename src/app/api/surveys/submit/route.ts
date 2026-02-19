@@ -5,6 +5,7 @@ import { getClientIp, hashIp } from "@/lib/ip"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
 import { prisma } from "@/lib/prisma"
+import { processSubmission } from "@/lib/services/px-value-engine"
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,7 +18,16 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const { clinicSlug, staffId, templateId, answers, freeText, patientAttributes } = parsed.data
+    const {
+      clinicSlug,
+      staffId,
+      templateId,
+      answers,
+      freeText,
+      patientAttributes,
+      responseDurationMs,
+      deviceUuid,
+    } = parsed.data
 
     // Verify clinic
     const clinic = await getClinicBySlug(clinicSlug)
@@ -44,11 +54,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // IP hash for audit trail (rate limiting removed to allow consecutive surveys from same device)
+    // IP hash for audit trail
     const ip = getClientIp()
     const ipHash = hashIp(ip)
 
-    // Calculate overall score from rating answers
+    // Calculate overall score (raw arithmetic mean) from rating answers
     const ratingValues = Object.values(answers).filter(
       (v): v is number => typeof v === "number"
     )
@@ -57,13 +67,33 @@ export async function POST(request: NextRequest) {
         ? ratingValues.reduce((sum, v) => sum + v, 0) / ratingValues.length
         : null
 
-    // Save response with optional staff tracking
+    // PX-Value engine: verification + weighted score
+    const isKiosk = !!patientAttributes
+    const pxResult = await processSubmission({
+      clinicId: clinic.id,
+      staffId: staffId ?? undefined,
+      templateId,
+      rawScore: overallScore ?? 0,
+      questionCount: ratingValues.length,
+      freeText,
+      patientAttributes: patientAttributes ?? undefined,
+      responseDurationMs,
+      deviceUuid,
+      isKiosk,
+    })
+
+    // Save response with PX-Value engine results
     const response = await createSurveyResponse({
       clinicId: clinic.id,
       staffId: staffId ?? undefined,
       templateId,
       answers,
       overallScore,
+      weightedScore: pxResult.weightedScore,
+      trustFactor: pxResult.trustFactor,
+      isVerified: pxResult.isVerified,
+      deviceType: pxResult.deviceType,
+      responseDurationMs: responseDurationMs ?? null,
       freeText,
       patientAttributes: patientAttributes ?? undefined,
       ipHash,

@@ -19,6 +19,8 @@ export const surveySubmissionSchema = z.object({
   ),
   freeText: z.string().max(500).optional(),
   patientAttributes: patientAttributesSchema.optional(),
+  responseDurationMs: z.number().int().min(0).max(600000).optional(),
+  deviceUuid: z.string().uuid().optional(),
 })
 
 export type SurveySubmissionInput = z.infer<typeof surveySubmissionSchema>

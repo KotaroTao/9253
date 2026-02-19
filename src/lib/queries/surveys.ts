@@ -36,6 +36,11 @@ export async function createSurveyResponse(data: {
   templateId: string
   answers: Prisma.InputJsonValue
   overallScore: number | null
+  weightedScore?: number | null
+  trustFactor?: number | null
+  responseDurationMs?: number | null
+  isVerified?: boolean
+  deviceType?: string | null
   freeText?: string
   patientAttributes?: Prisma.InputJsonValue
   ipHash: string
