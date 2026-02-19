@@ -35,20 +35,15 @@ interface KioskSurveyProps {
 
 type KioskState = "setup" | "survey" | "thanks"
 
-const MAINTENANCE_PURPOSES = ["periodontal", "checkup_insurance", "self_pay_cleaning", "checkup", "preventive"]
-
 function resolveTemplate(
   templates: SurveyTemplateInfo[],
   visitType: string,
-  purpose: string
+  _purpose: string
 ): SurveyTemplateInfo | undefined {
   if (visitType === "first_visit") {
     return templates.find((t) => t.name === "初診") ?? templates[0]
   }
-  if (MAINTENANCE_PURPOSES.includes(purpose)) {
-    return templates.find((t) => t.name === "定期検診") ?? templates[0]
-  }
-  return templates.find((t) => t.name === "治療中") ?? templates[0]
+  return templates.find((t) => t.name === "再診") ?? templates[0]
 }
 
 // Pill selector component for rapid tap selection

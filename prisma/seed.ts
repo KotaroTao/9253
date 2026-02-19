@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs"
 
 const prisma = new PrismaClient()
 
-// 3 survey types: first visit (8Q), treatment (6Q), checkup (6Q)
+// 2 survey types: first visit (8Q), return visit (6Q)
 // 設問方針: 特定の処置を前提にしない汎用的な設問。どんな診療内容でも回答可能。
 const FIRST_VISIT_QUESTIONS = [
   { id: "fv1", text: "医院の第一印象（清潔さ・雰囲気）はいかがでしたか？", type: "rating", required: true },
@@ -26,19 +26,9 @@ const TREATMENT_QUESTIONS = [
   { id: "tr6", text: "通院を続けることに安心感がありますか？", type: "rating", required: true },
 ]
 
-const CHECKUP_QUESTIONS = [
-  { id: "ck1", text: "本日の診療内容についての説明は分かりやすかったですか？", type: "rating", required: true },
-  { id: "ck2", text: "丁寧に対応してもらえたと感じましたか？", type: "rating", required: true },
-  { id: "ck3", text: "質問や相談がしやすい雰囲気でしたか？", type: "rating", required: true },
-  { id: "ck4", text: "待ち時間は気にならない程度でしたか？", type: "rating", required: true },
-  { id: "ck5", text: "予約の取りやすさはいかがでしたか？", type: "rating", required: true },
-  { id: "ck6", text: "今後も当院に定期的に通いたいと思いますか？", type: "rating", required: true },
-]
-
 const SURVEY_TEMPLATES = [
   { name: "初診", questions: FIRST_VISIT_QUESTIONS },
-  { name: "治療中", questions: TREATMENT_QUESTIONS },
-  { name: "定期検診", questions: CHECKUP_QUESTIONS },
+  { name: "再診", questions: TREATMENT_QUESTIONS },
 ]
 
 async function main() {
@@ -138,7 +128,7 @@ async function main() {
     console.log(`AuthorizedDevice: ${d.name} (${d.deviceUuid})`)
   }
 
-  // Create or update 3 survey templates (初診・治療中・定期検診)
+  // Create or update 2 survey templates (初診・再診)
   const templates = []
   for (const tmpl of SURVEY_TEMPLATES) {
     const existing = await prisma.surveyTemplate.findFirst({
@@ -164,7 +154,7 @@ async function main() {
     console.log(`Template: ${template.name} (${template.id})`)
   }
 
-  // Deactivate old templates that don't match the 3 types
+  // Deactivate old templates that don't match the 2 types
   await prisma.surveyTemplate.updateMany({
     where: {
       clinicId: clinic.id,
@@ -183,8 +173,7 @@ async function main() {
 
   const QUESTION_IDS: Record<string, string[]> = {
     "初診": ["fv1", "fv2", "fv3", "fv4", "fv5", "fv6", "fv7", "fv8"],
-    "治療中": ["tr1", "tr2", "tr3", "tr4", "tr5", "tr6"],
-    "定期検診": ["ck1", "ck2", "ck3", "ck4", "ck5", "ck6"],
+    "再診": ["tr1", "tr2", "tr3", "tr4", "tr5", "tr6"],
   }
 
   // 設問ごとのベースライン難易度（低い=患者がスコアを低くつけやすい）
@@ -205,23 +194,17 @@ async function main() {
     tr4: -0.20,  // 待ち時間: 低い
     tr5: 0.10,   // スタッフ対応: 高い（衛生士・医師は良好）
     tr6: 0.00,   // 安心感: 普通
-    ck1: -0.05,  // 説明: やや低め
-    ck2: 0.10,   // 丁寧さ: 高い（衛生士は丁寧）
-    ck3: -0.12,  // 相談しやすさ: ★受付の雰囲気が影響
-    ck4: -0.18,  // 待ち時間: 低い
-    ck5: -0.12,  // 予約取りやすさ: 低め
-    ck6: 0.03,   // 通いたい: 受付が足を引っ張る
   }
 
   // 改善アクションによるスコア押し上げ効果（月index → 対象設問 → 加算）
   // 月0=6ヶ月前, 月5=当月。アクション開始月から徐々に効果が出る
   // ★受付マニュアル研修のboostを大きく設定（受付接遇問題の改善が主テーマ）
   const ACTION_EFFECTS: Record<string, { startMonth: number; endMonth: number | null; questions: string[]; boost: number }> = {
-    "待ち時間の見える化": { startMonth: 0, endMonth: 2, questions: ["fv3", "tr4", "ck4"], boost: 0.12 },
-    "受付マニュアル研修": { startMonth: 1, endMonth: 3, questions: ["fv2", "fv1", "fv7", "tr3", "ck3"], boost: 0.18 },
-    "視覚資料での説明導入": { startMonth: 2, endMonth: 4, questions: ["fv5", "fv6", "tr1", "ck1"], boost: 0.10 },
-    "接遇マナー研修": { startMonth: 2, endMonth: 4, questions: ["tr5", "ck2", "fv7", "tr3", "ck3", "fv8", "ck6"], boost: 0.08 },
-    "予約枠バッファ導入": { startMonth: 4, endMonth: null, questions: ["fv3", "tr4", "ck4", "ck5"], boost: 0.08 },
+    "待ち時間の見える化": { startMonth: 0, endMonth: 2, questions: ["fv3", "tr4"], boost: 0.12 },
+    "受付マニュアル研修": { startMonth: 1, endMonth: 3, questions: ["fv2", "fv1", "fv7", "tr3"], boost: 0.18 },
+    "視覚資料での説明導入": { startMonth: 2, endMonth: 4, questions: ["fv5", "fv6", "tr1"], boost: 0.10 },
+    "接遇マナー研修": { startMonth: 2, endMonth: 4, questions: ["tr5", "fv7", "tr3", "fv8"], boost: 0.08 },
+    "予約枠バッファ導入": { startMonth: 4, endMonth: null, questions: ["fv3", "tr4"], boost: 0.08 },
     "痛み配慮の声かけ徹底": { startMonth: 4, endMonth: null, questions: ["tr2", "fv4", "tr6"], boost: 0.06 },
   }
 
@@ -300,7 +283,7 @@ async function main() {
   const templateConfig = templates.map((t) => ({
     template: t,
     questionIds: QUESTION_IDS[t.name] || [],
-    weight: t.name === "初診" ? 20 : 40,
+    weight: t.name === "初診" ? 25 : 75,
   }))
 
   // 既存のデモ回答を削除して再投入
@@ -444,7 +427,6 @@ async function main() {
       }
 
       const isFirstVisit = config.template.name === "初診"
-      const isCheckup = config.template.name === "定期検診"
       const chiefComplaint = COMPLAINTS[Math.floor(rng() * COMPLAINTS.length)]
 
       // === PX-Value fields ===
@@ -484,7 +466,6 @@ async function main() {
         freeText,
         patientAttributes: {
           visitType: isFirstVisit ? "first_visit" : "revisit",
-          treatmentType: isCheckup ? "checkup" : "treatment",
           chiefComplaint,
           ageGroup: weightedChoice(AGE_GROUPS, [8, 12, 18, 22, 25, 15]),
           gender: weightedChoice(GENDERS, [45, 50, 5]),
@@ -577,7 +558,7 @@ async function main() {
       status: "completed",
       startMonthIdx: 0,
       endMonthIdx: 2,
-      questions: ["fv3", "tr4", "ck4"],
+      questions: ["fv3", "tr4"],
     },
     {
       title: "受付マニュアルの作成と研修",
@@ -586,7 +567,7 @@ async function main() {
       status: "completed",
       startMonthIdx: 1,
       endMonthIdx: 3,
-      questions: ["fv2", "fv1", "fv7", "tr3", "ck3"],
+      questions: ["fv2", "fv1", "fv7", "tr3"],
     },
     {
       title: "視覚資料を活用した治療説明",
@@ -595,7 +576,7 @@ async function main() {
       status: "completed",
       startMonthIdx: 2,
       endMonthIdx: 4,
-      questions: ["fv5", "fv6", "tr1", "ck1"],
+      questions: ["fv5", "fv6", "tr1"],
     },
     {
       title: "接遇マナー研修の定期実施",
@@ -604,16 +585,16 @@ async function main() {
       status: "completed",
       startMonthIdx: 2,
       endMonthIdx: 4,
-      questions: ["tr5", "ck2", "fv7", "tr3", "ck3"],
+      questions: ["tr5", "fv7", "tr3"],
     },
     {
       title: "予約枠にバッファを確保",
       description: "急患対応用に1日3枠のバッファを設定。予約患者の待ち時間短縮と予約の取りやすさを改善中。",
-      targetQuestion: "ck5",
+      targetQuestion: "fv3",
       status: "active",
       startMonthIdx: 4,
       endMonthIdx: null,
-      questions: ["fv3", "tr4", "ck4", "ck5"],
+      questions: ["fv3", "tr4"],
     },
     {
       title: "痛みへの配慮を言語化して伝える",
@@ -628,7 +609,7 @@ async function main() {
 
   // Question ID → text lookup for targetQuestion field
   const questionTextMap = new Map<string, string>()
-  for (const q of [...FIRST_VISIT_QUESTIONS, ...TREATMENT_QUESTIONS, ...CHECKUP_QUESTIONS]) {
+  for (const q of [...FIRST_VISIT_QUESTIONS, ...TREATMENT_QUESTIONS]) {
     questionTextMap.set(q.id, q.text)
   }
 
