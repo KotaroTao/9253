@@ -3,7 +3,7 @@ import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
 import { prisma } from "@/lib/prisma"
-import { getMonthlySurveyCount, getMonthlySurveyQuality } from "@/lib/queries/stats"
+import { getMonthlySurveyCount } from "@/lib/queries/stats"
 
 const METRICS_SELECT = {
   firstVisitCount: true,
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
   const prevYear = prevDate.getFullYear()
   const prevMonth = prevDate.getMonth() + 1
 
-  const [summary, prevSummary, surveyCount, surveyQuality] =
+  const [summary, prevSummary, surveyCount] =
     await Promise.all([
       prisma.monthlyClinicMetrics.findUnique({
         where: { clinicId_year_month: { clinicId, year, month } },
@@ -61,14 +61,12 @@ export async function GET(request: NextRequest) {
         select: METRICS_SELECT,
       }),
       getMonthlySurveyCount(clinicId, year, month),
-      getMonthlySurveyQuality(clinicId, year, month),
     ])
 
   return successResponse({
     summary: summary ?? null,
     prevSummary: prevSummary?.firstVisitCount != null ? prevSummary : null,
     surveyCount,
-    surveyQuality,
   })
 }
 
