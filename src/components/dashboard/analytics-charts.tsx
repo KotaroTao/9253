@@ -8,6 +8,7 @@ import { TemplateTrendSmallMultiples } from "@/components/dashboard/template-tre
 import { QuestionBreakdown } from "@/components/dashboard/question-breakdown"
 import { SatisfactionHeatmap } from "@/components/dashboard/satisfaction-heatmap"
 import { StaffLeaderboard } from "@/components/dashboard/staff-leaderboard"
+import { PurposeSatisfaction } from "@/components/dashboard/purpose-satisfaction"
 import type { DailyTrendPoint, TemplateTrendPoint, TemplateQuestionScores, HeatmapCell } from "@/lib/queries/stats"
 
 const PERIOD_OPTIONS = [
@@ -153,6 +154,8 @@ export function AnalyticsCharts({
       ) : (
         <QuestionBreakdown data={questionData} selectedPeriod={selectedPeriod} />
       )}
+
+      <PurposeSatisfaction selectedPeriod={selectedPeriod} />
 
       {/* ヒートマップ + リーダーボード */}
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">

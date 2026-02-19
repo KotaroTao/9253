@@ -575,3 +575,49 @@ export async function getSatisfactionTrend(
     patientSatisfaction: r.patient_satisfaction,
   }))
 }
+
+// --- Purpose satisfaction breakdown (insuranceType × purpose) ---
+
+export interface PurposeSatisfactionRow {
+  insuranceType: string
+  purpose: string
+  avgScore: number
+  count: number
+}
+
+interface PurposeSatisfactionDbRow {
+  insurance_type: string
+  purpose: string
+  avg_score: number
+  count: bigint
+}
+
+export async function getPurposeSatisfaction(
+  clinicId: string,
+  days: number = 30,
+): Promise<PurposeSatisfactionRow[]> {
+  const sinceDate = jstDaysAgo(days)
+
+  const rows = await prisma.$queryRaw<PurposeSatisfactionDbRow[]>`
+    SELECT
+      patient_attributes->>'insuranceType' AS insurance_type,
+      patient_attributes->>'purpose' AS purpose,
+      ROUND(AVG(overall_score)::numeric, 2)::float AS avg_score,
+      COUNT(*) AS count
+    FROM survey_responses
+    WHERE clinic_id = ${clinicId}::uuid
+      AND responded_at >= ${sinceDate}
+      AND overall_score IS NOT NULL
+      AND patient_attributes->>'insuranceType' IS NOT NULL
+      AND patient_attributes->>'purpose' IS NOT NULL
+    GROUP BY insurance_type, purpose
+    ORDER BY insurance_type, avg_score DESC
+  `
+
+  return rows.map((r) => ({
+    insuranceType: r.insurance_type,
+    purpose: r.purpose,
+    avgScore: r.avg_score,
+    count: Number(r.count),
+  }))
+}
