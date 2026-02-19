@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { Star } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { messages } from "@/lib/messages"
@@ -15,18 +15,26 @@ interface StarRatingProps {
 export function StarRating({ value, onChange, disabled, large }: StarRatingProps) {
   const [hovering, setHovering] = useState(0)
 
-  // Only show hover on mouse (not touch) to prevent stars appearing selected on iPad
-  const handlePointerEnter = useCallback((star: number, e: React.PointerEvent) => {
-    if (e.pointerType === "mouse") {
-      setHovering(star)
-    }
+  // Reset hover state when value changes (prevents stale hover from previous interaction)
+  useEffect(() => {
+    setHovering(0)
+  }, [value])
+
+  // Use mouseenter/mouseleave instead of pointer events to prevent phantom selection on iPad.
+  // Touch interactions do not fire mouse events during scroll/proximity,
+  // while trackpad/mouse interactions correctly trigger them.
+  const handleMouseEnter = useCallback((star: number) => {
+    setHovering(star)
   }, [])
 
-  const handlePointerLeave = useCallback((e: React.PointerEvent) => {
-    if (e.pointerType === "mouse") {
-      setHovering(0)
-    }
+  const handleMouseLeave = useCallback(() => {
+    setHovering(0)
   }, [])
+
+  const handleClick = useCallback((star: number) => {
+    setHovering(0)
+    onChange(star)
+  }, [onChange])
 
   const displayValue = hovering || value
 
@@ -40,9 +48,9 @@ export function StarRating({ value, onChange, disabled, large }: StarRatingProps
             type="button"
             role="radio"
             aria-checked={value === star}
-            onClick={() => onChange(star)}
-            onPointerEnter={(e) => handlePointerEnter(star, e)}
-            onPointerLeave={handlePointerLeave}
+            onClick={() => handleClick(star)}
+            onMouseEnter={() => handleMouseEnter(star)}
+            onMouseLeave={handleMouseLeave}
             disabled={disabled}
             className={cn(
               "rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
