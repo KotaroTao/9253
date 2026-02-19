@@ -4,14 +4,29 @@ import { useState, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { messages } from "@/lib/messages"
-import { VISIT_TYPES, TREATMENT_TYPES, AGE_GROUPS, GENDERS } from "@/lib/constants"
+import {
+  VISIT_TYPES,
+  INSURANCE_TYPES,
+  INSURANCE_PURPOSES,
+  SELF_PAY_PURPOSES,
+  TREATMENT_TYPES,
+  AGE_GROUPS,
+  GENDERS,
+} from "@/lib/constants"
 import { Star, ChevronDown, Loader2 } from "lucide-react"
 
 const LABEL_MAP: Record<string, string> = Object.fromEntries([
   ...VISIT_TYPES.map((v) => [v.value, v.label]),
+  ...INSURANCE_TYPES.map((v) => [v.value, v.label]),
+  ...INSURANCE_PURPOSES.map((v) => [v.value, v.label]),
+  ...SELF_PAY_PURPOSES.map((v) => [v.value, v.label]),
+  // Legacy
   ...TREATMENT_TYPES.map((v) => [v.value, v.label]),
   ...AGE_GROUPS.map((v) => [v.value, v.label]),
   ...GENDERS.map((v) => [v.value, v.label]),
+  // Legacy purpose values not in new constants
+  ["treatment", "治療"], ["checkup", "定期検診"], ["denture", "入れ歯"],
+  ["orthodontics", "矯正"], ["cosmetic", "審美・ホワイトニング"], ["preventive", "検診・クリーニング"],
 ])
 
 interface ResponseItem {
@@ -76,7 +91,7 @@ export function RecentResponses({ responses: initialResponses, initialHasMore = 
                     const pa = r.patientAttributes as Record<string, string> | null | undefined
                     return pa ? (
                       <div className="flex flex-wrap gap-1">
-                        {["visitType", "treatmentType", "ageGroup", "gender"].map((key) => {
+                        {["visitType", "insuranceType", "purpose", "treatmentType", "ageGroup", "gender"].map((key) => {
                           const val = pa[key]
                           if (!val) return null
                           return (

@@ -88,6 +88,36 @@ export const VISIT_TYPES = [
   { value: "revisit", label: "再診" },
 ] as const
 
+// Insurance type (mandatory first choice in kiosk)
+export const INSURANCE_TYPES = [
+  { value: "insurance", label: "保険診療" },
+  { value: "self_pay", label: "自費診療" },
+] as const
+
+// Purpose options conditional on insurance type
+export const INSURANCE_PURPOSES = [
+  { value: "cavity_treatment", label: "虫歯治療", subLabel: "CR等" },
+  { value: "prosthetic_insurance", label: "被せ物・ブリッジ", subLabel: "保険" },
+  { value: "periodontal", label: "歯周病治療", subLabel: "SC・RP等" },
+  { value: "checkup_insurance", label: "定期検診", subLabel: "保険" },
+  { value: "denture_insurance", label: "保険義歯", subLabel: "入れ歯" },
+  { value: "extraction_surgery", label: "抜歯・口腔外科" },
+  { value: "root_canal", label: "根管治療" },
+  { value: "emergency", label: "急患・応急処置" },
+] as const
+
+export const SELF_PAY_PURPOSES = [
+  { value: "prosthetic_self_pay", label: "被せ物・ブリッジ", subLabel: "自費" },
+  { value: "implant", label: "インプラント" },
+  { value: "denture_self_pay", label: "自費義歯", subLabel: "金属床等" },
+  { value: "wire_orthodontics", label: "ワイヤー矯正" },
+  { value: "aligner", label: "マウスピース矯正" },
+  { value: "whitening", label: "ホワイトニング" },
+  { value: "self_pay_cleaning", label: "自費クリーニング" },
+  { value: "precision_root_canal", label: "精密根管治療" },
+] as const
+
+// Legacy constants (kept for backward compatibility with old data)
 export const TREATMENT_TYPES = [
   { value: "treatment", label: "治療" },
   { value: "checkup", label: "定期検診" },

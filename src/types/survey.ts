@@ -24,10 +24,13 @@ export interface SurveyTemplateInfo {
 
 export interface PatientAttributes {
   visitType: "first_visit" | "revisit"
-  treatmentType: "treatment" | "checkup" | "consultation"
-  chiefComplaint: string
+  insuranceType: "insurance" | "self_pay"
+  purpose: string
   ageGroup: string
   gender: string
+  // Legacy fields (kept for backward compatibility with old data)
+  treatmentType?: "treatment" | "checkup" | "consultation"
+  chiefComplaint?: string
 }
 
 export interface KioskStaffInfo {
