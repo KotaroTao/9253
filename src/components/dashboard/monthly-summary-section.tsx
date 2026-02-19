@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { messages } from "@/lib/messages"
-import { TrendingUp, TrendingDown, Check, AlertTriangle, Loader2, ChevronDown, ChevronUp } from "lucide-react"
+import { TrendingUp, TrendingDown, Check, Loader2, ChevronDown, ChevronUp } from "lucide-react"
 
 export interface MonthlySummary {
   firstVisitCount: number | null
@@ -19,18 +19,12 @@ export interface MonthlySummary {
   cancellationCount: number | null
 }
 
-interface SurveyQuality {
-  lowScoreCount: number
-  lowScoreQuestions: Array<{ text: string; avgScore: number }>
-}
-
 interface MonthlySummarySectionProps {
   year: number
   month: number
   initialSummary: MonthlySummary | null
   prevSummary: MonthlySummary | null
   surveyCount: number
-  surveyQuality: SurveyQuality | null
 }
 
 function DerivedDelta({ current, prev }: { current: number | null; prev: number | null }) {
@@ -92,7 +86,6 @@ export function MonthlySummarySection({
   initialSummary,
   prevSummary,
   surveyCount,
-  surveyQuality,
 }: MonthlySummarySectionProps) {
   // State for all input fields
   const [firstVisitCount, setFirstVisitCount] = useState(initialSummary?.firstVisitCount?.toString() ?? "")
@@ -106,15 +99,9 @@ export function MonthlySummarySection({
   const [selfPayRevenue, setSelfPayRevenue] = useState(initialSummary?.selfPayRevenue?.toString() ?? "")
   const [cancellationCount, setCancellationCount] = useState(initialSummary?.cancellationCount?.toString() ?? "")
 
-  const [showFirstBreakdown, setShowFirstBreakdown] = useState(
-    (initialSummary?.firstVisitInsurance ?? null) != null || (initialSummary?.firstVisitSelfPay ?? null) != null
-  )
-  const [showRevisitBreakdown, setShowRevisitBreakdown] = useState(
-    (initialSummary?.revisitInsurance ?? null) != null || (initialSummary?.revisitSelfPay ?? null) != null
-  )
-  const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(
-    (initialSummary?.insuranceRevenue ?? null) != null || (initialSummary?.selfPayRevenue ?? null) != null
-  )
+  const [showFirstBreakdown, setShowFirstBreakdown] = useState(true)
+  const [showRevisitBreakdown, setShowRevisitBreakdown] = useState(true)
+  const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(true)
 
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -132,15 +119,9 @@ export function MonthlySummarySection({
     setInsuranceRevenue(initialSummary?.insuranceRevenue?.toString() ?? "")
     setSelfPayRevenue(initialSummary?.selfPayRevenue?.toString() ?? "")
     setCancellationCount(initialSummary?.cancellationCount?.toString() ?? "")
-    setShowFirstBreakdown(
-      (initialSummary?.firstVisitInsurance ?? null) != null || (initialSummary?.firstVisitSelfPay ?? null) != null
-    )
-    setShowRevisitBreakdown(
-      (initialSummary?.revisitInsurance ?? null) != null || (initialSummary?.revisitSelfPay ?? null) != null
-    )
-    setShowRevenueBreakdown(
-      (initialSummary?.insuranceRevenue ?? null) != null || (initialSummary?.selfPayRevenue ?? null) != null
-    )
+    setShowFirstBreakdown(true)
+    setShowRevisitBreakdown(true)
+    setShowRevenueBreakdown(true)
     setSaved(false)
     isInitialMount.current = true
   }, [year, month, initialSummary])
@@ -226,14 +207,15 @@ export function MonthlySummarySection({
     { label: m.surveyResponseRate, value: derived.surveyResponseRate, format: (v: number) => `${v}%`, prev: null as number | null },
   ] : []
 
-  const BreakdownToggle = ({ open, onToggle }: { open: boolean; onToggle: () => void }) => (
+  const BreakdownToggle = ({ open, onToggle, label }: { open: boolean; onToggle: () => void; label: string }) => (
     <button
       type="button"
       onClick={onToggle}
-      className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-foreground"
+      className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
     >
       {open ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-      {m.optionalBreakdown}
+      <span>{label}</span>
+      <span className="rounded bg-muted px-1 py-0.5 text-[9px] text-muted-foreground">任意</span>
     </button>
   )
 
@@ -267,7 +249,7 @@ export function MonthlySummarySection({
               <Input type="number" min={0} value={firstVisitCount} onChange={(e) => setFirstVisitCount(e.target.value)} placeholder="0" className="text-right" />
               <span className="text-sm text-muted-foreground">{m.unitPersons}</span>
             </div>
-            <BreakdownToggle open={showFirstBreakdown} onToggle={() => setShowFirstBreakdown(!showFirstBreakdown)} />
+            <BreakdownToggle open={showFirstBreakdown} onToggle={() => setShowFirstBreakdown(!showFirstBreakdown)} label={m.optionalBreakdown} />
             {showFirstBreakdown && (
               <div className="ml-3 grid grid-cols-2 gap-2 border-l-2 border-muted pl-3">
                 <div>
@@ -289,7 +271,7 @@ export function MonthlySummarySection({
               <Input type="number" min={0} value={revisitCount} onChange={(e) => setRevisitCount(e.target.value)} placeholder="0" className="text-right" />
               <span className="text-sm text-muted-foreground">{m.unitPersons}</span>
             </div>
-            <BreakdownToggle open={showRevisitBreakdown} onToggle={() => setShowRevisitBreakdown(!showRevisitBreakdown)} />
+            <BreakdownToggle open={showRevisitBreakdown} onToggle={() => setShowRevisitBreakdown(!showRevisitBreakdown)} label={m.optionalBreakdown} />
             {showRevisitBreakdown && (
               <div className="ml-3 grid grid-cols-2 gap-2 border-l-2 border-muted pl-3">
                 <div>
@@ -311,7 +293,7 @@ export function MonthlySummarySection({
               <Input type="number" min={0} value={totalRevenue} onChange={(e) => setTotalRevenue(e.target.value)} placeholder="0" className="text-right" />
               <span className="text-sm text-muted-foreground">{m.unitMan}</span>
             </div>
-            <BreakdownToggle open={showRevenueBreakdown} onToggle={() => setShowRevenueBreakdown(!showRevenueBreakdown)} />
+            <BreakdownToggle open={showRevenueBreakdown} onToggle={() => setShowRevenueBreakdown(!showRevenueBreakdown)} label={m.optionalBreakdown} />
             {showRevenueBreakdown && (
               <div className="ml-3 grid grid-cols-2 gap-2 border-l-2 border-muted pl-3">
                 <div>
@@ -335,33 +317,6 @@ export function MonthlySummarySection({
             </div>
           </div>
         </div>
-
-        {/* Low score alert with question details */}
-        {surveyQuality && (surveyQuality.lowScoreCount > 0 || surveyQuality.lowScoreQuestions.length > 0) && (
-          <div className="space-y-2">
-            {surveyQuality.lowScoreCount > 0 && (
-              <div className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2">
-                <AlertTriangle className="h-4 w-4 text-red-500" />
-                <span className="text-sm font-medium text-red-700">
-                  {m.lowScoreAlert}: {surveyQuality.lowScoreCount}{m.lowScoreCount}
-                </span>
-              </div>
-            )}
-            {surveyQuality.lowScoreQuestions.length > 0 && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-                <p className="text-xs font-medium text-amber-700 mb-1.5">{messages.monthlyMetrics.lowScoreItems}</p>
-                <ul className="space-y-0.5">
-                  {surveyQuality.lowScoreQuestions.map((q) => (
-                    <li key={q.text} className="flex items-center justify-between text-sm text-amber-800">
-                      <span>・{q.text}</span>
-                      <span className="ml-2 font-medium tabular-nums">{q.avgScore}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Derived KPIs */}
         {hasInput && derived && (
