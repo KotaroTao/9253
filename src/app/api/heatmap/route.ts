@@ -6,7 +6,7 @@ import { NextRequest } from "next/server"
 
 export const dynamic = "force-dynamic"
 
-const ALLOWED_DAYS = [7, 30, 90, 180, 365]
+const MAX_DAYS = 10950 // 30 years
 
 /**
  * GET /api/heatmap?days=90
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
   const daysParam = request.nextUrl.searchParams.get("days")
   const days = daysParam ? parseInt(daysParam, 10) : 90
-  if (!ALLOWED_DAYS.includes(days)) {
+  if (isNaN(days) || days < 1 || days > MAX_DAYS) {
     return errorResponse("無効な期間です", 400)
   }
 

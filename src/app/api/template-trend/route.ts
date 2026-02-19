@@ -6,7 +6,7 @@ import { NextRequest } from "next/server"
 
 export const dynamic = "force-dynamic"
 
-const ALLOWED_DAYS = [7, 30, 90, 180, 365]
+const MAX_DAYS = 10950 // 30 years
 
 /**
  * GET /api/template-trend?days=30&offset=0
@@ -22,13 +22,13 @@ export async function GET(request: NextRequest) {
 
   const daysParam = request.nextUrl.searchParams.get("days")
   const days = daysParam ? parseInt(daysParam, 10) : 30
-  if (!ALLOWED_DAYS.includes(days)) {
+  if (isNaN(days) || days < 1 || days > MAX_DAYS) {
     return errorResponse("無効な期間です", 400)
   }
 
   const offsetParam = request.nextUrl.searchParams.get("offset")
   const offset = offsetParam ? parseInt(offsetParam, 10) : 0
-  if (offset < 0 || offset > 730) {
+  if (isNaN(offset) || offset < 0 || offset > MAX_DAYS * 2) {
     return errorResponse("無効なオフセットです", 400)
   }
 

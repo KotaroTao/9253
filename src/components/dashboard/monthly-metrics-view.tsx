@@ -9,14 +9,46 @@ import { MonthlySummarySection } from "./monthly-summary-section"
 import { MonthlyTrendSummary } from "./monthly-trend-summary"
 import type { MonthlySummary } from "./monthly-summary-section"
 import { ChevronDown, ChevronUp, PenSquare } from "lucide-react"
+import { formatPeriodLabel } from "./analytics-charts"
 
-const PERIOD_OPTIONS = [
-  { label: "7日", value: 7, months: 1 },
-  { label: "30日", value: 30, months: 2 },
-  { label: "90日", value: 90, months: 4 },
-  { label: "180日", value: 180, months: 7 },
-  { label: "365日", value: 365, months: 13 },
+const PERIOD_PRESETS = [
+  { label: "7日", value: 7 },
+  { label: "30日", value: 30 },
+  { label: "90日", value: 90 },
+  { label: "180日", value: 180 },
+  { label: "1年", value: 365 },
+  { label: "2年", value: 730 },
+  { label: "3年", value: 1095 },
 ] as const
+
+const MAX_DAYS = 10950
+
+function daysToMonths(days: number): number {
+  return Math.ceil(days / 30) + 1
+}
+
+// 2025年1月から当月までの月リストを生成
+function generateMonthOptions(): { year: number; month: number; label: string }[] {
+  const now = new Date()
+  const startYear = 2025
+  const startMonth = 1
+  const endYear = now.getFullYear()
+  const endMonth = now.getMonth() + 1
+
+  const options: { year: number; month: number; label: string }[] = []
+  for (let y = endYear; y >= startYear; y--) {
+    const mEnd = y === endYear ? endMonth : 12
+    const mStart = y === startYear ? startMonth : 1
+    for (let m = mEnd; m >= mStart; m--) {
+      options.push({
+        year: y,
+        month: m,
+        label: `${y}年${m}月`,
+      })
+    }
+  }
+  return options
+}
 
 interface MonthlyMetricsViewProps {
   initialSummary: MonthlySummary | null
@@ -36,6 +68,8 @@ export function MonthlyMetricsView({
   enteredMonths = [],
 }: MonthlyMetricsViewProps) {
   const [selectedDays, setSelectedDays] = useState(30)
+  const [customInput, setCustomInput] = useState("")
+  const [showCustom, setShowCustom] = useState(false)
   const [year, setYear] = useState(initialYear)
   const [month, setMonth] = useState(initialMonth)
   const [summary, setSummary] = useState<MonthlySummary | null>(initialSummary)
@@ -52,16 +86,10 @@ export function MonthlyMetricsView({
 
   const m = messages.monthlyMetrics
 
-  const now = new Date()
-  const monthOptions: { year: number; month: number; label: string }[] = []
-  for (let i = 0; i < 6; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    monthOptions.push({
-      year: d.getFullYear(),
-      month: d.getMonth() + 1,
-      label: `${d.getFullYear()}年${d.getMonth() + 1}月`,
-    })
-  }
+  const monthOptions = generateMonthOptions()
+
+  // 年ごとにグループ化
+  const years = Array.from(new Set(monthOptions.map((o) => o.year)))
 
   async function handleMonthChange(newYear: number, newMonth: number) {
     setYear(newYear)
@@ -95,19 +123,33 @@ export function MonthlyMetricsView({
     }
   }
 
-  const selectedOption = PERIOD_OPTIONS.find((o) => o.value === selectedDays)
+  const isPreset = PERIOD_PRESETS.some((o) => o.value === selectedDays)
+  const periodLabel = formatPeriodLabel(selectedDays)
+
+  function handlePresetClick(value: number) {
+    setShowCustom(false)
+    setSelectedDays(value)
+  }
+
+  function handleCustomSubmit() {
+    const v = parseInt(customInput, 10)
+    if (!isNaN(v) && v >= 1 && v <= MAX_DAYS) {
+      setSelectedDays(v)
+      setShowCustom(false)
+    }
+  }
 
   const periodSelector = (
     <div className="flex items-center gap-2">
       <span className="hidden text-xs text-muted-foreground sm:inline">
-        直近{selectedOption?.label ?? ""}
+        直近{periodLabel}
       </span>
       {/* Desktop: ボタン群 */}
       <div className="hidden gap-1 sm:flex">
-        {PERIOD_OPTIONS.map((opt) => (
+        {PERIOD_PRESETS.map((opt) => (
           <button
             key={opt.value}
-            onClick={() => setSelectedDays(opt.value)}
+            onClick={() => handlePresetClick(opt.value)}
             className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
               selectedDays === opt.value
                 ? "bg-primary text-primary-foreground shadow-sm"
@@ -117,19 +159,92 @@ export function MonthlyMetricsView({
             {opt.label}
           </button>
         ))}
+        {showCustom ? (
+          <form
+            onSubmit={(e) => { e.preventDefault(); handleCustomSubmit() }}
+            className="flex items-center gap-1"
+          >
+            <input
+              type="number"
+              min={1}
+              max={MAX_DAYS}
+              value={customInput}
+              onChange={(e) => setCustomInput(e.target.value)}
+              placeholder="日数"
+              className="w-16 rounded-md border bg-card px-2 py-1 text-xs"
+              autoFocus
+            />
+            <button
+              type="submit"
+              className="rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground shadow-sm"
+            >
+              適用
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowCustom(false)}
+              className="rounded-md px-1.5 py-1 text-xs text-muted-foreground hover:bg-muted"
+            >
+              x
+            </button>
+          </form>
+        ) : (
+          <button
+            onClick={() => { setShowCustom(true); setCustomInput(isPreset ? "" : String(selectedDays)) }}
+            className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+              !isPreset
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            {!isPreset ? `${periodLabel}` : "カスタム"}
+          </button>
+        )}
       </div>
       {/* Mobile: セレクト */}
       <select
-        value={selectedDays}
-        onChange={(e) => setSelectedDays(Number(e.target.value))}
+        value={isPreset ? selectedDays : "custom"}
+        onChange={(e) => {
+          const val = e.target.value
+          if (val === "custom") {
+            setShowCustom(true)
+          } else {
+            setShowCustom(false)
+            setSelectedDays(Number(val))
+          }
+        }}
         className="rounded-md border bg-card px-2 py-1.5 text-xs sm:hidden"
       >
-        {PERIOD_OPTIONS.map((opt) => (
+        {PERIOD_PRESETS.map((opt) => (
           <option key={opt.value} value={opt.value}>
             直近{opt.label}
           </option>
         ))}
+        <option value="custom">カスタム...</option>
       </select>
+      {showCustom && (
+        <form
+          onSubmit={(e) => { e.preventDefault(); handleCustomSubmit() }}
+          className="flex items-center gap-1 sm:hidden"
+        >
+          <input
+            type="number"
+            min={1}
+            max={MAX_DAYS}
+            value={customInput}
+            onChange={(e) => setCustomInput(e.target.value)}
+            placeholder="日数"
+            className="w-16 rounded-md border bg-card px-2 py-1 text-xs"
+            autoFocus
+          />
+          <button
+            type="submit"
+            className="rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground shadow-sm"
+          >
+            適用
+          </button>
+        </form>
+      )}
     </div>
   )
 
@@ -138,7 +253,7 @@ export function MonthlyMetricsView({
       {headerSlot && createPortal(periodSelector, headerSlot)}
 
       {/* グラフ（期間セレクタと連動） */}
-      <MonthlyTrendSummary months={selectedOption?.months ?? 2} />
+      <MonthlyTrendSummary months={daysToMonths(selectedDays)} />
 
       {/* データ入力セクション */}
       <div className="space-y-4">
@@ -160,30 +275,40 @@ export function MonthlyMetricsView({
         </button>
         {inputOpen && (
           <div className="space-y-4">
-            {/* Month selector */}
-            <div className="flex flex-wrap gap-2">
-              {monthOptions.map((opt) => {
-                const isSelected = year === opt.year && month === opt.month
-                const isEntered = entered.has(`${opt.year}-${opt.month}`)
-                return (
-                  <Button
-                    key={`${opt.year}-${opt.month}`}
-                    variant={isSelected ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleMonthChange(opt.year, opt.month)}
-                    className={
-                      !isSelected && !isEntered
-                        ? "border-dashed border-amber-300 text-amber-600 hover:border-amber-400 hover:text-amber-700"
-                        : undefined
-                    }
-                  >
-                    {opt.label}
-                    {!isEntered && (
-                      <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-amber-400" />
-                    )}
-                  </Button>
-                )
-              })}
+            {/* Month selector — grouped by year */}
+            <div className="space-y-2">
+              {years.map((y) => (
+                <div key={y} className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">{y}年</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {monthOptions
+                      .filter((opt) => opt.year === y)
+                      .sort((a, b) => a.month - b.month)
+                      .map((opt) => {
+                        const isSelected = year === opt.year && month === opt.month
+                        const isEntered = entered.has(`${opt.year}-${opt.month}`)
+                        return (
+                          <Button
+                            key={`${opt.year}-${opt.month}`}
+                            variant={isSelected ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handleMonthChange(opt.year, opt.month)}
+                            className={
+                              !isSelected && !isEntered
+                                ? "border-dashed border-amber-300 text-amber-600 hover:border-amber-400 hover:text-amber-700"
+                                : undefined
+                            }
+                          >
+                            {opt.month}月
+                            {!isEntered && (
+                              <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-amber-400" />
+                            )}
+                          </Button>
+                        )
+                      })}
+                  </div>
+                </div>
+              ))}
             </div>
 
             {loading && (
