@@ -14,7 +14,7 @@ const FIRST_VISIT_QUESTIONS = [
   { id: "fv5", text: "今後の方針や内容の説明は分かりやすかったですか？", type: "rating", required: true },
   { id: "fv6", text: "費用に関する説明は十分でしたか？", type: "rating", required: true },
   { id: "fv7", text: "不安や疑問を相談しやすい雰囲気でしたか？", type: "rating", required: true },
-  { id: "fv8", text: "今後も当院に通いたいと思いますか？", type: "rating", required: true },
+  { id: "fv8", text: "当院をご家族・知人にも紹介したいと思いますか？", type: "rating", required: true },
 ]
 
 const TREATMENT_QUESTIONS = [
@@ -187,7 +187,7 @@ async function main() {
     fv5: -0.10,  // 説明: 低め
     fv6: -0.15,  // 費用説明: 低い
     fv7: -0.22,  // 相談しやすさ: ★受付の雰囲気で低い（声をかけづらい）
-    fv8: -0.06,  // 通いたい: 受付印象に引っ張られてやや低い
+    fv8: -0.08,  // 紹介したい: 受付印象に引っ張られてやや低い（推薦意向は継続意向より厳しめ）
     tr1: -0.08,  // 診療説明: やや低め
     tr2: -0.05,  // 痛み配慮: やや低め
     tr3: -0.15,  // 相談しやすさ: ★受付の雰囲気が影響

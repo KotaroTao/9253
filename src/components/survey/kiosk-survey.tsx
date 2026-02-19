@@ -43,7 +43,13 @@ function resolveTemplate(
   if (visitType === "first_visit") {
     return templates.find((t) => t.name === "初診") ?? templates[0]
   }
-  return templates.find((t) => t.name === "再診") ?? templates[0]
+  // "再診" first, then legacy "治療中" name, then any non-初診 template
+  return (
+    templates.find((t) => t.name === "再診") ??
+    templates.find((t) => t.name === "治療中") ??
+    templates.find((t) => t.name !== "初診") ??
+    templates[0]
+  )
 }
 
 // Pill selector component for rapid tap selection

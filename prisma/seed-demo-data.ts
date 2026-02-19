@@ -4,8 +4,8 @@
  * 使い方: npx tsx prisma/seed-demo-data.ts
  *
  * - 日曜日は休診（データなし）
- * - 診療時間: 9:00〜18:00
- * - テンプレート比率: 初診20%, 治療中40%, 定期検診40%
+ * - 診療時間: 9:00〜19:00
+ * - テンプレート比率: 初診25%, 再診75%
  * - 1日あたり 8〜15件
  * - スコアは現実的な分布（平均4.0前後、時間帯・曜日で変動）
  */
@@ -16,7 +16,6 @@ const prisma = new PrismaClient()
 // --- 設問ID定義 ---
 const FIRST_VISIT_IDS = ["fv1", "fv2", "fv3", "fv4", "fv5", "fv6", "fv7", "fv8"]
 const TREATMENT_IDS = ["tr1", "tr2", "tr3", "tr4", "tr5", "tr6"]
-const CHECKUP_IDS = ["ck1", "ck2", "ck3", "ck4", "ck5", "ck6"]
 
 // --- ユーティリティ ---
 function seededRandom(seed: number): () => number {
@@ -95,8 +94,8 @@ async function main() {
     where: { clinicId: clinic.id, isActive: true },
     orderBy: { name: "asc" },
   })
-  if (templates.length < 3) {
-    console.error("テンプレートが3つ未満です。先に npx prisma db seed を実行してください。")
+  if (templates.length < 2) {
+    console.error("テンプレートが2つ未満です。先に npx prisma db seed を実行してください。")
     process.exit(1)
   }
 
@@ -108,15 +107,13 @@ async function main() {
     process.exit(1)
   }
 
-  // テンプレートを名前で特定
+  // テンプレートを名前で特定（レガシー名"治療中"にも対応）
   const firstVisitTmpl = templates.find((t) => t.name === "初診")!
-  const treatmentTmpl = templates.find((t) => t.name === "治療中")!
-  const checkupTmpl = templates.find((t) => t.name === "定期検診")!
+  const revisitTmpl = templates.find((t) => t.name === "再診") ?? templates.find((t) => t.name === "治療中")!
 
   const templateConfig = [
-    { template: firstVisitTmpl, questionIds: FIRST_VISIT_IDS, weight: 20 },
-    { template: treatmentTmpl, questionIds: TREATMENT_IDS, weight: 40 },
-    { template: checkupTmpl, questionIds: CHECKUP_IDS, weight: 40 },
+    { template: firstVisitTmpl, questionIds: FIRST_VISIT_IDS, weight: 25 },
+    { template: revisitTmpl, questionIds: TREATMENT_IDS, weight: 75 },
   ]
 
   // 既存のデモ回答を削除
@@ -175,7 +172,7 @@ async function main() {
     const dayBaseQuality = 0.55 + monthsFromStart * 0.03 + (rng() - 0.5) * 0.1
 
     for (let i = 0; i < dailyCount; i++) {
-      // テンプレート選択（初診20%, 治療中40%, 定期検診40%）
+      // テンプレート選択（初診25%, 再診75%）
       const config = weightedChoice(
         rng,
         templateConfig,
@@ -185,11 +182,11 @@ async function main() {
       // スタッフ選択（ランダム）
       const staff = staffMembers[Math.floor(rng() * staffMembers.length)]
 
-      // 時間帯: 9〜18時（午前に集中、昼休みに谷、午後にも山）
+      // 時間帯: 9〜19時（午前に集中、昼休みに谷、午後にも山）
       const hour = weightedChoice(
         rng,
-        [9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
-        [8, 15, 18, 5, 10, 16, 14, 12, 8, 4] // 11時ピーク、12時谷、14時ピーク
+        [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+        [5, 12, 18, 3, 7, 16, 14, 10, 8, 5, 2]
       )
       const minute = Math.floor(rng() * 60)
 
@@ -213,7 +210,7 @@ async function main() {
       const answers: Record<string, number> = {}
       for (const qId of config.questionIds) {
         // 待ち時間の質問は他よりやや低め
-        const isWaitQuestion = qId === "fv3" || qId === "tr4" || qId === "ck4"
+        const isWaitQuestion = qId === "fv3" || qId === "tr4"
         const qQuality = isWaitQuestion ? timeQuality - 0.1 : timeQuality
         answers[qId] = generateScore(rng, Math.max(0.1, Math.min(0.95, qQuality)))
       }
@@ -229,17 +226,12 @@ async function main() {
 
       // 患者属性 (insuranceType + purpose)
       const isFirstVisit = config.template.id === firstVisitTmpl.id
-      const isCheckup = config.template.id === checkupTmpl.id
       // 75% insurance, 25% self-pay
       const insuranceType = rng() < 0.75 ? "insurance" : "self_pay"
       let purpose: string
-      if (isCheckup) {
-        purpose = insuranceType === "self_pay" ? "self_pay_cleaning" : "periodontal"
-      } else if (insuranceType === "self_pay") {
-        // prosthetic_self_pay, implant, denture_self_pay, wire_ortho, aligner, whitening, self_pay_cleaning, precision_root_canal
+      if (insuranceType === "self_pay") {
         purpose = weightedChoice(rng, SELF_PAY_PURPOSE_VALUES, [25, 20, 8, 12, 12, 10, 5, 8])
       } else {
-        // cavity_treatment, prosthetic_ins, periodontal, checkup_ins, denture_ins, extraction, root_canal, emergency
         purpose = isFirstVisit
           ? weightedChoice(rng, INSURANCE_PURPOSE_VALUES, [25, 10, 15, 10, 5, 15, 10, 10])
           : weightedChoice(rng, INSURANCE_PURPOSE_VALUES, [30, 15, 15, 10, 8, 8, 10, 4])
