@@ -22,7 +22,12 @@ export interface ProcessSubmissionInput {
   rawScore: number
   questionCount: number
   freeText?: string
-  patientAttributes?: { chiefComplaint?: string; treatmentType?: string }
+  patientAttributes?: {
+    purpose?: string
+    insuranceType?: string
+    chiefComplaint?: string
+    treatmentType?: string
+  }
   responseDurationMs?: number
   deviceUuid?: string
   isKiosk: boolean
@@ -72,9 +77,12 @@ export async function processSubmission(
 
   // 3. Calculate weighted score
   const deviceWeight = DEVICE_WEIGHTS[deviceType] ?? 1.0
+  const weightKey =
+    input.patientAttributes?.purpose ??
+    input.patientAttributes?.chiefComplaint ??
+    ""
   const complaintWeight =
-    COMPLAINT_WEIGHTS[input.patientAttributes?.chiefComplaint ?? ""] ??
-    DEFAULT_COMPLAINT_WEIGHT
+    COMPLAINT_WEIGHTS[weightKey] ?? DEFAULT_COMPLAINT_WEIGHT
   const weightedScore =
     Math.round(input.rawScore * deviceWeight * complaintWeight * 100) / 100
 

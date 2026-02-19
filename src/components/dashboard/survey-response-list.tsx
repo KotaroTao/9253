@@ -5,10 +5,22 @@ import { useRouter } from "next/navigation"
 import { Star, Trash2, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { messages } from "@/lib/messages"
-import { VISIT_TYPES, TREATMENT_TYPES, AGE_GROUPS, GENDERS } from "@/lib/constants"
+import {
+  VISIT_TYPES,
+  INSURANCE_TYPES,
+  INSURANCE_PURPOSES,
+  SELF_PAY_PURPOSES,
+  TREATMENT_TYPES,
+  AGE_GROUPS,
+  GENDERS,
+} from "@/lib/constants"
 
 const LABEL_MAP: Record<string, string> = Object.fromEntries([
   ...VISIT_TYPES.map((v) => [v.value, v.label]),
+  ...INSURANCE_TYPES.map((v) => [v.value, v.label]),
+  ...INSURANCE_PURPOSES.map((v) => [v.value, v.label]),
+  ...SELF_PAY_PURPOSES.map((v) => [v.value, v.label]),
+  // Legacy
   ...TREATMENT_TYPES.map((v) => [v.value, v.label]),
   ...AGE_GROUPS.map((v) => [v.value, v.label]),
   ...GENDERS.map((v) => [v.value, v.label]),
@@ -60,7 +72,7 @@ export function SurveyResponseList({ responses: initialResponses }: SurveyRespon
               const pa = r.patientAttributes as Record<string, string> | null | undefined
               return pa ? (
                 <div className="flex flex-wrap gap-1">
-                  {["visitType", "treatmentType", "ageGroup", "gender"].map((key) => {
+                  {["visitType", "insuranceType", "purpose", "treatmentType", "ageGroup", "gender"].map((key) => {
                     const val = pa[key]
                     if (!val) return null
                     return (

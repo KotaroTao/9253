@@ -88,6 +88,30 @@ export const VISIT_TYPES = [
   { value: "revisit", label: "再診" },
 ] as const
 
+// Insurance type (mandatory first choice in kiosk)
+export const INSURANCE_TYPES = [
+  { value: "insurance", label: "保険診療" },
+  { value: "self_pay", label: "自費診療" },
+] as const
+
+// Purpose options conditional on insurance type
+export const INSURANCE_PURPOSES = [
+  { value: "treatment", label: "治療" },
+  { value: "checkup", label: "定期検診" },
+  { value: "emergency", label: "痛み・急患" },
+  { value: "denture", label: "入れ歯" },
+] as const
+
+export const SELF_PAY_PURPOSES = [
+  { value: "orthodontics", label: "矯正" },
+  { value: "cosmetic", label: "審美・ホワイトニング" },
+  { value: "implant", label: "インプラント" },
+  { value: "denture", label: "入れ歯" },
+  { value: "treatment", label: "治療" },
+  { value: "preventive", label: "検診・クリーニング" },
+] as const
+
+// Legacy constants (kept for backward compatibility with old data)
 export const TREATMENT_TYPES = [
   { value: "treatment", label: "治療" },
   { value: "checkup", label: "定期検診" },

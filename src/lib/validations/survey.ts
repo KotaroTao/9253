@@ -3,10 +3,16 @@ import { messages } from "@/lib/messages"
 
 export const patientAttributesSchema = z.object({
   visitType: z.enum(["first_visit", "revisit"]),
-  treatmentType: z.enum(["treatment", "checkup", "consultation"]),
-  chiefComplaint: z.string().optional(),
+  insuranceType: z.enum(["insurance", "self_pay"]).optional(),
+  purpose: z.enum([
+    "treatment", "checkup", "emergency", "denture",
+    "orthodontics", "cosmetic", "implant", "preventive",
+  ]).optional(),
   ageGroup: z.string().optional(),
   gender: z.string().optional(),
+  // Legacy fields (accepted for backward compatibility)
+  treatmentType: z.enum(["treatment", "checkup", "consultation"]).optional(),
+  chiefComplaint: z.string().optional(),
 })
 
 export const surveySubmissionSchema = z.object({

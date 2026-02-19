@@ -37,8 +37,13 @@ export const DEVICE_WEIGHTS: Record<string, number> = {
   kiosk_unauthorized: 0.8,
 } as const
 
-// ─── Complaint Weights ───
+// ─── Complaint / Purpose Weights ───
 export const COMPLAINT_WEIGHTS: Record<string, number> = {
+  // New format (purpose values)
+  emergency: 1.2,
+  checkup: 0.9,
+  preventive: 0.9,
+  // Legacy format (chiefComplaint values)
   pain: 1.2,
   prevention: 0.8,
 } as const

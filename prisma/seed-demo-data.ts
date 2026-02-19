@@ -69,7 +69,9 @@ const FREE_TEXTS = [
   null, // フリーテキストなし
 ]
 
-const COMPLAINTS = ["pain", "filling_crown", "periodontal", "cosmetic", "prevention", "orthodontics", "other"]
+// New format purpose values per insurance type
+const INSURANCE_PURPOSE_VALUES = ["treatment", "checkup", "emergency", "denture"]
+const SELF_PAY_PURPOSE_VALUES = ["orthodontics", "cosmetic", "implant", "denture", "treatment", "preventive"]
 const AGE_GROUPS = ["under_20", "20s", "30s", "40s", "50s", "60s_over"]
 const GENDERS = ["male", "female", "unspecified"]
 
@@ -219,13 +221,26 @@ async function main() {
         freeText = FREE_TEXTS[Math.floor(rng() * FREE_TEXTS.length)]
       }
 
-      // 患者属性
+      // 患者属性 (new format: insuranceType + purpose)
       const isFirstVisit = config.template.id === firstVisitTmpl.id
       const isCheckup = config.template.id === checkupTmpl.id
+      // 75% insurance, 25% self-pay
+      const insuranceType = rng() < 0.75 ? "insurance" : "self_pay"
+      let purpose: string
+      if (isCheckup) {
+        purpose = insuranceType === "self_pay" ? "preventive" : "checkup"
+      } else if (insuranceType === "self_pay") {
+        purpose = weightedChoice(rng, SELF_PAY_PURPOSE_VALUES, [30, 25, 20, 10, 10, 5])
+      } else {
+        // Insurance: treatment-heavy, with emergency and denture
+        purpose = isFirstVisit
+          ? weightedChoice(rng, INSURANCE_PURPOSE_VALUES, [40, 20, 30, 10])
+          : weightedChoice(rng, INSURANCE_PURPOSE_VALUES, [50, 25, 15, 10])
+      }
       const patientAttributes = {
         visitType: isFirstVisit ? "first_visit" : "revisit",
-        treatmentType: isCheckup ? "checkup" : "treatment",
-        chiefComplaint: COMPLAINTS[Math.floor(rng() * COMPLAINTS.length)],
+        insuranceType,
+        purpose,
         ageGroup: weightedChoice(rng, AGE_GROUPS, [8, 12, 18, 22, 25, 15]),
         gender: weightedChoice(rng, GENDERS, [45, 50, 5]),
       }

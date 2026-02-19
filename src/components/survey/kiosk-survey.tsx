@@ -16,8 +16,9 @@ import { Confetti } from "@/components/survey/confetti"
 import {
   DENTAL_TIPS,
   VISIT_TYPES,
-  TREATMENT_TYPES,
-  CHIEF_COMPLAINTS,
+  INSURANCE_TYPES,
+  INSURANCE_PURPOSES,
+  SELF_PAY_PURPOSES,
   AGE_GROUPS,
   GENDERS,
   STAFF_ROLE_LABELS,
@@ -37,12 +38,12 @@ type KioskState = "setup" | "survey" | "thanks"
 function resolveTemplate(
   templates: SurveyTemplateInfo[],
   visitType: string,
-  treatmentType: string
+  purpose: string
 ): SurveyTemplateInfo | undefined {
   if (visitType === "first_visit") {
     return templates.find((t) => t.name === "初診") ?? templates[0]
   }
-  if (treatmentType === "checkup") {
+  if (purpose === "checkup" || purpose === "preventive") {
     return templates.find((t) => t.name === "定期検診") ?? templates[0]
   }
   return templates.find((t) => t.name === "治療中") ?? templates[0]
@@ -55,16 +56,21 @@ function PillSelector({
   value,
   onChange,
   columns = 4,
+  required = false,
 }: {
   label: string
   options: readonly { value: string; label: string }[]
   value: string
   onChange: (v: string) => void
   columns?: number
+  required?: boolean
 }) {
   return (
     <div>
-      <p className="mb-2 text-xs font-semibold text-muted-foreground">{label}</p>
+      <p className="mb-2 text-xs font-semibold text-muted-foreground">
+        {label}
+        {required && <span className="ml-0.5 text-destructive">*</span>}
+      </p>
       <div
         className="grid gap-2"
         style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
@@ -108,8 +114,8 @@ export function KioskSurvey({
   // Staff setup state
   const [selectedStaffId, setSelectedStaffId] = useState("")
   const [visitType, setVisitType] = useState("")
-  const [treatmentType, setTreatmentType] = useState("")
-  const [chiefComplaint, setChiefComplaint] = useState("")
+  const [insuranceType, setInsuranceType] = useState("")
+  const [purpose, setPurpose] = useState("")
   const [ageGroup, setAgeGroup] = useState("")
   const [gender, setGender] = useState("")
   const [selectedData, setSelectedData] = useState<SurveyPageData | null>(null)
@@ -138,11 +144,22 @@ export function KioskSurvey({
       })
   }, [])
 
-  // Authorized devices require staff selection
+  // Reset purpose when insurance type changes
+  const handleInsuranceTypeChange = useCallback((v: string) => {
+    setInsuranceType(v)
+    setPurpose("")
+  }, [])
+
+  // All three mandatory fields required
   const canProceed =
     visitType !== "" &&
-    treatmentType !== "" &&
+    insuranceType !== "" &&
+    purpose !== "" &&
     (!isAuthorizedDevice || selectedStaffId !== "")
+
+  // Purpose options depend on insurance type
+  const purposeOptions = insuranceType === "self_pay" ? SELF_PAY_PURPOSES : INSURANCE_PURPOSES
+  const purposeColumns = insuranceType === "self_pay" ? 3 : 2
 
   const resetToSetup = useCallback(() => {
     setFormKey((k) => k + 1)
@@ -150,8 +167,8 @@ export function KioskSurvey({
     setShowConfetti(false)
     // Keep selectedStaffId across patients (same staff hands tablet)
     setVisitType("")
-    setTreatmentType("")
-    setChiefComplaint("")
+    setInsuranceType("")
+    setPurpose("")
     setAgeGroup("")
     setGender("")
     setSelectedData(null)
@@ -167,7 +184,7 @@ export function KioskSurvey({
 
   const handleStartSurvey = useCallback(() => {
     if (!canProceed) return
-    const template = resolveTemplate(templates, visitType, treatmentType)
+    const template = resolveTemplate(templates, visitType, purpose)
     if (!template) return
 
     setSelectedData({
@@ -179,13 +196,13 @@ export function KioskSurvey({
     })
     setPatientAttrs({
       visitType: visitType as PatientAttributes["visitType"],
-      treatmentType: treatmentType as PatientAttributes["treatmentType"],
-      chiefComplaint,
+      insuranceType: insuranceType as PatientAttributes["insuranceType"],
+      purpose,
       ageGroup,
       gender,
     })
     setState("survey")
-  }, [canProceed, templates, visitType, treatmentType, chiefComplaint, ageGroup, gender, clinicName, clinicSlug])
+  }, [canProceed, templates, visitType, insuranceType, purpose, ageGroup, gender, clinicName, clinicSlug])
 
   const handleExit = useCallback(() => {
     router.push("/dashboard")
@@ -248,25 +265,30 @@ export function KioskSurvey({
               value={visitType}
               onChange={setVisitType}
               columns={2}
+              required
             />
 
-            {/* Treatment type */}
+            {/* Insurance type */}
             <PillSelector
-              label={messages.patientSetup.treatmentType}
-              options={TREATMENT_TYPES}
-              value={treatmentType}
-              onChange={setTreatmentType}
-              columns={3}
+              label={messages.patientSetup.insuranceType}
+              options={INSURANCE_TYPES}
+              value={insuranceType}
+              onChange={handleInsuranceTypeChange}
+              columns={2}
+              required
             />
 
-            {/* Chief complaint */}
-            <PillSelector
-              label={messages.patientSetup.chiefComplaint}
-              options={CHIEF_COMPLAINTS}
-              value={chiefComplaint}
-              onChange={setChiefComplaint}
-              columns={4}
-            />
+            {/* Purpose (conditional on insurance type) */}
+            {insuranceType && (
+              <PillSelector
+                label={messages.patientSetup.purpose}
+                options={purposeOptions}
+                value={purpose}
+                onChange={setPurpose}
+                columns={purposeColumns}
+                required
+              />
+            )}
 
             {/* Age group */}
             <PillSelector
