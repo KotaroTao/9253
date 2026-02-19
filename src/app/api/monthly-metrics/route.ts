@@ -5,6 +5,19 @@ import { messages } from "@/lib/messages"
 import { prisma } from "@/lib/prisma"
 import { getMonthlySurveyCount, getMonthlySurveyQuality } from "@/lib/queries/stats"
 
+const METRICS_SELECT = {
+  firstVisitCount: true,
+  firstVisitInsurance: true,
+  firstVisitSelfPay: true,
+  revisitCount: true,
+  revisitInsurance: true,
+  revisitSelfPay: true,
+  totalRevenue: true,
+  insuranceRevenue: true,
+  selfPayRevenue: true,
+  cancellationCount: true,
+} as const
+
 export async function GET(request: NextRequest) {
   const authResult = await requireRole("clinic_admin", "system_admin")
   if (isAuthError(authResult)) return authResult
@@ -16,6 +29,18 @@ export async function GET(request: NextRequest) {
 
   const yearParam = request.nextUrl.searchParams.get("year")
   const monthParam = request.nextUrl.searchParams.get("month")
+
+  // trend mode: return last 12 months of data
+  if (request.nextUrl.searchParams.get("mode") === "trend") {
+    const rows = await prisma.monthlyClinicMetrics.findMany({
+      where: { clinicId },
+      select: { year: true, month: true, ...METRICS_SELECT },
+      orderBy: [{ year: "desc" }, { month: "desc" }],
+      take: 12,
+    })
+    return successResponse(rows.reverse())
+  }
+
   const now = new Date()
   const year = yearParam ? parseInt(yearParam) : now.getFullYear()
   const month = monthParam ? parseInt(monthParam) : now.getMonth() + 1
@@ -29,11 +54,11 @@ export async function GET(request: NextRequest) {
     await Promise.all([
       prisma.monthlyClinicMetrics.findUnique({
         where: { clinicId_year_month: { clinicId, year, month } },
-        select: { totalVisits: true, totalRevenue: true, selfPayRevenue: true, returnVisitRate: true, googleReviewCount: true, googleReviewRating: true },
+        select: METRICS_SELECT,
       }),
       prisma.monthlyClinicMetrics.findUnique({
         where: { clinicId_year_month: { clinicId, year: prevYear, month: prevMonth } },
-        select: { totalVisits: true, totalRevenue: true, selfPayRevenue: true, returnVisitRate: true, googleReviewCount: true, googleReviewRating: true },
+        select: METRICS_SELECT,
       }),
       getMonthlySurveyCount(clinicId, year, month),
       getMonthlySurveyQuality(clinicId, year, month),
@@ -41,7 +66,7 @@ export async function GET(request: NextRequest) {
 
   return successResponse({
     summary: summary ?? null,
-    prevSummary: prevSummary?.totalVisits != null ? prevSummary : null,
+    prevSummary: prevSummary?.firstVisitCount != null ? prevSummary : null,
     surveyCount,
     surveyQuality,
   })
@@ -57,37 +82,43 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { year, month, totalVisits, totalRevenue, selfPayRevenue, returnVisitRate, googleReviewCount, googleReviewRating } = body
+  const { year, month } = body
 
   if (typeof year !== "number" || typeof month !== "number" || month < 1 || month > 12 || year < 2000 || year > 2100) {
     return errorResponse(messages.errors.invalidInput, 400)
   }
 
-  // Validate: all values must be non-negative integers or null
-  const visits = totalVisits != null ? Math.max(0, Math.round(totalVisits)) : null
-  const revenue = totalRevenue != null ? Math.max(0, Math.round(totalRevenue)) : null
-  const selfPay = selfPayRevenue != null ? Math.max(0, Math.round(selfPayRevenue)) : null
+  const clampInt = (v: unknown) => v != null ? Math.max(0, Math.round(Number(v))) : null
 
-  // selfPayRevenue cannot exceed totalRevenue
-  const safeSelfPay = revenue != null && selfPay != null ? Math.min(selfPay, revenue) : selfPay
-  const returnRate = returnVisitRate != null ? Math.max(0, Math.min(100, Math.round(returnVisitRate * 10) / 10)) : null
-  const reviewCount = googleReviewCount != null ? Math.max(0, Math.round(googleReviewCount)) : null
-  const reviewRating = googleReviewRating != null ? Math.max(0, Math.min(5, Math.round(googleReviewRating * 10) / 10)) : null
+  const firstVisitCount = clampInt(body.firstVisitCount)
+  const firstVisitInsurance = clampInt(body.firstVisitInsurance)
+  const firstVisitSelfPay = clampInt(body.firstVisitSelfPay)
+  const revisitCount = clampInt(body.revisitCount)
+  const revisitInsurance = clampInt(body.revisitInsurance)
+  const revisitSelfPay = clampInt(body.revisitSelfPay)
+  const totalRevenue = clampInt(body.totalRevenue)
+  const insuranceRevenue = clampInt(body.insuranceRevenue)
+  const selfPayRevenue = clampInt(body.selfPayRevenue)
+  const cancellationCount = clampInt(body.cancellationCount)
 
   const data = {
-    totalVisits: visits,
-    totalRevenue: revenue,
-    selfPayRevenue: safeSelfPay,
-    returnVisitRate: returnRate,
-    googleReviewCount: reviewCount,
-    googleReviewRating: reviewRating,
+    firstVisitCount,
+    firstVisitInsurance,
+    firstVisitSelfPay,
+    revisitCount,
+    revisitInsurance,
+    revisitSelfPay,
+    totalRevenue,
+    insuranceRevenue,
+    selfPayRevenue,
+    cancellationCount,
   }
 
   const result = await prisma.monthlyClinicMetrics.upsert({
     where: { clinicId_year_month: { clinicId, year, month } },
     update: data,
     create: { clinicId, year, month, ...data },
-    select: { totalVisits: true, totalRevenue: true, selfPayRevenue: true, returnVisitRate: true, googleReviewCount: true, googleReviewRating: true },
+    select: METRICS_SELECT,
   })
 
   return successResponse(result)

@@ -182,12 +182,16 @@ model MonthlyClinicMetrics {
   clinicId                   String   @map("clinic_id") @db.Uuid
   year                       Int
   month                      Int
-  totalVisits                Int?     @map("total_visits")
+  firstVisitCount            Int?     @map("first_visit_count")
+  firstVisitInsurance        Int?     @map("first_visit_insurance")
+  firstVisitSelfPay          Int?     @map("first_visit_self_pay")
+  revisitCount               Int?     @map("revisit_count")
+  revisitInsurance           Int?     @map("revisit_insurance")
+  revisitSelfPay             Int?     @map("revisit_self_pay")
   totalRevenue               Int?     @map("total_revenue")
+  insuranceRevenue           Int?     @map("insurance_revenue")
   selfPayRevenue             Int?     @map("self_pay_revenue")
-  returnVisitRate            Float?   @map("return_visit_rate")
-  googleReviewCount          Int?     @map("google_review_count")
-  googleReviewRating         Float?   @map("google_review_rating")
+  cancellationCount          Int?     @map("cancellation_count")
   createdAt                  DateTime @default(now()) @map("created_at")
   updatedAt                  DateTime @updatedAt @map("updated_at")
 

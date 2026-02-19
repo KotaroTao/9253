@@ -649,20 +649,25 @@ async function main() {
     const monthResponses = allResponses.filter(
       (r) => r.respondedAt.getFullYear() === year && r.respondedAt.getMonth() + 1 === month
     ).length
-    const totalVisits = Math.round(monthResponses * (2.5 + rng() * 0.8))
-    const totalRevenue = Math.round((350 + rng() * 150) * totalVisits / 10000)
-    const selfPayRevenue = Math.round(totalRevenue * (0.15 + rng() * 0.15))
-    // 再来院率: 満足度改善に連動して55%→72%へ向上（歯科平均60-70%）
-    const returnVisitRate = Math.round((55 + (5 - m) * 3.5 + rng() * 3) * 10) / 10
-    const googleReviewCount = 40 + m * 2 + Math.floor(rng() * 5)
-    const googleReviewRating = Math.round((3.8 + rng() * 0.8) * 10) / 10
+    const totalPatients = Math.round(monthResponses * (2.5 + rng() * 0.8))
+    const firstVisitCount = Math.round(totalPatients * (0.15 + rng() * 0.1))
+    const revisitCount = totalPatients - firstVisitCount
+    const selfPayRatio = 0.15 + rng() * 0.15
+    const firstVisitInsurance = Math.round(firstVisitCount * (1 - selfPayRatio))
+    const firstVisitSelfPay = firstVisitCount - firstVisitInsurance
+    const revisitInsurance = Math.round(revisitCount * (1 - selfPayRatio * 0.8))
+    const revisitSelfPay = revisitCount - revisitInsurance
+    const totalRevenue = Math.round((350 + rng() * 150) * totalPatients / 10000)
+    const selfPayRevenue = Math.round(totalRevenue * selfPayRatio)
+    const insuranceRevenue = totalRevenue - selfPayRevenue
+    const cancellationCount = Math.round(totalPatients * (0.05 + rng() * 0.05))
 
     await prisma.monthlyClinicMetrics.upsert({
       where: { clinicId_year_month: { clinicId: clinic.id, year, month } },
-      update: { totalVisits, totalRevenue, selfPayRevenue, returnVisitRate, googleReviewCount, googleReviewRating },
-      create: { clinicId: clinic.id, year, month, totalVisits, totalRevenue, selfPayRevenue, returnVisitRate, googleReviewCount, googleReviewRating },
+      update: { firstVisitCount, firstVisitInsurance, firstVisitSelfPay, revisitCount, revisitInsurance, revisitSelfPay, totalRevenue, insuranceRevenue, selfPayRevenue, cancellationCount },
+      create: { clinicId: clinic.id, year, month, firstVisitCount, firstVisitInsurance, firstVisitSelfPay, revisitCount, revisitInsurance, revisitSelfPay, totalRevenue, insuranceRevenue, selfPayRevenue, cancellationCount },
     })
-    console.log(`月次レポート: ${year}-${String(month).padStart(2, "0")} (来院${totalVisits}人, 売上${totalRevenue}万円, 再来院率${returnVisitRate}%)`)
+    console.log(`月次レポート: ${year}-${String(month).padStart(2, "0")} (初診${firstVisitCount}人, 再診${revisitCount}人, 売上${totalRevenue}万円)`)
   }
 
   // Seed default patient tips to PlatformSetting

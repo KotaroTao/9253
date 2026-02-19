@@ -6,6 +6,19 @@ import { getMonthlySurveyCount, getMonthlySurveyQuality } from "@/lib/queries/st
 import { MonthlyMetricsView } from "@/components/dashboard/monthly-metrics-view"
 import { ROLES } from "@/lib/constants"
 
+const METRICS_SELECT = {
+  firstVisitCount: true,
+  firstVisitInsurance: true,
+  firstVisitSelfPay: true,
+  revisitCount: true,
+  revisitInsurance: true,
+  revisitSelfPay: true,
+  totalRevenue: true,
+  insuranceRevenue: true,
+  selfPayRevenue: true,
+  cancellationCount: true,
+} as const
+
 export default async function MetricsPage() {
   const session = await auth()
 
@@ -35,11 +48,11 @@ export default async function MetricsPage() {
     await Promise.all([
       prisma.monthlyClinicMetrics.findUnique({
         where: { clinicId_year_month: { clinicId, year, month } },
-        select: { totalVisits: true, totalRevenue: true, selfPayRevenue: true, returnVisitRate: true, googleReviewCount: true, googleReviewRating: true },
+        select: METRICS_SELECT,
       }),
       prisma.monthlyClinicMetrics.findUnique({
         where: { clinicId_year_month: { clinicId, year: prevYear, month: prevMonth } },
-        select: { totalVisits: true, totalRevenue: true, selfPayRevenue: true, returnVisitRate: true, googleReviewCount: true, googleReviewRating: true },
+        select: METRICS_SELECT,
       }),
       getMonthlySurveyCount(clinicId, year, month),
       getMonthlySurveyQuality(clinicId, year, month),
@@ -49,7 +62,7 @@ export default async function MetricsPage() {
     <div className="space-y-6">
       <MonthlyMetricsView
         initialSummary={summary ?? null}
-        initialPrevSummary={prevSummary?.totalVisits != null ? prevSummary : null}
+        initialPrevSummary={prevSummary?.firstVisitCount != null ? prevSummary : null}
         initialSurveyCount={surveyCount}
         initialSurveyQuality={surveyQuality}
         initialYear={year}

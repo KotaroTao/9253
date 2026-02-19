@@ -5,15 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
 import { MonthlySummarySection } from "./monthly-summary-section"
-
-interface MonthlySummary {
-  totalVisits: number | null
-  totalRevenue: number | null
-  selfPayRevenue: number | null
-  returnVisitRate: number | null
-  googleReviewCount: number | null
-  googleReviewRating: number | null
-}
+import { MonthlyTrendSummary } from "./monthly-trend-summary"
+import type { MonthlySummary } from "./monthly-summary-section"
 
 interface SurveyQuality {
   lowScoreCount: number
@@ -37,6 +30,7 @@ export function MonthlyMetricsView({
   initialYear,
   initialMonth,
 }: MonthlyMetricsViewProps) {
+  const [activeTab, setActiveTab] = useState<"summary" | "input">("summary")
   const [year, setYear] = useState(initialYear)
   const [month, setMonth] = useState(initialMonth)
   const [summary, setSummary] = useState<MonthlySummary | null>(initialSummary)
@@ -44,6 +38,8 @@ export function MonthlyMetricsView({
   const [surveyCount, setSurveyCount] = useState(initialSurveyCount)
   const [surveyQuality, setSurveyQuality] = useState<SurveyQuality | null>(initialSurveyQuality)
   const [loading, setLoading] = useState(false)
+
+  const m = messages.monthlyMetrics
 
   const now = new Date()
   const monthOptions: { year: number; month: number; label: string }[] = []
@@ -81,37 +77,71 @@ export function MonthlyMetricsView({
 
   return (
     <div className="space-y-6">
-      {/* Month selector */}
-      <div className="flex flex-wrap gap-2">
-        {monthOptions.map((opt) => (
-          <Button
-            key={`${opt.year}-${opt.month}`}
-            variant={year === opt.year && month === opt.month ? "default" : "outline"}
-            size="sm"
-            onClick={() => handleMonthChange(opt.year, opt.month)}
-          >
-            {opt.label}
-          </Button>
-        ))}
+      {/* Tab bar */}
+      <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
+        <button
+          onClick={() => setActiveTab("summary")}
+          className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+            activeTab === "summary"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {m.tabSummary}
+        </button>
+        <button
+          onClick={() => setActiveTab("input")}
+          className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+            activeTab === "input"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {m.tabInput}
+        </button>
       </div>
 
-      {loading && (
-        <Card>
-          <CardContent className="py-8 text-center">
-            <p className="text-muted-foreground">{messages.common.loading}</p>
-          </CardContent>
-        </Card>
+      {/* Summary tab (default) */}
+      {activeTab === "summary" && (
+        <MonthlyTrendSummary />
       )}
 
-      {!loading && (
-        <MonthlySummarySection
-          year={year}
-          month={month}
-          initialSummary={summary}
-          prevSummary={prevSummary}
-          surveyCount={surveyCount}
-          surveyQuality={surveyQuality}
-        />
+      {/* Input tab */}
+      {activeTab === "input" && (
+        <>
+          {/* Month selector */}
+          <div className="flex flex-wrap gap-2">
+            {monthOptions.map((opt) => (
+              <Button
+                key={`${opt.year}-${opt.month}`}
+                variant={year === opt.year && month === opt.month ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleMonthChange(opt.year, opt.month)}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
+
+          {loading && (
+            <Card>
+              <CardContent className="py-8 text-center">
+                <p className="text-muted-foreground">{messages.common.loading}</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {!loading && (
+            <MonthlySummarySection
+              year={year}
+              month={month}
+              initialSummary={summary}
+              prevSummary={prevSummary}
+              surveyCount={surveyCount}
+              surveyQuality={surveyQuality}
+            />
+          )}
+        </>
       )}
     </div>
   )
