@@ -7,6 +7,7 @@ import { messages } from "@/lib/messages"
 import { Lightbulb, HardDrive, ArrowRight, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, AlertTriangle, Activity } from "lucide-react"
 import { ClinicSearch } from "@/components/admin/clinic-search"
 import { ClinicRow } from "@/components/admin/clinic-row"
+import { PxValueDashboard } from "@/components/admin/px-value-dashboard"
 
 function ScoreBadge({ score, prevScore }: { score: number | null; prevScore: number | null }) {
   if (score == null) {
@@ -216,6 +217,11 @@ export default async function AdminPage({
           <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
         </Link>
       </div>
+
+      {/* PX-Value Rankings */}
+      <Suspense>
+        <PxValueDashboard />
+      </Suspense>
 
       {/* Clinic list */}
       <Card>
