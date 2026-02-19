@@ -35,6 +35,8 @@ interface KioskSurveyProps {
 
 type KioskState = "setup" | "survey" | "thanks"
 
+const MAINTENANCE_PURPOSES = ["periodontal", "checkup_insurance", "self_pay_cleaning", "checkup", "preventive"]
+
 function resolveTemplate(
   templates: SurveyTemplateInfo[],
   visitType: string,
@@ -43,7 +45,7 @@ function resolveTemplate(
   if (visitType === "first_visit") {
     return templates.find((t) => t.name === "初診") ?? templates[0]
   }
-  if (purpose === "checkup" || purpose === "preventive") {
+  if (MAINTENANCE_PURPOSES.includes(purpose)) {
     return templates.find((t) => t.name === "定期検診") ?? templates[0]
   }
   return templates.find((t) => t.name === "治療中") ?? templates[0]
@@ -59,7 +61,7 @@ function PillSelector({
   required = false,
 }: {
   label: string
-  options: readonly { value: string; label: string }[]
+  options: readonly { value: string; label: string; subLabel?: string }[]
   value: string
   onChange: (v: string) => void
   columns?: number
@@ -80,13 +82,18 @@ function PillSelector({
             key={opt.value}
             type="button"
             onClick={() => onChange(value === opt.value ? "" : opt.value)}
-            className={`rounded-xl border-2 px-2 py-3 text-sm font-bold transition-all active:scale-95 ${
+            className={`flex flex-col items-center justify-center rounded-xl border-2 px-2 py-3 transition-all active:scale-95 ${
               value === opt.value
                 ? "border-primary bg-primary text-primary-foreground shadow-sm"
                 : "border-muted bg-card text-foreground hover:border-primary/30"
             }`}
           >
-            {opt.label}
+            <span className="text-sm font-bold">{opt.label}</span>
+            {"subLabel" in opt && opt.subLabel && (
+              <span className={`text-[10px] ${value === opt.value ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                {opt.subLabel}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -157,9 +164,8 @@ export function KioskSurvey({
     purpose !== "" &&
     (!isAuthorizedDevice || selectedStaffId !== "")
 
-  // Purpose options depend on insurance type
+  // Purpose options depend on insurance type (8 items each, 2×4 grid)
   const purposeOptions = insuranceType === "self_pay" ? SELF_PAY_PURPOSES : INSURANCE_PURPOSES
-  const purposeColumns = insuranceType === "self_pay" ? 3 : 2
 
   const resetToSetup = useCallback(() => {
     setFormKey((k) => k + 1)
@@ -285,7 +291,7 @@ export function KioskSurvey({
                 options={purposeOptions}
                 value={purpose}
                 onChange={setPurpose}
-                columns={purposeColumns}
+                columns={2}
                 required
               />
             )}

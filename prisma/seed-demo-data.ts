@@ -69,9 +69,15 @@ const FREE_TEXTS = [
   null, // フリーテキストなし
 ]
 
-// New format purpose values per insurance type
-const INSURANCE_PURPOSE_VALUES = ["treatment", "checkup", "emergency", "denture"]
-const SELF_PAY_PURPOSE_VALUES = ["orthodontics", "cosmetic", "implant", "denture", "treatment", "preventive"]
+// Purpose values per insurance type
+const INSURANCE_PURPOSE_VALUES = [
+  "cavity_treatment", "prosthetic_insurance", "periodontal", "checkup_insurance",
+  "denture_insurance", "extraction_surgery", "root_canal", "emergency",
+]
+const SELF_PAY_PURPOSE_VALUES = [
+  "prosthetic_self_pay", "implant", "denture_self_pay", "wire_orthodontics",
+  "aligner", "whitening", "self_pay_cleaning", "precision_root_canal",
+]
 const AGE_GROUPS = ["under_20", "20s", "30s", "40s", "50s", "60s_over"]
 const GENDERS = ["male", "female", "unspecified"]
 
@@ -221,21 +227,22 @@ async function main() {
         freeText = FREE_TEXTS[Math.floor(rng() * FREE_TEXTS.length)]
       }
 
-      // 患者属性 (new format: insuranceType + purpose)
+      // 患者属性 (insuranceType + purpose)
       const isFirstVisit = config.template.id === firstVisitTmpl.id
       const isCheckup = config.template.id === checkupTmpl.id
       // 75% insurance, 25% self-pay
       const insuranceType = rng() < 0.75 ? "insurance" : "self_pay"
       let purpose: string
       if (isCheckup) {
-        purpose = insuranceType === "self_pay" ? "preventive" : "checkup"
+        purpose = insuranceType === "self_pay" ? "self_pay_cleaning" : "periodontal"
       } else if (insuranceType === "self_pay") {
-        purpose = weightedChoice(rng, SELF_PAY_PURPOSE_VALUES, [30, 25, 20, 10, 10, 5])
+        // prosthetic_self_pay, implant, denture_self_pay, wire_ortho, aligner, whitening, self_pay_cleaning, precision_root_canal
+        purpose = weightedChoice(rng, SELF_PAY_PURPOSE_VALUES, [25, 20, 8, 12, 12, 10, 5, 8])
       } else {
-        // Insurance: treatment-heavy, with emergency and denture
+        // cavity_treatment, prosthetic_ins, periodontal, checkup_ins, denture_ins, extraction, root_canal, emergency
         purpose = isFirstVisit
-          ? weightedChoice(rng, INSURANCE_PURPOSE_VALUES, [40, 20, 30, 10])
-          : weightedChoice(rng, INSURANCE_PURPOSE_VALUES, [50, 25, 15, 10])
+          ? weightedChoice(rng, INSURANCE_PURPOSE_VALUES, [25, 10, 15, 10, 5, 15, 10, 10])
+          : weightedChoice(rng, INSURANCE_PURPOSE_VALUES, [30, 15, 15, 10, 8, 8, 10, 4])
       }
       const patientAttributes = {
         visitType: isFirstVisit ? "first_visit" : "revisit",

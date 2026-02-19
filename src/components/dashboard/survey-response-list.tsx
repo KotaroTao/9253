@@ -24,6 +24,9 @@ const LABEL_MAP: Record<string, string> = Object.fromEntries([
   ...TREATMENT_TYPES.map((v) => [v.value, v.label]),
   ...AGE_GROUPS.map((v) => [v.value, v.label]),
   ...GENDERS.map((v) => [v.value, v.label]),
+  // Legacy purpose values not in new constants
+  ["treatment", "治療"], ["checkup", "定期検診"], ["denture", "入れ歯"],
+  ["orthodontics", "矯正"], ["cosmetic", "審美・ホワイトニング"], ["preventive", "検診・クリーニング"],
 ])
 
 interface ResponseItem {

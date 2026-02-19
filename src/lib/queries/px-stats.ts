@@ -25,9 +25,13 @@ export async function getSegmentAnalysis(
       CASE
         -- New format (insuranceType + purpose)
         WHEN patient_attributes->>'purpose' = 'emergency' THEN 'emergency'
-        WHEN patient_attributes->>'purpose' IN ('checkup', 'preventive') THEN 'maintenance'
+        WHEN patient_attributes->>'purpose' IN ('periodontal', 'checkup_insurance', 'self_pay_cleaning', 'checkup', 'preventive') THEN 'maintenance'
         WHEN patient_attributes->>'insuranceType' = 'self_pay'
-          AND patient_attributes->>'purpose' IN ('orthodontics', 'cosmetic', 'implant')
+          AND patient_attributes->>'purpose' IN (
+            'prosthetic_self_pay', 'implant', 'denture_self_pay',
+            'wire_orthodontics', 'aligner', 'whitening', 'precision_root_canal',
+            'orthodontics', 'cosmetic'
+          )
           THEN 'highValue'
         -- Legacy format (chiefComplaint + treatmentType)
         WHEN patient_attributes->>'chiefComplaint' = 'pain' THEN 'emergency'

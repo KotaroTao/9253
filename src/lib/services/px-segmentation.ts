@@ -31,13 +31,18 @@ export function classifySegment(
   if (attrs.insuranceType && attrs.purpose) {
     if (attrs.purpose === "emergency") return "emergency"
 
-    if (attrs.purpose === "checkup" || attrs.purpose === "preventive") {
+    if (["periodontal", "checkup_insurance", "self_pay_cleaning", "checkup", "preventive"].includes(attrs.purpose)) {
       return "maintenance"
     }
 
     if (
       attrs.insuranceType === "self_pay" &&
-      ["orthodontics", "cosmetic", "implant"].includes(attrs.purpose)
+      [
+        "prosthetic_self_pay", "implant", "denture_self_pay",
+        "wire_orthodontics", "aligner", "whitening", "precision_root_canal",
+        // Legacy
+        "orthodontics", "cosmetic",
+      ].includes(attrs.purpose)
     ) {
       return "highValue"
     }
