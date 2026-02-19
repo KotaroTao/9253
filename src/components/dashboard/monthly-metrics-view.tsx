@@ -11,9 +11,11 @@ import type { MonthlySummary } from "./monthly-summary-section"
 import { ChevronDown, ChevronUp, PenSquare } from "lucide-react"
 
 const PERIOD_OPTIONS = [
-  { label: "7ヶ月", value: 7 },
-  { label: "12ヶ月", value: 12 },
-  { label: "24ヶ月", value: 24 },
+  { label: "7日", value: 7, months: 1 },
+  { label: "30日", value: 30, months: 2 },
+  { label: "90日", value: 90, months: 4 },
+  { label: "180日", value: 180, months: 7 },
+  { label: "365日", value: 365, months: 13 },
 ] as const
 
 interface MonthlyMetricsViewProps {
@@ -33,7 +35,7 @@ export function MonthlyMetricsView({
   initialMonth,
   enteredMonths = [],
 }: MonthlyMetricsViewProps) {
-  const [selectedMonths, setSelectedMonths] = useState(12)
+  const [selectedDays, setSelectedDays] = useState(30)
   const [year, setYear] = useState(initialYear)
   const [month, setMonth] = useState(initialMonth)
   const [summary, setSummary] = useState<MonthlySummary | null>(initialSummary)
@@ -93,19 +95,21 @@ export function MonthlyMetricsView({
     }
   }
 
+  const selectedOption = PERIOD_OPTIONS.find((o) => o.value === selectedDays)
+
   const periodSelector = (
     <div className="flex items-center gap-2">
       <span className="hidden text-xs text-muted-foreground sm:inline">
-        直近{PERIOD_OPTIONS.find((o) => o.value === selectedMonths)?.label ?? ""}
+        直近{selectedOption?.label ?? ""}
       </span>
       {/* Desktop: ボタン群 */}
       <div className="hidden gap-1 sm:flex">
         {PERIOD_OPTIONS.map((opt) => (
           <button
             key={opt.value}
-            onClick={() => setSelectedMonths(opt.value)}
+            onClick={() => setSelectedDays(opt.value)}
             className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
-              selectedMonths === opt.value
+              selectedDays === opt.value
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
@@ -116,8 +120,8 @@ export function MonthlyMetricsView({
       </div>
       {/* Mobile: セレクト */}
       <select
-        value={selectedMonths}
-        onChange={(e) => setSelectedMonths(Number(e.target.value))}
+        value={selectedDays}
+        onChange={(e) => setSelectedDays(Number(e.target.value))}
         className="rounded-md border bg-card px-2 py-1.5 text-xs sm:hidden"
       >
         {PERIOD_OPTIONS.map((opt) => (
@@ -134,7 +138,7 @@ export function MonthlyMetricsView({
       {headerSlot && createPortal(periodSelector, headerSlot)}
 
       {/* グラフ（期間セレクタと連動） */}
-      <MonthlyTrendSummary months={selectedMonths} />
+      <MonthlyTrendSummary months={selectedOption?.months ?? 2} />
 
       {/* データ入力セクション */}
       <div className="space-y-4">
