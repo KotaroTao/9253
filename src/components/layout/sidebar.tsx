@@ -35,9 +35,12 @@ interface NavItem {
 
 const analyticsItems: NavItem[] = [
   { href: "/dashboard/analytics", label: messages.nav.analytics, icon: PieChart },
-  { href: "/dashboard/actions", label: messages.improvementActions.title, icon: Target },
-  { href: "/dashboard/surveys", label: messages.nav.surveys, icon: ClipboardList },
   { href: "/dashboard/metrics", label: messages.nav.monthlyMetrics, icon: FileBarChart },
+  { href: "/dashboard/surveys", label: messages.nav.surveys, icon: ClipboardList },
+]
+
+const actionItems: NavItem[] = [
+  { href: "/dashboard/actions", label: messages.improvementActions.title, icon: Target },
 ]
 
 const adminItems: NavItem[] = [
@@ -117,6 +120,7 @@ export function Sidebar({ role, isOperatorMode = false, clinicSlug }: SidebarPro
         {isAdmin && (
           <>
             <NavSection label={messages.nav.sectionAnalytics} items={analyticsItems} pathname={pathname} />
+            <NavSection label={messages.nav.sectionActions} items={actionItems} pathname={pathname} />
             <NavSection label={messages.nav.sectionAdmin} items={adminItems} pathname={pathname} />
           </>
         )}
