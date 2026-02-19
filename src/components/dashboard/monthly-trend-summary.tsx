@@ -6,6 +6,7 @@ import {
   Line,
   BarChart,
   Bar,
+  ComposedChart,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -169,20 +170,23 @@ export function MonthlyTrendSummary() {
         </CardContent>
       </Card>
 
-      {/* キャンセル件数推移 */}
+      {/* キャンセル件数・キャンセル率推移 */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">キャンセル件数推移</CardTitle>
+          <CardTitle className="text-base">キャンセル件数・キャンセル率推移</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={chartData}>
+          <ResponsiveContainer width="100%" height={250}>
+            <ComposedChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" fontSize={11} />
-              <YAxis fontSize={11} />
-              <Tooltip />
-              <Bar dataKey="cancellationCount" name={m.cancellationCount} fill="hsl(0, 84%, 60%)" />
-            </BarChart>
+              <YAxis yAxisId="left" fontSize={11} />
+              <YAxis yAxisId="right" orientation="right" fontSize={11} unit="%" domain={[0, (max: number) => Math.max(Math.ceil(max / 5) * 5, 10)]} />
+              <Tooltip formatter={(value: number, name: string) => name === m.cancellationRate ? `${value}%` : value} />
+              <Legend />
+              <Bar yAxisId="left" dataKey="cancellationCount" name={m.cancellationCount} fill="hsl(0, 84%, 60%)" />
+              <Line yAxisId="right" type="monotone" dataKey="cancellationRate" name={m.cancellationRate} stroke="hsl(0, 60%, 45%)" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+            </ComposedChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>

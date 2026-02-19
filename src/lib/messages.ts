@@ -395,6 +395,7 @@ export const messages = {
     noTemplate: "アンケートテンプレートが設定されていません",
     sectionDaily: "日常業務",
     sectionAnalytics: "分析・レポート",
+    sectionActions: "改善アクション",
     sectionAdmin: "管理",
   },
   admin: {
