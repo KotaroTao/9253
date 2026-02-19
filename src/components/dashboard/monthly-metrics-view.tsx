@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
@@ -33,6 +34,11 @@ export function MonthlyMetricsView({
   const [surveyCount, setSurveyCount] = useState(initialSurveyCount)
   const [loading, setLoading] = useState(false)
   const [entered, setEntered] = useState<Set<string>>(new Set(enteredMonths))
+  const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null)
+
+  useEffect(() => {
+    setHeaderSlot(document.getElementById("header-actions"))
+  }, [])
 
   const m = messages.monthlyMetrics
 
@@ -80,31 +86,32 @@ export function MonthlyMetricsView({
     }
   }
 
+  const TAB_OPTIONS = [
+    { label: m.tabSummary, value: "summary" as const },
+    { label: m.tabInput, value: "input" as const },
+  ]
+
+  const tabSelector = (
+    <div className="flex items-center gap-1">
+      {TAB_OPTIONS.map((opt) => (
+        <button
+          key={opt.value}
+          onClick={() => setActiveTab(opt.value)}
+          className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+            activeTab === opt.value
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  )
+
   return (
     <div className="space-y-6">
-      {/* Tab bar */}
-      <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
-        <button
-          onClick={() => setActiveTab("summary")}
-          className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-            activeTab === "summary"
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          {m.tabSummary}
-        </button>
-        <button
-          onClick={() => setActiveTab("input")}
-          className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-            activeTab === "input"
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          {m.tabInput}
-        </button>
-      </div>
+      {headerSlot && createPortal(tabSelector, headerSlot)}
 
       {/* Summary tab (default) */}
       {activeTab === "summary" && (
