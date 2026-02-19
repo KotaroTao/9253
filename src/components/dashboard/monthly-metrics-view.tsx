@@ -10,7 +10,7 @@ import type { MonthlySummary } from "./monthly-summary-section"
 
 interface SurveyQuality {
   lowScoreCount: number
-  freeTextRate: number | null
+  lowScoreQuestions: Array<{ text: string; avgScore: number }>
 }
 
 interface MonthlyMetricsViewProps {

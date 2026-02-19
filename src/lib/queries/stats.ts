@@ -66,18 +66,25 @@ export async function getMonthlySurveyQuality(
 ) {
   const startDate = jstStartOfMonth(year, month)
   const endDate = jstEndOfMonth(year, month)
-  const where = { clinicId, respondedAt: { gte: startDate, lte: endDate } }
 
-  const [lowScoreCount, freeTextCount, totalCount] = await Promise.all([
-    prisma.surveyResponse.count({ where: { ...where, overallScore: { lte: 3 } } }),
-    prisma.surveyResponse.count({ where: { ...where, freeText: { not: null } } }),
-    prisma.surveyResponse.count({ where }),
+  const [lowScoreCount, breakdown] = await Promise.all([
+    prisma.surveyResponse.count({
+      where: { clinicId, respondedAt: { gte: startDate, lte: endDate }, overallScore: { lte: 3 } },
+    }),
+    getQuestionBreakdownByDays(clinicId, 30),
   ])
 
-  return {
-    lowScoreCount,
-    freeTextRate: totalCount > 0 ? Math.round((freeTextCount / totalCount) * 1000) / 10 : null,
+  const lowScoreQuestions: Array<{ text: string; avgScore: number }> = []
+  for (const template of breakdown) {
+    for (const q of template.questions) {
+      if (q.avgScore > 0 && q.avgScore < 4.0) {
+        lowScoreQuestions.push({ text: q.text, avgScore: q.avgScore })
+      }
+    }
   }
+  lowScoreQuestions.sort((a, b) => a.avgScore - b.avgScore)
+
+  return { lowScoreCount, lowScoreQuestions }
 }
 
 export async function getMonthlySurveyCount(

@@ -21,7 +21,7 @@ export interface MonthlySummary {
 
 interface SurveyQuality {
   lowScoreCount: number
-  freeTextRate: number | null
+  lowScoreQuestions: Array<{ text: string; avgScore: number }>
 }
 
 interface MonthlySummarySectionProps {
@@ -336,9 +336,9 @@ export function MonthlySummarySection({
           </div>
         </div>
 
-        {/* Survey quality alerts */}
-        {surveyQuality && (surveyQuality.lowScoreCount > 0 || surveyQuality.freeTextRate != null) && (
-          <div className="flex flex-wrap gap-3">
+        {/* Low score alert with question details */}
+        {surveyQuality && (surveyQuality.lowScoreCount > 0 || surveyQuality.lowScoreQuestions.length > 0) && (
+          <div className="space-y-2">
             {surveyQuality.lowScoreCount > 0 && (
               <div className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2">
                 <AlertTriangle className="h-4 w-4 text-red-500" />
@@ -347,10 +347,17 @@ export function MonthlySummarySection({
                 </span>
               </div>
             )}
-            {surveyQuality.freeTextRate != null && (
-              <div className="rounded-lg border px-3 py-2">
-                <span className="text-xs text-muted-foreground">{m.freeTextRate}: </span>
-                <span className="text-sm font-medium">{surveyQuality.freeTextRate}%</span>
+            {surveyQuality.lowScoreQuestions.length > 0 && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                <p className="text-xs font-medium text-amber-700 mb-1.5">{messages.monthlyMetrics.lowScoreItems}</p>
+                <ul className="space-y-0.5">
+                  {surveyQuality.lowScoreQuestions.map((q) => (
+                    <li key={q.text} className="flex items-center justify-between text-sm text-amber-800">
+                      <span>・{q.text}</span>
+                      <span className="ml-2 font-medium tabular-nums">{q.avgScore}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>

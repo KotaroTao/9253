@@ -290,7 +290,7 @@ export const messages = {
     unitPercent: "%",
     lowScoreAlert: "低スコアアラート",
     lowScoreCount: "件（3点以下）",
-    freeTextRate: "フリーテキスト回答率",
+    lowScoreItems: "低スコア項目（直近30日平均）",
   },
   staff: {
     management: "スタッフ管理",
