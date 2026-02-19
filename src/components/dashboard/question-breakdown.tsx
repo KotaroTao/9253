@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertTriangle, TrendingUp, Plus } from "lucide-react"
 import Link from "next/link"
 import type { TemplateQuestionScores } from "@/lib/queries/stats"
-import { PERIOD_OPTIONS } from "@/components/dashboard/daily-trend-chart"
+import { formatPeriodLabel } from "@/components/dashboard/analytics-charts"
 
 interface QuestionBreakdownProps {
   data: TemplateQuestionScores[]
@@ -79,7 +79,7 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<
 
 export function QuestionBreakdown({ data, selectedPeriod }: QuestionBreakdownProps) {
   const periodLabel = selectedPeriod
-    ? PERIOD_OPTIONS.find((o) => o.value === selectedPeriod)?.label
+    ? formatPeriodLabel(selectedPeriod)
     : null
   if (data.length === 0) {
     return (

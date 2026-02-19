@@ -14,14 +14,7 @@ import {
 } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { DailyTrendPoint } from "@/lib/queries/stats"
-
-export const PERIOD_OPTIONS = [
-  { label: "7日", value: 7 },
-  { label: "30日", value: 30 },
-  { label: "90日", value: 90 },
-  { label: "180日", value: 180 },
-  { label: "365日", value: 365 },
-] as const
+import { formatPeriodLabel } from "./analytics-charts"
 
 function CustomTooltip({
   active,
@@ -92,7 +85,7 @@ export function DailyTrendChart({ initialData, selectedPeriod }: DailyTrendChart
     return { totalCount, avgScore }
   }, [data])
 
-  const periodLabel = PERIOD_OPTIONS.find((o) => o.value === selectedPeriod)?.label ?? ""
+  const periodLabel = formatPeriodLabel(selectedPeriod)
 
   return (
     <Card>

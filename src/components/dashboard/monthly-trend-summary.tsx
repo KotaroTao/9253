@@ -28,23 +28,30 @@ function formatMonth(year: number, month: number) {
   return `${year}/${String(month).padStart(2, "0")}`
 }
 
-export function MonthlyTrendSummary() {
+interface MonthlyTrendSummaryProps {
+  months?: number
+}
+
+export function MonthlyTrendSummary({ months = 12 }: MonthlyTrendSummaryProps) {
   const [data, setData] = useState<TrendRow[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let cancelled = false
+    setLoading(true)
     async function fetchTrend() {
       try {
-        const res = await fetch("/api/monthly-metrics?mode=trend", { cache: "no-store" })
-        if (res.ok) {
+        const res = await fetch(`/api/monthly-metrics?mode=trend&months=${months}`, { cache: "no-store" })
+        if (res.ok && !cancelled) {
           setData(await res.json())
         }
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
     fetchTrend()
-  }, [])
+    return () => { cancelled = true }
+  }, [months])
 
   const m = messages.monthlyMetrics
 
