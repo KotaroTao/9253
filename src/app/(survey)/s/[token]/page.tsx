@@ -39,7 +39,7 @@ export default async function SurveyPage({ params, searchParams }: SurveyPagePro
     clinicSlug: clinic.slug,
     templateId: template.id,
     templateName: template.name,
-    questions: template.questions as SurveyPageData["questions"],
+    questions: template.questions as unknown as SurveyPageData["questions"],
   }
 
   return (

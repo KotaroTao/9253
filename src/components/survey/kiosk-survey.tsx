@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { SurveyForm } from "@/components/survey/survey-form"
@@ -115,7 +115,34 @@ export function KioskSurvey({
   const [selectedData, setSelectedData] = useState<SurveyPageData | null>(null)
   const [patientAttrs, setPatientAttrs] = useState<PatientAttributes | null>(null)
 
-  const canProceed = visitType !== "" && treatmentType !== ""
+  // Device UUID: generate and persist in localStorage
+  const [deviceUuid, setDeviceUuid] = useState<string | undefined>(undefined)
+  const [isAuthorizedDevice, setIsAuthorizedDevice] = useState(false)
+
+  useEffect(() => {
+    let uuid = localStorage.getItem("mieru-device-uuid")
+    if (!uuid) {
+      uuid = crypto.randomUUID()
+      localStorage.setItem("mieru-device-uuid", uuid)
+    }
+    setDeviceUuid(uuid)
+
+    // Check if this device is authorized
+    fetch(`/api/devices/check?uuid=${encodeURIComponent(uuid)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.isAuthorized) setIsAuthorizedDevice(true)
+      })
+      .catch(() => {
+        // Device check is non-critical; default to unauthorized
+      })
+  }, [])
+
+  // Authorized devices require staff selection
+  const canProceed =
+    visitType !== "" &&
+    treatmentType !== "" &&
+    (!isAuthorizedDevice || selectedStaffId !== "")
 
   const resetToSetup = useCallback(() => {
     setFormKey((k) => k + 1)
@@ -187,6 +214,9 @@ export function KioskSurvey({
               <div>
                 <p className="mb-2 text-xs font-semibold text-muted-foreground">
                   {messages.patientSetup.staffSelect}
+                  {isAuthorizedDevice && (
+                    <span className="ml-1 text-destructive">*</span>
+                  )}
                 </p>
                 <div className="grid grid-cols-3 gap-2">
                   {staff.map((s) => (
@@ -271,7 +301,9 @@ export function KioskSurvey({
             </Button>
             {!canProceed && (
               <p className="mt-2 text-center text-xs text-muted-foreground">
-                {messages.patientSetup.requiredHint}
+                {isAuthorizedDevice && !selectedStaffId
+                  ? messages.patientSetup.staffRequiredHint
+                  : messages.patientSetup.requiredHint}
               </p>
             )}
           </div>
@@ -340,6 +372,7 @@ export function KioskSurvey({
           onComplete={handleSurveyComplete}
           patientAttributes={patientAttrs ?? undefined}
           staffId={selectedStaffId || undefined}
+          deviceUuid={deviceUuid}
           kioskMode
         />
       </div>

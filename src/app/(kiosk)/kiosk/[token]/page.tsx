@@ -49,7 +49,7 @@ export default async function KioskPage({ params }: KioskPageProps) {
   const templates: SurveyTemplateInfo[] = clinic.surveyTemplates.map((t) => ({
     id: t.id,
     name: t.name,
-    questions: t.questions as SurveyPageData["questions"],
+    questions: t.questions as unknown as SurveyPageData["questions"],
   }))
 
   const staff: KioskStaffInfo[] = staffList.map((s) => ({

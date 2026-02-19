@@ -12,6 +12,7 @@ model Clinic {
   name                String
   slug                String   @unique
   googlePlaceId       String?  @map("google_place_id")
+  unitCount           Int?     @map("unit_count")
   settings            Json     @default("{}")
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
@@ -22,6 +23,7 @@ model Clinic {
   surveyResponses      SurveyResponse[]
   monthlyClinicMetrics MonthlyClinicMetrics[]
   improvementActions   ImprovementAction[]
+  authorizedDevices    AuthorizedDevice[]
 
   @@map("clinics")
 }
@@ -80,17 +82,22 @@ model SurveyTemplate {
 }
 
 model SurveyResponse {
-  id              String   @id @default(uuid()) @db.Uuid
-  clinicId        String   @map("clinic_id") @db.Uuid
-  staffId         String?  @map("staff_id") @db.Uuid
-  templateId      String   @map("template_id") @db.Uuid
-  answers         Json
-  overallScore    Float?   @map("overall_score")
-  freeText          String?  @map("free_text")
-  patientAttributes Json?    @map("patient_attributes")
-  ipHash            String?  @map("ip_hash")
-  respondedAt     DateTime @default(now()) @map("responded_at")
-  createdAt       DateTime @default(now()) @map("created_at")
+  id                 String   @id @default(uuid()) @db.Uuid
+  clinicId           String   @map("clinic_id") @db.Uuid
+  staffId            String?  @map("staff_id") @db.Uuid
+  templateId         String   @map("template_id") @db.Uuid
+  answers            Json
+  overallScore       Float?   @map("overall_score")
+  weightedScore      Float?   @map("weighted_score")
+  trustFactor        Float?   @map("trust_factor")
+  responseDurationMs Int?     @map("response_duration_ms")
+  isVerified         Boolean  @default(true) @map("is_verified")
+  deviceType         String?  @map("device_type")
+  freeText           String?  @map("free_text")
+  patientAttributes  Json?    @map("patient_attributes")
+  ipHash             String?  @map("ip_hash")
+  respondedAt        DateTime @default(now()) @map("responded_at")
+  createdAt          DateTime @default(now()) @map("created_at")
 
   clinic   Clinic         @relation(fields: [clinicId], references: [id], onDelete: Cascade)
   staff    Staff?         @relation(fields: [staffId], references: [id], onDelete: Cascade)
@@ -105,7 +112,23 @@ model SurveyResponse {
   @@index([ipHash, respondedAt])
   @@index([clinicId, respondedAt, overallScore])
   @@index([clinicId, templateId, respondedAt])
+  @@index([clinicId, isVerified, respondedAt])
   @@map("survey_responses")
+}
+
+model AuthorizedDevice {
+  id           String   @id @default(uuid()) @db.Uuid
+  clinicId     String   @map("clinic_id") @db.Uuid
+  deviceUuid   String   @unique @map("device_uuid")
+  name         String?
+  isAuthorized Boolean  @default(true) @map("is_authorized")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@map("authorized_devices")
 }
 
 model PlatformSetting {

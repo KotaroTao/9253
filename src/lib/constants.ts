@@ -33,6 +33,14 @@ export const DEFAULTS = {
   DAILY_SURVEY_GOAL: 15,
 } as const
 
+// ─── PX-Value Segment Labels ───
+export const SEGMENT_LABELS: Record<string, string> = {
+  emergency: "緊急患者（痛み）",
+  maintenance: "予防・検診",
+  highValue: "自費診療",
+  general: "一般",
+} as const
+
 export const MILESTONES = [50, 100, 250, 500, 1000, 2000, 5000, 10000] as const
 
 // Streak milestones for badge display
