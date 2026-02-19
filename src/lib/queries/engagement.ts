@@ -5,6 +5,7 @@ import type { ClinicSettings } from "@/types"
 import {
   jstToday,
   jstDaysAgo,
+  jstNowParts,
   formatDateKeyJST,
   getDayOfWeekJaJST,
   getDayJST,
@@ -65,7 +66,13 @@ export async function getStaffEngagementData(
     week_count: bigint
     week_avg: number | null
   }
-  const [aggRows, streakResponses, positiveComments, clinic] =
+  // Previous month for daily goal calculation
+  const { year: nowYear, month: nowMonth } = jstNowParts()
+  const prevMonthDate = new Date(Date.UTC(nowYear, nowMonth - 2, 1))
+  const prevYear = prevMonthDate.getUTCFullYear()
+  const prevMonth = prevMonthDate.getUTCMonth() + 1
+
+  const [aggRows, streakResponses, positiveComments, clinic, prevMetrics] =
     await Promise.all([
       prisma.$queryRaw<AggRow[]>`
         SELECT
@@ -101,6 +108,11 @@ export async function getStaffEngagementData(
         where: { id: clinicId },
         select: { settings: true },
       }),
+
+      prisma.monthlyClinicMetrics.findUnique({
+        where: { clinicId_year_month: { clinicId, year: prevYear, month: prevMonth } },
+        select: { firstVisitCount: true, revisitCount: true },
+      }),
     ])
 
   const agg = aggRows[0]
@@ -112,10 +124,32 @@ export async function getStaffEngagementData(
 
   // Extract settings
   const settings = (clinic?.settings ?? {}) as ClinicSettings
-  const dailyGoal = settings.dailyGoal ?? DEFAULTS.DAILY_SURVEY_GOAL
   const closedDates = new Set<string>(settings.closedDates ?? [])
   const openDates = new Set<string>(settings.openDates ?? [])
   const regularClosedDays = new Set<number>(settings.regularClosedDays ?? [])
+
+  // Calculate dailyGoal from previous month's total patients / business days * 0.3
+  const dailyGoal = (() => {
+    const totalPatients = (prevMetrics?.firstVisitCount ?? 0) + (prevMetrics?.revisitCount ?? 0)
+    if (totalPatients <= 0) return DEFAULTS.DAILY_GOAL_FALLBACK
+
+    // Count business days in the previous month
+    const daysInPrevMonth = new Date(Date.UTC(prevYear, prevMonth, 0)).getUTCDate()
+    let businessDays = 0
+    for (let d = 1; d <= daysInPrevMonth; d++) {
+      const date = new Date(Date.UTC(prevYear, prevMonth - 1, d))
+      const dateKey = `${prevYear}-${String(prevMonth).padStart(2, "0")}-${String(d).padStart(2, "0")}`
+      if (openDates.has(dateKey)) {
+        businessDays++
+      } else if (closedDates.has(dateKey) || regularClosedDays.has(date.getUTCDay())) {
+        // closed
+      } else {
+        businessDays++
+      }
+    }
+    if (businessDays <= 0) return DEFAULTS.DAILY_GOAL_FALLBACK
+    return Math.max(1, Math.round((totalPatients / businessDays) * 0.3))
+  })()
 
   // Helper: check if a date is closed (ad-hoc or regular, with open override)
   // openDates overrides regularClosedDays for specific dates (e.g. working on a holiday)

@@ -31,6 +31,7 @@ export const DEFAULTS = {
   MIN_STAR_RATING: 1,
   MAX_STAR_RATING: 5,
   DAILY_SURVEY_GOAL: 15,
+  DAILY_GOAL_FALLBACK: 10,
 } as const
 
 // ─── PX-Value Segment Labels ───
