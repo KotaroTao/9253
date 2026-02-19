@@ -113,7 +113,7 @@ export const SELF_PAY_PURPOSES = [
   { value: "wire_orthodontics", label: "ワイヤー矯正" },
   { value: "aligner", label: "マウスピース矯正" },
   { value: "whitening", label: "ホワイトニング" },
-  { value: "self_pay_cleaning", label: "自費クリーニング" },
+  { value: "self_pay_cleaning", label: "自費メンテナンス" },
   { value: "precision_root_canal", label: "精密根管治療" },
 ] as const
 
