@@ -136,7 +136,8 @@ export const CHIEF_COMPLAINTS = [
 ] as const
 
 export const AGE_GROUPS = [
-  { value: "under_20", label: "〜20代" },
+  { value: "under_10s", label: "〜10代" },
+  { value: "under_20", label: "20代" },
   { value: "30s", label: "30代" },
   { value: "40s", label: "40代" },
   { value: "50s", label: "50代" },

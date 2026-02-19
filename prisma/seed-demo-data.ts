@@ -78,7 +78,7 @@ const SELF_PAY_PURPOSE_VALUES = [
   "prosthetic_self_pay", "implant", "denture_self_pay", "wire_orthodontics",
   "aligner", "whitening", "self_pay_cleaning", "precision_root_canal",
 ]
-const AGE_GROUPS = ["under_20", "20s", "30s", "40s", "50s", "60s_over"]
+const AGE_GROUPS = ["under_10s", "under_20", "30s", "40s", "50s", "60s_over"]
 const GENDERS = ["male", "female", "unspecified"]
 
 async function main() {
