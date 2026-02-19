@@ -52,7 +52,8 @@
 | 改善アクション管理 | ✅ | 専用ページ（/dashboard/actions）。作成・完了・削除、カテゴリ別提案、ベースライン/結果スコア記録、実施履歴ログ編集 |
 | 運営モード | ✅ | system_admin用の全クリニック横断管理、オペレーターとして特定クリニックに「ログイン」 |
 | ナビゲーション | ✅ | ロールに応じたサイドバー自動表示（clinic_admin/system_adminは管理者メニューが追加表示） |
-| システム管理 | ✅ | 全クリニック一覧（ヘルスチェック付き）、プラットフォーム統計、ヒント管理、バックアップ管理 |
+| PX-Valueランキング | ✅ | system_admin管理画面でクリニック別PX-Valueスコア・ランク（SSS/S/A/B）・信頼性・安定性を一覧表示 |
+| システム管理 | ✅ | 全クリニック一覧（ヘルスチェック付き）、プラットフォーム統計、PX-Valueランキング、ヒント管理、バックアップ管理 |
 | ランディングページ | ✅ | ヒーロー、課題提起、特徴、フロー、実績、コンプライアンス、FAQ、CTA |
 | 販促戦略共有ページ | ✅ | `/strategy` — 社内・パートナー向け1ページ共有ページ（認証不要、noindex） |
 | 研究計画書Webページ | ✅ | `/research-protocol` — 全20章・スクロール連動目次付き（認証不要、noindex） |
@@ -70,7 +71,7 @@
 ### 管理者ダッシュボードの分析機能
 - **InsightCards**: スコア推移（前月比較）、低スコア質問の自動検出、月次レポート入力促進、高満足度維持通知を自動生成
 - **分析ページ（/dashboard/analytics）**: 期間セレクタ（7/30/90/180/365日）で以下を動的切替
-  - テンプレート別スモールマルチプル: 初診/治療中/定期検診ごとの加重平均スコア + 前期比較（↑↓→トレンド矢印）+ ミニチャート
+  - テンプレート別スモールマルチプル: 初診/再診ごとの加重平均スコア + 前期比較（↑↓→トレンド矢印）+ ミニチャート
   - 日次トレンド: 回答数 + 平均スコアの折れ線グラフ
   - 質問別分析: テンプレートごとの設問別平均スコア（展開可能）
   - 満足度ヒートマップ: 曜日×時間帯のスコア分布（カラーグラデーション）
@@ -164,6 +165,7 @@ src/
 │   ├── ui/                        # shadcn/ui コンポーネント
 │   ├── layout/                    # サイドバー、ヘッダー、ボトムナビ
 │   ├── survey/                    # アンケート関連（Confetti含む）
+│   ├── admin/                     # システム管理関連（PxValueDashboard等）
 │   ├── dashboard/                 # ダッシュボード関連（19コンポーネント）
 │   ├── staff/                     # スタッフ管理関連
 │   ├── settings/                  # 設定関連
@@ -180,6 +182,7 @@ src/
 │   ├── date-jst.ts                # JST日付ユーティリティ
 │   ├── rate-limit.ts              # IP レート制限
 │   ├── ip.ts                      # IP取得・ハッシュ化
+│   ├── services/                  # PX-Valueエンジン（px-value-engine, px-constants, px-segmentation）
 │   ├── validations/               # Zod スキーマ
 │   └── queries/                   # DB クエリ関数（5モジュール）
 └── types/                         # TypeScript 型定義
@@ -248,6 +251,7 @@ src/
 | ルート | メソッド | 概要 |
 |--------|---------|------|
 | `/api/admin/operator-login` | POST | オペレーターモードでクリニックにログイン |
+| `/api/admin/px-values` | GET | PX-Valueランキング一覧（全クリニックのスコア・ランク・安定性） |
 | `/api/admin/tips` | GET/POST/PATCH/DELETE | プラットフォームヒント管理 |
 | `/api/admin/backups` | GET/POST | バックアップ状態・手動実行 |
 
@@ -319,7 +323,7 @@ src/
 - **Clinic**: UUID主キー、settings: JSONB（dailyGoal、regularClosedDays、closedDates、dailyTipカスタム設定を格納）
 - **Staff**: UUID主キー、qrToken (unique UUID)（レガシー、現在未使用）、isActive フラグ
 - **User**: email/password認証、role: system_admin / clinic_admin / staff、isActive フラグ
-- **SurveyTemplate**: questions: JSONB（初診/治療中/定期検診の3テンプレート）、isActive フラグ
+- **SurveyTemplate**: questions: JSONB（初診/再診の2テンプレート）、isActive フラグ
 - **SurveyResponse**: answers: JSONB、overallScore、freeText、patientAttributes: JSONB、ipHash、staffId（nullable）
 - **ImprovementAction**: 改善アクション履歴（baselineScore→resultScore、status: active/completed/cancelled）
 - **ImprovementActionLog**: 改善アクションの実施履歴（action, satisfactionScore, note）。ImprovementActionとリレーション
@@ -348,13 +352,15 @@ src/
 
 ### 患者属性（キオスクモード）
 - 来院種別: 初診、再診
-- 治療種別: 治療、定期検診、相談
-- 主訴: 痛み・違和感、詰め物・被せ物、歯周病・歯ぐき、審美、予防、矯正、入れ歯・インプラント、その他
-- 年代: ~20代、30代、40代、50代、60代~
-- 性別: 男性、女性、未回答
+- 診療区分（insuranceType）: 保険診療、自費診療
+- 診療内容（purpose）:
+  - 保険: う蝕処置、歯周治療、被せもの・ブリッジ(保険)、保険義歯、保険メンテ、抜歯、急患・応急処置、その他
+  - 自費: う蝕処置、歯周治療、被せもの・ブリッジ(自費)、自費義歯、自費メンテ、インプラント、ワイヤー矯正、マウスピース矯正、ホワイトニング、その他
+- 年代: ~20代、30代、40代、50代、60代~（任意）
+- 性別: 男性、女性、未回答（任意）
 
-### 改善アクション提案（11カテゴリ）
-clinic_environment / reception / wait_time / hearing / explanation / cost_explanation / comfort / pain_care / staff_courtesy / booking / loyalty（各3件の定型提案）
+### 改善アクション提案（10カテゴリ）
+clinic_environment / reception / wait_time / hearing / explanation / cost_explanation / comfort / pain_care / staff_courtesy / loyalty（各3件の定型提案）
 
 ## メッセージ辞書（`src/lib/messages.ts`）
 日本語UIテキストを一元管理。以下のセクション:
@@ -366,6 +372,7 @@ clinic_environment / reception / wait_time / hearing / explanation / cost_explan
 - `improvementActions`: CRUD、ステータス、履歴
 - `staffLeaderboard`: カラムラベル
 - `monthlyMetrics`: KPI、自動算出指標
+- `pxValue`: PX-Valueランキング画面（管理タイトル、スコア、ランク、加重平均、信頼性、安定性等）
 - `staff` / `kiosk` / `patientSetup` / `dailyTip` / `tipManager` / `settings` / `nav` / `admin` / `operatorMode` / `backup` / `landing`
 
 **患者満足度向上ヒント**: 30件・12カテゴリ（接遇、コミュニケーション、不安軽減、院内環境、待ち時間、チーム連携、初診対応、治療説明、フォローアップ、予防指導、小児対応、高齢者対応）— `src/lib/patient-tips.ts`
@@ -377,7 +384,7 @@ clinic_environment / reception / wait_time / hearing / explanation / cost_explan
 - クリニック: "MIERU デモ歯科クリニック" (slug: demo-dental, 管理者パスワード: 1111)
 - ユーザー: mail@function-t.com / MUNP1687 (system_admin), clinic@demo.com / clinic123 (clinic_admin)
 - スタッフ: 田中花子(衛生士), 佐藤太郎(歯科医師), 鈴木美咲(スタッフ)
-- テンプレート: 初診(8問), 治療中(6問), 定期検診(6問)
+- テンプレート: 初診(8問), 再診(6問)
 
 ### 6ヶ月分リアルアンケートデータ（約1,500件）
 決定的乱数（seed固定）により毎回同一データを生成。デモで以下が確認できる:
@@ -439,6 +446,44 @@ https://mieru-clinic.com/s/{clinicSlug}
 - **分析ページの期間セレクタ**: 7/30/90/180/365日の5段階。サーバーサイドで初期データ（30日分）をプリフェッチし、クライアント側で期間変更時にAPIを再取得
 - **テンプレート別スモールマルチプルの前期比較**: 同じ日数の前期間データをoffsetパラメータで取得し、加重平均スコアの差分でトレンド矢印（↑↓→）を表示
 - **ストリークの休診日スキップ**: 定休日（regularClosedDays）と臨時休診日（closedDates）をストリーク計算から除外。休診日に回答がなくてもストリークが途切れない
+- **PX-Valueはsystem_admin専用**: クリニック横断比較指標のため、system_admin管理画面のみに表示。clinic_admin/staffには非公開
+- **テンプレートを3→2に簡素化**: 初診/治療中/定期検診の3テンプレート構成を初診/再診の2テンプレートに変更。キオスクでは保険/自費→purpose選択の2ステップでテンプレートを自動決定
+
+## PX-Valueシステム（`src/lib/services/`）
+
+### 概要
+クリニック間の患者体験品質を横断比較するT-Score正規化指標。system_admin管理画面のみに表示。
+
+### 算出フロー
+1. **回答ごとの重み付きスコア**: `rawScore × deviceWeight × complaintWeight × engagementWeight`
+2. **クリニック別加重平均**: 直近90日の信頼済み回答（trustFactor > 0）で算出
+3. **T-Score正規化**: `50 + 10 × (clinic_avg - global_mean) / global_std_dev`
+4. **ランク付与**: SSS(70+) / S(60+) / A(50+) / B(<50)
+
+### 重み付け定数（`px-constants.ts`）
+| カテゴリ | 定数 | 値 |
+|---------|------|-----|
+| デバイス | patient_url / kiosk_authorized / kiosk_unauthorized | 1.5 / 1.0 / 0.8 |
+| 診療内容 | emergency / maintenance系 / default | 1.2 / 0.9 / 1.0 |
+| エンゲージメント | テキストなし / 短文(10-29字) / 長文(30字+) | 1.0 / 1.05 / 1.1 |
+
+### 信頼性検証（4トラップ）
+- **Speed Trap**: 回答速度チェック（2秒/問未満で減点）
+- **Continuity Trap**: 短時間連続送信チェック（60秒以内）
+- **Capacity Trap**: ユニット数に対する回答数上限チェック
+- **Similarity Trap**: フリーテキストのbigram類似度チェック（閾値0.8）
+
+### 安定性スコア
+変動係数ベースの0-100指標。月間スコアの安定性を評価。
+
+### 関連ファイル
+| ファイル | 役割 |
+|---------|------|
+| `px-constants.ts` | 全定数定義（重み、閾値、ランク境界） |
+| `px-value-engine.ts` | コアエンジン（processSubmission, calculateAllPxValues, calculateStabilityScore） |
+| `px-segmentation.ts` | 患者セグメント分類（emergency/maintenance/highValue/general） |
+| `src/components/admin/px-value-dashboard.tsx` | 管理画面UIコンポーネント |
+| `src/app/api/admin/px-values/route.ts` | APIエンドポイント |
 
 ## パフォーマンス最適化（1000医院×1万回答規模対応）
 

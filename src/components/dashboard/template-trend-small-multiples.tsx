@@ -15,8 +15,7 @@ import type { TemplateTrendPoint } from "@/lib/queries/stats"
 
 const TEMPLATE_COLORS: Record<string, string> = {
   "初診": "#2563eb",
-  "治療中": "#16a34a",
-  "定期検診": "#f59e0b",
+  "再診": "#16a34a",
 }
 
 const DEFAULT_COLOR = "#6b7280"
@@ -82,7 +81,7 @@ export function TemplateTrendSmallMultiples({ data, prevData, selectedPeriod }: 
     }
 
     const result: TemplateStats[] = []
-    const order = ["初診", "治療中", "定期検診"]
+    const order = ["初診", "再診"]
     const allNames = new Set([...Array.from(currentGroups.keys()), ...Array.from(prevGroups.keys())])
     const sortedNames = Array.from(allNames).sort(
       (a, b) => (order.indexOf(a) === -1 ? 99 : order.indexOf(a)) - (order.indexOf(b) === -1 ? 99 : order.indexOf(b))

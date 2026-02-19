@@ -16,8 +16,7 @@ import type { TemplateTrendPoint } from "@/lib/queries/stats"
 
 const TEMPLATE_COLORS: Record<string, string> = {
   "初診": "#2563eb",
-  "治療中": "#16a34a",
-  "定期検診": "#f59e0b",
+  "再診": "#16a34a",
 }
 
 const DEFAULT_COLOR = "#6b7280"

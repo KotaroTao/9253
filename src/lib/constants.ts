@@ -153,10 +153,9 @@ export const GENDERS = [
 ] as const
 
 // Template name → selection mapping
-export const TEMPLATE_SELECTION_MAP: Record<string, { visitType: string; treatmentType: string }> = {
-  "初診": { visitType: "first_visit", treatmentType: "treatment" },
-  "治療中": { visitType: "revisit", treatmentType: "treatment" },
-  "定期検診": { visitType: "revisit", treatmentType: "checkup" },
+export const TEMPLATE_SELECTION_MAP: Record<string, { visitType: string }> = {
+  "初診": { visitType: "first_visit" },
+  "再診": { visitType: "revisit" },
 }
 
 // Improvement action suggestions per question category
@@ -176,12 +175,6 @@ export const QUESTION_CATEGORY_MAP: Record<string, string> = {
   tr4: "wait_time",
   tr5: "staff_courtesy",
   tr6: "loyalty",
-  ck1: "explanation",
-  ck2: "staff_courtesy",
-  ck3: "comfort",
-  ck4: "wait_time",
-  ck5: "booking",
-  ck6: "loyalty",
 }
 
 export interface ImprovementSuggestion {
@@ -332,8 +325,8 @@ export const IMPROVEMENT_SUGGESTIONS: Record<string, ImprovementSuggestion[]> = 
   ],
   loyalty: [
     {
-      title: "定期検診の重要性をやさしく説明",
-      description: "検診のメリットを数字で示す（早期発見で治療費1/3等）。患者の歯の状態に合わせた検診間隔を個別に提案",
+      title: "継続通院の重要性をやさしく説明",
+      description: "定期的な通院のメリットを数字で示す（早期発見で治療費1/3等）。患者の歯の状態に合わせた通院間隔を個別に提案",
     },
     {
       title: "通院モチベーションの維持",
