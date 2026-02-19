@@ -30,13 +30,15 @@ export async function GET(request: NextRequest) {
   const yearParam = request.nextUrl.searchParams.get("year")
   const monthParam = request.nextUrl.searchParams.get("month")
 
-  // trend mode: return last 12 months of data
+  // trend mode: return N months of data (default 12)
   if (request.nextUrl.searchParams.get("mode") === "trend") {
+    const monthsParam = request.nextUrl.searchParams.get("months")
+    const take = monthsParam ? Math.min(Math.max(parseInt(monthsParam) || 12, 1), 36) : 12
     const rows = await prisma.monthlyClinicMetrics.findMany({
       where: { clinicId },
       select: { year: true, month: true, ...METRICS_SELECT },
       orderBy: [{ year: "desc" }, { month: "desc" }],
-      take: 12,
+      take,
     })
     return successResponse(rows.reverse())
   }
