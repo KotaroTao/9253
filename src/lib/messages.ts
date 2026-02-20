@@ -288,6 +288,9 @@ export const messages = {
     summaryNotEntered: "先月の経営レポートが未入力です",
     enterSummary: "入力する",
     unitPercent: "%",
+    missingDataAlert: "未入力の月があります",
+    missingDataAlertDetail: "経営データを入力すると、自費率・患者単価などの指標を自動算出できます。",
+    dismissAlert: "閉じる",
   },
   staff: {
     management: "スタッフ管理",
