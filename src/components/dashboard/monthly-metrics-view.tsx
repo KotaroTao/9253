@@ -79,6 +79,7 @@ export function MonthlyMetricsView({
   const [entered, setEntered] = useState<Set<string>>(new Set(enteredMonths))
   const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null)
   const [inputOpen, setInputOpen] = useState(false)
+  const [selectorYear, setSelectorYear] = useState(initialYear)
 
   useEffect(() => {
     setHeaderSlot(document.getElementById("header-actions"))
@@ -275,40 +276,46 @@ export function MonthlyMetricsView({
         </button>
         {inputOpen && (
           <div className="space-y-4">
-            {/* Month selector — grouped by year */}
+            {/* Month selector — year dropdown + month buttons */}
             <div className="space-y-2">
-              {years.map((y) => (
-                <div key={y} className="space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground">{y}年</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {monthOptions
-                      .filter((opt) => opt.year === y)
-                      .sort((a, b) => a.month - b.month)
-                      .map((opt) => {
-                        const isSelected = year === opt.year && month === opt.month
-                        const isEntered = entered.has(`${opt.year}-${opt.month}`)
-                        return (
-                          <Button
-                            key={`${opt.year}-${opt.month}`}
-                            variant={isSelected ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => handleMonthChange(opt.year, opt.month)}
-                            className={
-                              !isSelected && !isEntered
-                                ? "border-dashed border-amber-300 text-amber-600 hover:border-amber-400 hover:text-amber-700"
-                                : undefined
-                            }
-                          >
-                            {opt.month}月
-                            {!isEntered && (
-                              <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-amber-400" />
-                            )}
-                          </Button>
-                        )
-                      })}
-                  </div>
-                </div>
-              ))}
+              <div className="flex items-center gap-2">
+                <select
+                  value={selectorYear}
+                  onChange={(e) => setSelectorYear(Number(e.target.value))}
+                  className="rounded-md border bg-card px-3 py-1.5 text-sm font-medium"
+                >
+                  {years.map((y) => (
+                    <option key={y} value={y}>{y}年</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {monthOptions
+                  .filter((opt) => opt.year === selectorYear)
+                  .sort((a, b) => a.month - b.month)
+                  .map((opt) => {
+                    const isSelected = year === opt.year && month === opt.month
+                    const isEntered = entered.has(`${opt.year}-${opt.month}`)
+                    return (
+                      <Button
+                        key={`${opt.year}-${opt.month}`}
+                        variant={isSelected ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handleMonthChange(opt.year, opt.month)}
+                        className={
+                          !isSelected && !isEntered
+                            ? "border-dashed border-amber-300 text-amber-600 hover:border-amber-400 hover:text-amber-700"
+                            : undefined
+                        }
+                      >
+                        {opt.month}月
+                        {!isEntered && (
+                          <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-amber-400" />
+                        )}
+                      </Button>
+                    )
+                  })}
+              </div>
             </div>
 
             {loading && (

@@ -1,7 +1,7 @@
 import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
-import { getDailyTrend } from "@/lib/queries/stats"
+import { getDailyTrend, autoGranularity } from "@/lib/queries/stats"
 import { NextRequest } from "next/server"
 
 export const dynamic = "force-dynamic"
@@ -26,5 +26,6 @@ export async function GET(request: NextRequest) {
   }
 
   const data = await getDailyTrend(clinicId, days)
-  return successResponse(data)
+  const granularity = autoGranularity(days)
+  return successResponse({ data, granularity })
 }
