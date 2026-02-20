@@ -9,12 +9,30 @@ import { QuestionBreakdown } from "@/components/dashboard/question-breakdown"
 import { SatisfactionHeatmap } from "@/components/dashboard/satisfaction-heatmap"
 import { StaffLeaderboard } from "@/components/dashboard/staff-leaderboard"
 import { PurposeSatisfaction } from "@/components/dashboard/purpose-satisfaction"
+import {
+  VISIT_TYPES,
+  INSURANCE_TYPES,
+  INSURANCE_PURPOSES,
+  SELF_PAY_PURPOSES,
+  AGE_GROUPS,
+  GENDERS,
+} from "@/lib/constants"
 import type { DailyTrendPoint, TemplateTrendPoint, TemplateQuestionScores, HeatmapCell } from "@/lib/queries/stats"
 
 export interface CustomRange {
   from: string // YYYY-MM-DD
   to: string   // YYYY-MM-DD
 }
+
+export interface AttrFilterState {
+  visitType: string
+  insuranceType: string
+  purpose: string
+  ageGroup: string
+  gender: string
+}
+
+const EMPTY_FILTERS: AttrFilterState = { visitType: "", insuranceType: "", purpose: "", ageGroup: "", gender: "" }
 
 const PERIOD_PRESETS = [
   { label: "7日", value: 7 },
@@ -33,6 +51,17 @@ export function formatPeriodLabel(days: number): string {
 export function buildPeriodQuery(customRange: CustomRange | null, days: number): string {
   if (customRange) return `from=${customRange.from}&to=${customRange.to}`
   return `days=${days}`
+}
+
+/** フィルタをクエリ文字列に追加 */
+function appendFilterQuery(base: string, filters: AttrFilterState): string {
+  const parts = [base]
+  if (filters.visitType) parts.push(`visitType=${filters.visitType}`)
+  if (filters.insuranceType) parts.push(`insuranceType=${filters.insuranceType}`)
+  if (filters.purpose) parts.push(`purpose=${filters.purpose}`)
+  if (filters.ageGroup) parts.push(`ageGroup=${filters.ageGroup}`)
+  if (filters.gender) parts.push(`gender=${filters.gender}`)
+  return parts.join("&")
 }
 
 /** 表示用の期間ラベル */
@@ -60,6 +89,16 @@ function daysAgoStr(n: number): string {
   const m = String(d.getMonth() + 1).padStart(2, "0")
   const dd = String(d.getDate()).padStart(2, "0")
   return `${y}-${m}-${dd}`
+}
+
+function activeFilterCount(f: AttrFilterState): number {
+  return Object.values(f).filter(Boolean).length
+}
+
+function purposeOptions(insuranceType: string) {
+  if (insuranceType === "insurance") return INSURANCE_PURPOSES
+  if (insuranceType === "self_pay") return SELF_PAY_PURPOSES
+  return [...INSURANCE_PURPOSES, ...SELF_PAY_PURPOSES]
 }
 
 interface AnalyticsChartsProps {
@@ -90,11 +129,17 @@ export function AnalyticsCharts({
   const isInitialMount = useRef(true)
   const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null)
 
+  // --- Attribute filters ---
+  const [filters, setFilters] = useState<AttrFilterState>(EMPTY_FILTERS)
+  const [showFilters, setShowFilters] = useState(false)
+  const filterCount = activeFilterCount(filters)
+
   useEffect(() => {
     setHeaderSlot(document.getElementById("header-actions"))
   }, [])
 
   const periodQuery = buildPeriodQuery(customRange, selectedPeriod)
+  const fullQuery = appendFilterQuery(periodQuery, filters)
 
   const fetchQuestionBreakdown = useCallback(async (query: string) => {
     setQuestionLoading(true)
@@ -111,7 +156,7 @@ export function AnalyticsCharts({
     }
   }, [])
 
-  const fetchTemplateTrend = useCallback(async (query: string, isCustom: boolean, days: number) => {
+  const fetchTemplateTrend = useCallback(async (query: string, isCustom: boolean, days: number, filterQuery: string) => {
     setTemplateTrendLoading(true)
     try {
       // For custom range, compute prev period from/to
@@ -130,8 +175,8 @@ export function AnalyticsCharts({
       }
 
       const [currentRes, prevRes] = await Promise.all([
-        fetch(`/api/template-trend?${query}`, { cache: "no-store" }),
-        fetch(`/api/template-trend?${prevQuery}`, { cache: "no-store" }),
+        fetch(`/api/template-trend?${filterQuery}`, { cache: "no-store" }),
+        fetch(`/api/template-trend?${appendFilterQuery(prevQuery, filters)}`, { cache: "no-store" }),
       ])
       if (currentRes.ok) {
         setTemplateTrendData(await currentRes.json())
@@ -142,17 +187,18 @@ export function AnalyticsCharts({
     } finally {
       setTemplateTrendLoading(false)
     }
-  }, [])
+  }, [filters])
 
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false
       return
     }
-    const query = buildPeriodQuery(customRange, selectedPeriod)
-    fetchQuestionBreakdown(query)
-    fetchTemplateTrend(query, customRange !== null, selectedPeriod)
-  }, [selectedPeriod, customRange, fetchQuestionBreakdown, fetchTemplateTrend])
+    const pq = buildPeriodQuery(customRange, selectedPeriod)
+    const fq = appendFilterQuery(pq, filters)
+    fetchQuestionBreakdown(fq)
+    fetchTemplateTrend(pq, customRange !== null, selectedPeriod, fq)
+  }, [selectedPeriod, customRange, filters, fetchQuestionBreakdown, fetchTemplateTrend])
 
   function handlePresetClick(value: number) {
     setShowCustom(false)
@@ -164,6 +210,24 @@ export function AnalyticsCharts({
     if (!customFrom || !customTo || customFrom >= customTo) return
     setCustomRange({ from: customFrom, to: customTo })
     setShowCustom(false)
+  }
+
+  function handleFilterChange(key: keyof AttrFilterState, value: string) {
+    setFilters(prev => {
+      const next = { ...prev, [key]: value }
+      // insuranceType が変更された時、purpose が新しい保険種別に合わない場合はクリア
+      if (key === "insuranceType") {
+        const validPurposes: string[] = purposeOptions(value).map(o => o.value)
+        if (next.purpose && !validPurposes.includes(next.purpose)) {
+          next.purpose = ""
+        }
+      }
+      return next
+    })
+  }
+
+  function clearAllFilters() {
+    setFilters(EMPTY_FILTERS)
   }
 
   const isPreset = !customRange && PERIOD_PRESETS.some((o) => o.value === selectedPeriod)
@@ -280,14 +344,129 @@ export function AnalyticsCharts({
     </div>
   )
 
+  const purposes = purposeOptions(filters.insuranceType)
+
+  const filterBar = (
+    <div className="space-y-2">
+      {/* フィルタトグルボタン */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+            filterCount > 0
+              ? "border-primary/30 bg-primary/5 text-primary"
+              : "text-muted-foreground hover:bg-muted"
+          }`}
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+          </svg>
+          患者属性フィルタ
+          {filterCount > 0 && (
+            <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold leading-none text-primary-foreground">
+              {filterCount}
+            </span>
+          )}
+        </button>
+        {filterCount > 0 && (
+          <button
+            onClick={clearAllFilters}
+            className="text-xs text-muted-foreground underline hover:text-foreground"
+          >
+            クリア
+          </button>
+        )}
+        {/* アクティブフィルタのチップ表示 */}
+        {filterCount > 0 && !showFilters && (
+          <div className="flex flex-wrap gap-1">
+            {filters.visitType && (
+              <FilterChip
+                label={VISIT_TYPES.find(v => v.value === filters.visitType)?.label ?? filters.visitType}
+                onRemove={() => handleFilterChange("visitType", "")}
+              />
+            )}
+            {filters.insuranceType && (
+              <FilterChip
+                label={INSURANCE_TYPES.find(v => v.value === filters.insuranceType)?.label ?? filters.insuranceType}
+                onRemove={() => handleFilterChange("insuranceType", "")}
+              />
+            )}
+            {filters.purpose && (
+              <FilterChip
+                label={[...INSURANCE_PURPOSES, ...SELF_PAY_PURPOSES].find(v => v.value === filters.purpose)?.label ?? filters.purpose}
+                onRemove={() => handleFilterChange("purpose", "")}
+              />
+            )}
+            {filters.ageGroup && (
+              <FilterChip
+                label={AGE_GROUPS.find(v => v.value === filters.ageGroup)?.label ?? filters.ageGroup}
+                onRemove={() => handleFilterChange("ageGroup", "")}
+              />
+            )}
+            {filters.gender && (
+              <FilterChip
+                label={GENDERS.find(v => v.value === filters.gender)?.label ?? filters.gender}
+                onRemove={() => handleFilterChange("gender", "")}
+              />
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* フィルタパネル */}
+      {showFilters && (
+        <div className="rounded-lg border bg-card p-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <FilterSelect
+              label="来院種別"
+              value={filters.visitType}
+              onChange={(v) => handleFilterChange("visitType", v)}
+              options={VISIT_TYPES}
+            />
+            <FilterSelect
+              label="診療区分"
+              value={filters.insuranceType}
+              onChange={(v) => handleFilterChange("insuranceType", v)}
+              options={INSURANCE_TYPES}
+            />
+            <FilterSelect
+              label="診療内容"
+              value={filters.purpose}
+              onChange={(v) => handleFilterChange("purpose", v)}
+              options={purposes}
+            />
+            <FilterSelect
+              label="年代"
+              value={filters.ageGroup}
+              onChange={(v) => handleFilterChange("ageGroup", v)}
+              options={AGE_GROUPS}
+            />
+            <FilterSelect
+              label="性別"
+              value={filters.gender}
+              onChange={(v) => handleFilterChange("gender", v)}
+              options={GENDERS}
+            />
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            ※ キオスクモードで入力された回答のみフィルタ対象です
+          </p>
+        </div>
+      )}
+    </div>
+  )
+
   return (
     <div className="space-y-4">
       {headerSlot && createPortal(periodSelector, headerSlot)}
+
+      {filterBar}
 
       <DailyTrendChart
         initialData={initialDailyTrend}
         selectedPeriod={selectedPeriod}
         customRange={customRange}
+        filterQuery={fullQuery}
       />
 
       <TemplateTrendChart
@@ -310,13 +489,54 @@ export function AnalyticsCharts({
         <QuestionBreakdown data={questionData} selectedPeriod={selectedPeriod} customRange={customRange} />
       )}
 
-      <PurposeSatisfaction selectedPeriod={selectedPeriod} customRange={customRange} />
+      <PurposeSatisfaction selectedPeriod={selectedPeriod} customRange={customRange} filterQuery={fullQuery} />
 
       {/* ヒートマップ + リーダーボード */}
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-        <SatisfactionHeatmap initialData={heatmapData} selectedPeriod={selectedPeriod} customRange={customRange} />
+        <SatisfactionHeatmap initialData={heatmapData} selectedPeriod={selectedPeriod} customRange={customRange} filterQuery={fullQuery} />
         <StaffLeaderboard />
       </div>
     </div>
+  )
+}
+
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  options: ReadonlyArray<{ value: string; label: string }>
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="text-[11px] font-medium text-muted-foreground">{label}</label>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-md border bg-background px-2 py-1.5 text-xs"
+      >
+        <option value="">すべて</option>
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+}
+
+function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-0.5 rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 text-[11px] font-medium text-primary">
+      {label}
+      <button onClick={onRemove} className="ml-0.5 hover:text-destructive" aria-label="削除">
+        ×
+      </button>
+    </span>
   )
 }

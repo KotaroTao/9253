@@ -12,6 +12,7 @@ import type { CustomRange } from "./analytics-charts"
 interface PurposeSatisfactionProps {
   selectedPeriod: number
   customRange?: CustomRange | null
+  filterQuery?: string
 }
 
 // Build label lookup from constants
@@ -53,10 +54,9 @@ function ScoreBar({ score, color }: { score: number; color: string }) {
   )
 }
 
-export function PurposeSatisfaction({ selectedPeriod, customRange = null }: PurposeSatisfactionProps) {
+export function PurposeSatisfaction({ selectedPeriod, customRange = null, filterQuery }: PurposeSatisfactionProps) {
   const [data, setData] = useState<PurposeSatisfactionRow[]>([])
   const [loading, setLoading] = useState(true)
-  const isInitialMount = useRef(true)
 
   const fetchData = useCallback(async (query: string) => {
     setLoading(true)
@@ -72,12 +72,13 @@ export function PurposeSatisfaction({ selectedPeriod, customRange = null }: Purp
     }
   }, [])
 
+  const effectiveQuery = filterQuery ?? (customRange
+    ? `from=${customRange.from}&to=${customRange.to}`
+    : `days=${selectedPeriod}`)
+
   useEffect(() => {
-    const query = customRange
-      ? `from=${customRange.from}&to=${customRange.to}`
-      : `days=${selectedPeriod}`
-    fetchData(query)
-  }, [selectedPeriod, customRange, fetchData])
+    fetchData(effectiveQuery)
+  }, [effectiveQuery, fetchData])
 
   // Group by insuranceType
   const grouped = data.reduce<Record<string, PurposeSatisfactionRow[]>>(

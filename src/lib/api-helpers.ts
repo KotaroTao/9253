@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { parseJSTDate, parseJSTDateEnd, daysBetween } from "@/lib/date-jst"
-import type { DateRange } from "@/lib/queries/stats"
+import type { DateRange, AttributeFilters } from "@/lib/queries/stats"
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
@@ -20,6 +20,22 @@ export function parseDateRangeParams(
   const days = daysBetween(from, to)
   if (days > maxDays) return { error: "指定期間が長すぎます" }
   return { range: { from, to }, days }
+}
+
+const ATTR_KEYS: (keyof AttributeFilters)[] = ["visitType", "insuranceType", "purpose", "ageGroup", "gender"]
+
+/** URLSearchParams から患者属性フィルタをパース。フィルタなしの場合 undefined を返す */
+export function parseAttributeFilters(params: URLSearchParams): AttributeFilters | undefined {
+  const filters: AttributeFilters = {}
+  let hasAny = false
+  for (const key of ATTR_KEYS) {
+    const val = params.get(key)
+    if (val) {
+      filters[key] = val
+      hasAny = true
+    }
+  }
+  return hasAny ? filters : undefined
 }
 
 export function successResponse(data: unknown, status = 200) {
