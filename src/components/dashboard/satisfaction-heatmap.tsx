@@ -3,10 +3,12 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { HeatmapCell } from "@/lib/queries/stats"
+import type { CustomRange } from "./analytics-charts"
 
 interface SatisfactionHeatmapProps {
   initialData: HeatmapCell[]
   selectedPeriod: number
+  customRange?: CustomRange | null
 }
 
 // 曜日ラベル（DOW: 0=日, 1=月, ..., 6=土）
@@ -14,7 +16,7 @@ const DAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"]
 // 月〜土〜日の並び順（日本の慣習）
 const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0]
 
-import { formatPeriodLabel } from "./analytics-charts"
+import { periodDisplayLabel } from "./analytics-charts"
 
 function getScoreColor(score: number): string {
   if (score >= 4.5) return "bg-blue-600 text-white"
@@ -30,15 +32,15 @@ function getScoreBg(score: number): string {
   return "bg-orange-500"
 }
 
-export function SatisfactionHeatmap({ initialData, selectedPeriod }: SatisfactionHeatmapProps) {
+export function SatisfactionHeatmap({ initialData, selectedPeriod, customRange = null }: SatisfactionHeatmapProps) {
   const [data, setData] = useState<HeatmapCell[]>(initialData)
   const [loading, setLoading] = useState(false)
   const isInitialMount = useRef(true)
 
-  const fetchData = useCallback(async (days: number) => {
+  const fetchData = useCallback(async (query: string) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/heatmap?days=${days}`, {
+      const res = await fetch(`/api/heatmap?${query}`, {
         cache: "no-store",
       })
       if (res.ok) {
@@ -55,8 +57,11 @@ export function SatisfactionHeatmap({ initialData, selectedPeriod }: Satisfactio
       isInitialMount.current = false
       return
     }
-    fetchData(selectedPeriod)
-  }, [selectedPeriod, fetchData])
+    const query = customRange
+      ? `from=${customRange.from}&to=${customRange.to}`
+      : `days=${selectedPeriod}`
+    fetchData(query)
+  }, [selectedPeriod, customRange, fetchData])
 
   if (loading) {
     return (
@@ -108,8 +113,8 @@ export function SatisfactionHeatmap({ initialData, selectedPeriod }: Satisfactio
       <CardHeader className="pb-3">
         <CardTitle className="text-base">時間帯別 患者満足度</CardTitle>
         <p className="text-xs text-muted-foreground">
-          直近{formatPeriodLabel(selectedPeriod)}のデータ
-          {selectedPeriod > 365 && "（長期間のため季節差が平均化されています）"}
+          {periodDisplayLabel(customRange ?? null, selectedPeriod)}のデータ
+          {!customRange && selectedPeriod > 365 && "（長期間のため季節差が平均化されています）"}
         </p>
       </CardHeader>
       <CardContent>

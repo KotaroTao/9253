@@ -14,18 +14,13 @@ import {
 } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { DailyTrendPoint, TrendGranularity } from "@/lib/queries/stats"
-import { formatPeriodLabel } from "./analytics-charts"
+import { buildPeriodQuery, periodDisplayLabel } from "./analytics-charts"
+import type { CustomRange } from "./analytics-charts"
 
 const GRANULARITY_LABELS: Record<TrendGranularity, string> = {
   day: "日次",
   week: "週次",
   month: "月次",
-}
-
-function getAutoGranularity(days: number): TrendGranularity {
-  if (days > 1095) return "month"
-  if (days > 365) return "week"
-  return "day"
 }
 
 function CustomTooltip({
@@ -55,18 +50,19 @@ function CustomTooltip({
 interface DailyTrendChartProps {
   initialData: DailyTrendPoint[]
   selectedPeriod: number
+  customRange?: CustomRange | null
 }
 
-export function DailyTrendChart({ initialData, selectedPeriod }: DailyTrendChartProps) {
+export function DailyTrendChart({ initialData, selectedPeriod, customRange = null }: DailyTrendChartProps) {
   const [data, setData] = useState<DailyTrendPoint[]>(initialData)
-  const [granularity, setGranularity] = useState<TrendGranularity>(getAutoGranularity(30))
+  const [granularity, setGranularity] = useState<TrendGranularity>("day")
   const [loading, setLoading] = useState(false)
   const isInitialMount = useRef(true)
 
-  const fetchData = useCallback(async (days: number) => {
+  const fetchData = useCallback(async (query: string) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/daily-trend?days=${days}`, {
+      const res = await fetch(`/api/daily-trend?${query}`, {
         cache: "no-store",
       })
       if (res.ok) {
@@ -84,8 +80,8 @@ export function DailyTrendChart({ initialData, selectedPeriod }: DailyTrendChart
       isInitialMount.current = false
       return
     }
-    fetchData(selectedPeriod)
-  }, [selectedPeriod, fetchData])
+    fetchData(buildPeriodQuery(customRange ?? null, selectedPeriod))
+  }, [selectedPeriod, customRange, fetchData])
 
   const maxCount = Math.max(...data.map((d) => d.count), 1)
   const yCountMax = Math.ceil(maxCount * 1.2)
@@ -99,7 +95,7 @@ export function DailyTrendChart({ initialData, selectedPeriod }: DailyTrendChart
     return { totalCount, avgScore }
   }, [data])
 
-  const periodLabel = formatPeriodLabel(selectedPeriod)
+  const label = periodDisplayLabel(customRange ?? null, selectedPeriod)
   const granLabel = GRANULARITY_LABELS[granularity]
 
   return (
@@ -175,11 +171,11 @@ export function DailyTrendChart({ initialData, selectedPeriod }: DailyTrendChart
             </ResponsiveContainer>
             <div className="mt-4 flex items-center gap-6 border-t pt-3">
               <div>
-                <p className="text-xs text-muted-foreground">直近{periodLabel}の回答数</p>
+                <p className="text-xs text-muted-foreground">{label}の回答数</p>
                 <p className="text-xl font-bold">{summary.totalCount}<span className="text-sm font-normal text-muted-foreground">件</span></p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">直近{periodLabel}の平均満足度</p>
+                <p className="text-xs text-muted-foreground">{label}の平均満足度</p>
                 <p className="text-xl font-bold text-blue-600">
                   {summary.avgScore != null ? summary.avgScore.toFixed(1) : "-"}
                   <span className="text-sm font-normal text-muted-foreground"> / 5.0</span>

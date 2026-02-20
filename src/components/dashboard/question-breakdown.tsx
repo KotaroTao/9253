@@ -15,11 +15,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertTriangle, TrendingUp, Plus } from "lucide-react"
 import Link from "next/link"
 import type { TemplateQuestionScores } from "@/lib/queries/stats"
-import { formatPeriodLabel } from "@/components/dashboard/analytics-charts"
+import { formatPeriodLabel, periodDisplayLabel } from "@/components/dashboard/analytics-charts"
+import type { CustomRange } from "@/components/dashboard/analytics-charts"
 
 interface QuestionBreakdownProps {
   data: TemplateQuestionScores[]
   selectedPeriod?: number
+  customRange?: CustomRange | null
 }
 
 const SCORE_THRESHOLD = 4.0
@@ -77,10 +79,12 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<
   )
 }
 
-export function QuestionBreakdown({ data, selectedPeriod }: QuestionBreakdownProps) {
-  const periodLabel = selectedPeriod
-    ? formatPeriodLabel(selectedPeriod)
-    : null
+export function QuestionBreakdown({ data, selectedPeriod, customRange = null }: QuestionBreakdownProps) {
+  const periodLabel = customRange
+    ? periodDisplayLabel(customRange, 0)
+    : selectedPeriod
+      ? formatPeriodLabel(selectedPeriod)
+      : null
   if (data.length === 0) {
     return (
       <Card>

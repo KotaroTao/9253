@@ -8,7 +8,14 @@ import {
   jstEndOfMonth,
   jstMonthsAgoStart,
   jstMonthKey,
+  daysBetween,
 } from "@/lib/date-jst"
+
+/** 日付範囲を直接指定するオプション（days の代わりに使用） */
+export interface DateRange {
+  from: Date
+  to: Date
+}
 
 export async function getDashboardStats(
   clinicId: string,
@@ -274,6 +281,7 @@ export async function getQuestionBreakdown(
 export async function getQuestionBreakdownByDays(
   clinicId: string,
   days: number = 30,
+  range?: DateRange,
 ): Promise<TemplateQuestionScores[]> {
   const templates = await prisma.surveyTemplate.findMany({
     where: { clinicId, isActive: true },
@@ -282,7 +290,8 @@ export async function getQuestionBreakdownByDays(
 
   if (templates.length === 0) return []
 
-  const sinceDate = jstDaysAgo(days)
+  const sinceDate = range?.from ?? jstDaysAgo(days)
+  const untilDate = range?.to ?? jstEndOfDay(0)
 
   const templateIds = templates.map((t) => t.id)
   const rows = await prisma.$queryRaw<QuestionBreakdownRow[]>`
@@ -296,12 +305,13 @@ export async function getQuestionBreakdownByDays(
     WHERE clinic_id = ${clinicId}::uuid
       AND template_id = ANY(${templateIds}::uuid[])
       AND responded_at >= ${sinceDate}
+      AND responded_at <= ${untilDate}
     GROUP BY template_id, key
   `
 
   const responseCounts = await prisma.surveyResponse.groupBy({
     by: ["templateId"],
-    where: { clinicId, templateId: { in: templateIds }, respondedAt: { gte: sinceDate } },
+    where: { clinicId, templateId: { in: templateIds }, respondedAt: { gte: sinceDate, lte: untilDate } },
     _count: { _all: true },
   })
   const countMap = new Map(responseCounts.map((r) => [r.templateId, r._count._all]))
@@ -441,18 +451,22 @@ export function autoGranularity(days: number): TrendGranularity {
 export async function getDailyTrend(
   clinicId: string,
   days: number = 30,
+  range?: DateRange,
 ): Promise<DailyTrendPoint[]> {
-  const granularity = autoGranularity(days)
-  if (granularity === "month") return getDailyTrendMonthly(clinicId, days)
-  if (granularity === "week") return getDailyTrendWeekly(clinicId, days)
-  return getDailyTrendDaily(clinicId, days)
+  const effectiveDays = range ? daysBetween(range.from, range.to) : days
+  const granularity = autoGranularity(effectiveDays)
+  if (granularity === "month") return getDailyTrendMonthly(clinicId, days, range)
+  if (granularity === "week") return getDailyTrendWeekly(clinicId, days, range)
+  return getDailyTrendDaily(clinicId, days, range)
 }
 
 async function getDailyTrendDaily(
   clinicId: string,
   days: number,
+  range?: DateRange,
 ): Promise<DailyTrendPoint[]> {
-  const sinceDate = jstDaysAgo(days)
+  const sinceDate = range?.from ?? jstDaysAgo(days)
+  const untilDate = range?.to ?? jstEndOfDay(0)
 
   const rows = await prisma.$queryRaw<DailyTrendRow[]>`
     SELECT
@@ -462,6 +476,7 @@ async function getDailyTrendDaily(
     FROM survey_responses
     WHERE clinic_id = ${clinicId}::uuid
       AND responded_at >= ${sinceDate}
+      AND responded_at <= ${untilDate}
       AND overall_score IS NOT NULL
     GROUP BY (responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date, date_label
     ORDER BY (responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date ASC
@@ -477,8 +492,10 @@ async function getDailyTrendDaily(
 async function getDailyTrendWeekly(
   clinicId: string,
   days: number,
+  range?: DateRange,
 ): Promise<DailyTrendPoint[]> {
-  const sinceDate = jstDaysAgo(days)
+  const sinceDate = range?.from ?? jstDaysAgo(days)
+  const untilDate = range?.to ?? jstEndOfDay(0)
 
   const rows = await prisma.$queryRaw<DailyTrendRow[]>`
     SELECT
@@ -488,6 +505,7 @@ async function getDailyTrendWeekly(
     FROM survey_responses
     WHERE clinic_id = ${clinicId}::uuid
       AND responded_at >= ${sinceDate}
+      AND responded_at <= ${untilDate}
       AND overall_score IS NOT NULL
     GROUP BY DATE_TRUNC('week', (responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date)
     ORDER BY DATE_TRUNC('week', (responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date) ASC
@@ -503,8 +521,10 @@ async function getDailyTrendWeekly(
 async function getDailyTrendMonthly(
   clinicId: string,
   days: number,
+  range?: DateRange,
 ): Promise<DailyTrendPoint[]> {
-  const sinceDate = jstDaysAgo(days)
+  const sinceDate = range?.from ?? jstDaysAgo(days)
+  const untilDate = range?.to ?? jstEndOfDay(0)
 
   const rows = await prisma.$queryRaw<DailyTrendRow[]>`
     SELECT
@@ -514,6 +534,7 @@ async function getDailyTrendMonthly(
     FROM survey_responses
     WHERE clinic_id = ${clinicId}::uuid
       AND responded_at >= ${sinceDate}
+      AND responded_at <= ${untilDate}
       AND overall_score IS NOT NULL
     GROUP BY TO_CHAR(responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'YYYY-MM'), date_label
     ORDER BY TO_CHAR(responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'YYYY-MM') ASC
@@ -546,20 +567,23 @@ export async function getTemplateTrend(
   clinicId: string,
   days: number = 30,
   offsetDays: number = 0,
+  range?: DateRange,
 ): Promise<TemplateTrendPoint[]> {
-  const granularity = autoGranularity(days)
-  if (granularity === "month") return getTemplateTrendMonthly(clinicId, days, offsetDays)
-  if (granularity === "week") return getTemplateTrendWeekly(clinicId, days, offsetDays)
-  return getTemplateTrendDaily(clinicId, days, offsetDays)
+  const effectiveDays = range ? daysBetween(range.from, range.to) : days
+  const granularity = autoGranularity(effectiveDays)
+  if (granularity === "month") return getTemplateTrendMonthly(clinicId, days, offsetDays, range)
+  if (granularity === "week") return getTemplateTrendWeekly(clinicId, days, offsetDays, range)
+  return getTemplateTrendDaily(clinicId, days, offsetDays, range)
 }
 
 async function getTemplateTrendDaily(
   clinicId: string,
   days: number,
   offsetDays: number,
+  range?: DateRange,
 ): Promise<TemplateTrendPoint[]> {
-  const untilDate = jstEndOfDay(offsetDays)
-  const sinceDate = jstDaysAgo(offsetDays + days)
+  const sinceDate = range?.from ?? jstDaysAgo(offsetDays + days)
+  const untilDate = range?.to ?? jstEndOfDay(offsetDays)
 
   const rows = await prisma.$queryRaw<TemplateTrendRow[]>`
     SELECT
@@ -589,9 +613,10 @@ async function getTemplateTrendWeekly(
   clinicId: string,
   days: number,
   offsetDays: number,
+  range?: DateRange,
 ): Promise<TemplateTrendPoint[]> {
-  const untilDate = jstEndOfDay(offsetDays)
-  const sinceDate = jstDaysAgo(offsetDays + days)
+  const sinceDate = range?.from ?? jstDaysAgo(offsetDays + days)
+  const untilDate = range?.to ?? jstEndOfDay(offsetDays)
 
   const rows = await prisma.$queryRaw<TemplateTrendRow[]>`
     SELECT
@@ -621,9 +646,10 @@ async function getTemplateTrendMonthly(
   clinicId: string,
   days: number,
   offsetDays: number,
+  range?: DateRange,
 ): Promise<TemplateTrendPoint[]> {
-  const untilDate = jstEndOfDay(offsetDays)
-  const sinceDate = jstDaysAgo(offsetDays + days)
+  const sinceDate = range?.from ?? jstDaysAgo(offsetDays + days)
+  const untilDate = range?.to ?? jstEndOfDay(offsetDays)
 
   const rows = await prisma.$queryRaw<TemplateTrendRow[]>`
     SELECT
@@ -667,9 +693,11 @@ interface HeatmapRow {
 
 export async function getHourlyHeatmapData(
   clinicId: string,
-  days: number = 90
+  days: number = 90,
+  range?: DateRange,
 ): Promise<HeatmapCell[]> {
-  const sinceDate = jstDaysAgo(days)
+  const sinceDate = range?.from ?? jstDaysAgo(days)
+  const untilDate = range?.to ?? jstEndOfDay(0)
 
   const rows = await prisma.$queryRaw<HeatmapRow[]>`
     SELECT
@@ -680,6 +708,7 @@ export async function getHourlyHeatmapData(
     FROM survey_responses
     WHERE clinic_id = ${clinicId}::uuid
       AND responded_at >= ${sinceDate}
+      AND responded_at <= ${untilDate}
       AND overall_score IS NOT NULL
     GROUP BY day_of_week, hour
     ORDER BY day_of_week, hour
@@ -740,8 +769,10 @@ interface PurposeSatisfactionDbRow {
 export async function getPurposeSatisfaction(
   clinicId: string,
   days: number = 30,
+  range?: DateRange,
 ): Promise<PurposeSatisfactionRow[]> {
-  const sinceDate = jstDaysAgo(days)
+  const sinceDate = range?.from ?? jstDaysAgo(days)
+  const untilDate = range?.to ?? jstEndOfDay(0)
 
   const rows = await prisma.$queryRaw<PurposeSatisfactionDbRow[]>`
     SELECT
@@ -752,6 +783,7 @@ export async function getPurposeSatisfaction(
     FROM survey_responses
     WHERE clinic_id = ${clinicId}::uuid
       AND responded_at >= ${sinceDate}
+      AND responded_at <= ${untilDate}
       AND overall_score IS NOT NULL
       AND patient_attributes->>'insuranceType' IS NOT NULL
       AND patient_attributes->>'purpose' IS NOT NULL
