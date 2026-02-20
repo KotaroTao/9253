@@ -175,6 +175,7 @@ export function KioskSurvey({
     setGender("")
     setSelectedData(null)
     setPatientAttrs(null)
+    window.scrollTo(0, 0)
   }, [])
 
   const handleSurveyComplete = useCallback(() => {
@@ -182,6 +183,7 @@ export function KioskSurvey({
     setRandomTip(DENTAL_TIPS[Math.floor(Math.random() * DENTAL_TIPS.length)])
     setShowConfetti(true)
     setState("thanks")
+    window.scrollTo(0, 0)
   }, [])
 
   const handleStartSurvey = useCallback(() => {
@@ -204,6 +206,7 @@ export function KioskSurvey({
       gender,
     })
     setState("survey")
+    window.scrollTo(0, 0)
   }, [canProceed, templates, visitType, insuranceType, purpose, ageGroup, gender, clinicName, clinicSlug])
 
   const handleExit = useCallback(() => {
