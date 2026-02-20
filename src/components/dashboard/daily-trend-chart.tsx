@@ -51,9 +51,10 @@ interface DailyTrendChartProps {
   initialData: DailyTrendPoint[]
   selectedPeriod: number
   customRange?: CustomRange | null
+  filterQuery?: string
 }
 
-export function DailyTrendChart({ initialData, selectedPeriod, customRange = null }: DailyTrendChartProps) {
+export function DailyTrendChart({ initialData, selectedPeriod, customRange = null, filterQuery }: DailyTrendChartProps) {
   const [data, setData] = useState<DailyTrendPoint[]>(initialData)
   const [granularity, setGranularity] = useState<TrendGranularity>("day")
   const [loading, setLoading] = useState(false)
@@ -75,13 +76,15 @@ export function DailyTrendChart({ initialData, selectedPeriod, customRange = nul
     }
   }, [])
 
+  const effectiveQuery = filterQuery ?? buildPeriodQuery(customRange ?? null, selectedPeriod)
+
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false
       return
     }
-    fetchData(buildPeriodQuery(customRange ?? null, selectedPeriod))
-  }, [selectedPeriod, customRange, fetchData])
+    fetchData(effectiveQuery)
+  }, [effectiveQuery, fetchData])
 
   const maxCount = Math.max(...data.map((d) => d.count), 1)
   const yCountMax = Math.ceil(maxCount * 1.2)

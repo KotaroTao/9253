@@ -9,6 +9,7 @@ interface SatisfactionHeatmapProps {
   initialData: HeatmapCell[]
   selectedPeriod: number
   customRange?: CustomRange | null
+  filterQuery?: string
 }
 
 // 曜日ラベル（DOW: 0=日, 1=月, ..., 6=土）
@@ -32,7 +33,7 @@ function getScoreBg(score: number): string {
   return "bg-orange-500"
 }
 
-export function SatisfactionHeatmap({ initialData, selectedPeriod, customRange = null }: SatisfactionHeatmapProps) {
+export function SatisfactionHeatmap({ initialData, selectedPeriod, customRange = null, filterQuery }: SatisfactionHeatmapProps) {
   const [data, setData] = useState<HeatmapCell[]>(initialData)
   const [loading, setLoading] = useState(false)
   const isInitialMount = useRef(true)
@@ -52,16 +53,17 @@ export function SatisfactionHeatmap({ initialData, selectedPeriod, customRange =
     }
   }, [])
 
+  const effectiveQuery = filterQuery ?? (customRange
+    ? `from=${customRange.from}&to=${customRange.to}`
+    : `days=${selectedPeriod}`)
+
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false
       return
     }
-    const query = customRange
-      ? `from=${customRange.from}&to=${customRange.to}`
-      : `days=${selectedPeriod}`
-    fetchData(query)
-  }, [selectedPeriod, customRange, fetchData])
+    fetchData(effectiveQuery)
+  }, [effectiveQuery, fetchData])
 
   if (loading) {
     return (

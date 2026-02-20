@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { Prisma } from "@prisma/client"
 import type { SatisfactionTrend } from "@/types"
 import {
   jstNowParts,
@@ -15,6 +16,53 @@ import {
 export interface DateRange {
   from: Date
   to: Date
+}
+
+/** 患者属性フィルタ（JSONB patient_attributes に対する条件） */
+export interface AttributeFilters {
+  visitType?: string
+  insuranceType?: string
+  purpose?: string
+  ageGroup?: string
+  gender?: string
+}
+
+/** AttributeFilters から raw SQL の AND 条件フラグメントを構築 */
+function buildAttrSql(filters?: AttributeFilters): Prisma.Sql {
+  if (!filters) return Prisma.empty
+  const conds: Prisma.Sql[] = []
+  if (filters.visitType) conds.push(Prisma.sql`patient_attributes->>'visitType' = ${filters.visitType}`)
+  if (filters.insuranceType) conds.push(Prisma.sql`patient_attributes->>'insuranceType' = ${filters.insuranceType}`)
+  if (filters.purpose) conds.push(Prisma.sql`patient_attributes->>'purpose' = ${filters.purpose}`)
+  if (filters.ageGroup) conds.push(Prisma.sql`patient_attributes->>'ageGroup' = ${filters.ageGroup}`)
+  if (filters.gender) conds.push(Prisma.sql`patient_attributes->>'gender' = ${filters.gender}`)
+  if (conds.length === 0) return Prisma.empty
+  return Prisma.join(conds.map(c => Prisma.sql`AND ${c}`), " ")
+}
+
+/** テーブル別名付き版（sr. prefix） */
+function buildAttrSqlAliased(filters?: AttributeFilters): Prisma.Sql {
+  if (!filters) return Prisma.empty
+  const conds: Prisma.Sql[] = []
+  if (filters.visitType) conds.push(Prisma.sql`sr.patient_attributes->>'visitType' = ${filters.visitType}`)
+  if (filters.insuranceType) conds.push(Prisma.sql`sr.patient_attributes->>'insuranceType' = ${filters.insuranceType}`)
+  if (filters.purpose) conds.push(Prisma.sql`sr.patient_attributes->>'purpose' = ${filters.purpose}`)
+  if (filters.ageGroup) conds.push(Prisma.sql`sr.patient_attributes->>'ageGroup' = ${filters.ageGroup}`)
+  if (filters.gender) conds.push(Prisma.sql`sr.patient_attributes->>'gender' = ${filters.gender}`)
+  if (conds.length === 0) return Prisma.empty
+  return Prisma.join(conds.map(c => Prisma.sql`AND ${c}`), " ")
+}
+
+/** AttributeFilters から Prisma の where 条件（AND配列）を構築 */
+function buildAttrPrismaWhere(filters?: AttributeFilters): object[] {
+  if (!filters) return []
+  const conds: object[] = []
+  if (filters.visitType) conds.push({ patientAttributes: { path: ["visitType"], equals: filters.visitType } })
+  if (filters.insuranceType) conds.push({ patientAttributes: { path: ["insuranceType"], equals: filters.insuranceType } })
+  if (filters.purpose) conds.push({ patientAttributes: { path: ["purpose"], equals: filters.purpose } })
+  if (filters.ageGroup) conds.push({ patientAttributes: { path: ["ageGroup"], equals: filters.ageGroup } })
+  if (filters.gender) conds.push({ patientAttributes: { path: ["gender"], equals: filters.gender } })
+  return conds
 }
 
 export async function getDashboardStats(
@@ -282,6 +330,7 @@ export async function getQuestionBreakdownByDays(
   clinicId: string,
   days: number = 30,
   range?: DateRange,
+  attrFilters?: AttributeFilters,
 ): Promise<TemplateQuestionScores[]> {
   const templates = await prisma.surveyTemplate.findMany({
     where: { clinicId, isActive: true },
@@ -292,6 +341,7 @@ export async function getQuestionBreakdownByDays(
 
   const sinceDate = range?.from ?? jstDaysAgo(days)
   const untilDate = range?.to ?? jstEndOfDay(0)
+  const af = buildAttrSql(attrFilters)
 
   const templateIds = templates.map((t) => t.id)
   const rows = await prisma.$queryRaw<QuestionBreakdownRow[]>`
@@ -306,12 +356,19 @@ export async function getQuestionBreakdownByDays(
       AND template_id = ANY(${templateIds}::uuid[])
       AND responded_at >= ${sinceDate}
       AND responded_at <= ${untilDate}
+      ${af}
     GROUP BY template_id, key
   `
 
+  const attrWhere = buildAttrPrismaWhere(attrFilters)
   const responseCounts = await prisma.surveyResponse.groupBy({
     by: ["templateId"],
-    where: { clinicId, templateId: { in: templateIds }, respondedAt: { gte: sinceDate, lte: untilDate } },
+    where: {
+      clinicId,
+      templateId: { in: templateIds },
+      respondedAt: { gte: sinceDate, lte: untilDate },
+      ...(attrWhere.length > 0 ? { AND: attrWhere } : {}),
+    },
     _count: { _all: true },
   })
   const countMap = new Map(responseCounts.map((r) => [r.templateId, r._count._all]))
@@ -452,21 +509,24 @@ export async function getDailyTrend(
   clinicId: string,
   days: number = 30,
   range?: DateRange,
+  attrFilters?: AttributeFilters,
 ): Promise<DailyTrendPoint[]> {
   const effectiveDays = range ? daysBetween(range.from, range.to) : days
   const granularity = autoGranularity(effectiveDays)
-  if (granularity === "month") return getDailyTrendMonthly(clinicId, days, range)
-  if (granularity === "week") return getDailyTrendWeekly(clinicId, days, range)
-  return getDailyTrendDaily(clinicId, days, range)
+  if (granularity === "month") return getDailyTrendMonthly(clinicId, days, range, attrFilters)
+  if (granularity === "week") return getDailyTrendWeekly(clinicId, days, range, attrFilters)
+  return getDailyTrendDaily(clinicId, days, range, attrFilters)
 }
 
 async function getDailyTrendDaily(
   clinicId: string,
   days: number,
   range?: DateRange,
+  attrFilters?: AttributeFilters,
 ): Promise<DailyTrendPoint[]> {
   const sinceDate = range?.from ?? jstDaysAgo(days)
   const untilDate = range?.to ?? jstEndOfDay(0)
+  const af = buildAttrSql(attrFilters)
 
   const rows = await prisma.$queryRaw<DailyTrendRow[]>`
     SELECT
@@ -478,6 +538,7 @@ async function getDailyTrendDaily(
       AND responded_at >= ${sinceDate}
       AND responded_at <= ${untilDate}
       AND overall_score IS NOT NULL
+      ${af}
     GROUP BY (responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date, date_label
     ORDER BY (responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date ASC
   `
@@ -493,9 +554,11 @@ async function getDailyTrendWeekly(
   clinicId: string,
   days: number,
   range?: DateRange,
+  attrFilters?: AttributeFilters,
 ): Promise<DailyTrendPoint[]> {
   const sinceDate = range?.from ?? jstDaysAgo(days)
   const untilDate = range?.to ?? jstEndOfDay(0)
+  const af = buildAttrSql(attrFilters)
 
   const rows = await prisma.$queryRaw<DailyTrendRow[]>`
     SELECT
@@ -507,6 +570,7 @@ async function getDailyTrendWeekly(
       AND responded_at >= ${sinceDate}
       AND responded_at <= ${untilDate}
       AND overall_score IS NOT NULL
+      ${af}
     GROUP BY DATE_TRUNC('week', (responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date)
     ORDER BY DATE_TRUNC('week', (responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date) ASC
   `
@@ -522,9 +586,11 @@ async function getDailyTrendMonthly(
   clinicId: string,
   days: number,
   range?: DateRange,
+  attrFilters?: AttributeFilters,
 ): Promise<DailyTrendPoint[]> {
   const sinceDate = range?.from ?? jstDaysAgo(days)
   const untilDate = range?.to ?? jstEndOfDay(0)
+  const af = buildAttrSql(attrFilters)
 
   const rows = await prisma.$queryRaw<DailyTrendRow[]>`
     SELECT
@@ -536,6 +602,7 @@ async function getDailyTrendMonthly(
       AND responded_at >= ${sinceDate}
       AND responded_at <= ${untilDate}
       AND overall_score IS NOT NULL
+      ${af}
     GROUP BY TO_CHAR(responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'YYYY-MM'), date_label
     ORDER BY TO_CHAR(responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'YYYY-MM') ASC
   `
@@ -568,12 +635,13 @@ export async function getTemplateTrend(
   days: number = 30,
   offsetDays: number = 0,
   range?: DateRange,
+  attrFilters?: AttributeFilters,
 ): Promise<TemplateTrendPoint[]> {
   const effectiveDays = range ? daysBetween(range.from, range.to) : days
   const granularity = autoGranularity(effectiveDays)
-  if (granularity === "month") return getTemplateTrendMonthly(clinicId, days, offsetDays, range)
-  if (granularity === "week") return getTemplateTrendWeekly(clinicId, days, offsetDays, range)
-  return getTemplateTrendDaily(clinicId, days, offsetDays, range)
+  if (granularity === "month") return getTemplateTrendMonthly(clinicId, days, offsetDays, range, attrFilters)
+  if (granularity === "week") return getTemplateTrendWeekly(clinicId, days, offsetDays, range, attrFilters)
+  return getTemplateTrendDaily(clinicId, days, offsetDays, range, attrFilters)
 }
 
 async function getTemplateTrendDaily(
@@ -581,9 +649,11 @@ async function getTemplateTrendDaily(
   days: number,
   offsetDays: number,
   range?: DateRange,
+  attrFilters?: AttributeFilters,
 ): Promise<TemplateTrendPoint[]> {
   const sinceDate = range?.from ?? jstDaysAgo(offsetDays + days)
   const untilDate = range?.to ?? jstEndOfDay(offsetDays)
+  const af = buildAttrSqlAliased(attrFilters)
 
   const rows = await prisma.$queryRaw<TemplateTrendRow[]>`
     SELECT
@@ -597,6 +667,7 @@ async function getTemplateTrendDaily(
       AND sr.responded_at >= ${sinceDate}
       AND sr.responded_at <= ${untilDate}
       AND sr.overall_score IS NOT NULL
+      ${af}
     GROUP BY (sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date, date_label, st.name
     ORDER BY (sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date ASC, st.name
   `
@@ -614,9 +685,11 @@ async function getTemplateTrendWeekly(
   days: number,
   offsetDays: number,
   range?: DateRange,
+  attrFilters?: AttributeFilters,
 ): Promise<TemplateTrendPoint[]> {
   const sinceDate = range?.from ?? jstDaysAgo(offsetDays + days)
   const untilDate = range?.to ?? jstEndOfDay(offsetDays)
+  const af = buildAttrSqlAliased(attrFilters)
 
   const rows = await prisma.$queryRaw<TemplateTrendRow[]>`
     SELECT
@@ -630,6 +703,7 @@ async function getTemplateTrendWeekly(
       AND sr.responded_at >= ${sinceDate}
       AND sr.responded_at <= ${untilDate}
       AND sr.overall_score IS NOT NULL
+      ${af}
     GROUP BY DATE_TRUNC('week', (sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date), st.name
     ORDER BY DATE_TRUNC('week', (sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date) ASC, st.name
   `
@@ -647,9 +721,11 @@ async function getTemplateTrendMonthly(
   days: number,
   offsetDays: number,
   range?: DateRange,
+  attrFilters?: AttributeFilters,
 ): Promise<TemplateTrendPoint[]> {
   const sinceDate = range?.from ?? jstDaysAgo(offsetDays + days)
   const untilDate = range?.to ?? jstEndOfDay(offsetDays)
+  const af = buildAttrSqlAliased(attrFilters)
 
   const rows = await prisma.$queryRaw<TemplateTrendRow[]>`
     SELECT
@@ -663,6 +739,7 @@ async function getTemplateTrendMonthly(
       AND sr.responded_at >= ${sinceDate}
       AND sr.responded_at <= ${untilDate}
       AND sr.overall_score IS NOT NULL
+      ${af}
     GROUP BY TO_CHAR(sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'YYYY-MM'), date_label, st.name
     ORDER BY TO_CHAR(sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'YYYY-MM') ASC, st.name
   `
@@ -695,9 +772,11 @@ export async function getHourlyHeatmapData(
   clinicId: string,
   days: number = 90,
   range?: DateRange,
+  attrFilters?: AttributeFilters,
 ): Promise<HeatmapCell[]> {
   const sinceDate = range?.from ?? jstDaysAgo(days)
   const untilDate = range?.to ?? jstEndOfDay(0)
+  const af = buildAttrSql(attrFilters)
 
   const rows = await prisma.$queryRaw<HeatmapRow[]>`
     SELECT
@@ -710,6 +789,7 @@ export async function getHourlyHeatmapData(
       AND responded_at >= ${sinceDate}
       AND responded_at <= ${untilDate}
       AND overall_score IS NOT NULL
+      ${af}
     GROUP BY day_of_week, hour
     ORDER BY day_of_week, hour
   `
@@ -770,9 +850,11 @@ export async function getPurposeSatisfaction(
   clinicId: string,
   days: number = 30,
   range?: DateRange,
+  attrFilters?: AttributeFilters,
 ): Promise<PurposeSatisfactionRow[]> {
   const sinceDate = range?.from ?? jstDaysAgo(days)
   const untilDate = range?.to ?? jstEndOfDay(0)
+  const af = buildAttrSql(attrFilters)
 
   const rows = await prisma.$queryRaw<PurposeSatisfactionDbRow[]>`
     SELECT
@@ -787,6 +869,7 @@ export async function getPurposeSatisfaction(
       AND overall_score IS NOT NULL
       AND patient_attributes->>'insuranceType' IS NOT NULL
       AND patient_attributes->>'purpose' IS NOT NULL
+      ${af}
     GROUP BY insurance_type, purpose
     ORDER BY insurance_type, avg_score DESC
   `
