@@ -408,7 +408,112 @@ export const IMPROVEMENT_SUGGESTIONS: Record<string, ImprovementSuggestion[]> = 
 export const ADVISORY = {
   DEFAULT_THRESHOLD: 30,           // 新規回答数でアンロック
   MIN_RESPONSES_FOR_FIRST: 30,     // 初回分析に必要な最低回答数
+  HIGH_SCORE_THRESHOLD: 4.0,       // 高評価と判定する閾値
+  LOW_SCORE_THRESHOLD: 3.8,        // 低評価と判定する閾値
+  MIN_SAMPLES_FOR_INSIGHT: 5,      // インサイト生成に必要な最低サンプル数
+  SIGNIFICANT_GAP: 0.3,            // 有意な差と見なすスコア差
+  POLARIZATION_LOW_PCT: 15,        // 二極化判定: 低スコア(1-2)のパーセンテージ
+  POLARIZATION_HIGH_PCT: 40,       // 二極化判定: 高スコア(4-5)のパーセンテージ
+  CONSISTENCY_STDDEV: 0.6,         // 安定性判定: 標準偏差の閾値
 } as const
+
+// ─── 歯科コンサル知見: 設問カテゴリ別の分析ルール ───
+
+export const CATEGORY_LABELS: Record<string, string> = {
+  clinic_environment: "院内環境",
+  reception: "受付対応",
+  wait_time: "待ち時間",
+  hearing: "ヒアリング",
+  explanation: "治療説明",
+  cost_explanation: "費用説明",
+  comfort: "安心感・質問しやすさ",
+  loyalty: "紹介意向",
+  pain_care: "痛みへの配慮",
+  staff_courtesy: "スタッフ対応",
+}
+
+/** 初診/再診で同じカテゴリを比較するための対応マップ */
+export const CROSS_TEMPLATE_CATEGORIES: Array<{
+  category: string
+  label: string
+  firstVisitId: string
+  revisitId: string
+}> = [
+  { category: "wait_time", label: "待ち時間", firstVisitId: "fv3", revisitId: "tr4" },
+  { category: "explanation", label: "治療説明", firstVisitId: "fv5", revisitId: "tr1" },
+  { category: "comfort", label: "安心感", firstVisitId: "fv7", revisitId: "tr3" },
+  { category: "loyalty", label: "紹介意向", firstVisitId: "fv8", revisitId: "tr6" },
+]
+
+/** 設問間相関パターン — 歯科コンサルタントの知見に基づく診断ルール */
+export interface DentalInsightRule {
+  id: string
+  high: string[]   // これらのカテゴリのスコアが高い (>= HIGH_SCORE_THRESHOLD)
+  low: string[]    // これらのカテゴリのスコアが低い (< LOW_SCORE_THRESHOLD)
+  insight: string
+  recommendation: string
+}
+
+export const DENTAL_INSIGHT_RULES: DentalInsightRule[] = [
+  {
+    id: "one_way_explanation",
+    high: ["explanation"],
+    low: ["comfort"],
+    insight: "治療説明のスコアは高いものの、安心感・質問しやすさが低い傾向があります。説明が「一方的」になっている可能性があります。患者は説明を「聞いている」が「理解・納得している」とは限りません。",
+    recommendation: "説明後に「何か気になる点はありますか？」と必ず確認する習慣を導入しましょう。3秒の沈黙を意識的に作ることで、患者が質問しやすくなります。",
+  },
+  {
+    id: "waiting_stress",
+    high: ["reception"],
+    low: ["wait_time"],
+    insight: "受付対応への評価は良好ですが、待ち時間のスコアが低い状態です。受付後の「待たされている感」が課題です。待ち時間の問題は「実際の長さ」ではなく「不透明さ」が本質であることが多いです。",
+    recommendation: "待ち時間が10分以上になる場合、スタッフから「あと約○分です」と声かけする運用を導入しましょう。待ち時間の「見える化」だけで体感待ち時間は大幅に改善します。また、待合室にデジタルサイネージや口腔ケア情報を設置し「待ち時間の有効化」も検討してください。",
+  },
+  {
+    id: "communication_gap",
+    high: [],
+    low: ["hearing", "explanation"],
+    insight: "初診時のヒアリングと治療説明の両方でスコアが低めです。「聞いてもらえていない」→「説明も分かりにくい」という悪循環が疑われます。ヒアリング不足は全ての患者体験の土台を崩します。",
+    recommendation: "初診カウンセリングに最低10分確保し、患者の主訴だけでなく不安・希望も聞き取る体制を整えましょう。ヒアリングシートを「選択式+自由記述」に改善し、患者が話しやすい個室環境を用意することも効果的です。",
+  },
+  {
+    id: "anxiety_loop",
+    high: [],
+    low: ["pain_care", "comfort"],
+    insight: "痛みへの配慮と安心感の両方が低い状態です。患者が「自分でコントロールできない」という不安を感じている可能性が高く、これは歯科恐怖症の増悪要因にもなります。",
+    recommendation: "治療前に「痛い時は左手を挙げてください、すぐ止めます」とシグナルルールを必ず伝えましょう。患者が「いつでも止められる」と感じるだけで痛みの体感と不安が大幅に軽減します。表面麻酔の徹底と、治療中30秒ごとの声かけ「順調ですよ」「あと少しです」も標準化してください。",
+  },
+  {
+    id: "financial_distrust",
+    high: [],
+    low: ["cost_explanation", "loyalty"],
+    insight: "費用説明と紹介意向の両方が低い状態です。「費用が不透明」という不信感がクリニック全体への信頼低下につながっている可能性があります。費用の不透明さは、診療の質とは無関係に満足度を大きく下げる要因です。",
+    recommendation: "治療開始前に費用の概算を書面で提示し、保険/自費の選択肢を比較表で明示しましょう。会計時にも「今回の○○は○円です」と一言添えることで不信感を解消できます。",
+  },
+  {
+    id: "satisfaction_without_differentiation",
+    high: ["reception", "explanation", "comfort"],
+    low: ["loyalty"],
+    insight: "各項目の満足度は高いものの「人に紹介したい」スコアが低い状態です。患者は満足しているが「特別な体験」ではないと感じています。「不満がない」と「紹介したい」の間には大きな壁があります。",
+    recommendation: "口腔内写真で治療のビフォーアフターを共有する、前回の会話内容をカルテにメモし次回に話題にする等「この医院ならでは」の個別体験を設計しましょう。定期検診時に「前回より歯茎の状態が良くなっています」と改善をフィードバックすることも効果的です。",
+  },
+  {
+    id: "facility_service_gap",
+    high: ["staff_courtesy", "explanation"],
+    low: ["clinic_environment"],
+    insight: "スタッフ対応・治療説明は高評価ですが、院内環境のスコアが低い状態です。「人」のサービスは良いのに「場」が足を引っ張っています。院内環境は来院時の第一印象を決め、全体の期待値を左右します。",
+    recommendation: "午前・午後の清掃チェックリストを導入し、待合室・トイレの清潔感を確保しましょう。季節の装飾や観葉植物の追加、掲示物の整理など「明るく清潔」な印象づくりが効果的です。",
+  },
+]
+
+export const DAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"] as const
+
+/** 時間帯の分類 */
+export function getTimeSlotLabel(hour: number): string {
+  if (hour < 12) return "午前"
+  if (hour < 17) return "午後"
+  return "夕方"
+}
 
 // AI分析回数バッジ
 export const ADVISORY_MILESTONES = [
