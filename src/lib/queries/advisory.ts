@@ -35,7 +35,6 @@ export async function getAdvisoryProgress(clinicId: string): Promise<AdvisoryPro
   const canGenerate =
     totalResponses >= ADVISORY.MIN_RESPONSES_FOR_FIRST &&
     (current >= threshold ||
-      (daysSinceLastReport !== null && daysSinceLastReport >= ADVISORY.SCHEDULED_INTERVAL_DAYS) ||
       (!lastReport && totalResponses >= ADVISORY.MIN_RESPONSES_FOR_FIRST))
 
   const lastReportData: AdvisoryReportData | null = lastReport

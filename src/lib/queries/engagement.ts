@@ -1,11 +1,10 @@
 import { prisma } from "@/lib/prisma"
-import { DEFAULTS, MILESTONES, getRank, getNextRank } from "@/lib/constants"
+import { MILESTONES, getRank, getNextRank } from "@/lib/constants"
 import type { Rank } from "@/lib/constants"
 import type { ClinicSettings } from "@/types"
 import {
   jstToday,
   jstDaysAgo,
-  jstNowParts,
   formatDateKeyJST,
   getDayOfWeekJaJST,
   getDayJST,
@@ -26,12 +25,12 @@ export interface WeekDayData {
 
 export interface EngagementData {
   todayCount: number
-  dailyGoal: number
   streak: number
   totalCount: number
   currentMilestone: number | null
   nextMilestone: number | null
   positiveComment: string | null
+  positiveCommentScore: number | null
   // Rank system
   rank: Rank
   nextRank: Rank | null
@@ -58,7 +57,7 @@ export async function getStaffEngagementData(
   // Week start (past 7 days: today - 6 days)
   const weekStart = jstDaysAgo(6)
 
-  // Consolidate count/avg queries into a single raw SQL to reduce round-trips (7→4)
+  // Consolidate count/avg queries into a single raw SQL to reduce round-trips
   interface AggRow {
     total_count: bigint
     today_count: bigint
@@ -66,13 +65,8 @@ export async function getStaffEngagementData(
     week_count: bigint
     week_avg: number | null
   }
-  // Previous month for daily goal calculation
-  const { year: nowYear, month: nowMonth } = jstNowParts()
-  const prevMonthDate = new Date(Date.UTC(nowYear, nowMonth - 2, 1))
-  const prevYear = prevMonthDate.getUTCFullYear()
-  const prevMonth = prevMonthDate.getUTCMonth() + 1
 
-  const [aggRows, streakResponses, positiveComments, clinic, prevMetrics] =
+  const [aggRows, streakResponses, positiveComments, clinic] =
     await Promise.all([
       prisma.$queryRaw<AggRow[]>`
         SELECT
@@ -99,7 +93,7 @@ export async function getStaffEngagementData(
           freeText: { not: null },
           respondedAt: { gte: commentStart },
         },
-        select: { freeText: true },
+        select: { freeText: true, overallScore: true },
         orderBy: { respondedAt: "desc" },
         take: 20,
       }),
@@ -107,11 +101,6 @@ export async function getStaffEngagementData(
       prisma.clinic.findUnique({
         where: { id: clinicId },
         select: { settings: true },
-      }),
-
-      prisma.monthlyClinicMetrics.findUnique({
-        where: { clinicId_year_month: { clinicId, year: prevYear, month: prevMonth } },
-        select: { firstVisitCount: true, revisitCount: true },
       }),
     ])
 
@@ -129,7 +118,6 @@ export async function getStaffEngagementData(
   const regularClosedDays = new Set<number>(settings.regularClosedDays ?? [])
 
   const DAY_MS = 24 * 60 * 60 * 1000
-  const JST_OFFSET = 9 * 60 * 60 * 1000
 
   // Helper: check if a date is closed (ad-hoc or regular, with open override)
   function isClosedDate(dateKey: string, date: Date): boolean {
@@ -147,95 +135,6 @@ export async function getStaffEngagementData(
     dateSet.add(key)
     dateCountMap.set(key, (dateCountMap.get(key) ?? 0) + 1)
   }
-
-  // Calculate base daily patients from previous month (totalPatients / businessDays)
-  const totalPatients = (prevMetrics?.firstVisitCount ?? 0) + (prevMetrics?.revisitCount ?? 0)
-  const baseDaily = (() => {
-    if (totalPatients <= 0) return 0
-    const daysInPrevMonth = new Date(Date.UTC(prevYear, prevMonth, 0)).getUTCDate()
-    let businessDays = 0
-    for (let d = 1; d <= daysInPrevMonth; d++) {
-      const date = new Date(Date.UTC(prevYear, prevMonth - 1, d))
-      const dateKey = `${prevYear}-${String(prevMonth).padStart(2, "0")}-${String(d).padStart(2, "0")}`
-      if (openDates.has(dateKey)) {
-        businessDays++
-      } else if (closedDates.has(dateKey) || regularClosedDays.has(date.getUTCDay())) {
-        // closed
-      } else {
-        businessDays++
-      }
-    }
-    return businessDays > 0 ? totalPatients / businessDays : 0
-  })()
-
-  // Dynamic goal multiplier: 0.3 → 0.4 → 0.5 (level 0/1/2)
-  // 7日連続達成で1段階UP、7日連続未達成で1段階DOWN
-  const { GOAL_MULTIPLIERS, GOAL_STREAK_THRESHOLD } = DEFAULTS
-  let goalLevel = Math.max(0, Math.min(2, settings.goalLevel ?? 0))
-  let goalAchieveStreak = settings.goalAchieveStreak ?? 0
-  let goalMissStreak = settings.goalMissStreak ?? 0
-  const goalLastCheckedDate = settings.goalLastCheckedDate ?? null
-  const yesterdayKey = formatDateKeyJST(new Date(todayStart.getTime() - DAY_MS))
-
-  if (baseDaily > 0 && goalLastCheckedDate) {
-    // Evaluate each business day from the day after lastCheckedDate to yesterday
-    const [ly, lm, ld] = goalLastCheckedDate.split("-").map(Number)
-    let evalTime = Date.UTC(ly, lm - 1, ld) - JST_OFFSET + DAY_MS
-
-    for (let i = 0; i < 90; i++) {
-      const evalDate = new Date(evalTime)
-      const evalKey = formatDateKeyJST(evalDate)
-      if (evalKey > yesterdayKey) break
-
-      if (!isClosedDate(evalKey, evalDate)) {
-        const goal = Math.max(1, Math.round(baseDaily * GOAL_MULTIPLIERS[goalLevel]))
-        const count = dateCountMap.get(evalKey) ?? 0
-
-        if (count >= goal) {
-          goalAchieveStreak++
-          goalMissStreak = 0
-          if (goalAchieveStreak >= GOAL_STREAK_THRESHOLD && goalLevel < 2) {
-            goalLevel++
-            goalAchieveStreak = 0
-          }
-        } else {
-          goalMissStreak++
-          goalAchieveStreak = 0
-          if (goalMissStreak >= GOAL_STREAK_THRESHOLD && goalLevel > 0) {
-            goalLevel--
-            goalMissStreak = 0
-          }
-        }
-      }
-
-      evalTime += DAY_MS
-    }
-  }
-
-  // Persist updated goal tracking (atomic JSONB merge, fire-and-forget)
-  const newLastCheckedDate = yesterdayKey
-  if (
-    goalLevel !== (settings.goalLevel ?? 0) ||
-    goalAchieveStreak !== (settings.goalAchieveStreak ?? 0) ||
-    goalMissStreak !== (settings.goalMissStreak ?? 0) ||
-    newLastCheckedDate !== goalLastCheckedDate
-  ) {
-    const patch = JSON.stringify({
-      goalLevel,
-      goalAchieveStreak,
-      goalMissStreak,
-      goalLastCheckedDate: newLastCheckedDate,
-    })
-    prisma.$executeRaw`
-      UPDATE clinics SET settings = settings || ${patch}::jsonb
-      WHERE id = ${clinicId}::uuid
-    `.catch(() => {})
-  }
-
-  // Final daily goal with dynamic multiplier
-  const dailyGoal = baseDaily > 0
-    ? Math.max(1, Math.round(baseDaily * GOAL_MULTIPLIERS[goalLevel]))
-    : DEFAULTS.DAILY_GOAL_FALLBACK
 
   // Calculate weekly active days (past 7 days) and per-day data
   let weekActiveDays = 0
@@ -256,7 +155,7 @@ export async function getStaffEngagementData(
     })
   }
 
-  // Calculate streak: skip closed dates (treat as non-existent days)
+  // Calculate streak: consecutive business days with 1+ responses (skip closed dates)
   let streak = 0
   let streakBreak: StreakBreakInfo | null = null
   let checkTime = todayStart.getTime()
@@ -294,12 +193,14 @@ export async function getStaffEngagementData(
     MILESTONES.filter((m) => totalCount >= m).pop() ?? null
   const nextMilestone = MILESTONES.find((m) => totalCount < m) ?? null
 
-  // Pick a random positive comment
+  // Pick a random positive comment (with score)
   const candidates = positiveComments.filter((c) => c.freeText)
-  const positiveComment =
+  const picked =
     candidates.length > 0
-      ? candidates[Math.floor(Math.random() * candidates.length)].freeText
+      ? candidates[Math.floor(Math.random() * candidates.length)]
       : null
+  const positiveComment = picked?.freeText ?? null
+  const positiveCommentScore = picked?.overallScore ?? null
 
   // Rank system
   const rank = getRank(totalCount)
@@ -313,12 +214,12 @@ export async function getStaffEngagementData(
 
   return {
     todayCount,
-    dailyGoal,
     streak,
     totalCount,
     currentMilestone,
     nextMilestone,
     positiveComment,
+    positiveCommentScore,
     rank,
     nextRank: nextRankObj,
     rankProgress,

@@ -99,8 +99,6 @@ export const messages = {
     staffMilestone10: "本日10件達成！素晴らしいですね",
     staffMilestone20: "本日20件！チームの力ですね",
     staffTodayCount: "本日のアンケート回答数",
-    dailyGoal: "本日の目標",
-    goalReached: "目標達成！お疲れさまです",
     streakPrefix: "連続",
     streakDays: "日",
     patientVoice: "患者さまの声",
@@ -118,9 +116,6 @@ export const messages = {
     rankLabel: "ランク",
     rankProgress: "次のランクまで",
     rankUp: "ランクアップ！",
-    // Goal celebration
-    goalCelebration: "素晴らしい！本日の目標を達成しました",
-    goalKeepGoing: "あと{remaining}件で目標達成です",
     // Enhanced streak
     streakRecord: "最長記録更新中！",
     streakEncourage: "今日のアンケートでストリーク継続！",
@@ -132,13 +127,13 @@ export const messages = {
     happinessOkay: "まずまず",
     happinessLow: "改善のチャンス",
     // Encouragement messages
-    encourageGoalClose: "あと少し！目標達成まで頑張りましょう",
+    encourageAlmostUnlock: "あと{remaining}件でAI分析がアンロック！",
+    encourageUnlocked: "AI分析が利用可能です！結果を確認しましょう",
     encourageStreak: "連続記録を更新中！この調子です",
     encourageHighScore: "患者さまの笑顔が増えています",
     encourageMorning: "今日も患者さまの声を届けましょう",
     encourageAfternoon: "午後も引き続きよろしくお願いします",
-    encourageEvening: "今日もお疲れさまでした。明日も頑張りましょう",
-    encourageFirstToday: "最初の1件をお待ちしています！",
+    encourageEvening: "今日もお疲れさまでした",
     // Week summary
     weekSummary: "今週の実績",
     weekResponses: "今週の回答",

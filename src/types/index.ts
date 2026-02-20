@@ -3,7 +3,6 @@ export type UserRole = "system_admin" | "clinic_admin" | "staff"
 /** Clinic.settings JSONB の型定義 */
 export interface ClinicSettings {
   adminPassword?: string
-  dailyGoal?: number
   closedDates?: string[]
   openDates?: string[] // 定休日の営業日オーバーライド（定休日でも診療する日）
   regularClosedDays?: number[] // 0=日, 1=月, 2=火, 3=水, 4=木, 5=金, 6=土
@@ -12,11 +11,6 @@ export interface ClinicSettings {
     title: string
     content: string
   }
-  // 動的目標乗数トラッキング
-  goalLevel?: number // 0=×0.3, 1=×0.4, 2=×0.5
-  goalAchieveStreak?: number // 連続達成日数
-  goalMissStreak?: number // 連続未達成日数
-  goalLastCheckedDate?: string // 最終評価日 YYYY-MM-DD
   // AI Advisory トラッキング
   advisoryThreshold?: number // アンロックに必要な回答数（デフォルト30）
   responsesSinceLastAdvisory?: number // 最終分析以降の新規回答数
