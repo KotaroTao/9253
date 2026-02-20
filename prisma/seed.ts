@@ -803,6 +803,111 @@ async function main() {
     console.log("\nPlatform tips already exist, skipping (preserving custom settings)")
   }
 
+  // =========================================================================
+  // AI Advisory レポート（デモデータ: 2件のレポート + カウンター設定）
+  // =========================================================================
+  await prisma.advisoryReport.deleteMany({ where: { clinicId: clinic.id } })
+
+  // 直近1ヶ月のデータで分析レポートを計算
+  const recentResponses = allResponses.filter((r) => {
+    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+    return r.respondedAt >= oneMonthAgo
+  })
+  const recentAvgScore = recentResponses.length > 0
+    ? Math.round((recentResponses.reduce((a, b) => a + b.overallScore, 0) / recentResponses.length) * 100) / 100
+    : 4.2
+
+  // レポート1: 2週間前に自動生成されたレポート
+  const report1Date = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
+  await prisma.advisoryReport.create({
+    data: {
+      clinicId: clinic.id,
+      triggerType: "threshold",
+      responseCount: allResponses.length - 150,
+      summary: `患者満足度は良好水準（${(recentAvgScore - 0.15).toFixed(1)}点）です。「待ち時間は気にならない程度でしたか？」の改善に取り組むことでさらなる向上が期待できます。`,
+      priority: "待ち時間は気にならない程度でしたか？",
+      generatedAt: report1Date,
+      sections: JSON.parse(JSON.stringify([
+        {
+          title: "総合評価",
+          content: `現在の患者満足度スコアは ${(recentAvgScore - 0.15).toFixed(1)} で、良好水準です。前月比 +0.2ポイントの上昇傾向です。総回答数は ${allResponses.length - 150}件です。`,
+          type: "summary",
+        },
+        {
+          title: "強み",
+          content: "以下の項目で高い評価を得ています: 「スタッフの対応は丁寧でしたか？」(4.6点)、「不安や痛みへの配慮は十分でしたか？」(4.5点)。これらの強みを維持し、患者さまへの訴求ポイントとして活用しましょう。",
+          type: "strength",
+        },
+        {
+          title: "改善ポイント",
+          content: "以下の項目でスコアが低めです: 「待ち時間は気にならない程度でしたか？」(3.8点)、「費用に関する説明は十分でしたか？」(3.9点)。特に最もスコアの低い「待ち時間」への対策を優先的に検討してください。",
+          type: "improvement",
+        },
+        {
+          title: "トレンド分析",
+          content: "直近1週間の回答数は42件、平均スコアは4.3点です。前週(4.1点)から上昇しており、良い傾向です。",
+          type: "trend",
+        },
+        {
+          title: "推奨アクション",
+          content: "現在2件の改善アクションが進行中です。効果をモニタリングし、スコアの変化を確認しましょう。\n高スコアの回答に8件のコメントが寄せられています。スタッフのモチベーション向上に活用しましょう。",
+          type: "action",
+        },
+      ])),
+    },
+  })
+
+  // レポート2: 最新レポート（3日前に手動実行）
+  const report2Date = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)
+  await prisma.advisoryReport.create({
+    data: {
+      clinicId: clinic.id,
+      triggerType: "manual",
+      responseCount: allResponses.length,
+      summary: `患者満足度は良好水準（${recentAvgScore.toFixed(1)}点）です。「費用に関する説明は十分でしたか？」の改善に取り組むことでさらなる向上が期待できます。`,
+      priority: "費用に関する説明は十分でしたか？",
+      generatedAt: report2Date,
+      sections: JSON.parse(JSON.stringify([
+        {
+          title: "総合評価",
+          content: `現在の患者満足度スコアは ${recentAvgScore.toFixed(1)} で、良好水準です。前月比 +0.3ポイントの上昇傾向です。総回答数は ${allResponses.length}件です。`,
+          type: "summary",
+        },
+        {
+          title: "強み",
+          content: "以下の項目で高い評価を得ています: 「スタッフの対応は丁寧でしたか？」(4.7点)、「不安や痛みへの配慮は十分でしたか？」(4.6点)、「本日の診療についての説明は分かりやすかったですか？」(4.5点)。これらの強みを維持し、患者さまへの訴求ポイントとして活用しましょう。",
+          type: "strength",
+        },
+        {
+          title: "改善ポイント",
+          content: "以下の項目でスコアが低めです: 「費用に関する説明は十分でしたか？」(3.9点)、「待ち時間は気にならない程度でしたか？」(4.0点)。特に「費用説明」への対策を優先的に検討してください。前回分析時の最優先課題「待ち時間」は4.0点まで改善しました。",
+          type: "improvement",
+        },
+        {
+          title: "トレンド分析",
+          content: `直近1週間の回答数は48件、平均スコアは${recentAvgScore.toFixed(1)}点です。前週(${(recentAvgScore - 0.1).toFixed(1)}点)から上昇しており、改善施策の効果が出ています。回答数も前週(42件)から増加しています。`,
+          type: "trend",
+        },
+        {
+          title: "推奨アクション",
+          content: "最もスコアの低い「費用に関する説明は十分でしたか？」に対する改善アクションを登録しましょう。\n現在2件の改善アクションが進行中です。効果をモニタリングし、スコアの変化を確認しましょう。\n高スコアの回答に12件のコメントが寄せられています。スタッフのモチベーション向上に活用しましょう。",
+          type: "action",
+        },
+      ])),
+    },
+  })
+
+  // クリニック設定にadvisoryカウンターを設定（25/30 = 次回分析まであと5件）
+  const advisoryPatch = JSON.stringify({
+    advisoryThreshold: 30,
+    responsesSinceLastAdvisory: 25,
+  })
+  await prisma.$executeRaw`
+    UPDATE clinics SET settings = settings || ${advisoryPatch}::jsonb
+    WHERE id = ${clinic.id}::uuid
+  `
+  console.log(`\nAI Advisory: 2件のレポート作成、カウンター 25/30 に設定`)
+
   console.log("\nSeed completed!")
   console.log("\n--- Login Credentials ---")
   console.log("System Admin: mail@function-t.com / MUNP1687")
