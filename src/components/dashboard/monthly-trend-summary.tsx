@@ -28,11 +28,17 @@ function formatMonth(year: number, month: number) {
   return `${year}/${String(month).padStart(2, "0")}`
 }
 
-interface MonthlyTrendSummaryProps {
-  months?: number
+interface MonthRange {
+  from: string // YYYY-MM
+  to: string   // YYYY-MM
 }
 
-export function MonthlyTrendSummary({ months = 12 }: MonthlyTrendSummaryProps) {
+interface MonthlyTrendSummaryProps {
+  months?: number
+  customRange?: MonthRange | null
+}
+
+export function MonthlyTrendSummary({ months = 12, customRange }: MonthlyTrendSummaryProps) {
   const [data, setData] = useState<TrendRow[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -41,7 +47,10 @@ export function MonthlyTrendSummary({ months = 12 }: MonthlyTrendSummaryProps) {
     setLoading(true)
     async function fetchTrend() {
       try {
-        const res = await fetch(`/api/monthly-metrics?mode=trend&months=${months}`, { cache: "no-store" })
+        const query = customRange
+          ? `mode=trend&fromMonth=${customRange.from}&toMonth=${customRange.to}`
+          : `mode=trend&months=${months}`
+        const res = await fetch(`/api/monthly-metrics?${query}`, { cache: "no-store" })
         if (res.ok && !cancelled) {
           setData(await res.json())
         }
@@ -51,7 +60,7 @@ export function MonthlyTrendSummary({ months = 12 }: MonthlyTrendSummaryProps) {
     }
     fetchTrend()
     return () => { cancelled = true }
-  }, [months])
+  }, [months, customRange])
 
   const m = messages.monthlyMetrics
 

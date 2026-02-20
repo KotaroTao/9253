@@ -30,8 +30,30 @@ export async function GET(request: NextRequest) {
   const yearParam = request.nextUrl.searchParams.get("year")
   const monthParam = request.nextUrl.searchParams.get("month")
 
-  // trend mode: return N months of data (default 12)
+  // trend mode: return N months of data (default 12) or custom range
   if (request.nextUrl.searchParams.get("mode") === "trend") {
+    const fromMonth = request.nextUrl.searchParams.get("fromMonth") // YYYY-MM
+    const toMonth = request.nextUrl.searchParams.get("toMonth")     // YYYY-MM
+
+    if (fromMonth && toMonth) {
+      const [fy, fm] = fromMonth.split("-").map(Number)
+      const [ty, tm] = toMonth.split("-").map(Number)
+      if (!fy || !fm || !ty || !tm) return errorResponse("無効な月指定です", 400)
+      const rows = await prisma.monthlyClinicMetrics.findMany({
+        where: {
+          clinicId,
+          OR: [
+            { year: { gt: fy, lt: ty } },
+            { year: fy, month: { gte: fm } },
+            ...(fy !== ty ? [{ year: ty, month: { lte: tm } }] : []),
+          ],
+        },
+        select: { year: true, month: true, ...METRICS_SELECT },
+        orderBy: [{ year: "asc" }, { month: "asc" }],
+      })
+      return successResponse(rows)
+    }
+
     const monthsParam = request.nextUrl.searchParams.get("months")
     const take = monthsParam ? Math.min(Math.max(parseInt(monthsParam) || 12, 1), 360) : 12
     const rows = await prisma.monthlyClinicMetrics.findMany({

@@ -9,22 +9,32 @@ import { MonthlySummarySection } from "./monthly-summary-section"
 import { MonthlyTrendSummary } from "./monthly-trend-summary"
 import type { MonthlySummary } from "./monthly-summary-section"
 import { ChevronDown, ChevronUp, PenSquare } from "lucide-react"
-import { formatPeriodLabel } from "./analytics-charts"
+export interface MonthRange {
+  from: string // YYYY-MM
+  to: string   // YYYY-MM
+}
 
 const PERIOD_PRESETS = [
-  { label: "7日", value: 7 },
-  { label: "30日", value: 30 },
-  { label: "90日", value: 90 },
-  { label: "180日", value: 180 },
-  { label: "1年", value: 365 },
-  { label: "2年", value: 730 },
-  { label: "3年", value: 1095 },
+  { label: "6ヶ月", value: 6 },
+  { label: "1年", value: 12 },
+  { label: "2年", value: 24 },
+  { label: "3年", value: 36 },
 ] as const
 
-const MAX_DAYS = 10950
+function formatMonthPreset(months: number): string {
+  if (months >= 12 && months % 12 === 0) return `${months / 12}年`
+  return `${months}ヶ月`
+}
 
-function daysToMonths(days: number): number {
-  return Math.ceil(days / 30) + 1
+function currentYearMonth(): string {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+}
+
+function monthsAgoYearMonth(n: number): string {
+  const now = new Date()
+  const d = new Date(now.getFullYear(), now.getMonth() - n, 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
 }
 
 // 2025年1月から当月までの月リストを生成
@@ -67,9 +77,11 @@ export function MonthlyMetricsView({
   initialMonth,
   enteredMonths = [],
 }: MonthlyMetricsViewProps) {
-  const [selectedDays, setSelectedDays] = useState(30)
-  const [customInput, setCustomInput] = useState("")
+  const [selectedMonths, setSelectedMonths] = useState(12)
+  const [customMonthRange, setCustomMonthRange] = useState<MonthRange | null>(null)
   const [showCustom, setShowCustom] = useState(false)
+  const [customMonthFrom, setCustomMonthFrom] = useState(() => monthsAgoYearMonth(12))
+  const [customMonthTo, setCustomMonthTo] = useState(currentYearMonth)
   const [year, setYear] = useState(initialYear)
   const [month, setMonth] = useState(initialMonth)
   const [summary, setSummary] = useState<MonthlySummary | null>(initialSummary)
@@ -124,26 +136,27 @@ export function MonthlyMetricsView({
     }
   }
 
-  const isPreset = PERIOD_PRESETS.some((o) => o.value === selectedDays)
-  const periodLabel = formatPeriodLabel(selectedDays)
+  const isPreset = !customMonthRange && PERIOD_PRESETS.some((o) => o.value === selectedMonths)
+  const periodLabel = customMonthRange
+    ? `${customMonthRange.from}〜${customMonthRange.to}`
+    : `直近${formatMonthPreset(selectedMonths)}`
 
   function handlePresetClick(value: number) {
     setShowCustom(false)
-    setSelectedDays(value)
+    setCustomMonthRange(null)
+    setSelectedMonths(value)
   }
 
-  function handleCustomSubmit() {
-    const v = parseInt(customInput, 10)
-    if (!isNaN(v) && v >= 1 && v <= MAX_DAYS) {
-      setSelectedDays(v)
-      setShowCustom(false)
-    }
+  function handleCustomMonthSubmit() {
+    if (!customMonthFrom || !customMonthTo || customMonthFrom > customMonthTo) return
+    setCustomMonthRange({ from: customMonthFrom, to: customMonthTo })
+    setShowCustom(false)
   }
 
   const periodSelector = (
     <div className="flex items-center gap-2">
       <span className="hidden text-xs text-muted-foreground sm:inline">
-        直近{periodLabel}
+        {periodLabel}
       </span>
       {/* Desktop: ボタン群 */}
       <div className="hidden gap-1 sm:flex">
@@ -152,7 +165,7 @@ export function MonthlyMetricsView({
             key={opt.value}
             onClick={() => handlePresetClick(opt.value)}
             className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
-              selectedDays === opt.value
+              !customMonthRange && selectedMonths === opt.value
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
@@ -161,57 +174,58 @@ export function MonthlyMetricsView({
           </button>
         ))}
         {showCustom ? (
-          <form
-            onSubmit={(e) => { e.preventDefault(); handleCustomSubmit() }}
-            className="flex items-center gap-1"
-          >
+          <div className="flex items-center gap-1">
             <input
-              type="number"
-              min={1}
-              max={MAX_DAYS}
-              value={customInput}
-              onChange={(e) => setCustomInput(e.target.value)}
-              placeholder="日数"
-              className="w-16 rounded-md border bg-card px-2 py-1 text-xs"
-              autoFocus
+              type="month"
+              value={customMonthFrom}
+              onChange={(e) => setCustomMonthFrom(e.target.value)}
+              className="rounded-md border bg-card px-2 py-1 text-xs"
+            />
+            <span className="text-xs text-muted-foreground">〜</span>
+            <input
+              type="month"
+              value={customMonthTo}
+              max={currentYearMonth()}
+              onChange={(e) => setCustomMonthTo(e.target.value)}
+              className="rounded-md border bg-card px-2 py-1 text-xs"
             />
             <button
-              type="submit"
+              onClick={handleCustomMonthSubmit}
               className="rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground shadow-sm"
             >
               適用
             </button>
             <button
-              type="button"
               onClick={() => setShowCustom(false)}
               className="rounded-md px-1.5 py-1 text-xs text-muted-foreground hover:bg-muted"
             >
               x
             </button>
-          </form>
+          </div>
         ) : (
           <button
-            onClick={() => { setShowCustom(true); setCustomInput(isPreset ? "" : String(selectedDays)) }}
+            onClick={() => setShowCustom(true)}
             className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
-              !isPreset
+              customMonthRange
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
-            {!isPreset ? `${periodLabel}` : "カスタム"}
+            {customMonthRange ? periodLabel : "カスタム"}
           </button>
         )}
       </div>
       {/* Mobile: セレクト */}
       <select
-        value={isPreset ? selectedDays : "custom"}
+        value={customMonthRange ? "custom" : isPreset ? selectedMonths : "custom"}
         onChange={(e) => {
           const val = e.target.value
           if (val === "custom") {
             setShowCustom(true)
           } else {
             setShowCustom(false)
-            setSelectedDays(Number(val))
+            setCustomMonthRange(null)
+            setSelectedMonths(Number(val))
           }
         }}
         className="rounded-md border bg-card px-2 py-1.5 text-xs sm:hidden"
@@ -224,27 +238,28 @@ export function MonthlyMetricsView({
         <option value="custom">カスタム...</option>
       </select>
       {showCustom && (
-        <form
-          onSubmit={(e) => { e.preventDefault(); handleCustomSubmit() }}
-          className="flex items-center gap-1 sm:hidden"
-        >
+        <div className="flex items-center gap-1 sm:hidden">
           <input
-            type="number"
-            min={1}
-            max={MAX_DAYS}
-            value={customInput}
-            onChange={(e) => setCustomInput(e.target.value)}
-            placeholder="日数"
-            className="w-16 rounded-md border bg-card px-2 py-1 text-xs"
-            autoFocus
+            type="month"
+            value={customMonthFrom}
+            onChange={(e) => setCustomMonthFrom(e.target.value)}
+            className="rounded-md border bg-card px-2 py-1 text-xs"
+          />
+          <span className="text-xs text-muted-foreground">〜</span>
+          <input
+            type="month"
+            value={customMonthTo}
+            max={currentYearMonth()}
+            onChange={(e) => setCustomMonthTo(e.target.value)}
+            className="rounded-md border bg-card px-2 py-1 text-xs"
           />
           <button
-            type="submit"
+            onClick={handleCustomMonthSubmit}
             className="rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground shadow-sm"
           >
             適用
           </button>
-        </form>
+        </div>
       )}
     </div>
   )
@@ -254,7 +269,7 @@ export function MonthlyMetricsView({
       {headerSlot && createPortal(periodSelector, headerSlot)}
 
       {/* グラフ（期間セレクタと連動） */}
-      <MonthlyTrendSummary months={daysToMonths(selectedDays)} />
+      <MonthlyTrendSummary months={selectedMonths} customRange={customMonthRange} />
 
       {/* データ入力セクション */}
       <div className="space-y-4">

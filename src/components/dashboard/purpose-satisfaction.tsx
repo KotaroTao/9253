@@ -7,9 +7,11 @@ import {
   SELF_PAY_PURPOSES,
 } from "@/lib/constants"
 import type { PurposeSatisfactionRow } from "@/lib/queries/stats"
+import type { CustomRange } from "./analytics-charts"
 
 interface PurposeSatisfactionProps {
   selectedPeriod: number
+  customRange?: CustomRange | null
 }
 
 // Build label lookup from constants
@@ -51,15 +53,15 @@ function ScoreBar({ score, color }: { score: number; color: string }) {
   )
 }
 
-export function PurposeSatisfaction({ selectedPeriod }: PurposeSatisfactionProps) {
+export function PurposeSatisfaction({ selectedPeriod, customRange = null }: PurposeSatisfactionProps) {
   const [data, setData] = useState<PurposeSatisfactionRow[]>([])
   const [loading, setLoading] = useState(true)
   const isInitialMount = useRef(true)
 
-  const fetchData = useCallback(async (days: number) => {
+  const fetchData = useCallback(async (query: string) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/purpose-satisfaction?days=${days}`, {
+      const res = await fetch(`/api/purpose-satisfaction?${query}`, {
         cache: "no-store",
       })
       if (res.ok) {
@@ -71,8 +73,11 @@ export function PurposeSatisfaction({ selectedPeriod }: PurposeSatisfactionProps
   }, [])
 
   useEffect(() => {
-    fetchData(selectedPeriod)
-  }, [selectedPeriod, fetchData])
+    const query = customRange
+      ? `from=${customRange.from}&to=${customRange.to}`
+      : `days=${selectedPeriod}`
+    fetchData(query)
+  }, [selectedPeriod, customRange, fetchData])
 
   // Group by insuranceType
   const grouped = data.reduce<Record<string, PurposeSatisfactionRow[]>>(

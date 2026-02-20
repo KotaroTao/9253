@@ -78,3 +78,20 @@ export function getDayJST(date: Date): number {
 export function jstTodayStr(): string {
   return formatDateKeyJST(new Date())
 }
+
+/** YYYY-MM-DD 文字列をJSTの00:00としてUTC Dateに変換（DBクエリ用） */
+export function parseJSTDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split("-").map(Number)
+  return new Date(Date.UTC(y, m - 1, d) - JST_OFFSET_MS)
+}
+
+/** YYYY-MM-DD 文字列をJSTの23:59:59としてUTC Dateに変換（DBクエリ用） */
+export function parseJSTDateEnd(dateStr: string): Date {
+  const [y, m, d] = dateStr.split("-").map(Number)
+  return new Date(Date.UTC(y, m - 1, d, 23, 59, 59) - JST_OFFSET_MS)
+}
+
+/** 2つのDate間の日数差を計算 */
+export function daysBetween(from: Date, to: Date): number {
+  return Math.max(1, Math.ceil((to.getTime() - from.getTime()) / DAY_MS))
+}

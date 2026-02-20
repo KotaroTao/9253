@@ -12,6 +12,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card"
 import { TrendingUp, TrendingDown, Minus } from "lucide-react"
 import type { TemplateTrendPoint } from "@/lib/queries/stats"
+import type { CustomRange } from "./analytics-charts"
 
 const TEMPLATE_COLORS: Record<string, string> = {
   "初診": "#2563eb",
@@ -24,6 +25,7 @@ interface Props {
   data: TemplateTrendPoint[]
   prevData: TemplateTrendPoint[]
   selectedPeriod: number
+  customRange?: CustomRange | null
 }
 
 interface TemplateStats {
@@ -57,9 +59,25 @@ function calcWeightedAvg(points: TemplateTrendPoint[]): number | null {
   return Math.round((weightedSum / totalCount) * 100) / 100
 }
 
-export function TemplateTrendSmallMultiples({ data, prevData, selectedPeriod }: Props) {
-  const currentLabel = formatPeriodLabel(selectedPeriod, 0)
-  const prevLabel = formatPeriodLabel(selectedPeriod, selectedPeriod)
+export function TemplateTrendSmallMultiples({ data, prevData, selectedPeriod, customRange = null }: Props) {
+  let currentLabel: string
+  let prevLabel: string
+  if (customRange) {
+    const f = customRange.from.replace(/-/g, "/")
+    const t = customRange.to.replace(/-/g, "/")
+    currentLabel = `${f}〜${t}`
+    // prev period label: compute from duration
+    const fromDate = new Date(customRange.from)
+    const toDate = new Date(customRange.to)
+    const durationMs = toDate.getTime() - fromDate.getTime()
+    const prevTo = new Date(fromDate.getTime() - 1)
+    const prevFrom = new Date(prevTo.getTime() - durationMs)
+    const fmt = (d: Date) => `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`
+    prevLabel = `${fmt(prevFrom)}〜${fmt(prevTo)}`
+  } else {
+    currentLabel = formatPeriodLabel(selectedPeriod, 0)
+    prevLabel = formatPeriodLabel(selectedPeriod, selectedPeriod)
+  }
 
   const templates = useMemo(() => {
     // Group current period by template
