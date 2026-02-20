@@ -8,7 +8,7 @@ import {
   DAY_LABELS,
   getTimeSlotLabel,
 } from "@/lib/constants"
-import { jstDaysAgo } from "@/lib/date-jst"
+import { jstDaysAgo, jstNowParts } from "@/lib/date-jst"
 import {
   getQuestionBreakdownByDays,
   getDashboardStats,
@@ -16,6 +16,7 @@ import {
   getPurposeSatisfaction,
   getHourlyHeatmapData,
   getQuestionCurrentScores,
+  getMonthlyTrend,
 } from "@/lib/queries/stats"
 import type {
   ClinicSettings,
@@ -51,6 +52,20 @@ interface AnalysisData {
   actionCurrentScores: Record<string, number>
   /** カテゴリ → 平均スコアのマップ（全テンプレート横断） */
   categoryScores: Map<string, { total: number; count: number }>
+  /** 月次経営データ（直近24ヶ月） */
+  monthlyMetrics: MonthlyMetricRow[]
+  /** 月次満足度トレンド（直近24ヶ月） */
+  monthlyScoreTrend: Array<{ month: string; avgScore: number; count: number }>
+}
+
+interface MonthlyMetricRow {
+  year: number
+  month: number
+  firstVisitCount: number | null
+  revisitCount: number | null
+  insuranceRevenue: number | null
+  selfPayRevenue: number | null
+  cancellationCount: number | null
 }
 
 interface ScoreDistRow {
@@ -149,6 +164,8 @@ async function collectAnalysisData(clinicId: string): Promise<AnalysisData> {
     recentComments,
     activeActions,
     scoreDistRows,
+    monthlyMetrics,
+    monthlyScoreTrend,
   ] = await Promise.all([
     getDashboardStats(clinicId),
     getQuestionBreakdownByDays(clinicId, 30),
@@ -185,6 +202,21 @@ async function collectAnalysisData(clinicId: string): Promise<AnalysisData> {
       GROUP BY score
       ORDER BY score
     `,
+    prisma.monthlyClinicMetrics.findMany({
+      where: { clinicId },
+      select: {
+        year: true,
+        month: true,
+        firstVisitCount: true,
+        revisitCount: true,
+        insuranceRevenue: true,
+        selfPayRevenue: true,
+        cancellationCount: true,
+      },
+      orderBy: [{ year: "asc" }, { month: "asc" }],
+      take: 24,
+    }),
+    getMonthlyTrend(clinicId, 24),
   ])
 
   const scoreDistribution = scoreDistRows.map((r) => ({
@@ -225,6 +257,8 @@ async function collectAnalysisData(clinicId: string): Promise<AnalysisData> {
     scoreDistribution,
     actionCurrentScores,
     categoryScores,
+    monthlyMetrics,
+    monthlyScoreTrend,
   }
 }
 
@@ -742,7 +776,282 @@ function analyzeTrend(data: AnalysisData): AdvisorySection | null {
   }
 }
 
-/** 10. 推奨アクション（全分析結果を統合） */
+/** 10. 経営指標×満足度の相関分析 */
+function analyzeBusinessCorrelation(data: AnalysisData): AdvisorySection | null {
+  const { monthlyMetrics, monthlyScoreTrend } = data
+  if (monthlyMetrics.length < 3 || monthlyScoreTrend.length < 3) return null
+
+  // 月次データを結合（YYYY-MM キーで突合）
+  type Joined = {
+    key: string
+    score: number
+    totalVisits: number | null
+    selfPayRate: number | null
+    cancelRate: number | null
+  }
+
+  const scoreMap = new Map(monthlyScoreTrend.map((m) => [m.month, m]))
+  const joined: Joined[] = []
+
+  for (const m of monthlyMetrics) {
+    const key = `${m.year}-${String(m.month).padStart(2, "0")}`
+    const s = scoreMap.get(key)
+    if (!s) continue
+
+    const totalVisits =
+      m.firstVisitCount != null && m.revisitCount != null
+        ? m.firstVisitCount + m.revisitCount
+        : null
+    const totalRevenue =
+      m.insuranceRevenue != null && m.selfPayRevenue != null
+        ? m.insuranceRevenue + m.selfPayRevenue
+        : null
+    const selfPayRate =
+      totalRevenue != null && totalRevenue > 0 && m.selfPayRevenue != null
+        ? (m.selfPayRevenue / totalRevenue) * 100
+        : null
+    const cancelRate =
+      totalVisits != null && totalVisits > 0 && m.cancellationCount != null
+        ? (m.cancellationCount / totalVisits) * 100
+        : null
+
+    joined.push({
+      key,
+      score: s.avgScore,
+      totalVisits,
+      selfPayRate,
+      cancelRate,
+    })
+  }
+
+  if (joined.length < 3) return null
+
+  const lines: string[] = []
+
+  // 満足度×来院数の相関
+  const visitPairs = joined.filter((j) => j.totalVisits !== null)
+  if (visitPairs.length >= 3) {
+    const corr = pearsonCorrelation(
+      visitPairs.map((j) => j.score),
+      visitPairs.map((j) => j.totalVisits!)
+    )
+    if (Math.abs(corr) >= 0.4) {
+      const direction = corr > 0 ? "正の相関" : "負の相関"
+      lines.push(
+        `満足度スコアと来院数に${direction}があります（相関係数: ${corr.toFixed(2)}）。` +
+        (corr > 0
+          ? "満足度が高い月は来院数も多い傾向です。患者体験の向上が集患に直結していることを示しています。"
+          : "来院数が多い月は満足度が下がる傾向です。混雑時の待ち時間やスタッフの余裕不足が影響している可能性があります。")
+      )
+    }
+  }
+
+  // 満足度×自費率の相関
+  const selfPayPairs = joined.filter((j) => j.selfPayRate !== null)
+  if (selfPayPairs.length >= 3) {
+    const corr = pearsonCorrelation(
+      selfPayPairs.map((j) => j.score),
+      selfPayPairs.map((j) => j.selfPayRate!)
+    )
+    if (Math.abs(corr) >= 0.4) {
+      const direction = corr > 0 ? "正の相関" : "負の相関"
+      lines.push(
+        `満足度スコアと自費率に${direction}があります（相関係数: ${corr.toFixed(2)}）。` +
+        (corr > 0
+          ? "満足度が高い月は自費率も高い傾向です。丁寧な説明と信頼構築が自費選択を後押ししていることを示唆しています。"
+          : "自費率が高い月は満足度が下がる傾向です。自費治療時の費用説明や期待値コントロールに課題がある可能性があります。")
+      )
+    }
+  }
+
+  // 満足度×キャンセル率の相関
+  const cancelPairs = joined.filter((j) => j.cancelRate !== null)
+  if (cancelPairs.length >= 3) {
+    const corr = pearsonCorrelation(
+      cancelPairs.map((j) => j.score),
+      cancelPairs.map((j) => j.cancelRate!)
+    )
+    if (Math.abs(corr) >= 0.4) {
+      lines.push(
+        `満足度スコアとキャンセル率に相関があります（相関係数: ${corr.toFixed(2)}）。` +
+        (corr < 0
+          ? "満足度が高い月はキャンセルが少ない傾向です。体験改善が直接的にキャンセル率低下に貢献しています。"
+          : "キャンセル率が高い月は満足度も高い傾向です。キャンセル枠に余裕ができ一人ひとりへの対応時間が増えていると考えられます。")
+      )
+    }
+  }
+
+  // 月次推移のハイライト
+  if (joined.length >= 6) {
+    const recent3 = joined.slice(-3)
+    const prev3 = joined.slice(-6, -3)
+    const recentAvgVisits = avg(recent3.map((j) => j.totalVisits).filter((v): v is number => v !== null))
+    const prevAvgVisits = avg(prev3.map((j) => j.totalVisits).filter((v): v is number => v !== null))
+
+    if (recentAvgVisits !== null && prevAvgVisits !== null && prevAvgVisits > 0) {
+      const visitChange = ((recentAvgVisits - prevAvgVisits) / prevAvgVisits) * 100
+      if (Math.abs(visitChange) >= 5) {
+        lines.push(
+          `直近3ヶ月の平均来院数は${Math.round(recentAvgVisits)}人/月で、その前の3ヶ月（${Math.round(prevAvgVisits)}人/月）から${visitChange > 0 ? "+" : ""}${visitChange.toFixed(0)}%${visitChange > 0 ? "増加" : "減少"}しています。`
+        )
+      }
+    }
+  }
+
+  if (lines.length === 0) return null
+
+  return {
+    title: "経営指標×満足度",
+    content: `経営データと満足度スコアの相関（${joined.length}ヶ月分）:\n${lines.join("\n")}`,
+    type: "business_correlation",
+  }
+}
+
+/** 11. 季節性・前年同月比分析 */
+function analyzeSeasonality(data: AnalysisData): AdvisorySection | null {
+  const { monthlyScoreTrend } = data
+  if (monthlyScoreTrend.length < 6) return null
+
+  const { year: currentYear, month: currentMonth } = jstNowParts()
+  const lines: string[] = []
+
+  // 前年同月比
+  const currentKey = `${currentYear}-${String(currentMonth).padStart(2, "0")}`
+  const prevYearKey = `${currentYear - 1}-${String(currentMonth).padStart(2, "0")}`
+
+  const current = monthlyScoreTrend.find((m) => m.month === currentKey)
+  const prevYear = monthlyScoreTrend.find((m) => m.month === prevYearKey)
+
+  if (current && prevYear && prevYear.count >= 10) {
+    const delta = current.avgScore - prevYear.avgScore
+    lines.push(
+      `前年同月比（${currentYear - 1}年${currentMonth}月 vs 今月）: ` +
+      `${prevYear.avgScore.toFixed(2)} → ${current.avgScore.toFixed(2)}（${delta >= 0 ? "+" : ""}${delta.toFixed(2)}）` +
+      (Math.abs(delta) >= 0.2
+        ? delta > 0
+          ? "。1年間で大きな改善を達成しています。"
+          : "。前年より低下しています。長期的な原因の調査を推奨します。"
+        : "。ほぼ同水準を維持しています。")
+    )
+  }
+
+  // 前年同月比（来院数）
+  const { monthlyMetrics } = data
+  if (monthlyMetrics.length >= 12) {
+    const curMetric = monthlyMetrics.find((m) => m.year === currentYear && m.month === currentMonth)
+    const prevMetric = monthlyMetrics.find((m) => m.year === currentYear - 1 && m.month === currentMonth)
+    if (curMetric && prevMetric) {
+      const curVisits = (curMetric.firstVisitCount ?? 0) + (curMetric.revisitCount ?? 0)
+      const prevVisits = (prevMetric.firstVisitCount ?? 0) + (prevMetric.revisitCount ?? 0)
+      if (prevVisits > 0) {
+        const change = ((curVisits - prevVisits) / prevVisits) * 100
+        lines.push(
+          `来院数の前年同月比: ${prevVisits}人 → ${curVisits}人（${change >= 0 ? "+" : ""}${change.toFixed(0)}%）`
+        )
+      }
+    }
+  }
+
+  // 季節性パターンの検出（12ヶ月以上のデータがある場合）
+  if (monthlyScoreTrend.length >= 12) {
+    // 月別平均を計算
+    const monthAvgs = new Map<number, { total: number; count: number }>()
+    for (const m of monthlyScoreTrend) {
+      const mo = parseInt(m.month.split("-")[1])
+      const entry = monthAvgs.get(mo) ?? { total: 0, count: 0 }
+      entry.total += m.avgScore
+      entry.count += 1
+      monthAvgs.set(mo, entry)
+    }
+
+    const monthScores = Array.from(monthAvgs.entries())
+      .filter(([, v]) => v.count >= 1)
+      .map(([mo, v]) => ({ month: mo, avg: v.total / v.count }))
+      .sort((a, b) => a.avg - b.avg)
+
+    if (monthScores.length >= 6) {
+      const low = monthScores[0]
+      const high = monthScores[monthScores.length - 1]
+      const gap = high.avg - low.avg
+
+      if (gap >= 0.2) {
+        lines.push(
+          `季節パターン: ${low.month}月が最もスコアが低く（平均${low.avg.toFixed(2)}）、${high.month}月が最も高い（平均${high.avg.toFixed(2)}）傾向です。`
+        )
+
+        // 歯科特有の季節性解釈
+        if (low.month === 12 || low.month === 1) {
+          lines.push("年末年始は駆け込み受診や急患が増え、通常より対応が手薄になりやすい時期です。この時期は特にスタッフ配置と予約枠管理を強化してください。")
+        } else if (low.month >= 6 && low.month <= 8) {
+          lines.push("夏場はお子さまの受診が増える時期です。小児対応の待ち時間管理やキッズ対応の強化が満足度改善に効果的です。")
+        } else if (low.month >= 3 && low.month <= 4) {
+          lines.push("年度替わりの時期は転入・新規患者が増えやすく、初診対応の質がスコアに影響しやすい時期です。")
+        }
+      }
+    }
+  }
+
+  // 回答数の季節性
+  if (monthlyScoreTrend.length >= 12) {
+    const countByMonth = new Map<number, { total: number; count: number }>()
+    for (const m of monthlyScoreTrend) {
+      const mo = parseInt(m.month.split("-")[1])
+      const entry = countByMonth.get(mo) ?? { total: 0, count: 0 }
+      entry.total += m.count
+      entry.count += 1
+      countByMonth.set(mo, entry)
+    }
+
+    const countScores = Array.from(countByMonth.entries())
+      .filter(([, v]) => v.count >= 1)
+      .map(([mo, v]) => ({ month: mo, avgCount: v.total / v.count }))
+      .sort((a, b) => a.avgCount - b.avgCount)
+
+    if (countScores.length >= 6) {
+      const lowMonth = countScores[0]
+      const highMonth = countScores[countScores.length - 1]
+      if (highMonth.avgCount > lowMonth.avgCount * 1.5) {
+        lines.push(
+          `回答数の季節変動: ${lowMonth.month}月が最少（平均${Math.round(lowMonth.avgCount)}件）、${highMonth.month}月が最多（平均${Math.round(highMonth.avgCount)}件）。回答が少ない月はスコアの振れ幅が大きくなるため、解釈に注意してください。`
+        )
+      }
+    }
+  }
+
+  if (lines.length === 0) return null
+
+  return {
+    title: "季節性・前年同月比",
+    content: lines.join("\n"),
+    type: "seasonality",
+  }
+}
+
+// ─── 統計ヘルパー ───
+
+/** ピアソン相関係数 */
+function pearsonCorrelation(x: number[], y: number[]): number {
+  const n = x.length
+  if (n < 3) return 0
+
+  const sumX = x.reduce((a, b) => a + b, 0)
+  const sumY = y.reduce((a, b) => a + b, 0)
+  const sumXY = x.reduce((a, xi, i) => a + xi * y[i], 0)
+  const sumXX = x.reduce((a, xi) => a + xi * xi, 0)
+  const sumYY = y.reduce((a, yi) => a + yi * yi, 0)
+
+  const denom = Math.sqrt((n * sumXX - sumX * sumX) * (n * sumYY - sumY * sumY))
+  if (denom === 0) return 0
+  return (n * sumXY - sumX * sumY) / denom
+}
+
+/** 配列の平均値（空ならnull） */
+function avg(values: number[]): number | null {
+  if (values.length === 0) return null
+  return values.reduce((a, b) => a + b, 0) / values.length
+}
+
+/** 12. 推奨アクション（全分析結果を統合） */
 function buildRecommendations(
   data: AnalysisData,
   findings: AdvisorySection[]
@@ -834,6 +1143,24 @@ function buildRecommendations(
     }
   }
 
+  // 経営×満足度の相関からの推奨
+  const bizSection = findings.find((f) => f.type === "business_correlation")
+  if (bizSection && bizSection.content.includes("負の相関")) {
+    actions.push({
+      priority: 4,
+      text: "満足度と来院数に負の相関が検出されています。繁忙月のスタッフ増員や予約枠調整で、混雑時の患者体験を維持する対策を検討してください。",
+    })
+  }
+
+  // 季節性への事前対策
+  const seasonSection = findings.find((f) => f.type === "seasonality")
+  if (seasonSection && seasonSection.content.includes("最もスコアが低く")) {
+    actions.push({
+      priority: 5,
+      text: "季節性パターンが検出されています。低スコア月に向けた事前の体制強化（スタッフ配置・予約枠調整）を計画してください。",
+    })
+  }
+
   // ポジティブ強化
   const positiveComments = data.recentComments.filter(
     (c) => c.overallScore !== null && c.overallScore >= 4.5 && c.freeText
@@ -842,6 +1169,14 @@ function buildRecommendations(
     actions.push({
       priority: 6,
       text: `高スコアの回答に${positiveComments.length}件のポジティブなコメントが寄せられています。スタッフミーティングで共有し、モチベーション向上に活用しましょう。`,
+    })
+  }
+
+  // 経営データ未入力の促進
+  if (data.monthlyMetrics.length < 3) {
+    actions.push({
+      priority: 7,
+      text: "経営データ（来院数・売上）の入力が3ヶ月未満です。経営レポートにデータを入力すると、満足度との相関分析や季節性パターンの検出が可能になります。",
     })
   }
 
@@ -880,6 +1215,8 @@ export async function generateAdvisoryReport(
     analyzeImprovements(data),
     analyzeActionEffectiveness(data),
     analyzeTrend(data),
+    analyzeBusinessCorrelation(data),
+    analyzeSeasonality(data),
   ].filter((s): s is AdvisorySection => s !== null)
 
   // 推奨アクション（全分析結果を統合）
