@@ -5,12 +5,14 @@ export const patientAttributesSchema = z.object({
   visitType: z.enum(["first_visit", "revisit"]),
   insuranceType: z.enum(["insurance", "self_pay"]).optional(),
   purpose: z.enum([
-    // New values (insurance 8 + self-pay 8)
-    "cavity_treatment", "prosthetic_insurance", "periodontal", "checkup_insurance",
-    "denture_insurance", "extraction_surgery", "root_canal", "emergency",
-    "prosthetic_self_pay", "implant", "denture_self_pay", "wire_orthodontics",
-    "aligner", "whitening", "self_pay_cleaning", "precision_root_canal",
+    // Insurance purposes (8)
+    "cavity_treatment", "periodontal", "prosthetic_insurance", "denture_insurance",
+    "checkup_insurance", "extraction_surgery", "emergency", "other_insurance",
+    // Self-pay purposes (10)
+    "cavity_treatment_self", "periodontal_self", "prosthetic_self_pay", "denture_self_pay",
+    "self_pay_cleaning", "implant", "wire_orthodontics", "aligner", "whitening", "other_self_pay",
     // Legacy values (backward compatibility)
+    "root_canal", "precision_root_canal",
     "treatment", "checkup", "denture", "orthodontics", "cosmetic", "preventive",
   ]).optional(),
   ageGroup: z.string().optional(),
