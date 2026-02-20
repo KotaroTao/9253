@@ -21,6 +21,8 @@ import {
   CalendarClock,
   Activity,
   PieChart,
+  DollarSign,
+  Snowflake,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { AdvisoryReportData, AdvisoryProgress } from "@/types"
@@ -76,6 +78,16 @@ const SECTION_CONFIG = {
     label: messages.advisory.sectionDistribution,
     color: "slate",
   },
+  business_correlation: {
+    icon: DollarSign,
+    label: messages.advisory.sectionBusinessCorrelation,
+    color: "cyan",
+  },
+  seasonality: {
+    icon: Snowflake,
+    label: messages.advisory.sectionSeasonality,
+    color: "sky",
+  },
 } as const
 
 const COLOR_MAP: Record<string, { border: string; bg: string; icon: string; text: string }> = {
@@ -89,6 +101,8 @@ const COLOR_MAP: Record<string, { border: string; bg: string; icon: string; text
   orange: { border: "border-orange-200", bg: "bg-orange-50", icon: "text-orange-600", text: "text-orange-800" },
   emerald: { border: "border-emerald-200", bg: "bg-emerald-50", icon: "text-emerald-600", text: "text-emerald-800" },
   slate: { border: "border-slate-200", bg: "bg-slate-50", icon: "text-slate-600", text: "text-slate-800" },
+  cyan: { border: "border-cyan-200", bg: "bg-cyan-50", icon: "text-cyan-600", text: "text-cyan-800" },
+  sky: { border: "border-sky-200", bg: "bg-sky-50", icon: "text-sky-600", text: "text-sky-800" },
 }
 
 const TRIGGER_LABELS: Record<string, string> = {

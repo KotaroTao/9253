@@ -31,6 +31,8 @@ export interface AdvisorySection {
     | "time_pattern"
     | "action_effect"
     | "distribution"
+    | "business_correlation"
+    | "seasonality"
 }
 
 /** AI Advisory レポートデータ */

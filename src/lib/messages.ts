@@ -185,6 +185,8 @@ export const messages = {
     sectionTimePattern: "曜日・時間帯パターン",
     sectionActionEffect: "改善アクション効果検証",
     sectionDistribution: "スコア分布分析",
+    sectionBusinessCorrelation: "経営指標×満足度",
+    sectionSeasonality: "季節性・前年同月比",
     responseCount: "分析対象: {count}件の回答",
     priority: "最優先改善領域",
     generateFailed: "分析の生成に失敗しました",
