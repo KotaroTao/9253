@@ -34,6 +34,7 @@ export const surveySubmissionSchema = z.object({
   patientAttributes: patientAttributesSchema.optional(),
   responseDurationMs: z.number().int().min(0).max(600000).optional(),
   deviceUuid: z.string().uuid().optional(),
+  isTest: z.boolean().optional(),
 })
 
 export type SurveySubmissionInput = z.infer<typeof surveySubmissionSchema>

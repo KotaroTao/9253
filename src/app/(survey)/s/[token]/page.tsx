@@ -7,7 +7,7 @@ import type { ClinicSettings, PostSurveyLinks } from "@/types"
 
 interface SurveyPageProps {
   params: { token: string }
-  searchParams: { t?: string }
+  searchParams: { t?: string; test?: string }
 }
 
 export default async function SurveyPage({ params, searchParams }: SurveyPageProps) {
@@ -26,6 +26,7 @@ export default async function SurveyPage({ params, searchParams }: SurveyPagePro
     )
   }
 
+  const isTestMode = searchParams.test === "1"
   const templateId = searchParams.t
   const template = templateId
     ? clinic.surveyTemplates.find((t) => t.id === templateId)
@@ -57,7 +58,7 @@ export default async function SurveyPage({ params, searchParams }: SurveyPagePro
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-8">
       <div className="w-full max-w-md">
-        <SurveyForm data={pageData} postSurveyLinks={hasLinks ? postSurveyLinks : undefined} />
+        <SurveyForm data={pageData} postSurveyLinks={hasLinks ? postSurveyLinks : undefined} isTestMode={isTestMode} />
       </div>
     </div>
   )

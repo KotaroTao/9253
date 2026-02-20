@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
       patientAttributes,
       responseDurationMs,
       deviceUuid,
+      isTest,
     } = parsed.data
 
     // Verify clinic
@@ -42,6 +43,11 @@ export async function POST(request: NextRequest) {
     )
     if (!template) {
       return errorResponse(messages.errors.invalidTemplate, 400)
+    }
+
+    // テストモード: DB保存せずに成功レスポンスを返す
+    if (isTest) {
+      return successResponse({ id: "test-mode", isTest: true }, 200)
     }
 
     // Verify staffId belongs to this clinic (if provided)

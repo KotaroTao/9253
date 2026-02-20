@@ -449,7 +449,7 @@ export function AnalyticsCharts({
             />
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">
-            ※ キオスクモードで入力された回答のみフィルタ対象です
+            ※ アンケート（医院端末）で入力された回答のみフィルタ対象です
           </p>
         </div>
       )}
