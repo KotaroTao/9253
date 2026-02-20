@@ -8,9 +8,10 @@ import type { ClinicSettings, PostSurveyLinks } from "@/types"
 
 interface KioskPageProps {
   params: { token: string }
+  searchParams: { test?: string }
 }
 
-export default async function KioskPage({ params }: KioskPageProps) {
+export default async function KioskPage({ params, searchParams }: KioskPageProps) {
   const slug = decodeURIComponent(params.token)
   const clinic = await getClinicBySlug(slug)
 
@@ -70,6 +71,8 @@ export default async function KioskPage({ params }: KioskPageProps) {
   }
   const hasLinks = postSurveyLinks.googleReviewUrl || postSurveyLinks.lineUrl || postSurveyLinks.clinicHomepageUrl
 
+  const isTestMode = searchParams.test === "1"
+
   return (
     <KioskSurvey
       clinicName={clinic.name}
@@ -78,6 +81,7 @@ export default async function KioskPage({ params }: KioskPageProps) {
       initialTodayCount={todayCount}
       staff={staff}
       postSurveyLinks={hasLinks ? postSurveyLinks : undefined}
+      isTestMode={isTestMode}
     />
   )
 }

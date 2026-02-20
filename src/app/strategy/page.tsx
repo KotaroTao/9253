@@ -90,7 +90,7 @@ const differentiators = [
   {
     icon: Zap,
     title: "即日導入",
-    desc: "QRコード/キオスクモードでEHR連携不要。当日から利用開始可能",
+    desc: "QRコード/医院端末モードでEHR連携不要。当日から利用開始可能",
     detail: "グローバル競合の多くはEHR/PMS連携が前提。日本のEMR普及率のばらつきに対する大きな優位性",
   },
   {
@@ -131,7 +131,7 @@ const plans = [
     price: "9,800",
     target: "小規模個人医院",
     staff: "最大3名",
-    features: ["QRコード/キオスク", "基本ダッシュボード", "月次サマリー"],
+    features: ["QRコード/医院端末", "基本ダッシュボード", "月次サマリー"],
     highlight: false,
   },
   {

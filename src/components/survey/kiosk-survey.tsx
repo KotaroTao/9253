@@ -13,6 +13,7 @@ import {
   User,
   ExternalLink,
   Globe,
+  FlaskConical,
 } from "lucide-react"
 import { Confetti } from "@/components/survey/confetti"
 import {
@@ -35,6 +36,7 @@ interface KioskSurveyProps {
   initialTodayCount: number
   staff: KioskStaffInfo[]
   postSurveyLinks?: PostSurveyLinks
+  isTestMode?: boolean
 }
 
 type KioskState = "setup" | "survey" | "thanks"
@@ -108,6 +110,7 @@ export function KioskSurvey({
   initialTodayCount,
   staff,
   postSurveyLinks,
+  isTestMode = false,
 }: KioskSurveyProps) {
   const router = useRouter()
   const [state, setState] = useState<KioskState>("setup")
@@ -222,6 +225,12 @@ export function KioskSurvey({
   if (state === "setup") {
     return (
       <div className="flex min-h-screen flex-col bg-gradient-to-b from-slate-50 to-white">
+        {isTestMode && (
+          <div className="flex items-center justify-center gap-2 bg-amber-100 px-3 py-2 text-xs font-semibold text-amber-800">
+            <FlaskConical className="h-3.5 w-3.5" />
+            {messages.kiosk.testModeBanner}
+          </div>
+        )}
         <div className="flex-1 overflow-y-auto px-4 pb-28 pt-6">
           <div className="mx-auto max-w-lg space-y-5">
             {/* Header */}
@@ -373,6 +382,12 @@ export function KioskSurvey({
       <>
         {showConfetti && <Confetti />}
         <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-green-50/60 to-white px-4">
+          {isTestMode && (
+            <div className="mb-4 flex items-center gap-2 rounded-lg bg-amber-100 px-4 py-2 text-xs font-semibold text-amber-800">
+              <FlaskConical className="h-3.5 w-3.5" />
+              {messages.kiosk.testModeBanner}
+            </div>
+          )}
           <div className="w-full max-w-sm space-y-6 text-center">
             <div className="text-5xl">🎉</div>
             <h1 className="text-2xl font-bold">{messages.survey.thankYou}</h1>
@@ -470,6 +485,7 @@ export function KioskSurvey({
           staffId={selectedStaffId || undefined}
           deviceUuid={deviceUuid}
           kioskMode
+          isTestMode={isTestMode}
         />
       </div>
     </div>

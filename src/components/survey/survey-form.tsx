@@ -7,7 +7,7 @@ import { StarRating } from "@/components/survey/star-rating"
 import { messages } from "@/lib/messages"
 import { cn } from "@/lib/utils"
 import { DEFAULTS, DENTAL_TIPS } from "@/lib/constants"
-import { Lightbulb, ExternalLink, Globe } from "lucide-react"
+import { Lightbulb, ExternalLink, Globe, FlaskConical } from "lucide-react"
 import { Confetti } from "@/components/survey/confetti"
 import type { SurveyPageData, PatientAttributes } from "@/types/survey"
 import type { PostSurveyLinks } from "@/types"
@@ -20,11 +20,12 @@ interface SurveyFormProps {
   staffId?: string
   deviceUuid?: string
   postSurveyLinks?: PostSurveyLinks
+  isTestMode?: boolean
 }
 
 type Step = "welcome" | "survey" | "submitting" | "thanks"
 
-export function SurveyForm({ data, onComplete, kioskMode = false, patientAttributes, staffId, deviceUuid, postSurveyLinks }: SurveyFormProps) {
+export function SurveyForm({ data, onComplete, kioskMode = false, patientAttributes, staffId, deviceUuid, postSurveyLinks, isTestMode = false }: SurveyFormProps) {
   const [step, setStep] = useState<Step>(kioskMode ? "survey" : "welcome")
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [freeText, setFreeText] = useState("")
@@ -105,6 +106,7 @@ export function SurveyForm({ data, onComplete, kioskMode = false, patientAttribu
           patientAttributes: patientAttributes || undefined,
           responseDurationMs,
           deviceUuid: deviceUuid || undefined,
+          ...(isTestMode ? { isTest: true } : {}),
         }),
       })
 
@@ -123,8 +125,17 @@ export function SurveyForm({ data, onComplete, kioskMode = false, patientAttribu
     }
   }
 
+  const testBanner = isTestMode ? (
+    <div className="mb-3 flex items-center justify-center gap-2 rounded-lg bg-amber-100 px-3 py-2 text-xs font-semibold text-amber-800">
+      <FlaskConical className="h-3.5 w-3.5" />
+      {messages.kiosk.testModeBanner}
+    </div>
+  ) : null
+
   if (step === "welcome") {
     return (
+      <>
+      {testBanner}
       <Card className="overflow-hidden">
         <div className="h-1.5 bg-muted" />
         <CardHeader className="pb-3 text-center">
@@ -140,6 +151,7 @@ export function SurveyForm({ data, onComplete, kioskMode = false, patientAttribu
           </p>
         </CardContent>
       </Card>
+      </>
     )
   }
 
@@ -147,6 +159,8 @@ export function SurveyForm({ data, onComplete, kioskMode = false, patientAttribu
     const progressPercent = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0
 
     return (
+      <>
+      {testBanner}
       <Card className="overflow-hidden">
         {/* Animated progress bar */}
         <div className="h-1.5 bg-muted">
@@ -236,6 +250,7 @@ export function SurveyForm({ data, onComplete, kioskMode = false, patientAttribu
           )}
         </CardContent>
       </Card>
+      </>
     )
   }
 

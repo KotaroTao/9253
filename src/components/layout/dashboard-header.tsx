@@ -15,6 +15,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/dashboard/settings": messages.settings.title,
   "/dashboard/metrics": messages.nav.monthlyMetrics,
   "/dashboard/metrics/input": messages.nav.metricsInput,
+  "/dashboard/test": messages.testSurvey.title,
 }
 
 interface DashboardHeaderProps {

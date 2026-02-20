@@ -16,6 +16,7 @@ import {
   PenSquare,
   ExternalLink,
   Brain,
+  FlaskConical,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
@@ -110,6 +111,7 @@ export function Sidebar({ role, isOperatorMode = false, clinicSlug }: SidebarPro
     ...(kioskUrl
       ? [{ href: kioskUrl, label: messages.nav.surveyStart, icon: Smartphone, external: true }]
       : []),
+    { href: "/dashboard/test", label: messages.nav.testSurvey, icon: FlaskConical },
   ]
 
   return (
