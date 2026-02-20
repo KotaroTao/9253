@@ -366,7 +366,7 @@ src/
 - 性別: 男性、女性、未回答（任意）
 
 ### 改善アクション提案（10カテゴリ）
-clinic_environment / reception / wait_time / hearing / explanation / cost_explanation / comfort / pain_care / staff_courtesy / loyalty（各3件の定型提案）
+clinic_environment / reception / wait_time / hearing / explanation / cost_explanation / comfort / pain_care / staff_courtesy / loyalty（各5件の定型提案）
 
 ## メッセージ辞書（`src/lib/messages.ts`）
 日本語UIテキストを一元管理。以下のセクション:
