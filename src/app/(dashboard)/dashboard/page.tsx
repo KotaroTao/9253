@@ -4,7 +4,9 @@ import { prisma } from "@/lib/prisma"
 import { getOperatorClinicId } from "@/lib/admin-mode"
 import { getStaffEngagementData } from "@/lib/queries/engagement"
 import { getQuestionCurrentScores } from "@/lib/queries/stats"
+import { getAdvisoryProgress } from "@/lib/queries/advisory"
 import { StaffEngagement } from "@/components/dashboard/staff-engagement"
+import { AdvisoryProgressCard } from "@/components/dashboard/advisory-progress"
 import { messages } from "@/lib/messages"
 import { ROLES } from "@/lib/constants"
 
@@ -29,8 +31,10 @@ export default async function DashboardPage() {
   })
   const kioskUrl = clinic ? `/kiosk/${encodeURIComponent(clinic.slug)}` : "/dashboard/survey-start"
 
-  // Fetch engagement + active improvement actions
-  const [engagement, activeActions] = await Promise.all([
+  const isAdmin = session.user.role === ROLES.CLINIC_ADMIN || session.user.role === ROLES.SYSTEM_ADMIN
+
+  // Fetch engagement + active improvement actions + advisory progress
+  const [engagement, activeActions, advisoryProgress] = await Promise.all([
     getStaffEngagementData(clinicId),
     prisma.improvementAction.findMany({
       where: { clinicId, status: "active" },
@@ -48,6 +52,7 @@ export default async function DashboardPage() {
       orderBy: { createdAt: "desc" },
       take: 5,
     }),
+    getAdvisoryProgress(clinicId),
   ])
 
   // Fetch current question scores for active actions
@@ -69,6 +74,9 @@ export default async function DashboardPage() {
         activeActions={activeActions}
         questionScores={questionScores}
       />
+      {advisoryProgress.totalResponses > 0 && (
+        <AdvisoryProgressCard progress={advisoryProgress} isAdmin={isAdmin} />
+      )}
     </div>
   )
 }

@@ -17,8 +17,39 @@ export interface ClinicSettings {
   goalAchieveStreak?: number // 連続達成日数
   goalMissStreak?: number // 連続未達成日数
   goalLastCheckedDate?: string // 最終評価日 YYYY-MM-DD
+  // AI Advisory トラッキング
+  advisoryThreshold?: number // アンロックに必要な回答数（デフォルト30）
+  responsesSinceLastAdvisory?: number // 最終分析以降の新規回答数
 }
 
+/** AI Advisory レポートのセクション型 */
+export interface AdvisorySection {
+  title: string
+  content: string
+  type: "strength" | "improvement" | "action" | "trend" | "summary"
+}
+
+/** AI Advisory レポートデータ */
+export interface AdvisoryReportData {
+  id: string
+  triggerType: string
+  responseCount: number
+  sections: AdvisorySection[]
+  summary: string
+  priority: string | null
+  generatedAt: string | Date
+}
+
+/** AI Advisory プログレスデータ */
+export interface AdvisoryProgress {
+  current: number       // 最終分析以降の回答数
+  threshold: number     // アンロック閾値
+  percentage: number    // 進捗率 0-100
+  totalResponses: number // 全回答数
+  lastReport: AdvisoryReportData | null
+  canGenerate: boolean  // 手動生成可能か
+  daysSinceLastReport: number | null
+}
 
 export interface RecentResponse {
   id: string

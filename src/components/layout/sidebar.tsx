@@ -15,6 +15,7 @@ import {
   FileBarChart,
   PenSquare,
   ExternalLink,
+  Brain,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
@@ -36,6 +37,7 @@ interface NavItem {
 
 const analyticsItems: NavItem[] = [
   { href: "/dashboard/analytics", label: messages.nav.analytics, icon: PieChart },
+  { href: "/dashboard/advisory", label: messages.nav.advisory, icon: Brain },
   { href: "/dashboard/metrics", label: messages.nav.monthlyMetrics, icon: FileBarChart },
   { href: "/dashboard/metrics/input", label: messages.nav.metricsInput, icon: PenSquare },
   { href: "/dashboard/surveys", label: messages.nav.surveys, icon: ClipboardList },
