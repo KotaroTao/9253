@@ -23,7 +23,7 @@ const TREATMENT_QUESTIONS = [
   { id: "tr3", text: "質問や相談がしやすい雰囲気でしたか？", type: "rating", required: true },
   { id: "tr4", text: "待ち時間は気にならない程度でしたか？", type: "rating", required: true },
   { id: "tr5", text: "スタッフの対応は丁寧でしたか？", type: "rating", required: true },
-  { id: "tr6", text: "通院を続けることに安心感がありますか？", type: "rating", required: true },
+  { id: "tr6", text: "当院をご家族・知人にも紹介したいと思いますか？", type: "rating", required: true },
 ]
 
 const SURVEY_TEMPLATES = [
@@ -193,7 +193,7 @@ async function main() {
     tr3: -0.15,  // 相談しやすさ: ★受付の雰囲気が影響
     tr4: -0.20,  // 待ち時間: 低い
     tr5: 0.10,   // スタッフ対応: 高い（衛生士・医師は良好）
-    tr6: 0.00,   // 安心感: 普通
+    tr6: -0.05,  // 紹介意向: やや厳しめ（推薦意向は安心感より高いハードル）
   }
 
   // 改善アクションによるスコア押し上げ効果（月index → 対象設問 → 加算）
@@ -205,7 +205,7 @@ async function main() {
     "視覚資料での説明導入": { startMonth: 2, endMonth: 4, questions: ["fv5", "fv6", "tr1"], boost: 0.10 },
     "接遇マナー研修": { startMonth: 2, endMonth: 4, questions: ["tr5", "fv7", "tr3", "fv8"], boost: 0.08 },
     "予約枠バッファ導入": { startMonth: 4, endMonth: null, questions: ["fv3", "tr4"], boost: 0.08 },
-    "痛み配慮の声かけ徹底": { startMonth: 4, endMonth: null, questions: ["tr2", "fv4", "tr6"], boost: 0.06 },
+    "痛み配慮の声かけ徹底": { startMonth: 4, endMonth: null, questions: ["tr2", "fv4", "fv7"], boost: 0.06 },
   }
 
   // スタッフごとの回答回収傾向
@@ -603,7 +603,7 @@ async function main() {
       status: "active",
       startMonthIdx: 4,
       endMonthIdx: null,
-      questions: ["tr2", "fv4", "tr6"],
+      questions: ["tr2", "fv4", "fv7"],
     },
   ]
 
