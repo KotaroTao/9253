@@ -132,8 +132,8 @@ export function MonthlySummarySection({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-base text-slate-100">{m.summaryTitle}</CardTitle>
-            <p className="text-xs text-slate-400">{m.summaryHint}</p>
+            <CardTitle className="text-base text-white">{m.summaryTitle}</CardTitle>
+            <p className="text-xs text-slate-300">{m.summaryHint}</p>
           </div>
           <div className="flex items-center gap-1.5 text-xs">
             {saving && (
@@ -152,46 +152,46 @@ export function MonthlySummarySection({
         <div className="grid gap-4 sm:grid-cols-2">
           {/* 初診実人数 */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-400">{m.firstVisitCount}</label>
+            <label className="mb-1 block text-xs font-medium text-slate-200">{m.firstVisitCount}</label>
             <div className="flex items-center gap-1">
-              <Input type="number" min={0} value={firstVisitCount} onChange={(e) => setFirstVisitCount(e.target.value)} placeholder="0" className="border-slate-600 bg-slate-800/80 text-right text-slate-100 placeholder:text-slate-600 focus:border-slate-500 focus:ring-slate-500" />
-              <span className="text-sm text-slate-500">{m.unitPersons}</span>
+              <Input type="number" min={0} value={firstVisitCount} onChange={(e) => setFirstVisitCount(e.target.value)} placeholder="0" className="border-slate-600 bg-slate-800/80 text-right text-white placeholder:text-slate-500 focus:border-slate-500 focus:ring-slate-500" />
+              <span className="text-sm text-slate-300">{m.unitPersons}</span>
             </div>
           </div>
 
           {/* 再診実人数 */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-400">{m.revisitCount}</label>
+            <label className="mb-1 block text-xs font-medium text-slate-200">{m.revisitCount}</label>
             <div className="flex items-center gap-1">
-              <Input type="number" min={0} value={revisitCount} onChange={(e) => setRevisitCount(e.target.value)} placeholder="0" className="border-slate-600 bg-slate-800/80 text-right text-slate-100 placeholder:text-slate-600 focus:border-slate-500 focus:ring-slate-500" />
-              <span className="text-sm text-slate-500">{m.unitPersons}</span>
+              <Input type="number" min={0} value={revisitCount} onChange={(e) => setRevisitCount(e.target.value)} placeholder="0" className="border-slate-600 bg-slate-800/80 text-right text-white placeholder:text-slate-500 focus:border-slate-500 focus:ring-slate-500" />
+              <span className="text-sm text-slate-300">{m.unitPersons}</span>
             </div>
           </div>
 
           {/* 保険売上 */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-400">{m.insuranceRevenue}</label>
+            <label className="mb-1 block text-xs font-medium text-slate-200">{m.insuranceRevenue}</label>
             <div className="flex items-center gap-1">
-              <Input type="number" min={0} value={insuranceRevenue} onChange={(e) => setInsuranceRevenue(e.target.value)} placeholder="0" className="border-slate-600 bg-slate-800/80 text-right text-slate-100 placeholder:text-slate-600 focus:border-slate-500 focus:ring-slate-500" />
-              <span className="text-sm text-slate-500">{m.unitMan}</span>
+              <Input type="number" min={0} value={insuranceRevenue} onChange={(e) => setInsuranceRevenue(e.target.value)} placeholder="0" className="border-slate-600 bg-slate-800/80 text-right text-white placeholder:text-slate-500 focus:border-slate-500 focus:ring-slate-500" />
+              <span className="text-sm text-slate-300">{m.unitMan}</span>
             </div>
           </div>
 
           {/* 自費売上 */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-400">{m.selfPayRevenue}</label>
+            <label className="mb-1 block text-xs font-medium text-slate-200">{m.selfPayRevenue}</label>
             <div className="flex items-center gap-1">
-              <Input type="number" min={0} value={selfPayRevenue} onChange={(e) => setSelfPayRevenue(e.target.value)} placeholder="0" className="border-slate-600 bg-slate-800/80 text-right text-slate-100 placeholder:text-slate-600 focus:border-slate-500 focus:ring-slate-500" />
-              <span className="text-sm text-slate-500">{m.unitMan}</span>
+              <Input type="number" min={0} value={selfPayRevenue} onChange={(e) => setSelfPayRevenue(e.target.value)} placeholder="0" className="border-slate-600 bg-slate-800/80 text-right text-white placeholder:text-slate-500 focus:border-slate-500 focus:ring-slate-500" />
+              <span className="text-sm text-slate-300">{m.unitMan}</span>
             </div>
           </div>
 
           {/* キャンセル件数 */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-400">{m.cancellationCount}</label>
+            <label className="mb-1 block text-xs font-medium text-slate-200">{m.cancellationCount}</label>
             <div className="flex items-center gap-1">
-              <Input type="number" min={0} value={cancellationCount} onChange={(e) => setCancellationCount(e.target.value)} placeholder="0" className="border-slate-600 bg-slate-800/80 text-right text-slate-100 placeholder:text-slate-600 focus:border-slate-500 focus:ring-slate-500" />
-              <span className="text-sm text-slate-500">{m.unitCount}</span>
+              <Input type="number" min={0} value={cancellationCount} onChange={(e) => setCancellationCount(e.target.value)} placeholder="0" className="border-slate-600 bg-slate-800/80 text-right text-white placeholder:text-slate-500 focus:border-slate-500 focus:ring-slate-500" />
+              <span className="text-sm text-slate-300">{m.unitCount}</span>
             </div>
           </div>
         </div>
@@ -199,12 +199,12 @@ export function MonthlySummarySection({
         {/* Derived KPIs */}
         {hasInput && derived && (
           <div>
-            <p className="mb-3 text-xs font-medium text-slate-400">{m.derivedTitle}</p>
+            <p className="mb-3 text-xs font-medium text-slate-200">{m.derivedTitle}</p>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {derivedMetrics.map((metric) => (
                 <div key={metric.label} className="rounded-lg border border-slate-700/50 bg-slate-800/60 p-3">
-                  <p className="text-xs text-slate-400">{metric.label}</p>
-                  <p className="text-lg font-bold text-slate-100">
+                  <p className="text-xs text-slate-300">{metric.label}</p>
+                  <p className="text-lg font-bold text-white">
                     {metric.value != null ? metric.format(metric.value) : "-"}
                     <DerivedDelta current={metric.value} prev={metric.prev} />
                   </p>
