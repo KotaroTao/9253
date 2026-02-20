@@ -5,14 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { messages } from "@/lib/messages"
 import { TrendingUp, TrendingDown, Check, Loader2 } from "lucide-react"
-
-export interface MonthlySummary {
-  firstVisitCount: number | null
-  revisitCount: number | null
-  insuranceRevenue: number | null
-  selfPayRevenue: number | null
-  cancellationCount: number | null
-}
+import { calcDerived } from "@/lib/metrics-utils"
+import type { MonthlySummary } from "@/lib/metrics-utils"
 
 interface MonthlySummarySectionProps {
   year: number
@@ -33,33 +27,6 @@ function DerivedDelta({ current, prev }: { current: number | null; prev: number 
       {" "}{isUp ? "+" : ""}{diff}
     </span>
   )
-}
-
-export function calcDerived(s: MonthlySummary | null, surveyCount: number) {
-  if (!s) return null
-  const first = s.firstVisitCount
-  const revisit = s.revisitCount
-  const totalPatients = first != null && revisit != null ? first + revisit : null
-  const insRev = s.insuranceRevenue
-  const spRev = s.selfPayRevenue
-  const totalRevenue = insRev != null && spRev != null ? insRev + spRev : null
-  const cancel = s.cancellationCount
-
-  return {
-    totalPatients,
-    revenuePerVisit: totalPatients != null && totalPatients > 0 && totalRevenue != null
-      ? Math.round((totalRevenue / totalPatients) * 10) / 10 : null,
-    selfPayRatioAmount: totalRevenue != null && totalRevenue > 0 && spRev != null
-      ? Math.round((spRev / totalRevenue) * 1000) / 10 : null,
-    returnRate: totalPatients != null && totalPatients > 0 && revisit != null
-      ? Math.round((revisit / totalPatients) * 1000) / 10 : null,
-    newPatientRate: totalPatients != null && totalPatients > 0 && first != null
-      ? Math.round((first / totalPatients) * 1000) / 10 : null,
-    cancellationRate: totalPatients != null && totalPatients > 0 && cancel != null
-      ? Math.round((cancel / (totalPatients + cancel)) * 1000) / 10 : null,
-    surveyResponseRate: totalPatients != null && totalPatients > 0
-      ? Math.round((surveyCount / totalPatients) * 1000) / 10 : null,
-  }
 }
 
 export function MonthlySummarySection({
