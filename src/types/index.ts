@@ -12,6 +12,11 @@ export interface ClinicSettings {
     title: string
     content: string
   }
+  // 動的目標乗数トラッキング
+  goalLevel?: number // 0=×0.3, 1=×0.4, 2=×0.5
+  goalAchieveStreak?: number // 連続達成日数
+  goalMissStreak?: number // 連続未達成日数
+  goalLastCheckedDate?: string // 最終評価日 YYYY-MM-DD
 }
 
 

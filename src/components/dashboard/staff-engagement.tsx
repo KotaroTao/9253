@@ -292,9 +292,14 @@ export function StaffEngagement({ data, kioskUrl, activeActions = [], questionSc
                         <Target className="h-4 w-4 shrink-0 text-blue-500" />
                         <p className="text-sm font-medium truncate">{action.title}</p>
                       </div>
-                      {action.targetQuestion && (
+                      {action.description && (
                         <p className="mt-1 text-xs text-muted-foreground pl-6">
-                          {action.targetQuestion}
+                          {action.description}
+                        </p>
+                      )}
+                      {action.targetQuestion && (
+                        <p className="mt-0.5 text-xs text-muted-foreground/70 pl-6">
+                          対象: {action.targetQuestion}
                         </p>
                       )}
                     </div>
