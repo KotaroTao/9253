@@ -684,8 +684,8 @@ async function main() {
   // =========================================================================
   // 月次経営レポート（12ヶ月分。当月は未入力=InsightBanner表示用）
   // =========================================================================
-  // 1年前: 実人数約300人(初診30,再診270), 売上4000万, 自費率30%, キャンセル率10%
-  // 現在:  売上約5000万, 全体的に改善
+  // 1年前: 実人数約300人(初診30,再診270), 売上330万, 自費率30%, キャンセル率10%
+  // 現在:  売上約425万, 全体的に改善
   // 季節変動: 8月(お盆)・12月(年末)=低め、3-4月・10月=高め
 
   await prisma.monthlyClinicMetrics.deleteMany({ where: { clinicId: clinic.id } })
@@ -723,9 +723,9 @@ async function main() {
     const revisitSelfPay = Math.max(0, Math.round(revisitCount * patientSelfPayRatio))
     const revisitInsurance = revisitCount - revisitSelfPay
 
-    // 売上: 3900→5100万、季節変動あり
-    const baseRevenue = 3900 + Math.round(1200 * progress)
-    const totalRevenue = Math.max(1000, Math.round(baseRevenue * seasonal + (rng() - 0.5) * 150))
+    // 売上: 325→425万、季節変動あり
+    const baseRevenue = 325 + Math.round(100 * progress)
+    const totalRevenue = Math.max(80, Math.round(baseRevenue * seasonal + (rng() - 0.5) * 13))
     const selfPayRevenue = Math.round(totalRevenue * selfPayRatio)
     const insuranceRevenue = totalRevenue - selfPayRevenue
 
