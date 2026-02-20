@@ -100,7 +100,7 @@ function generateInsights({
       type: "info",
       icon: <BarChart3 className="h-4 w-4" />,
       text: messages.dashboard.insightMissingMetrics,
-      action: { label: messages.monthlyMetrics.enterSummary, href: "/dashboard/metrics" },
+      action: { label: messages.monthlyMetrics.enterSummary, href: "/dashboard/metrics/input" },
     })
   }
 

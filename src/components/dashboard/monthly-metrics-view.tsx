@@ -1,14 +1,11 @@
 "use client"
 
-import { useState, useEffect, useMemo, useRef } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { createPortal } from "react-dom"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import Link from "next/link"
 import { messages } from "@/lib/messages"
-import { MonthlySummarySection } from "./monthly-summary-section"
 import { MonthlyTrendSummary } from "./monthly-trend-summary"
-import type { MonthlySummary } from "./monthly-summary-section"
-import { ChevronDown, ChevronUp, PenSquare, AlertTriangle, X } from "lucide-react"
+import { AlertTriangle, X } from "lucide-react"
 
 export interface MonthRange {
   from: string // YYYY-MM
@@ -38,35 +35,7 @@ function monthsAgoYearMonth(n: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
 }
 
-// 2025年1月から当月までの月リストを生成
-function generateMonthOptions(): { year: number; month: number; label: string }[] {
-  const now = new Date()
-  const startYear = 2025
-  const startMonth = 1
-  const endYear = now.getFullYear()
-  const endMonth = now.getMonth() + 1
-
-  const options: { year: number; month: number; label: string }[] = []
-  for (let y = endYear; y >= startYear; y--) {
-    const mEnd = y === endYear ? endMonth : 12
-    const mStart = y === startYear ? startMonth : 1
-    for (let m = mEnd; m >= mStart; m--) {
-      options.push({
-        year: y,
-        month: m,
-        label: `${y}年${m}月`,
-      })
-    }
-  }
-  return options
-}
-
 interface MonthlyMetricsViewProps {
-  initialSummary: MonthlySummary | null
-  initialPrevSummary: MonthlySummary | null
-  initialSurveyCount: number
-  initialYear: number
-  initialMonth: number
   enteredMonths?: string[]
 }
 
@@ -87,32 +56,16 @@ function getRecentMissingMonths(enteredSet: Set<string>): { year: number; month:
 const ALERT_STORAGE_KEY_PREFIX = "metrics-alert-dismissed-"
 
 export function MonthlyMetricsView({
-  initialSummary,
-  initialPrevSummary,
-  initialSurveyCount,
-  initialYear,
-  initialMonth,
   enteredMonths = [],
 }: MonthlyMetricsViewProps) {
-  const initialEnteredSet = useMemo(() => new Set(enteredMonths), [enteredMonths])
-  const initialMissing = useMemo(() => getRecentMissingMonths(initialEnteredSet), [initialEnteredSet])
+  const enteredSet = useMemo(() => new Set(enteredMonths), [enteredMonths])
 
   const [selectedMonths, setSelectedMonths] = useState(12)
   const [customMonthRange, setCustomMonthRange] = useState<MonthRange | null>(null)
   const [showCustom, setShowCustom] = useState(false)
   const [customMonthFrom, setCustomMonthFrom] = useState(() => monthsAgoYearMonth(12))
   const [customMonthTo, setCustomMonthTo] = useState(currentYearMonth)
-  const [year, setYear] = useState(initialYear)
-  const [month, setMonth] = useState(initialMonth)
-  const [summary, setSummary] = useState<MonthlySummary | null>(initialSummary)
-  const [prevSummary, setPrevSummary] = useState<MonthlySummary | null>(initialPrevSummary)
-  const [surveyCount, setSurveyCount] = useState(initialSurveyCount)
-  const [loading, setLoading] = useState(false)
-  const [entered, setEntered] = useState<Set<string>>(initialEnteredSet)
   const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null)
-  // Auto-open when there are missing recent months
-  const [inputOpen, setInputOpen] = useState(initialMissing.length > 0)
-  const [selectorYear, setSelectorYear] = useState(initialYear)
 
   // Dismissible alert state — persisted per month in localStorage
   const [alertDismissed, setAlertDismissed] = useState(false)
@@ -122,14 +75,12 @@ export function MonthlyMetricsView({
     setAlertDismissed(localStorage.getItem(key) === "true")
   }, [])
 
-  const inputSectionRef = useRef<HTMLDivElement>(null)
-
   useEffect(() => {
     setHeaderSlot(document.getElementById("header-actions"))
   }, [])
 
   // Recalculate missing months reactively
-  const missingRecentMonths = useMemo(() => getRecentMissingMonths(entered), [entered])
+  const missingRecentMonths = useMemo(() => getRecentMissingMonths(enteredSet), [enteredSet])
 
   function dismissAlert() {
     const now = new Date()
@@ -138,57 +89,7 @@ export function MonthlyMetricsView({
     setAlertDismissed(true)
   }
 
-  function handleAlertAction() {
-    setInputOpen(true)
-    // Navigate to first missing month
-    if (missingRecentMonths.length > 0) {
-      const target = missingRecentMonths[0]
-      setSelectorYear(target.year)
-      handleMonthChange(target.year, target.month)
-    }
-    setTimeout(() => {
-      inputSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-    }, 100)
-  }
-
   const m = messages.monthlyMetrics
-
-  const monthOptions = generateMonthOptions()
-
-  // 年ごとにグループ化
-  const years = Array.from(new Set(monthOptions.map((o) => o.year)))
-
-  async function handleMonthChange(newYear: number, newMonth: number) {
-    setYear(newYear)
-    setMonth(newMonth)
-    setLoading(true)
-
-    try {
-      const res = await fetch(
-        `/api/monthly-metrics?year=${newYear}&month=${newMonth}`
-      )
-      if (res.ok) {
-        const data = await res.json()
-        setSummary(data.summary ?? null)
-        setPrevSummary(data.prevSummary ?? null)
-        setSurveyCount(data.surveyCount ?? 0)
-        const key = `${newYear}-${newMonth}`
-        if (data.summary) {
-          setEntered((prev) => { const next = new Set(Array.from(prev)); next.add(key); return next })
-        } else {
-          setEntered((prev) => {
-            const next = new Set(prev)
-            next.delete(key)
-            return next
-          })
-        }
-      }
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const isPreset = !customMonthRange && PERIOD_PRESETS.some((o) => o.value === selectedMonths)
   const periodLabel = customMonthRange
@@ -338,12 +239,12 @@ export function MonthlyMetricsView({
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-1">
-            <button
-              onClick={handleAlertAction}
+            <Link
+              href="/dashboard/metrics/input"
               className="rounded-md bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800 hover:bg-amber-200 dark:bg-amber-900/50 dark:text-amber-200 dark:hover:bg-amber-900"
             >
               {m.enterSummary}
-            </button>
+            </Link>
             <button
               onClick={dismissAlert}
               className="rounded-md p-1 text-amber-400 hover:bg-amber-100 hover:text-amber-600 dark:hover:bg-amber-900/50"
@@ -357,104 +258,6 @@ export function MonthlyMetricsView({
 
       {/* グラフ（期間セレクタと連動） */}
       <MonthlyTrendSummary months={selectedMonths} customRange={customMonthRange} />
-
-      {/* データ入力セクション */}
-      <div ref={inputSectionRef}>
-        <button
-          type="button"
-          onClick={() => setInputOpen(!inputOpen)}
-          className={`flex w-full items-center justify-between rounded-lg border px-4 py-3.5 transition-colors hover:bg-muted/50 ${
-            !inputOpen && missingRecentMonths.length > 0
-              ? "border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/20"
-              : "bg-card"
-          }`}
-        >
-          <div className="flex items-center gap-2.5">
-            <PenSquare className={`h-4 w-4 ${!inputOpen && missingRecentMonths.length > 0 ? "text-amber-500" : "text-muted-foreground"}`} />
-            <span className="text-sm font-semibold">{m.tabInput}</span>
-            <span className="hidden text-xs text-muted-foreground sm:inline">{m.summaryHint}</span>
-            {!inputOpen && missingRecentMonths.length > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400" />
-                {missingRecentMonths.length}ヶ月未入力
-              </span>
-            )}
-          </div>
-          {inputOpen ? (
-            <ChevronUp className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          )}
-        </button>
-        {inputOpen && (
-          <div className="mt-4 space-y-4">
-            {/* Month selector — year dropdown + month buttons */}
-            <Card>
-              <CardContent className="py-4">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={selectorYear}
-                      onChange={(e) => setSelectorYear(Number(e.target.value))}
-                      className="rounded-md border bg-card px-3 py-1.5 text-sm font-medium"
-                    >
-                      {years.map((y) => (
-                        <option key={y} value={y}>{y}年</option>
-                      ))}
-                    </select>
-                    <span className="text-xs text-muted-foreground">月を選択</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {monthOptions
-                      .filter((opt) => opt.year === selectorYear)
-                      .sort((a, b) => a.month - b.month)
-                      .map((opt) => {
-                        const isSelected = year === opt.year && month === opt.month
-                        const isEntered = entered.has(`${opt.year}-${opt.month}`)
-                        return (
-                          <Button
-                            key={`${opt.year}-${opt.month}`}
-                            variant={isSelected ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => handleMonthChange(opt.year, opt.month)}
-                            className={
-                              !isSelected && !isEntered
-                                ? "border-dashed border-amber-300 text-amber-600 hover:border-amber-400 hover:text-amber-700"
-                                : undefined
-                            }
-                          >
-                            {opt.month}月
-                            {!isEntered && (
-                              <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-amber-400" />
-                            )}
-                          </Button>
-                        )
-                      })}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {loading && (
-              <Card>
-                <CardContent className="py-8 text-center">
-                  <p className="text-muted-foreground">{messages.common.loading}</p>
-                </CardContent>
-              </Card>
-            )}
-
-            {!loading && (
-              <MonthlySummarySection
-                year={year}
-                month={month}
-                initialSummary={summary}
-                prevSummary={prevSummary}
-                surveyCount={surveyCount}
-              />
-            )}
-          </div>
-        )}
-      </div>
     </div>
   )
 }

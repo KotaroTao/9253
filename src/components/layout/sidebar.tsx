@@ -13,6 +13,7 @@ import {
   Target,
   PieChart,
   FileBarChart,
+  PenSquare,
   ExternalLink,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
@@ -36,6 +37,7 @@ interface NavItem {
 const analyticsItems: NavItem[] = [
   { href: "/dashboard/analytics", label: messages.nav.analytics, icon: PieChart },
   { href: "/dashboard/metrics", label: messages.nav.monthlyMetrics, icon: FileBarChart },
+  { href: "/dashboard/metrics/input", label: messages.nav.metricsInput, icon: PenSquare },
   { href: "/dashboard/surveys", label: messages.nav.surveys, icon: ClipboardList },
 ]
 
@@ -74,7 +76,7 @@ function NavSection({ label, items, pathname }: { label: string; items: NavItem[
         const isActive =
           item.href === "/dashboard"
             ? pathname === "/dashboard"
-            : pathname.startsWith(item.href)
+            : pathname === item.href || (pathname.startsWith(item.href + "/") && !items.some((other) => other.href !== item.href && other.href.startsWith(item.href) && pathname.startsWith(other.href)))
         return (
           <Link
             key={item.href}

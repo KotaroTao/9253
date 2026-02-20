@@ -392,6 +392,7 @@ export const messages = {
     clinics: "クリニック管理",
     systemAdmin: "システム管理",
     monthlyMetrics: "経営レポート",
+    metricsInput: "経営データ入力",
     surveyStart: "アンケート案内",
     analytics: "満足度レポート",
     selectStaffForSurvey: "スタッフを選んでください",
