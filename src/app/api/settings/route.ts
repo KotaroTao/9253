@@ -18,7 +18,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { regularClosedDays, googleReviewEnabled, googleReviewUrl, ...rest } = body
+    const { regularClosedDays, postSurveyAction, googleReviewUrl, lineUrl, clinicHomepageUrl, ...rest } = body
     const parsed = updateClinicSchema.safeParse(rest)
 
     if (!parsed.success) {
@@ -27,21 +27,24 @@ export async function PATCH(request: NextRequest) {
 
     const updateData: Record<string, unknown> = { ...parsed.data }
 
-    // Merge settings fields (regularClosedDays, googleReview, etc.)
+    // Merge settings fields
     const settingsPatch: Partial<ClinicSettings> = {}
     if (Array.isArray(regularClosedDays) && regularClosedDays.every((d: unknown) => typeof d === "number" && d >= 0 && d <= 6)) {
       settingsPatch.regularClosedDays = regularClosedDays
     }
-    if (typeof googleReviewEnabled === "boolean") {
-      settingsPatch.googleReviewEnabled = googleReviewEnabled
+    // postSurveyAction: "none" | "google_review" | "line"
+    if (typeof postSurveyAction === "string" && ["none", "google_review", "line"].includes(postSurveyAction)) {
+      settingsPatch.postSurveyAction = postSurveyAction as ClinicSettings["postSurveyAction"]
     }
-    if (typeof googleReviewUrl === "string") {
-      // URLバリデーション: Google関連URLまたは空文字を許可
-      const trimmed = googleReviewUrl.trim()
-      if (trimmed === "") {
-        settingsPatch.googleReviewUrl = undefined
-      } else if (/^https:\/\/.+/.test(trimmed)) {
-        settingsPatch.googleReviewUrl = trimmed
+    // URL fields: validate https:// or clear
+    for (const [key, value] of Object.entries({ googleReviewUrl, lineUrl, clinicHomepageUrl })) {
+      if (typeof value === "string") {
+        const trimmed = value.trim()
+        if (trimmed === "") {
+          settingsPatch[key as keyof ClinicSettings] = undefined as never
+        } else if (/^https?:\/\/.+/.test(trimmed)) {
+          settingsPatch[key as keyof ClinicSettings] = trimmed as never
+        }
       }
     }
     if (Object.keys(settingsPatch).length > 0) {

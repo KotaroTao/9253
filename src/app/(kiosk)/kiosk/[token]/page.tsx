@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { KioskSurvey } from "@/components/survey/kiosk-survey"
 import { messages } from "@/lib/messages"
 import type { SurveyPageData, SurveyTemplateInfo, KioskStaffInfo } from "@/types/survey"
-import type { ClinicSettings } from "@/types"
+import type { ClinicSettings, PostSurveyLinks } from "@/types"
 
 interface KioskPageProps {
   params: { token: string }
@@ -59,11 +59,16 @@ export default async function KioskPage({ params }: KioskPageProps) {
     role: s.role,
   }))
 
-  // Google口コミ誘導URL（有効時のみ）
+  // アンケート完了後の誘導リンク
   const clinicSettings = (clinic.settings ?? {}) as ClinicSettings
-  const googleReviewUrl = clinicSettings.googleReviewEnabled && clinicSettings.googleReviewUrl
-    ? clinicSettings.googleReviewUrl
-    : undefined
+  const postSurveyLinks: PostSurveyLinks = {
+    googleReviewUrl: clinicSettings.postSurveyAction === "google_review" && clinicSettings.googleReviewUrl
+      ? clinicSettings.googleReviewUrl : undefined,
+    lineUrl: clinicSettings.postSurveyAction === "line" && clinicSettings.lineUrl
+      ? clinicSettings.lineUrl : undefined,
+    clinicHomepageUrl: clinicSettings.clinicHomepageUrl || undefined,
+  }
+  const hasLinks = postSurveyLinks.googleReviewUrl || postSurveyLinks.lineUrl || postSurveyLinks.clinicHomepageUrl
 
   return (
     <KioskSurvey
@@ -72,7 +77,7 @@ export default async function KioskPage({ params }: KioskPageProps) {
       templates={templates}
       initialTodayCount={todayCount}
       staff={staff}
-      googleReviewUrl={googleReviewUrl}
+      postSurveyLinks={hasLinks ? postSurveyLinks : undefined}
     />
   )
 }

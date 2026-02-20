@@ -36,8 +36,10 @@ export default async function SettingsPage() {
       <SettingsForm
         clinic={clinic}
         regularClosedDays={regularClosedDays}
-        googleReviewEnabled={settings.googleReviewEnabled}
+        postSurveyAction={settings.postSurveyAction}
         googleReviewUrl={settings.googleReviewUrl}
+        lineUrl={settings.lineUrl}
+        clinicHomepageUrl={settings.clinicHomepageUrl}
       />
     </div>
   )
