@@ -5,6 +5,7 @@ import type { ClinicSettings } from "@/types"
 import {
   jstToday,
   jstDaysAgo,
+  jstNowParts,
   formatDateKeyJST,
   getDayOfWeekJaJST,
   getDayJST,
@@ -65,7 +66,13 @@ export async function getStaffEngagementData(
     week_count: bigint
     week_avg: number | null
   }
-  const [aggRows, streakResponses, positiveComments, clinic] =
+  // Previous month for daily goal calculation
+  const { year: nowYear, month: nowMonth } = jstNowParts()
+  const prevMonthDate = new Date(Date.UTC(nowYear, nowMonth - 2, 1))
+  const prevYear = prevMonthDate.getUTCFullYear()
+  const prevMonth = prevMonthDate.getUTCMonth() + 1
+
+  const [aggRows, streakResponses, positiveComments, clinic, prevMetrics] =
     await Promise.all([
       prisma.$queryRaw<AggRow[]>`
         SELECT
@@ -101,6 +108,11 @@ export async function getStaffEngagementData(
         where: { id: clinicId },
         select: { settings: true },
       }),
+
+      prisma.monthlyClinicMetrics.findUnique({
+        where: { clinicId_year_month: { clinicId, year: prevYear, month: prevMonth } },
+        select: { firstVisitCount: true, revisitCount: true },
+      }),
     ])
 
   const agg = aggRows[0]
@@ -112,13 +124,14 @@ export async function getStaffEngagementData(
 
   // Extract settings
   const settings = (clinic?.settings ?? {}) as ClinicSettings
-  const dailyGoal = settings.dailyGoal ?? DEFAULTS.DAILY_SURVEY_GOAL
   const closedDates = new Set<string>(settings.closedDates ?? [])
   const openDates = new Set<string>(settings.openDates ?? [])
   const regularClosedDays = new Set<number>(settings.regularClosedDays ?? [])
 
+  const DAY_MS = 24 * 60 * 60 * 1000
+  const JST_OFFSET = 9 * 60 * 60 * 1000
+
   // Helper: check if a date is closed (ad-hoc or regular, with open override)
-  // openDates overrides regularClosedDays for specific dates (e.g. working on a holiday)
   function isClosedDate(dateKey: string, date: Date): boolean {
     if (openDates.has(dateKey)) return false
     return closedDates.has(dateKey) || regularClosedDays.has(getDayJST(date))
@@ -126,33 +139,111 @@ export async function getStaffEngagementData(
 
   const todayKey = formatDateKeyJST(todayStart)
 
-  // Build date set for streak + weekly activity (format in JST)
+  // Build date→count map and dateSet from all responses (last 90 days)
+  const dateCountMap = new Map<string, number>()
   const dateSet = new Set<string>()
   for (const r of streakResponses) {
-    dateSet.add(formatDateKeyJST(new Date(r.respondedAt)))
+    const key = formatDateKeyJST(new Date(r.respondedAt))
+    dateSet.add(key)
+    dateCountMap.set(key, (dateCountMap.get(key) ?? 0) + 1)
   }
+
+  // Calculate base daily patients from previous month (totalPatients / businessDays)
+  const totalPatients = (prevMetrics?.firstVisitCount ?? 0) + (prevMetrics?.revisitCount ?? 0)
+  const baseDaily = (() => {
+    if (totalPatients <= 0) return 0
+    const daysInPrevMonth = new Date(Date.UTC(prevYear, prevMonth, 0)).getUTCDate()
+    let businessDays = 0
+    for (let d = 1; d <= daysInPrevMonth; d++) {
+      const date = new Date(Date.UTC(prevYear, prevMonth - 1, d))
+      const dateKey = `${prevYear}-${String(prevMonth).padStart(2, "0")}-${String(d).padStart(2, "0")}`
+      if (openDates.has(dateKey)) {
+        businessDays++
+      } else if (closedDates.has(dateKey) || regularClosedDays.has(date.getUTCDay())) {
+        // closed
+      } else {
+        businessDays++
+      }
+    }
+    return businessDays > 0 ? totalPatients / businessDays : 0
+  })()
+
+  // Dynamic goal multiplier: 0.3 → 0.4 → 0.5 (level 0/1/2)
+  // 7日連続達成で1段階UP、7日連続未達成で1段階DOWN
+  const { GOAL_MULTIPLIERS, GOAL_STREAK_THRESHOLD } = DEFAULTS
+  let goalLevel = Math.max(0, Math.min(2, settings.goalLevel ?? 0))
+  let goalAchieveStreak = settings.goalAchieveStreak ?? 0
+  let goalMissStreak = settings.goalMissStreak ?? 0
+  const goalLastCheckedDate = settings.goalLastCheckedDate ?? null
+  const yesterdayKey = formatDateKeyJST(new Date(todayStart.getTime() - DAY_MS))
+
+  if (baseDaily > 0 && goalLastCheckedDate) {
+    // Evaluate each business day from the day after lastCheckedDate to yesterday
+    const [ly, lm, ld] = goalLastCheckedDate.split("-").map(Number)
+    let evalTime = Date.UTC(ly, lm - 1, ld) - JST_OFFSET + DAY_MS
+
+    for (let i = 0; i < 90; i++) {
+      const evalDate = new Date(evalTime)
+      const evalKey = formatDateKeyJST(evalDate)
+      if (evalKey > yesterdayKey) break
+
+      if (!isClosedDate(evalKey, evalDate)) {
+        const goal = Math.max(1, Math.round(baseDaily * GOAL_MULTIPLIERS[goalLevel]))
+        const count = dateCountMap.get(evalKey) ?? 0
+
+        if (count >= goal) {
+          goalAchieveStreak++
+          goalMissStreak = 0
+          if (goalAchieveStreak >= GOAL_STREAK_THRESHOLD && goalLevel < 2) {
+            goalLevel++
+            goalAchieveStreak = 0
+          }
+        } else {
+          goalMissStreak++
+          goalAchieveStreak = 0
+          if (goalMissStreak >= GOAL_STREAK_THRESHOLD && goalLevel > 0) {
+            goalLevel--
+            goalMissStreak = 0
+          }
+        }
+      }
+
+      evalTime += DAY_MS
+    }
+  }
+
+  // Persist updated goal tracking (atomic JSONB merge, fire-and-forget)
+  const newLastCheckedDate = yesterdayKey
+  if (
+    goalLevel !== (settings.goalLevel ?? 0) ||
+    goalAchieveStreak !== (settings.goalAchieveStreak ?? 0) ||
+    goalMissStreak !== (settings.goalMissStreak ?? 0) ||
+    newLastCheckedDate !== goalLastCheckedDate
+  ) {
+    const patch = JSON.stringify({
+      goalLevel,
+      goalAchieveStreak,
+      goalMissStreak,
+      goalLastCheckedDate: newLastCheckedDate,
+    })
+    prisma.$executeRaw`
+      UPDATE clinics SET settings = settings || ${patch}::jsonb
+      WHERE id = ${clinicId}::uuid
+    `.catch(() => {})
+  }
+
+  // Final daily goal with dynamic multiplier
+  const dailyGoal = baseDaily > 0
+    ? Math.max(1, Math.round(baseDaily * GOAL_MULTIPLIERS[goalLevel]))
+    : DEFAULTS.DAILY_GOAL_FALLBACK
 
   // Calculate weekly active days (past 7 days) and per-day data
   let weekActiveDays = 0
   const weekDays: WeekDayData[] = []
-
-  // Build per-day count map for the week (JST date keys)
-  const weekDayCountMap = new Map<string, number>()
-  const weekStartKey = formatDateKeyJST(weekStart)
-  for (const r of streakResponses) {
-    const key = formatDateKeyJST(new Date(r.respondedAt))
-    if (key >= weekStartKey && key <= todayKey) {
-      weekDayCountMap.set(key, (weekDayCountMap.get(key) ?? 0) + 1)
-    }
-  }
-
-  // Iterate 7 days from weekStart. Since weekStart is midnight JST (a UTC timestamp),
-  // adding DAY_MS advances exactly one JST day (Japan has no DST).
-  const DAY_MS = 24 * 60 * 60 * 1000
   for (let i = 0; i < 7; i++) {
     const dayDate = new Date(weekStart.getTime() + i * DAY_MS)
     const key = formatDateKeyJST(dayDate)
-    const count = weekDayCountMap.get(key) ?? 0
+    const count = dateCountMap.get(key) ?? 0
     if (count > 0) {
       weekActiveDays++
     }
