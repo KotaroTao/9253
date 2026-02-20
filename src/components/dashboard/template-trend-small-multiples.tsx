@@ -137,7 +137,7 @@ export function TemplateTrendSmallMultiples({ data, prevData, selectedPeriod, cu
 
   return (
     <div className="space-y-2">
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         {templates.map((t) => (
           <Card key={t.name}>
             <CardContent className="py-4">

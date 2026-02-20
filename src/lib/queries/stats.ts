@@ -667,6 +667,7 @@ async function getTemplateTrendDaily(
       AND sr.responded_at >= ${sinceDate}
       AND sr.responded_at <= ${untilDate}
       AND sr.overall_score IS NOT NULL
+      AND st.is_active = true
       ${af}
     GROUP BY (sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date, date_label, st.name
     ORDER BY (sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date ASC, st.name
@@ -703,6 +704,7 @@ async function getTemplateTrendWeekly(
       AND sr.responded_at >= ${sinceDate}
       AND sr.responded_at <= ${untilDate}
       AND sr.overall_score IS NOT NULL
+      AND st.is_active = true
       ${af}
     GROUP BY DATE_TRUNC('week', (sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date), st.name
     ORDER BY DATE_TRUNC('week', (sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date) ASC, st.name
@@ -739,6 +741,7 @@ async function getTemplateTrendMonthly(
       AND sr.responded_at >= ${sinceDate}
       AND sr.responded_at <= ${untilDate}
       AND sr.overall_score IS NOT NULL
+      AND st.is_active = true
       ${af}
     GROUP BY TO_CHAR(sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'YYYY-MM'), date_label, st.name
     ORDER BY TO_CHAR(sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'YYYY-MM') ASC, st.name

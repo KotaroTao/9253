@@ -163,63 +163,65 @@ async function main() {
     data: { isActive: false },
   })
 
-  // --- 6ヶ月分のリアルなデモアンケートデータを生成 ---
-  // 設定: 受付の接遇に問題がある歯科医院（鈴木美咲=受付担当が特に低評価）
-  // 患者満足度: 3.5 → 4.2 に半年で徐々に向上（受付研修等の改善アクションと連動）
-  // 曜日差: 土曜=大混雑で受付パンク→大幅低下 / 月曜=少ない / 水曜=余裕あり高め
-  // 時間帯差: 午前=余裕あり高め / 夕方〜19時=受付疲弊で低い
-  // スタッフ差: 田中花子(衛生士)=高評価 / 佐藤太郎(歯科医師)=やや高 / 鈴木美咲(受付)=明確に低評価
-  // 営業時間: 9:00〜19:00
+  // =========================================================================
+  // 1年分のリアルなデモアンケートデータを生成
+  // =========================================================================
+  // ストーリー:
+  //   受付対応と待ち時間に大きな課題があった歯科医院が、
+  //   1年間の改善アクションにより患者満足度 3.5 → 4.6 に向上。
+  //   鈴木美咲(受付)がiPadで約60%のアンケートを回収。
+  //   土曜日や午後の忙しい時間帯に満足度が低下する傾向あり。
+  // 営業: 月〜土（日曜休診）、9:00〜19:00
 
   const QUESTION_IDS: Record<string, string[]> = {
     "初診": ["fv1", "fv2", "fv3", "fv4", "fv5", "fv6", "fv7", "fv8"],
     "再診": ["tr1", "tr2", "tr3", "tr4", "tr5", "tr6"],
   }
 
-  // 設問ごとのベースライン難易度（低い=患者がスコアを低くつけやすい）
-  // ★受付の接遇に問題がある医院: 受付対応・相談しやすさが顕著に低い
-  // 一方、衛生士・歯科医師の対応は良好（スタッフ対応・丁寧さは高い）
+  // 設問ごとのベースライン難易度（低い=スコアが低くなりやすい）
+  // ★受付対応(fv2)と待ち時間(fv3,tr4)が最大の課題
   const QUESTION_DIFFICULTY: Record<string, number> = {
-    fv1: -0.08,  // 第一印象: 受付の雰囲気に引っ張られて低め
-    fv2: -0.35,  // 受付対応: ★大きく低い（最大の問題点）
-    fv3: -0.20,  // 待ち時間: 低い（不満が出やすい）
+    fv1: -0.10,  // 第一印象: 受付の雰囲気に引っ張られて低め
+    fv2: -0.30,  // 受付対応: ★最大の問題点
+    fv3: -0.22,  // 待ち時間: ★大きな問題点
     fv4: -0.05,  // ヒアリング: やや低い
     fv5: -0.10,  // 説明: 低め
     fv6: -0.15,  // 費用説明: 低い
-    fv7: -0.22,  // 相談しやすさ: ★受付の雰囲気で低い（声をかけづらい）
-    fv8: -0.08,  // 紹介したい: 受付印象に引っ張られてやや低い（推薦意向は継続意向より厳しめ）
+    fv7: -0.18,  // 相談しやすさ: 受付の雰囲気が影響
+    fv8: -0.10,  // 紹介意向: 受付印象に引っ張られる
     tr1: -0.08,  // 診療説明: やや低め
     tr2: -0.05,  // 痛み配慮: やや低め
-    tr3: -0.15,  // 相談しやすさ: ★受付の雰囲気が影響
-    tr4: -0.20,  // 待ち時間: 低い
+    tr3: -0.12,  // 相談しやすさ: 受付の雰囲気が影響
+    tr4: -0.22,  // 待ち時間: ★大きな問題点
     tr5: 0.10,   // スタッフ対応: 高い（衛生士・医師は良好）
-    tr6: -0.05,  // 紹介意向: やや厳しめ（推薦意向は安心感より高いハードル）
+    tr6: -0.05,  // 紹介意向: やや厳しめ
   }
 
-  // 改善アクションによるスコア押し上げ効果（月index → 対象設問 → 加算）
-  // 月0=6ヶ月前, 月5=当月。アクション開始月から徐々に効果が出る
-  // ★受付マニュアル研修のboostを大きく設定（受付接遇問題の改善が主テーマ）
+  // 改善アクションによるスコア押し上げ効果
+  // 月index: 0=12ヶ月前, 11=先月。startMonthから2ヶ月で最大効果
   const ACTION_EFFECTS: Record<string, { startMonth: number; endMonth: number | null; questions: string[]; boost: number }> = {
-    "待ち時間の見える化": { startMonth: 0, endMonth: 2, questions: ["fv3", "tr4"], boost: 0.12 },
-    "受付マニュアル研修": { startMonth: 1, endMonth: 3, questions: ["fv2", "fv1", "fv7", "tr3"], boost: 0.18 },
-    "視覚資料での説明導入": { startMonth: 2, endMonth: 4, questions: ["fv5", "fv6", "tr1"], boost: 0.10 },
-    "接遇マナー研修": { startMonth: 2, endMonth: 4, questions: ["tr5", "fv7", "tr3", "fv8"], boost: 0.08 },
-    "予約枠バッファ導入": { startMonth: 4, endMonth: null, questions: ["fv3", "tr4"], boost: 0.08 },
-    "痛み配慮の声かけ徹底": { startMonth: 4, endMonth: null, questions: ["tr2", "fv4", "fv7"], boost: 0.06 },
+    "待ち時間の見える化": { startMonth: 0, endMonth: 3, questions: ["fv3", "tr4"], boost: 0.12 },
+    "受付マニュアル研修": { startMonth: 1, endMonth: 5, questions: ["fv2", "fv1", "fv7", "tr3"], boost: 0.20 },
+    "受付環境改善": { startMonth: 2, endMonth: 5, questions: ["fv1", "fv2"], boost: 0.12 },
+    "視覚資料での説明導入": { startMonth: 4, endMonth: 7, questions: ["fv5", "fv6", "tr1"], boost: 0.10 },
+    "接遇マナー研修": { startMonth: 5, endMonth: 8, questions: ["tr5", "fv7", "tr3", "fv8", "tr6"], boost: 0.08 },
+    "予約枠バッファ導入": { startMonth: 7, endMonth: 10, questions: ["fv3", "tr4"], boost: 0.10 },
+    "痛み配慮の声かけ徹底": { startMonth: 9, endMonth: null, questions: ["tr2", "fv4"], boost: 0.08 },
+    "フォローアップ体制強化": { startMonth: 10, endMonth: null, questions: ["tr6", "fv8"], boost: 0.06 },
   }
 
   // スタッフごとの回答回収傾向
-  // 田中花子(衛生士): 最も積極的で接遇も良好 → 高回収率・高評価
-  // 佐藤太郎(歯科医師): 治療中心で安定 → 中回収率・やや高評価
-  // 鈴木美咲(受付スタッフ): ★受付接遇に問題 → 低回収率・明確に低評価
+  // 鈴木美咲(受付): iPadで最も多く回収（約60%）
+  // 田中花子(衛生士): クリーニング後に回収（約30%）
+  // 佐藤太郎(歯科医師): 治療後に時々（約10%）
   const STAFF_WEIGHTS = [
-    { staff: staffMembers[0], weight: 45, scoreBonus: 0.08 },   // 田中花子: 高回収率、高評価（接遇良好な衛生士）
-    { staff: staffMembers[1], weight: 35, scoreBonus: 0.03 },   // 佐藤太郎: 中回収率、やや高い（信頼される歯科医師）
-    { staff: staffMembers[2], weight: 20, scoreBonus: -0.15 },  // 鈴木美咲: ★低回収率、明確に低評価（受付接遇の問題）
+    { staff: staffMembers[0], weight: 30, scoreBonus: 0.05 },   // 田中花子: 接遇良好な衛生士
+    { staff: staffMembers[1], weight: 10, scoreBonus: 0.03 },   // 佐藤太郎: 信頼される歯科医師
+    { staff: staffMembers[2], weight: 60, scoreBonus: 0.00 },   // 鈴木美咲: 受付スタッフ（ニュートラル）
   ]
 
-  // 決定的乱数（seedを固定してデータが毎回同じになるように）
-  let rngState = 20260217
+  // 決定的乱数
+  let rngState = 20250220
   const rng = () => {
     rngState = (rngState * 1664525 + 1013904223) & 0x7fffffff
     return rngState / 0x7fffffff
@@ -235,17 +237,15 @@ async function main() {
     return items[items.length - 1]
   }
 
-  // スコア生成: baseQuality (0-1) を5段階に変換。3.5→4.2の推移を再現
-  // quality≈0.20 → 平均3.5, quality≈0.80 → 平均4.2 となるよう調整
+  // スコア生成: quality (0-1) を5段階に変換
+  // quality≈0.22 → 平均3.5, quality≈0.90 → 平均4.6
   const generateScore = (baseQuality: number): number => {
-    const clamped = Math.max(0.0, Math.min(1.0, baseQuality))
+    const q = Math.max(0.0, Math.min(1.0, baseQuality))
     const r = rng()
-    // clamped が高いほど 4, 5 が出やすい。低いと 1, 2, 3 が増える
-    const p1 = Math.max(0, 0.06 - clamped * 0.05)        // 1の確率: 6%→1%
-    const p2 = Math.max(0, 0.16 - clamped * 0.13)        // 2の確率: 16%→3%
-    const p3 = Math.max(0.03, 0.40 - clamped * 0.38)     // 3の確率: 40%→5%
-    const p4 = 0.30 + (clamped - 0.5) * 0.12             // 4の確率: 24%→36%
-    // 5 = 残り
+    const p1 = Math.max(0, 0.05 * (1 - q))
+    const p2 = Math.max(0, 0.13 - q * 0.13)
+    const p3 = Math.max(0.02, 0.33 - q * 0.33)
+    const p4 = 0.32 + (0.5 - q) * 0.08
     if (r < p1) return 1
     if (r < p1 + p2) return 2
     if (r < p1 + p2 + p3) return 3
@@ -253,6 +253,25 @@ async function main() {
     return 5
   }
 
+  // フリーテキスト（前半=受付・待ち時間の不満中心、後半=改善認知あり）
+  const FREE_TEXTS_NEGATIVE_RECEPTION = [
+    "受付の方の対応がやや事務的に感じました。",
+    "受付が混雑していて声をかけづらかったです。",
+    "受付での説明が早口で聞き取りにくかったです。",
+    "受付の方がバタバタしていて少し不安になりました。",
+  ]
+  const FREE_TEXTS_NEGATIVE_WAIT = [
+    "待ち時間が長く、目安も分からなくて不安でした。",
+    "予約時間を過ぎても呼ばれず心配になりました。",
+    "待合室で長時間待ちましたが声かけがなかったです。",
+    "待ち時間が少し長かったです。",
+  ]
+  const FREE_TEXTS_NEGATIVE_OTHER = [
+    "治療の説明が専門的で少し難しかったです。",
+    "費用についてもう少し事前に説明がほしかったです。",
+    "次回の治療内容をもう少し詳しく教えてほしかったです。",
+    "もう少しゆっくり説明してほしかったです。",
+  ]
   const FREE_TEXTS_POSITIVE = [
     "丁寧に対応していただきありがとうございました。",
     "説明が分かりやすくて安心しました。",
@@ -263,19 +282,18 @@ async function main() {
     "予約が取りやすくて助かります。",
     "痛みへの配慮がとても嬉しかったです。",
     "いつもありがとうございます。安心して通えます。",
-    "受付の対応がとても丁寧で好印象です。",
     "費用の説明が事前にあって安心しました。",
     "先生がとても話しやすくてリラックスできました。",
-    "写真を使って説明してくれたので分かりやすかったです。",
   ]
-  const FREE_TEXTS_NEGATIVE = [
-    "待ち時間が少し長かったです。",
-    "次回の治療内容をもう少し詳しく教えてほしかったです。",
-    "治療の説明が専門的で少し難しかったです。",
-    "費用についてもう少し事前に説明がほしかったです。",
-    "予約が取りにくいと感じました。",
-    "もう少しゆっくり説明してほしかったです。",
+  const FREE_TEXTS_POSITIVE_IMPROVED = [
+    "以前より受付の対応がとても丁寧になりましたね。",
+    "待ち時間の目安を教えてくれて助かりました。",
+    "受付がスムーズになって気持ちよく来院できます。",
+    "写真を使った説明がとても分かりやすかったです。",
+    "予約通りに呼ばれて待ち時間がなく快適でした。",
+    "受付の方の笑顔が素敵で安心しました。",
   ]
+
   const COMPLAINTS = ["pain", "filling_crown", "periodontal", "cosmetic", "prevention", "orthodontics", "other"]
   const AGE_GROUPS = ["under_20", "20s", "30s", "40s", "50s", "60s_over"]
   const GENDERS = ["male", "female", "unspecified"]
@@ -295,13 +313,12 @@ async function main() {
   }
 
   const now = new Date()
-  const startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1)
+  const startDate = new Date(now.getFullYear() - 1, now.getMonth(), 1) // 12ヶ月前の1日
+
   // Device types for seed: 70% patient_url, 20% kiosk_authorized, 10% kiosk_unauthorized
   const DEVICE_TYPES = ["patient_url", "kiosk_authorized", "kiosk_unauthorized"] as const
   const DEVICE_TYPE_WEIGHTS = [70, 20, 10]
-  // Device weights matching px-constants.ts
   const SEED_DEVICE_WEIGHTS: Record<string, number> = { patient_url: 1.5, kiosk_authorized: 1.0, kiosk_unauthorized: 0.8 }
-  // Complaint weights matching px-constants.ts
   const SEED_COMPLAINT_WEIGHTS: Record<string, number> = { pain: 1.2, prevention: 0.8 }
 
   const allResponses: Array<{
@@ -331,72 +348,66 @@ async function main() {
     }
     totalDays++
 
-    // 月indexを算出（0=最初の月, 5=6ヶ月目）
+    // 月index（0=最初の月, 11=12ヶ月目）
     const monthsFromStart = (current.getFullYear() - startDate.getFullYear()) * 12 + (current.getMonth() - startDate.getMonth())
-    // 月内の進捗（0.0〜1.0）
     const dayOfMonth = current.getDate()
     const daysInMonth = new Date(current.getFullYear(), current.getMonth() + 1, 0).getDate()
     const monthProgress = dayOfMonth / daysInMonth
 
-    // === 1日あたりの回答数（曜日で大きく変動）===
-    // 土曜は来院数が非常に多く受付がパンク状態。月曜は閑散。
+    // === 1日あたりの回答数（曜日・月で変動） ===
+    // 初期: 平均4件/日 → 12ヶ月後: 平均8件/日（回収率向上）
     let baseDailyCount: number
-    if (dayOfWeek === 6) baseDailyCount = 16 + Math.floor(rng() * 8) // 土曜: 16-23（非常に多い）
-    else if (dayOfWeek === 1) baseDailyCount = 4 + Math.floor(rng() * 3) // 月曜: 4-6（少ない）
-    else if (dayOfWeek === 3) baseDailyCount = 11 + Math.floor(rng() * 6) // 水曜: 11-16（多め）
-    else if (dayOfWeek === 5) baseDailyCount = 9 + Math.floor(rng() * 5) // 金曜: 9-13
-    else if (dayOfWeek === 2) baseDailyCount = 6 + Math.floor(rng() * 4) // 火曜: 6-9
-    else baseDailyCount = 7 + Math.floor(rng() * 4) // 木曜: 7-10
+    if (dayOfWeek === 6) baseDailyCount = 7 + Math.floor(rng() * 5)       // 土曜: 7-11（最も多い）
+    else if (dayOfWeek === 1) baseDailyCount = 2 + Math.floor(rng() * 2)  // 月曜: 2-3（少ない）
+    else if (dayOfWeek === 3) baseDailyCount = 4 + Math.floor(rng() * 4)  // 水曜: 4-7（多め）
+    else if (dayOfWeek === 5) baseDailyCount = 3 + Math.floor(rng() * 4)  // 金曜: 3-6
+    else if (dayOfWeek === 2) baseDailyCount = 2 + Math.floor(rng() * 3)  // 火曜: 2-4
+    else baseDailyCount = 3 + Math.floor(rng() * 3)                        // 木曜: 3-5
 
-    // 月が進むと回収率が上がる（スタッフの定着）
-    const dailyCount = Math.round(baseDailyCount * (1.0 + monthsFromStart * 0.06))
+    // 月が進むと回収率UP
+    const dailyCount = Math.max(1, Math.round(baseDailyCount * (1.0 + monthsFromStart * 0.07)))
 
-    // === ベースクオリティ: 3.5→4.2 への推移を制御 ===
-    // 新generateScore: quality≈0.20→平均3.5, quality≈0.80→平均4.2
-    // 設問難易度の平均が約-0.08、改善アクション効果が月末に+0.08〜0.12を考慮
-    // 6ヶ月で 0.28 → 0.74 （差分0.46をS字カーブで）
-    const linearProgress = (monthsFromStart + monthProgress) / 6.0  // 0.0〜1.0
-    const sCurve = linearProgress * linearProgress * (3 - 2 * linearProgress) // S字カーブ
-    const dayBaseQuality = 0.28 + sCurve * 0.46 + (rng() - 0.5) * 0.08
+    // === ベースクオリティ: S字カーブで 0.22→0.90 に推移 ===
+    // generateScore: quality≈0.22→平均3.5, quality≈0.90→平均4.6
+    const linearProgress = (monthsFromStart + monthProgress) / 12.0
+    const sCurve = linearProgress * linearProgress * (3 - 2 * linearProgress)
+    const dayBaseQuality = 0.22 + sCurve * 0.68 + (rng() - 0.5) * 0.06
 
-    // === 曜日によるスコア変動（受付の負荷と直結）===
+    // === 曜日によるスコア変動 ===
     let dayOfWeekBonus = 0
-    if (dayOfWeek === 6) dayOfWeekBonus = -0.12   // 土曜: ★大混雑で受付パンク、大幅低下
-    if (dayOfWeek === 1) dayOfWeekBonus = -0.05   // 月曜: 週明けバタバタ
+    if (dayOfWeek === 6) dayOfWeekBonus = -0.12   // 土曜: 大混雑で受付パンク
+    if (dayOfWeek === 1) dayOfWeekBonus = -0.04   // 月曜: 週明けバタバタ
     if (dayOfWeek === 2) dayOfWeekBonus = -0.01   // 火曜: やや低め
-    if (dayOfWeek === 3) dayOfWeekBonus = 0.06    // 水曜: 余裕がある日、高め
+    if (dayOfWeek === 3) dayOfWeekBonus = 0.06    // 水曜: 余裕あり
     if (dayOfWeek === 5) dayOfWeekBonus = 0.02    // 金曜: やや高い
 
     for (let i = 0; i < dailyCount; i++) {
       const config = weightedChoice(templateConfig, templateConfig.map((c) => c.weight))
-
-      // スタッフ選択（重み付き）
       const staffChoice = weightedChoice(STAFF_WEIGHTS, STAFF_WEIGHTS.map((s) => s.weight))
 
-      // === 時間帯（9:00-19:00営業、11時・14時ピーク、12時谷、19時は少数）===
+      // === 時間帯（9:00-19:00営業） ===
       const hour = weightedChoice(
         [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
         [5, 12, 18, 3, 7, 16, 14, 10, 8, 5, 2]
       )
-      // JST時間をUTCとして保存（DBクエリで AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo' する前提）
       const respondedAt = new Date(Date.UTC(
         current.getFullYear(), current.getMonth(), current.getDate(),
         hour - 9, Math.floor(rng() * 60), Math.floor(rng() * 60)
       ))
 
-      // === 時間帯によるスコア変動（受付の疲弊と直結）===
+      // === 時間帯によるスコア変動 ===
       let timeBonus = 0
-      if (hour >= 9 && hour <= 11) timeBonus = 0.08      // 午前: 高い（受付も余裕あり）
-      if (hour === 12) timeBonus = -0.06                   // 昼: 低め（バタバタ）
-      if (hour >= 14 && hour <= 15) timeBonus = 0.03      // 午後前半: やや高い
-      if (hour === 16) timeBonus = -0.02                   // 夕方入り: やや低い
-      if (hour >= 17 && hour <= 18) timeBonus = -0.10     // 夕方: ★低い（受付も疲弊、雑になりがち）
-      if (hour >= 19) timeBonus = -0.14                    // 閉院間際: ★非常に低い（早く終わらせたい雰囲気）
-      if (dayOfWeek === 6 && hour >= 14) timeBonus -= 0.06 // 土曜午後: ★さらに低下（混雑ピーク）
+      if (hour >= 9 && hour <= 11) timeBonus = 0.06       // 午前: 余裕あり
+      if (hour === 12) timeBonus = -0.05                    // 昼: バタバタ
+      if (hour >= 14 && hour <= 15) timeBonus = 0.02       // 午後前半: やや高い
+      if (hour === 16) timeBonus = -0.02                    // 夕方入り
+      if (hour >= 17 && hour <= 18) timeBonus = -0.08      // 夕方: 受付疲弊
+      if (hour >= 19) timeBonus = -0.12                     // 閉院間際
+      if (dayOfWeek === 6 && hour >= 14) timeBonus -= 0.05 // 土曜午後: さらに低下
 
       const baseForThisResponse = dayBaseQuality + dayOfWeekBonus + timeBonus + staffChoice.scoreBonus
 
-      // === 設問ごとのスコア生成（設問難易度 + 改善アクション効果） ===
+      // === 設問ごとのスコア生成 ===
       const answers: Record<string, number> = {}
       for (const qId of config.questionIds) {
         let qBase = baseForThisResponse + (QUESTION_DIFFICULTY[qId] || 0)
@@ -405,7 +416,6 @@ async function main() {
         for (const [, effect] of Object.entries(ACTION_EFFECTS)) {
           if (!effect.questions.includes(qId)) continue
           if (monthsFromStart < effect.startMonth) continue
-          // 開始月から徐々に効果UP（最大でboost値）
           const monthsSinceAction = monthsFromStart - effect.startMonth + monthProgress
           const effectStrength = Math.min(1.0, monthsSinceAction / 2.0) // 2ヶ月で最大効果
           qBase += effect.boost * effectStrength
@@ -416,11 +426,23 @@ async function main() {
       const scoreValues = Object.values(answers)
       const overallScore = Math.round((scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length) * 100) / 100
 
-      // フリーテキスト: 低スコア時はネガティブ、高スコア時はポジティブが出やすい
+      // フリーテキスト: 前半はネガティブ（受付・待ち時間中心）、後半はポジティブ（改善認知）
       let freeText: string | null = null
-      if (rng() < 0.22) {
-        if (overallScore <= 3.0 && rng() < 0.6) {
-          freeText = FREE_TEXTS_NEGATIVE[Math.floor(rng() * FREE_TEXTS_NEGATIVE.length)]
+      if (rng() < 0.20) {
+        const monthRatio = monthsFromStart / 11
+        if (overallScore <= 3.0) {
+          // 低スコア → ネガティブ
+          const negType = rng()
+          if (negType < 0.35) {
+            freeText = FREE_TEXTS_NEGATIVE_RECEPTION[Math.floor(rng() * FREE_TEXTS_NEGATIVE_RECEPTION.length)]
+          } else if (negType < 0.65) {
+            freeText = FREE_TEXTS_NEGATIVE_WAIT[Math.floor(rng() * FREE_TEXTS_NEGATIVE_WAIT.length)]
+          } else {
+            freeText = FREE_TEXTS_NEGATIVE_OTHER[Math.floor(rng() * FREE_TEXTS_NEGATIVE_OTHER.length)]
+          }
+        } else if (monthRatio > 0.5 && rng() < 0.3) {
+          // 後半で改善を実感するコメント
+          freeText = FREE_TEXTS_POSITIVE_IMPROVED[Math.floor(rng() * FREE_TEXTS_POSITIVE_IMPROVED.length)]
         } else {
           freeText = FREE_TEXTS_POSITIVE[Math.floor(rng() * FREE_TEXTS_POSITIVE.length)]
         }
@@ -429,27 +451,24 @@ async function main() {
       const isFirstVisit = config.template.name === "初診"
       const chiefComplaint = COMPLAINTS[Math.floor(rng() * COMPLAINTS.length)]
 
-      // === PX-Value fields ===
+      // PX-Value fields
       const deviceType = weightedChoice([...DEVICE_TYPES], DEVICE_TYPE_WEIGHTS)
       const deviceWeight = SEED_DEVICE_WEIGHTS[deviceType] ?? 1.0
       const complaintWeight = SEED_COMPLAINT_WEIGHTS[chiefComplaint] ?? 1.0
       const weightedScore = Math.round(overallScore * deviceWeight * complaintWeight * 100) / 100
 
-      // Response duration: normal responses 25-120s, ~5% speed trap failures (<20s for 10Q)
+      // Response duration: normal 25-120s, ~5% speed trap failures
       const isSpeedTrapFail = rng() < 0.05
       const questionCount = config.questionIds.length
       const responseDurationMs = isSpeedTrapFail
-        ? Math.floor(rng() * questionCount * 1500) // Too fast: 0 to questionCount*1500ms
-        : Math.floor((25000 + rng() * 95000)) // Normal: 25s to 120s
+        ? Math.floor(rng() * questionCount * 1500)
+        : Math.floor((25000 + rng() * 95000))
 
-      // Trust factor: 0.0 to 1.0. Most are fully trusted, some have deductions
       let trustFactor = 1.0
-      if (isSpeedTrapFail) trustFactor -= 0.3 // speed trap weight
-      if (rng() < 0.03) trustFactor -= 0.25  // rare continuity trap
-      if (rng() < 0.02) trustFactor -= 0.20  // rare capacity trap
+      if (isSpeedTrapFail) trustFactor -= 0.3
+      if (rng() < 0.03) trustFactor -= 0.25
+      if (rng() < 0.02) trustFactor -= 0.20
       trustFactor = Math.round(Math.max(0, trustFactor) * 100) / 100
-
-      // isVerified: false if trustFactor < 0.7 (any trap significantly failed)
       const isVerified = trustFactor >= 0.7
 
       allResponses.push({
@@ -466,6 +485,7 @@ async function main() {
         freeText,
         patientAttributes: {
           visitType: isFirstVisit ? "first_visit" : "revisit",
+          insuranceType: rng() < (0.14 + monthsFromStart * 0.005) ? "self_pay" : "insurance",
           chiefComplaint,
           ageGroup: weightedChoice(AGE_GROUPS, [8, 12, 18, 22, 25, 15]),
           gender: weightedChoice(GENDERS, [45, 50, 5]),
@@ -489,13 +509,15 @@ async function main() {
     const staffName = staffMembers.find((s) => s.id === r.staffId)?.name || "unknown"
     staffCounts[staffName] = (staffCounts[staffName] || 0) + 1
   }
-  console.log(`デモ回答作成: ${allResponses.length}件（${totalDays}営業日分）`)
+  console.log(`\nデモ回答作成: ${allResponses.length}件（${totalDays}営業日分）`)
   for (const [name, count] of Object.entries(staffCounts)) {
-    console.log(`  ${name}: ${count}件`)
+    const pct = Math.round(count / allResponses.length * 100)
+    console.log(`  ${name}: ${count}件（${pct}%）`)
   }
 
-  // 月ごとの平均スコアをログ出力（3.5→4.2推移の確認用）
-  for (let m = 0; m <= 5; m++) {
+  // 月ごとの平均スコアをログ出力
+  console.log(`\n月別平均スコア推移:`)
+  for (let m = 0; m <= 12; m++) {
     const d = new Date(startDate.getFullYear(), startDate.getMonth() + m, 1)
     const year = d.getFullYear()
     const month = d.getMonth() + 1
@@ -508,7 +530,7 @@ async function main() {
     }
   }
 
-  // PX-Value stats summary
+  // PX-Value stats
   const verifiedCount = allResponses.filter((r) => r.isVerified).length
   const unverifiedCount = allResponses.length - verifiedCount
   const avgTrust = Math.round((allResponses.reduce((a, b) => a + b.trustFactor, 0) / allResponses.length) * 100) / 100
@@ -523,8 +545,9 @@ async function main() {
     console.log(`  ${dt}: ${cnt}件`)
   }
 
-  // === 改善アクション履歴（6件: 4完了 + 2実施中） ===
-  // 改善アクション開始時・完了時の実際のスコアを算出
+  // =========================================================================
+  // 改善アクション履歴（8件: 6完了 + 2実施中）
+  // =========================================================================
   const getScoreAtMonth = (monthIdx: number, questions: string[]): number => {
     const d = new Date(startDate.getFullYear(), startDate.getMonth() + monthIdx, 1)
     const year = d.getFullYear()
@@ -533,7 +556,6 @@ async function main() {
       (r) => r.respondedAt.getFullYear() === year && r.respondedAt.getMonth() + 1 === month
     )
     if (monthResponses.length === 0) return 3.5
-    // 対象設問のスコアだけ集計
     let total = 0, count = 0
     for (const r of monthResponses) {
       for (const qId of questions) {
@@ -553,66 +575,84 @@ async function main() {
   const improvementActions = [
     {
       title: "待ち時間の見える化と声がけ",
-      description: "待ち時間が発生した際に「あと○分」と具体的な目安を伝える運用を開始。受付にタイマー表示を設置。",
+      description: "待ち時間が発生した際に「あと○分」と具体的な目安を伝える運用を開始。受付にタイマー表示を設置し、15分以上の待ちが発生した場合は必ず一声かける体制に。",
       targetQuestion: "fv3",
       status: "completed",
       startMonthIdx: 0,
-      endMonthIdx: 2,
+      endMonthIdx: 3,
       questions: ["fv3", "tr4"],
     },
     {
       title: "受付マニュアルの作成と研修",
-      description: "受付時の笑顔・挨拶・名前呼びを統一するマニュアルを作成し、全スタッフで研修を実施。受付対応が最大の課題であったため重点的に取り組み。",
+      description: "受付時の笑顔・挨拶・名前呼びを統一するマニュアルを作成。全スタッフで月2回のロールプレイング研修を実施。アンケートで最も課題だった受付対応の改善に重点的に取り組んだ。",
       targetQuestion: "fv2",
       status: "completed",
       startMonthIdx: 1,
-      endMonthIdx: 3,
+      endMonthIdx: 5,
       questions: ["fv2", "fv1", "fv7", "tr3"],
     },
     {
-      title: "視覚資料を活用した治療説明",
-      description: "口腔内カメラの写真やイラスト付き資料を使って、治療内容・費用を視覚的に説明する運用を導入。",
-      targetQuestion: "fv5",
+      title: "受付環境の改善（動線・表示見直し）",
+      description: "受付カウンターの配置を見直し、患者動線を改善。案内表示を大きく分かりやすくし、初めての患者が迷わない環境を整備。受付の混雑感を軽減。",
+      targetQuestion: "fv1",
       status: "completed",
       startMonthIdx: 2,
-      endMonthIdx: 4,
+      endMonthIdx: 5,
+      questions: ["fv1", "fv2"],
+    },
+    {
+      title: "視覚資料を活用した治療説明",
+      description: "口腔内カメラの写真やイラスト付き資料を使って、治療内容・費用を視覚的に説明する運用を導入。患者の理解度と納得感の向上を目指す。",
+      targetQuestion: "fv5",
+      status: "completed",
+      startMonthIdx: 4,
+      endMonthIdx: 7,
       questions: ["fv5", "fv6", "tr1"],
     },
     {
       title: "接遇マナー研修の定期実施",
-      description: "月1回の接遇研修を開始。スタッフの声かけ・表情・患者対応のロールプレイングを実施。",
+      description: "月1回の接遇研修を開始。スタッフの声かけ・表情・患者対応のロールプレイングを実施。外部講師による特別研修も四半期ごとに実施。",
       targetQuestion: "tr5",
       status: "completed",
-      startMonthIdx: 2,
-      endMonthIdx: 4,
-      questions: ["tr5", "fv7", "tr3"],
+      startMonthIdx: 5,
+      endMonthIdx: 8,
+      questions: ["tr5", "fv7", "tr3", "fv8", "tr6"],
     },
     {
       title: "予約枠にバッファを確保",
-      description: "急患対応用に1日3枠のバッファを設定。予約患者の待ち時間短縮と予約の取りやすさを改善中。",
+      description: "急患対応用に1日3枠のバッファを設定。特に土曜日は2枠追加で確保し、予約患者の待ち時間短縮と混雑緩和を実現。",
       targetQuestion: "fv3",
-      status: "active",
-      startMonthIdx: 4,
-      endMonthIdx: null,
+      status: "completed",
+      startMonthIdx: 7,
+      endMonthIdx: 10,
       questions: ["fv3", "tr4"],
     },
     {
       title: "痛みへの配慮を言語化して伝える",
-      description: "治療前に「少しチクッとします」等の予告を徹底。手を挙げたら止めるルールも導入中。",
+      description: "治療前に「少しチクッとします」等の予告を徹底。手を挙げたら止めるルールを全チェアに掲示し、患者の安心感を向上中。",
       targetQuestion: "tr2",
       status: "active",
-      startMonthIdx: 4,
+      startMonthIdx: 9,
       endMonthIdx: null,
-      questions: ["tr2", "fv4", "fv7"],
+      questions: ["tr2", "fv4"],
+    },
+    {
+      title: "フォローアップ体制の強化",
+      description: "抜歯等の処置後に翌日の電話フォローを開始。次回予約時に治療内容の説明を添えて、キャンセル率の低下と紹介意向の向上を目指す。",
+      targetQuestion: "tr6",
+      status: "active",
+      startMonthIdx: 10,
+      endMonthIdx: null,
+      questions: ["tr6", "fv8"],
     },
   ]
 
-  // Question ID → text lookup for targetQuestion field
   const questionTextMap = new Map<string, string>()
   for (const q of [...FIRST_VISIT_QUESTIONS, ...TREATMENT_QUESTIONS]) {
     questionTextMap.set(q.id, q.text)
   }
 
+  console.log(`\n改善アクション:`)
   for (const action of improvementActions) {
     const startedAt = new Date(startDate.getFullYear(), startDate.getMonth() + action.startMonthIdx, 10 + Math.floor(rng() * 10))
     const completedAt = action.endMonthIdx !== null
@@ -638,36 +678,67 @@ async function main() {
         completedAt,
       },
     })
-    console.log(`改善アクション: ${action.title}（${action.status}）開始時 ${baselineScore} → ${resultScore !== null ? `完了時 ${resultScore}` : "実施中"}`)
+    console.log(`  ${action.title}（${action.status}）${baselineScore.toFixed(2)} → ${resultScore !== null ? resultScore.toFixed(2) : "実施中"}`)
   }
 
-  // 月次レポート（過去5ヶ月分。当月は未入力=InsightBanner表示用）
-  for (let m = 1; m <= 5; m++) {
+  // =========================================================================
+  // 月次経営レポート（12ヶ月分。当月は未入力=InsightBanner表示用）
+  // =========================================================================
+  // 1年前: 実人数約300人(初診30,再診270), 売上4000万, 自費率30%, キャンセル率10%
+  // 現在:  売上約5000万, 全体的に改善
+  // 季節変動: 8月(お盆)・12月(年末)=低め、3-4月・10月=高め
+
+  await prisma.monthlyClinicMetrics.deleteMany({ where: { clinicId: clinic.id } })
+
+  const SEASONAL_FACTORS: Record<number, number> = {
+    1: 0.95, 2: 0.98, 3: 1.03, 4: 1.03, 5: 1.01, 6: 1.00,
+    7: 1.00, 8: 0.90, 9: 1.02, 10: 1.04, 11: 1.01, 12: 0.93,
+  }
+
+  console.log(`\n月次経営レポート:`)
+  for (let m = 1; m <= 12; m++) {
     const d = new Date(now.getFullYear(), now.getMonth() - m, 1)
     const year = d.getFullYear()
     const month = d.getMonth() + 1
-    const monthResponses = allResponses.filter(
-      (r) => r.respondedAt.getFullYear() === year && r.respondedAt.getMonth() + 1 === month
-    ).length
-    const totalPatients = Math.round(monthResponses * (2.5 + rng() * 0.8))
-    const firstVisitCount = Math.round(totalPatients * (0.15 + rng() * 0.1))
+    const seasonal = SEASONAL_FACTORS[month] ?? 1.0
+
+    // progress: 0（12ヶ月前）→ 1（先月）
+    const progress = (12 - m) / 11
+
+    // 患者数: 300→355、季節変動あり
+    const basePatients = 295 + Math.round(60 * progress)
+    const totalPatients = Math.round(basePatients * seasonal + (rng() - 0.5) * 15)
+
+    // 初診比率: 10%→12%（口コミ効果で増加）
+    const firstVisitRatio = 0.10 + 0.02 * progress
+    const firstVisitCount = Math.max(1, Math.round(totalPatients * firstVisitRatio + (rng() - 0.5) * 4))
     const revisitCount = totalPatients - firstVisitCount
-    const selfPayRatio = 0.15 + rng() * 0.15
-    const firstVisitInsurance = Math.round(firstVisitCount * (1 - selfPayRatio))
-    const firstVisitSelfPay = firstVisitCount - firstVisitInsurance
-    const revisitInsurance = Math.round(revisitCount * (1 - selfPayRatio * 0.8))
-    const revisitSelfPay = revisitCount - revisitInsurance
-    const totalRevenue = Math.round((350 + rng() * 150) * totalPatients / 10000)
+
+    // 自費率（金額）: 30%→35%、患者自費比率はその約半分
+    const selfPayRatio = 0.29 + 0.06 * progress + (rng() - 0.5) * 0.02
+    const patientSelfPayRatio = selfPayRatio * 0.55
+
+    const firstVisitSelfPay = Math.max(0, Math.round(firstVisitCount * patientSelfPayRatio))
+    const firstVisitInsurance = firstVisitCount - firstVisitSelfPay
+    const revisitSelfPay = Math.max(0, Math.round(revisitCount * patientSelfPayRatio))
+    const revisitInsurance = revisitCount - revisitSelfPay
+
+    // 売上: 3900→5100万、季節変動あり
+    const baseRevenue = 3900 + Math.round(1200 * progress)
+    const totalRevenue = Math.max(1000, Math.round(baseRevenue * seasonal + (rng() - 0.5) * 150))
     const selfPayRevenue = Math.round(totalRevenue * selfPayRatio)
     const insuranceRevenue = totalRevenue - selfPayRevenue
-    const cancellationCount = Math.round(totalPatients * (0.05 + rng() * 0.05))
+
+    // キャンセル率: 10%→5%
+    const cancelRate = 0.105 - 0.055 * progress + (rng() - 0.5) * 0.01
+    const cancellationCount = Math.max(0, Math.round(totalPatients * cancelRate))
 
     await prisma.monthlyClinicMetrics.upsert({
       where: { clinicId_year_month: { clinicId: clinic.id, year, month } },
       update: { firstVisitCount, firstVisitInsurance, firstVisitSelfPay, revisitCount, revisitInsurance, revisitSelfPay, totalRevenue, insuranceRevenue, selfPayRevenue, cancellationCount },
       create: { clinicId: clinic.id, year, month, firstVisitCount, firstVisitInsurance, firstVisitSelfPay, revisitCount, revisitInsurance, revisitSelfPay, totalRevenue, insuranceRevenue, selfPayRevenue, cancellationCount },
     })
-    console.log(`月次レポート: ${year}-${String(month).padStart(2, "0")} (初診${firstVisitCount}人, 再診${revisitCount}人, 売上${totalRevenue}万円)`)
+    console.log(`  ${year}-${String(month).padStart(2, "0")}: 実人数${totalPatients}人（初診${firstVisitCount}/再診${revisitCount}）売上${totalRevenue}万円 自費率${Math.round(selfPayRatio * 100)}% キャンセル${cancellationCount}件(${Math.round(cancelRate * 100)}%)`)
   }
 
   // Seed default patient tips to PlatformSetting
@@ -704,7 +775,6 @@ async function main() {
     { category: "待ち時間", title: "予約枠にバッファを持たせる", content: "急患対応用に1日2〜3枠のバッファを確保すると、予約患者の待ち時間が減ります。待ち時間の長さは満足度を下げる最大の要因の一つです。" },
   ]
 
-  // 既存設定がある場合は上書きしない（管理画面で変更した値を保持）
   const existingTipSetting = await prisma.platformSetting.findUnique({
     where: { key: "patientTips" },
   })
@@ -716,9 +786,9 @@ async function main() {
         value: tipSettingValue as unknown as Prisma.InputJsonValue,
       },
     })
-    console.log(`Platform tips seeded: ${defaultTips.length} tips (rotation: 1440 min)`)
+    console.log(`\nPlatform tips seeded: ${defaultTips.length} tips (rotation: 1440 min)`)
   } else {
-    console.log("Platform tips already exist, skipping (preserving custom settings)")
+    console.log("\nPlatform tips already exist, skipping (preserving custom settings)")
   }
 
   console.log("\nSeed completed!")
