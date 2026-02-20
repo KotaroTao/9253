@@ -24,6 +24,7 @@ model Clinic {
   monthlyClinicMetrics MonthlyClinicMetrics[]
   improvementActions   ImprovementAction[]
   authorizedDevices    AuthorizedDevice[]
+  advisoryReports      AdvisoryReport[]
 
   @@map("clinics")
 }
@@ -175,6 +176,23 @@ model ImprovementActionLog {
 
   @@index([improvementActionId])
   @@map("improvement_action_logs")
+}
+
+model AdvisoryReport {
+  id              String   @id @default(uuid()) @db.Uuid
+  clinicId        String   @map("clinic_id") @db.Uuid
+  triggerType     String   @map("trigger_type") // threshold, scheduled, manual
+  responseCount   Int      @map("response_count")
+  sections        Json     // AI分析結果のセクション
+  summary         String   // 一言サマリー
+  priority        String?  // 最優先改善領域
+  generatedAt     DateTime @default(now()) @map("generated_at")
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@index([clinicId, generatedAt])
+  @@map("advisory_reports")
 }
 
 model MonthlyClinicMetrics {

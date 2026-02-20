@@ -408,6 +408,13 @@ export const IMPROVEMENT_SUGGESTIONS: Record<string, ImprovementSuggestion[]> = 
   ],
 }
 
+// AI Advisory settings
+export const ADVISORY = {
+  DEFAULT_THRESHOLD: 30,           // 新規回答数でアンロック
+  SCHEDULED_INTERVAL_DAYS: 7,      // 定期更新間隔（日）
+  MIN_RESPONSES_FOR_FIRST: 30,     // 初回分析に必要な最低回答数
+} as const
+
 export const OPERATOR_CLINIC_COOKIE = "mieru-operator-clinic"
 export const OPERATOR_MODE_MAX_AGE = 60 * 60 * 8 // 8 hours
 
