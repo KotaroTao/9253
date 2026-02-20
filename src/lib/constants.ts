@@ -30,10 +30,6 @@ export const DEFAULTS = {
   MAX_FREE_TEXT_LENGTH: 500,
   MIN_STAR_RATING: 1,
   MAX_STAR_RATING: 5,
-  DAILY_SURVEY_GOAL: 15,
-  DAILY_GOAL_FALLBACK: 10,
-  GOAL_MULTIPLIERS: [0.3, 0.4, 0.5] as readonly number[],
-  GOAL_STREAK_THRESHOLD: 7, // 連続日数で乗数が変動
 } as const
 
 // ─── PX-Value Segment Labels ───
@@ -411,9 +407,16 @@ export const IMPROVEMENT_SUGGESTIONS: Record<string, ImprovementSuggestion[]> = 
 // AI Advisory settings
 export const ADVISORY = {
   DEFAULT_THRESHOLD: 30,           // 新規回答数でアンロック
-  SCHEDULED_INTERVAL_DAYS: 7,      // 定期更新間隔（日）
   MIN_RESPONSES_FOR_FIRST: 30,     // 初回分析に必要な最低回答数
 } as const
+
+// AI分析回数バッジ
+export const ADVISORY_MILESTONES = [
+  { count: 1, label: "初回分析", emoji: "🔮" },
+  { count: 3, label: "3回目", emoji: "📊" },
+  { count: 5, label: "5回目", emoji: "🧪" },
+  { count: 10, label: "10回目", emoji: "🎓" },
+] as const
 
 export const OPERATOR_CLINIC_COOKIE = "mieru-operator-clinic"
 export const OPERATOR_MODE_MAX_AGE = 60 * 60 * 8 // 8 hours

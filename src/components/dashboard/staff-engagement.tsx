@@ -4,11 +4,16 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
-import { Flame, Trophy, CalendarOff, Smartphone, ArrowRight, Sparkles, Target, TrendingUp, TrendingDown } from "lucide-react"
+import { STREAK_MILESTONES, ADVISORY_MILESTONES } from "@/lib/constants"
+import {
+  Flame, Trophy, CalendarOff, Smartphone, ArrowRight, Sparkles,
+  Target, TrendingUp, TrendingDown, Brain, MessageCircle, Clock,
+} from "lucide-react"
 import Link from "next/link"
 import { Confetti } from "@/components/survey/confetti"
 import { cn } from "@/lib/utils"
 import type { EngagementData } from "@/lib/queries/engagement"
+import type { AdvisoryProgress } from "@/types"
 
 interface ActiveAction {
   id: string
@@ -25,40 +30,68 @@ interface ActiveAction {
 interface StaffEngagementProps {
   data: EngagementData
   kioskUrl: string
+  advisoryProgress: AdvisoryProgress
+  isAdmin: boolean
+  advisoryReportCount: number
   activeActions?: ActiveAction[]
   questionScores?: Record<string, number>
 }
 
-export function StaffEngagement({ data, kioskUrl, activeActions = [], questionScores = {} }: StaffEngagementProps) {
+function getHappinessEmoji(score: number | null): { emoji: string; label: string } {
+  if (score === null) return { emoji: "➖", label: "" }
+  if (score >= 4.5) return { emoji: "😄", label: messages.dashboard.happinessExcellent }
+  if (score >= 4.0) return { emoji: "😊", label: messages.dashboard.happinessGood }
+  if (score >= 3.5) return { emoji: "🙂", label: messages.dashboard.happinessOkay }
+  return { emoji: "😐", label: messages.dashboard.happinessLow }
+}
+
+export function StaffEngagement({
+  data,
+  kioskUrl,
+  advisoryProgress,
+  isAdmin,
+  advisoryReportCount,
+  activeActions = [],
+  questionScores = {},
+}: StaffEngagementProps) {
   const {
     todayCount,
-    dailyGoal,
     streak,
     totalCount,
     nextMilestone,
     weekDays,
+    positiveComment,
+    positiveCommentScore,
+    todayAvgScore,
+    rank,
+    nextRank,
+    rankProgress,
   } = data
 
   const router = useRouter()
   const [togglingDate, setTogglingDate] = useState<string | null>(null)
 
-  const progress = Math.min((todayCount / dailyGoal) * 100, 100)
-  const goalReached = todayCount >= dailyGoal
-  const remaining = dailyGoal - todayCount
   const weekTotal = weekDays.reduce((sum, d) => sum + d.count, 0)
+  const { current, threshold, percentage } = advisoryProgress
+  const advisoryUnlocked = percentage >= 100
+  const advisoryRemaining = threshold - current
+
+  // 獲得済みバッジ
+  const earnedStreakBadges = STREAK_MILESTONES.filter((m) => streak >= m.days)
+  const earnedAdvisoryBadges = ADVISORY_MILESTONES.filter((m) => advisoryReportCount >= m.count)
+
+  const happiness = getHappinessEmoji(todayAvgScore)
 
   async function handleToggleClosed(date: string, currentlyClosed: boolean) {
     setTogglingDate(date)
     try {
       if (currentlyClosed) {
-        // Remove closed date
         await fetch("/api/closed-dates", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ date }),
         })
       } else {
-        // Add closed date
         await fetch("/api/closed-dates", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -73,8 +106,8 @@ export function StaffEngagement({ data, kioskUrl, activeActions = [], questionSc
 
   return (
     <div className="space-y-4">
-      {/* Confetti when goal reached */}
-      {goalReached && <Confetti />}
+      {/* Confetti when AI analysis unlocked */}
+      {advisoryUnlocked && <Confetti />}
 
       {/* Onboarding for first-time users */}
       {totalCount === 0 && todayCount === 0 && (
@@ -102,153 +135,215 @@ export function StaffEngagement({ data, kioskUrl, activeActions = [], questionSc
         </Card>
       )}
 
-      {/* ②③ Daily goal + Week chart combined */}
-      <Card>
-        <CardContent className="py-5">
-          {/* Daily goal header */}
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-muted-foreground">
-              {messages.dashboard.dailyGoal}
-            </p>
-            {streak > 0 && (
-              <div className="flex items-center gap-1 text-orange-500">
-                <Flame className="h-4 w-4" />
-                <span className="text-sm font-bold">
-                  {messages.dashboard.streakPrefix}{streak}{messages.dashboard.streakDays}
-                </span>
+      {/* ① AI分析クエスト + 週チャート */}
+      {totalCount > 0 && (
+        <Card className={cn(
+          "border-purple-200",
+          advisoryUnlocked
+            ? "bg-gradient-to-r from-purple-100/80 to-purple-50/50"
+            : "bg-gradient-to-r from-purple-50/50 to-white"
+        )}>
+          <CardContent className="py-5">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Brain className="h-4 w-4 text-purple-600" />
+                <p className="text-sm font-bold text-purple-900">
+                  {messages.advisory.progressLabel}
+                </p>
               </div>
-            )}
-          </div>
-
-          {/* Today's count */}
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-3xl font-bold">{todayCount}</span>
-            <span className="text-lg text-muted-foreground">/ {dailyGoal}{messages.common.countSuffix}</span>
-            {goalReached && <span className="text-lg">🎉</span>}
-          </div>
-
-          {/* Progress bar */}
-          <div className="mt-3 h-3 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className={cn(
-                "h-full rounded-full transition-all duration-500",
-                goalReached
-                  ? "bg-green-500"
-                  : progress > 50
-                    ? "bg-blue-500"
-                    : "bg-blue-400"
+              {streak > 0 && (
+                <div className="flex items-center gap-1 text-orange-500">
+                  <Flame className="h-4 w-4" />
+                  <span className="text-sm font-bold">
+                    {messages.dashboard.streakPrefix}{streak}{messages.dashboard.streakDays}
+                  </span>
+                </div>
               )}
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-
-          {goalReached ? (
-            <p className="mt-2 text-sm font-medium text-green-600">
-              {messages.dashboard.goalCelebration}
-            </p>
-          ) : (
-            <p className="mt-2 text-xs text-muted-foreground">
-              {messages.dashboard.goalKeepGoing.replace("{remaining}", String(remaining))}
-            </p>
-          )}
-
-          {/* Week chart separator */}
-          <div className="mt-5 border-t pt-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-medium text-muted-foreground">過去1週間</p>
-              <p className="text-xs text-muted-foreground">
-                合計 <span className="font-bold text-foreground">{weekTotal}</span>{messages.common.countSuffix}
-              </p>
             </div>
 
-            {/* Bar chart for each day */}
-            {(() => {
-              const maxCount = Math.max(...weekDays.map((d) => d.count), dailyGoal)
-              return (
-                <div className="flex items-end gap-1.5">
-                  {weekDays.map((day) => {
-                    const barHeight = maxCount > 0 ? Math.max((day.count / maxCount) * 80, day.count > 0 ? 8 : 0) : 0
-                    const isToggling = togglingDate === day.date
+            {/* Progress bar */}
+            <div className="mt-3 flex items-center gap-3">
+              <div className="flex-1 h-3 overflow-hidden rounded-full bg-purple-100">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all duration-500",
+                    advisoryUnlocked ? "bg-purple-500" : "bg-purple-400"
+                  )}
+                  style={{ width: `${percentage}%` }}
+                />
+              </div>
+              <span className="text-sm font-bold text-purple-700 tabular-nums whitespace-nowrap">
+                {current}/{threshold}
+              </span>
+            </div>
 
-                    return (
-                      <div key={day.date} className="flex flex-1 flex-col items-center gap-1">
-                        {/* Count label */}
-                        <span className={cn(
-                          "text-[10px] font-medium",
-                          day.isToday ? "text-blue-600" : day.isClosed ? "text-muted-foreground/40" : "text-muted-foreground"
-                        )}>
-                          {day.isClosed ? "-" : day.count}
-                        </span>
+            {/* Status message */}
+            <div className="mt-2 flex items-center justify-between">
+              {advisoryUnlocked ? (
+                <p className="text-xs font-medium text-purple-600">
+                  {messages.advisory.progressReady}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  {messages.dashboard.encourageAlmostUnlock.replace("{remaining}", String(advisoryRemaining))}
+                </p>
+              )}
+              {advisoryProgress.lastReport && (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Clock className="h-3 w-3" />
+                  {new Date(advisoryProgress.lastReport.generatedAt).toLocaleDateString("ja-JP", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </span>
+              )}
+            </div>
 
-                        {/* Bar */}
-                        <div className="relative w-full" style={{ height: 80 }}>
-                          {day.isClosed ? (
-                            <div className="absolute bottom-0 w-full flex items-center justify-center" style={{ height: 80 }}>
-                              <CalendarOff className="h-4 w-4 text-muted-foreground/30" />
-                            </div>
-                          ) : (
-                            <div
-                              className={cn(
-                                "absolute bottom-0 w-full rounded-t-sm transition-all",
-                                day.isToday
-                                  ? goalReached ? "bg-green-400" : "bg-blue-400"
-                                  : day.count >= dailyGoal
-                                    ? "bg-green-300"
+            {/* Admin link to full report */}
+            {isAdmin && (advisoryUnlocked || advisoryProgress.lastReport) && (
+              <Link
+                href="/dashboard/advisory"
+                className={cn(
+                  "mt-3 flex items-center justify-center gap-1 rounded-lg border py-2 text-xs font-medium transition-colors",
+                  advisoryUnlocked
+                    ? "border-purple-400 bg-purple-500 text-white hover:bg-purple-600"
+                    : "border-purple-200 text-purple-600 hover:bg-purple-50"
+                )}
+              >
+                {advisoryUnlocked ? messages.advisory.generateButton : messages.advisory.viewReport}
+              </Link>
+            )}
+
+            {/* Week chart separator */}
+            <div className="mt-5 border-t border-purple-100 pt-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-medium text-muted-foreground">過去1週間</p>
+                <p className="text-xs text-muted-foreground">
+                  合計 <span className="font-bold text-foreground">{weekTotal}</span>{messages.common.countSuffix}
+                </p>
+              </div>
+
+              {/* Bar chart for each day */}
+              {(() => {
+                const maxCount = Math.max(...weekDays.map((d) => d.count), 1)
+                return (
+                  <div className="flex items-end gap-1.5">
+                    {weekDays.map((day) => {
+                      const barHeight = maxCount > 0 ? Math.max((day.count / maxCount) * 80, day.count > 0 ? 8 : 0) : 0
+                      const isToggling = togglingDate === day.date
+
+                      return (
+                        <div key={day.date} className="flex flex-1 flex-col items-center gap-1">
+                          {/* Count label */}
+                          <span className={cn(
+                            "text-[10px] font-medium",
+                            day.isToday ? "text-purple-600" : day.isClosed ? "text-muted-foreground/40" : "text-muted-foreground"
+                          )}>
+                            {day.isClosed ? "-" : day.count}
+                          </span>
+
+                          {/* Bar */}
+                          <div className="relative w-full" style={{ height: 80 }}>
+                            {day.isClosed ? (
+                              <div className="absolute bottom-0 w-full flex items-center justify-center" style={{ height: 80 }}>
+                                <CalendarOff className="h-4 w-4 text-muted-foreground/30" />
+                              </div>
+                            ) : (
+                              <div
+                                className={cn(
+                                  "absolute bottom-0 w-full rounded-t-sm transition-all",
+                                  day.isToday
+                                    ? "bg-purple-400"
                                     : day.count > 0
-                                      ? "bg-blue-200"
+                                      ? "bg-purple-200"
                                       : ""
+                                )}
+                                style={{ height: barHeight }}
+                              />
+                            )}
+                          </div>
+
+                          {/* Day label */}
+                          <span className={cn(
+                            "text-[10px]",
+                            day.isToday ? "font-bold text-purple-600" : "text-muted-foreground"
+                          )}>
+                            {day.dayLabel}
+                          </span>
+
+                          {/* Bottom label */}
+                          {day.isToday ? (
+                            <span className="min-h-[28px] min-w-[36px] flex items-center justify-center rounded-full bg-purple-100 px-2 py-1 text-[10px] font-bold text-purple-600">
+                              本日
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleToggleClosed(day.date, day.isClosed)}
+                              disabled={isToggling}
+                              className={cn(
+                                "min-h-[28px] min-w-[36px] rounded-full px-2 py-1 text-[10px] font-medium transition-colors disabled:opacity-50",
+                                day.isClosed
+                                  ? "bg-orange-100 text-orange-600 hover:bg-orange-200"
+                                  : "bg-muted text-muted-foreground/60 hover:bg-muted/80 hover:text-muted-foreground"
                               )}
-                              style={{ height: barHeight }}
-                            />
-                          )}
-                          {/* Goal line */}
-                          {!day.isClosed && maxCount > 0 && (
-                            <div
-                              className="absolute w-full border-t border-dashed border-muted-foreground/20"
-                              style={{ bottom: `${(dailyGoal / maxCount) * 80}px` }}
-                            />
+                              title={day.isClosed ? "営業日に戻す" : "休診日にする"}
+                            >
+                              {day.isClosed ? "休診" : "休診?"}
+                            </button>
                           )}
                         </div>
+                      )
+                    })}
+                  </div>
+                )
+              })()}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-                        {/* Day label */}
-                        <span className={cn(
-                          "text-[10px]",
-                          day.isToday ? "font-bold text-blue-600" : "text-muted-foreground"
-                        )}>
-                          {day.dayLabel}
-                        </span>
-
-                        {/* Bottom label: "本日" for today, toggle for other days */}
-                        {day.isToday ? (
-                          <span className="min-h-[28px] min-w-[36px] flex items-center justify-center rounded-full bg-blue-100 px-2 py-1 text-[10px] font-bold text-blue-600">
-                            本日
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => handleToggleClosed(day.date, day.isClosed)}
-                            disabled={isToggling}
-                            className={cn(
-                              "min-h-[28px] min-w-[36px] rounded-full px-2 py-1 text-[10px] font-medium transition-colors disabled:opacity-50",
-                              day.isClosed
-                                ? "bg-orange-100 text-orange-600 hover:bg-orange-200"
-                                : "bg-muted text-muted-foreground/60 hover:bg-muted/80 hover:text-muted-foreground"
-                            )}
-                            title={day.isClosed ? "営業日に戻す" : "休診日にする"}
-                          >
-                            {day.isClosed ? "休診" : "休診?"}
-                          </button>
-                        )}
-                      </div>
-                    )
-                  })}
+      {/* ② パーソナルステータスバー */}
+      {totalCount > 0 && (
+        <Card>
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              {/* Rank */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-lg">{rank.emoji}</span>
+                <span className="text-sm font-bold">{rank.name}</span>
+              </div>
+              {/* Today count */}
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">今日</p>
+                <p className="text-lg font-bold">{todayCount}<span className="text-xs text-muted-foreground">{messages.common.countSuffix}</span></p>
+              </div>
+              {/* Happiness meter */}
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">満足度</p>
+                <p className="text-lg">{happiness.emoji} <span className="text-sm font-medium">{todayAvgScore?.toFixed(1) ?? "-"}</span></p>
+              </div>
+            </div>
+            {/* Rank progress */}
+            {nextRank && (
+              <div className="mt-2">
+                <div className="flex justify-between text-[10px] text-muted-foreground">
+                  <span>{messages.dashboard.rankProgress}: {nextRank.name} {nextRank.emoji}</span>
+                  <span>{messages.dashboard.milestoneRemaining}{(nextRank.minCount - totalCount).toLocaleString()}{messages.common.countSuffix}</span>
                 </div>
-              )
-            })()}
-          </div>
-        </CardContent>
-      </Card>
+                <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-blue-400 transition-all"
+                    style={{ width: `${rankProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
-      {/* ④ Kiosk action card (large) */}
+      {/* ③ Kiosk CTA */}
       <a
         href={kioskUrl}
         target="_blank"
@@ -265,7 +360,29 @@ export function StaffEngagement({ data, kioskUrl, activeActions = [], questionSc
         <ArrowRight className="h-5 w-5 shrink-0 text-blue-400 transition-transform group-hover:translate-x-1" />
       </a>
 
-      {/* ⑤ Active improvement actions (matching /dashboard/actions style) */}
+      {/* ④ 患者さまの声（格上げ） */}
+      {positiveComment && (
+        <Card className="border-amber-200 bg-gradient-to-r from-amber-50/50 to-white">
+          <CardContent className="py-5">
+            <div className="flex items-center gap-2 text-amber-700 mb-3">
+              <MessageCircle className="h-4 w-4" />
+              <p className="text-sm font-bold">{messages.dashboard.patientVoice}</p>
+            </div>
+            <blockquote className="text-sm leading-relaxed text-foreground/80 italic pl-3 border-l-2 border-amber-200">
+              「{positiveComment}」
+            </blockquote>
+            {positiveCommentScore && (
+              <div className="mt-2 flex justify-end">
+                <span className="text-xs text-amber-600 font-medium">
+                  {"⭐".repeat(Math.round(positiveCommentScore))} {positiveCommentScore.toFixed(1)}
+                </span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ⑤ Active improvement actions */}
       {activeActions.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
@@ -346,7 +463,7 @@ export function StaffEngagement({ data, kioskUrl, activeActions = [], questionSc
         </div>
       )}
 
-      {/* ⑥ Total milestone */}
+      {/* ⑥ マイルストーン + バッジ */}
       {totalCount > 0 && (
         <Card className="border-purple-200 bg-gradient-to-r from-purple-50/50 to-white">
           <CardContent className="py-5">
@@ -359,6 +476,8 @@ export function StaffEngagement({ data, kioskUrl, activeActions = [], questionSc
             <p className="mt-1 text-xs text-muted-foreground">
               {messages.dashboard.milestoneVoicesDelivered.replace("{count}", totalCount.toLocaleString())}
             </p>
+
+            {/* Next milestone progress */}
             {nextMilestone && (
               <div className="mt-3">
                 <div className="flex justify-between text-xs text-muted-foreground">
@@ -375,10 +494,34 @@ export function StaffEngagement({ data, kioskUrl, activeActions = [], questionSc
                 </div>
               </div>
             )}
+
+            {/* Earned badges */}
+            {(earnedStreakBadges.length > 0 || earnedAdvisoryBadges.length > 0) && (
+              <div className="mt-4 border-t pt-3">
+                <p className="text-[10px] font-medium text-muted-foreground mb-2">獲得バッジ</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {earnedStreakBadges.map((badge) => (
+                    <span
+                      key={badge.days}
+                      className="inline-flex items-center gap-0.5 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-medium text-orange-700"
+                    >
+                      {badge.emoji}{badge.label}
+                    </span>
+                  ))}
+                  {earnedAdvisoryBadges.map((badge) => (
+                    <span
+                      key={badge.count}
+                      className="inline-flex items-center gap-0.5 rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-medium text-purple-700"
+                    >
+                      {badge.emoji}AI×{badge.count}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
-
     </div>
   )
 }
