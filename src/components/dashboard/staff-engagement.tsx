@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
 import { STREAK_MILESTONES, ADVISORY_MILESTONES } from "@/lib/constants"
 import {
-  Flame, Trophy, CalendarOff, Smartphone, ArrowRight, Sparkles,
+  Flame, Trophy, CalendarOff, Smartphone, QrCode, ArrowRight, Sparkles,
   Target, TrendingUp, TrendingDown, Brain, MessageCircle, Clock,
 } from "lucide-react"
 import Link from "next/link"
@@ -30,6 +30,7 @@ interface ActiveAction {
 interface StaffEngagementProps {
   data: EngagementData
   kioskUrl: string
+  patientSurveyUrl?: string | null
   advisoryProgress: AdvisoryProgress
   isAdmin: boolean
   advisoryReportCount: number
@@ -48,6 +49,7 @@ function getHappinessEmoji(score: number | null): { emoji: string; label: string
 export function StaffEngagement({
   data,
   kioskUrl,
+  patientSurveyUrl,
   advisoryProgress,
   isAdmin,
   advisoryReportCount,
@@ -343,22 +345,39 @@ export function StaffEngagement({
         </Card>
       )}
 
-      {/* ③ Kiosk CTA */}
-      <a
-        href={kioskUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="group flex items-center gap-4 rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-6 transition-all hover:border-blue-400 hover:shadow-md active:scale-[0.98]"
-      >
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-blue-500 text-white shadow-sm">
-          <Smartphone className="h-8 w-8" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-xl font-bold text-blue-900">{messages.dashboard.startSurvey}</p>
-          <p className="text-sm text-blue-600/70">{messages.dashboard.startSurveyDesc}</p>
-        </div>
-        <ArrowRight className="h-5 w-5 shrink-0 text-blue-400 transition-transform group-hover:translate-x-1" />
-      </a>
+      {/* ③ Survey CTA buttons */}
+      <div className="grid grid-cols-2 gap-3">
+        <a
+          href={kioskUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group flex flex-col items-center gap-3 rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-5 transition-all hover:border-blue-400 hover:shadow-md active:scale-[0.98]"
+        >
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-blue-500 text-white shadow-sm">
+            <Smartphone className="h-7 w-7" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-bold text-blue-900">{messages.dashboard.startKiosk}</p>
+            <p className="mt-0.5 text-xs text-blue-600/70">{messages.dashboard.startKioskDesc}</p>
+          </div>
+        </a>
+        {patientSurveyUrl && (
+          <a
+            href={patientSurveyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex flex-col items-center gap-3 rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5 transition-all hover:border-emerald-400 hover:shadow-md active:scale-[0.98]"
+          >
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-sm">
+              <QrCode className="h-7 w-7" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-bold text-emerald-900">{messages.dashboard.startPatientSurvey}</p>
+              <p className="mt-0.5 text-xs text-emerald-600/70">{messages.dashboard.startPatientSurveyDesc}</p>
+            </div>
+          </a>
+        )}
+      </div>
 
       {/* ④ 患者さまの声（格上げ） */}
       {positiveComment && (
