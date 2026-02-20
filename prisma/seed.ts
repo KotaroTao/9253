@@ -294,7 +294,22 @@ async function main() {
     "受付の方の笑顔が素敵で安心しました。",
   ]
 
-  const COMPLAINTS = ["pain", "filling_crown", "periodontal", "cosmetic", "prevention", "orthodontics", "other"]
+  // Purpose values matching constants.ts INSURANCE_PURPOSES / SELF_PAY_PURPOSES
+  const INSURANCE_PURPOSE_VALUES = [
+    "cavity_treatment", "periodontal", "prosthetic_insurance", "denture_insurance",
+    "checkup_insurance", "extraction_surgery", "emergency", "other_insurance",
+  ]
+  const INSURANCE_PURPOSE_WEIGHTS = [20, 18, 12, 5, 25, 8, 5, 7]
+  const SELF_PAY_PURPOSE_VALUES = [
+    "cavity_treatment_self", "periodontal_self", "prosthetic_self_pay", "denture_self_pay",
+    "self_pay_cleaning", "implant", "wire_orthodontics", "aligner", "whitening", "other_self_pay",
+  ]
+  const SELF_PAY_PURPOSE_WEIGHTS = [8, 8, 15, 5, 20, 15, 8, 10, 8, 3]
+  // Seed complaint weights for PX-Value (keyed by purpose value)
+  const PURPOSE_SCORE_WEIGHTS: Record<string, number> = {
+    emergency: 1.2, checkup_insurance: 0.85, self_pay_cleaning: 0.85,
+    implant: 1.1, wire_orthodontics: 1.05,
+  }
   const AGE_GROUPS = ["under_20", "20s", "30s", "40s", "50s", "60s_over"]
   const GENDERS = ["male", "female", "unspecified"]
 
@@ -319,7 +334,7 @@ async function main() {
   const DEVICE_TYPES = ["patient_url", "kiosk_authorized", "kiosk_unauthorized"] as const
   const DEVICE_TYPE_WEIGHTS = [70, 20, 10]
   const SEED_DEVICE_WEIGHTS: Record<string, number> = { patient_url: 1.5, kiosk_authorized: 1.0, kiosk_unauthorized: 0.8 }
-  const SEED_COMPLAINT_WEIGHTS: Record<string, number> = { pain: 1.2, prevention: 0.8 }
+  // PURPOSE_SCORE_WEIGHTS is defined above alongside purpose arrays
 
   const allResponses: Array<{
     clinicId: string
@@ -449,13 +464,16 @@ async function main() {
       }
 
       const isFirstVisit = config.template.name === "初診"
-      const chiefComplaint = COMPLAINTS[Math.floor(rng() * COMPLAINTS.length)]
+      const isSelfPay = rng() < (0.14 + monthsFromStart * 0.005)
+      const purpose = isSelfPay
+        ? weightedChoice([...SELF_PAY_PURPOSE_VALUES], SELF_PAY_PURPOSE_WEIGHTS)
+        : weightedChoice([...INSURANCE_PURPOSE_VALUES], INSURANCE_PURPOSE_WEIGHTS)
 
       // PX-Value fields
       const deviceType = weightedChoice([...DEVICE_TYPES], DEVICE_TYPE_WEIGHTS)
       const deviceWeight = SEED_DEVICE_WEIGHTS[deviceType] ?? 1.0
-      const complaintWeight = SEED_COMPLAINT_WEIGHTS[chiefComplaint] ?? 1.0
-      const weightedScore = Math.round(overallScore * deviceWeight * complaintWeight * 100) / 100
+      const purposeWeight = PURPOSE_SCORE_WEIGHTS[purpose] ?? 1.0
+      const weightedScore = Math.round(overallScore * deviceWeight * purposeWeight * 100) / 100
 
       // Response duration: normal 25-120s, ~5% speed trap failures
       const isSpeedTrapFail = rng() < 0.05
@@ -485,8 +503,8 @@ async function main() {
         freeText,
         patientAttributes: {
           visitType: isFirstVisit ? "first_visit" : "revisit",
-          insuranceType: rng() < (0.14 + monthsFromStart * 0.005) ? "self_pay" : "insurance",
-          chiefComplaint,
+          insuranceType: isSelfPay ? "self_pay" : "insurance",
+          purpose,
           ageGroup: weightedChoice(AGE_GROUPS, [8, 12, 18, 22, 25, 15]),
           gender: weightedChoice(GENDERS, [45, 50, 5]),
         },
