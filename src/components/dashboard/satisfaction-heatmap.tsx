@@ -14,13 +14,7 @@ const DAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"]
 // 月〜土〜日の並び順（日本の慣習）
 const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0]
 
-const PERIOD_LABELS: Record<number, string> = {
-  7: "7日",
-  30: "30日",
-  90: "90日",
-  180: "180日",
-  365: "365日",
-}
+import { formatPeriodLabel } from "./analytics-charts"
 
 function getScoreColor(score: number): string {
   if (score >= 4.5) return "bg-blue-600 text-white"
@@ -113,7 +107,10 @@ export function SatisfactionHeatmap({ initialData, selectedPeriod }: Satisfactio
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base">時間帯別 患者満足度</CardTitle>
-        <p className="text-xs text-muted-foreground">直近{PERIOD_LABELS[selectedPeriod] ?? `${selectedPeriod}日`}のデータ</p>
+        <p className="text-xs text-muted-foreground">
+          直近{formatPeriodLabel(selectedPeriod)}のデータ
+          {selectedPeriod > 365 && "（長期間のため季節差が平均化されています）"}
+        </p>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto -mx-2 px-2">

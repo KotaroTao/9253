@@ -430,9 +430,27 @@ interface DailyTrendRow {
   count: bigint
 }
 
+export type TrendGranularity = "day" | "week" | "month"
+
+export function autoGranularity(days: number): TrendGranularity {
+  if (days > 1095) return "month"
+  if (days > 365) return "week"
+  return "day"
+}
+
 export async function getDailyTrend(
   clinicId: string,
   days: number = 30,
+): Promise<DailyTrendPoint[]> {
+  const granularity = autoGranularity(days)
+  if (granularity === "month") return getDailyTrendMonthly(clinicId, days)
+  if (granularity === "week") return getDailyTrendWeekly(clinicId, days)
+  return getDailyTrendDaily(clinicId, days)
+}
+
+async function getDailyTrendDaily(
+  clinicId: string,
+  days: number,
 ): Promise<DailyTrendPoint[]> {
   const sinceDate = jstDaysAgo(days)
 
@@ -447,6 +465,58 @@ export async function getDailyTrend(
       AND overall_score IS NOT NULL
     GROUP BY (responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date, date_label
     ORDER BY (responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date ASC
+  `
+
+  return rows.map((r) => ({
+    date: r.date_label,
+    count: Number(r.count),
+    avgScore: r.avg_score ?? null,
+  }))
+}
+
+async function getDailyTrendWeekly(
+  clinicId: string,
+  days: number,
+): Promise<DailyTrendPoint[]> {
+  const sinceDate = jstDaysAgo(days)
+
+  const rows = await prisma.$queryRaw<DailyTrendRow[]>`
+    SELECT
+      TO_CHAR(DATE_TRUNC('week', (responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date), 'MM/DD') || '~' AS date_label,
+      ROUND(AVG(overall_score)::numeric, 2)::float AS avg_score,
+      COUNT(*) AS count
+    FROM survey_responses
+    WHERE clinic_id = ${clinicId}::uuid
+      AND responded_at >= ${sinceDate}
+      AND overall_score IS NOT NULL
+    GROUP BY DATE_TRUNC('week', (responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date)
+    ORDER BY DATE_TRUNC('week', (responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date) ASC
+  `
+
+  return rows.map((r) => ({
+    date: r.date_label,
+    count: Number(r.count),
+    avgScore: r.avg_score ?? null,
+  }))
+}
+
+async function getDailyTrendMonthly(
+  clinicId: string,
+  days: number,
+): Promise<DailyTrendPoint[]> {
+  const sinceDate = jstDaysAgo(days)
+
+  const rows = await prisma.$queryRaw<DailyTrendRow[]>`
+    SELECT
+      TO_CHAR(responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'YY/MM') AS date_label,
+      ROUND(AVG(overall_score)::numeric, 2)::float AS avg_score,
+      COUNT(*) AS count
+    FROM survey_responses
+    WHERE clinic_id = ${clinicId}::uuid
+      AND responded_at >= ${sinceDate}
+      AND overall_score IS NOT NULL
+    GROUP BY TO_CHAR(responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'YYYY-MM'), date_label
+    ORDER BY TO_CHAR(responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'YYYY-MM') ASC
   `
 
   return rows.map((r) => ({
@@ -477,6 +547,17 @@ export async function getTemplateTrend(
   days: number = 30,
   offsetDays: number = 0,
 ): Promise<TemplateTrendPoint[]> {
+  const granularity = autoGranularity(days)
+  if (granularity === "month") return getTemplateTrendMonthly(clinicId, days, offsetDays)
+  if (granularity === "week") return getTemplateTrendWeekly(clinicId, days, offsetDays)
+  return getTemplateTrendDaily(clinicId, days, offsetDays)
+}
+
+async function getTemplateTrendDaily(
+  clinicId: string,
+  days: number,
+  offsetDays: number,
+): Promise<TemplateTrendPoint[]> {
   const untilDate = jstEndOfDay(offsetDays)
   const sinceDate = jstDaysAgo(offsetDays + days)
 
@@ -494,6 +575,70 @@ export async function getTemplateTrend(
       AND sr.overall_score IS NOT NULL
     GROUP BY (sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date, date_label, st.name
     ORDER BY (sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date ASC, st.name
+  `
+
+  return rows.map((r) => ({
+    date: r.date_label,
+    templateName: r.template_name,
+    avgScore: r.avg_score ?? null,
+    count: Number(r.count),
+  }))
+}
+
+async function getTemplateTrendWeekly(
+  clinicId: string,
+  days: number,
+  offsetDays: number,
+): Promise<TemplateTrendPoint[]> {
+  const untilDate = jstEndOfDay(offsetDays)
+  const sinceDate = jstDaysAgo(offsetDays + days)
+
+  const rows = await prisma.$queryRaw<TemplateTrendRow[]>`
+    SELECT
+      TO_CHAR(DATE_TRUNC('week', (sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date), 'MM/DD') || '~' AS date_label,
+      st.name AS template_name,
+      ROUND(AVG(sr.overall_score)::numeric, 2)::float AS avg_score,
+      COUNT(*) AS count
+    FROM survey_responses sr
+    JOIN survey_templates st ON sr.template_id = st.id
+    WHERE sr.clinic_id = ${clinicId}::uuid
+      AND sr.responded_at >= ${sinceDate}
+      AND sr.responded_at <= ${untilDate}
+      AND sr.overall_score IS NOT NULL
+    GROUP BY DATE_TRUNC('week', (sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date), st.name
+    ORDER BY DATE_TRUNC('week', (sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date) ASC, st.name
+  `
+
+  return rows.map((r) => ({
+    date: r.date_label,
+    templateName: r.template_name,
+    avgScore: r.avg_score ?? null,
+    count: Number(r.count),
+  }))
+}
+
+async function getTemplateTrendMonthly(
+  clinicId: string,
+  days: number,
+  offsetDays: number,
+): Promise<TemplateTrendPoint[]> {
+  const untilDate = jstEndOfDay(offsetDays)
+  const sinceDate = jstDaysAgo(offsetDays + days)
+
+  const rows = await prisma.$queryRaw<TemplateTrendRow[]>`
+    SELECT
+      TO_CHAR(sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'YY/MM') AS date_label,
+      st.name AS template_name,
+      ROUND(AVG(sr.overall_score)::numeric, 2)::float AS avg_score,
+      COUNT(*) AS count
+    FROM survey_responses sr
+    JOIN survey_templates st ON sr.template_id = st.id
+    WHERE sr.clinic_id = ${clinicId}::uuid
+      AND sr.responded_at >= ${sinceDate}
+      AND sr.responded_at <= ${untilDate}
+      AND sr.overall_score IS NOT NULL
+    GROUP BY TO_CHAR(sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'YYYY-MM'), date_label, st.name
+    ORDER BY TO_CHAR(sr.responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'YYYY-MM') ASC, st.name
   `
 
   return rows.map((r) => ({

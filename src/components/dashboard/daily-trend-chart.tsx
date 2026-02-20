@@ -13,8 +13,20 @@ import {
   Legend,
 } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { DailyTrendPoint } from "@/lib/queries/stats"
+import type { DailyTrendPoint, TrendGranularity } from "@/lib/queries/stats"
 import { formatPeriodLabel } from "./analytics-charts"
+
+const GRANULARITY_LABELS: Record<TrendGranularity, string> = {
+  day: "日次",
+  week: "週次",
+  month: "月次",
+}
+
+function getAutoGranularity(days: number): TrendGranularity {
+  if (days > 1095) return "month"
+  if (days > 365) return "week"
+  return "day"
+}
 
 function CustomTooltip({
   active,
@@ -47,6 +59,7 @@ interface DailyTrendChartProps {
 
 export function DailyTrendChart({ initialData, selectedPeriod }: DailyTrendChartProps) {
   const [data, setData] = useState<DailyTrendPoint[]>(initialData)
+  const [granularity, setGranularity] = useState<TrendGranularity>(getAutoGranularity(30))
   const [loading, setLoading] = useState(false)
   const isInitialMount = useRef(true)
 
@@ -58,7 +71,8 @@ export function DailyTrendChart({ initialData, selectedPeriod }: DailyTrendChart
       })
       if (res.ok) {
         const json = await res.json()
-        setData(json)
+        setData(json.data)
+        setGranularity(json.granularity)
       }
     } finally {
       setLoading(false)
@@ -86,11 +100,15 @@ export function DailyTrendChart({ initialData, selectedPeriod }: DailyTrendChart
   }, [data])
 
   const periodLabel = formatPeriodLabel(selectedPeriod)
+  const granLabel = GRANULARITY_LABELS[granularity]
 
   return (
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-base">回答数・満足度推移</CardTitle>
+        {granularity !== "day" && (
+          <p className="text-xs text-muted-foreground">{granLabel}集計で表示中</p>
+        )}
       </CardHeader>
       <CardContent>
         {loading ? (
