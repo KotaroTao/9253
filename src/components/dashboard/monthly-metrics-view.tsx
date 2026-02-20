@@ -8,7 +8,8 @@ import { messages } from "@/lib/messages"
 import { MonthlySummarySection } from "./monthly-summary-section"
 import { MonthlyTrendSummary } from "./monthly-trend-summary"
 import type { MonthlySummary } from "./monthly-summary-section"
-import { ChevronDown, ChevronUp, PenSquare, Info, X } from "lucide-react"
+import { ChevronDown, ChevronUp, PenSquare, AlertTriangle, X } from "lucide-react"
+
 export interface MonthRange {
   from: string // YYYY-MM
   to: string   // YYYY-MM
@@ -324,7 +325,7 @@ export function MonthlyMetricsView({
       {/* 未入力アラート（非侵入的・dismiss可能） */}
       {missingRecentMonths.length > 0 && !alertDismissed && (
         <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/30">
-          <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
               {m.missingDataAlert}
@@ -358,17 +359,17 @@ export function MonthlyMetricsView({
       <MonthlyTrendSummary months={selectedMonths} customRange={customMonthRange} />
 
       {/* データ入力セクション */}
-      <div className="space-y-4" ref={inputSectionRef}>
+      <div ref={inputSectionRef}>
         <button
           type="button"
           onClick={() => setInputOpen(!inputOpen)}
-          className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 transition-colors hover:bg-muted/50 ${
+          className={`flex w-full items-center justify-between rounded-lg border px-4 py-3.5 transition-colors hover:bg-muted/50 ${
             !inputOpen && missingRecentMonths.length > 0
               ? "border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/20"
               : "bg-card"
           }`}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <PenSquare className={`h-4 w-4 ${!inputOpen && missingRecentMonths.length > 0 ? "text-amber-500" : "text-muted-foreground"}`} />
             <span className="text-sm font-semibold">{m.tabInput}</span>
             <span className="hidden text-xs text-muted-foreground sm:inline">{m.summaryHint}</span>
@@ -386,48 +387,53 @@ export function MonthlyMetricsView({
           )}
         </button>
         {inputOpen && (
-          <div className="space-y-4">
+          <div className="mt-4 space-y-4">
             {/* Month selector — year dropdown + month buttons */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <select
-                  value={selectorYear}
-                  onChange={(e) => setSelectorYear(Number(e.target.value))}
-                  className="rounded-md border bg-card px-3 py-1.5 text-sm font-medium"
-                >
-                  {years.map((y) => (
-                    <option key={y} value={y}>{y}年</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {monthOptions
-                  .filter((opt) => opt.year === selectorYear)
-                  .sort((a, b) => a.month - b.month)
-                  .map((opt) => {
-                    const isSelected = year === opt.year && month === opt.month
-                    const isEntered = entered.has(`${opt.year}-${opt.month}`)
-                    return (
-                      <Button
-                        key={`${opt.year}-${opt.month}`}
-                        variant={isSelected ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => handleMonthChange(opt.year, opt.month)}
-                        className={
-                          !isSelected && !isEntered
-                            ? "border-dashed border-amber-300 text-amber-600 hover:border-amber-400 hover:text-amber-700"
-                            : undefined
-                        }
-                      >
-                        {opt.month}月
-                        {!isEntered && (
-                          <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-amber-400" />
-                        )}
-                      </Button>
-                    )
-                  })}
-              </div>
-            </div>
+            <Card>
+              <CardContent className="py-4">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={selectorYear}
+                      onChange={(e) => setSelectorYear(Number(e.target.value))}
+                      className="rounded-md border bg-card px-3 py-1.5 text-sm font-medium"
+                    >
+                      {years.map((y) => (
+                        <option key={y} value={y}>{y}年</option>
+                      ))}
+                    </select>
+                    <span className="text-xs text-muted-foreground">月を選択</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {monthOptions
+                      .filter((opt) => opt.year === selectorYear)
+                      .sort((a, b) => a.month - b.month)
+                      .map((opt) => {
+                        const isSelected = year === opt.year && month === opt.month
+                        const isEntered = entered.has(`${opt.year}-${opt.month}`)
+                        return (
+                          <Button
+                            key={`${opt.year}-${opt.month}`}
+                            variant={isSelected ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handleMonthChange(opt.year, opt.month)}
+                            className={
+                              !isSelected && !isEntered
+                                ? "border-dashed border-amber-300 text-amber-600 hover:border-amber-400 hover:text-amber-700"
+                                : undefined
+                            }
+                          >
+                            {opt.month}月
+                            {!isEntered && (
+                              <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-amber-400" />
+                            )}
+                          </Button>
+                        )
+                      })}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
             {loading && (
               <Card>
