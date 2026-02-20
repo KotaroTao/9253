@@ -17,8 +17,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
 import { Users, Banknote, BarChart3, Wallet, XCircle } from "lucide-react"
-import type { MonthlySummary } from "./monthly-summary-section"
-import { calcDerived } from "./monthly-summary-section"
+import { calcDerived } from "@/lib/metrics-utils"
+import type { MonthlySummary } from "@/lib/metrics-utils"
 
 interface TrendRow extends MonthlySummary {
   year: number

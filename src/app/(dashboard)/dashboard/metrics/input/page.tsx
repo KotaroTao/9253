@@ -3,8 +3,9 @@ import { auth } from "@/auth"
 import { getOperatorClinicId } from "@/lib/admin-mode"
 import { prisma } from "@/lib/prisma"
 import { getMonthlySurveyCount } from "@/lib/queries/stats"
-import { MetricsInputView, getMonthStatus } from "@/components/dashboard/metrics-input-view"
-import type { MonthStatus } from "@/components/dashboard/metrics-input-view"
+import { MetricsInputView } from "@/components/dashboard/metrics-input-view"
+import { getMonthStatus } from "@/lib/metrics-utils"
+import type { MonthStatus } from "@/lib/metrics-utils"
 import { ROLES } from "@/lib/constants"
 
 const METRICS_SELECT = {

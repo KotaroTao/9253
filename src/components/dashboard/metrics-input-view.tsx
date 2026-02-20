@@ -5,22 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
 import { MonthlySummarySection } from "./monthly-summary-section"
-import type { MonthlySummary } from "./monthly-summary-section"
-
-// The 5 input fields used for completeness check
-const INPUT_FIELDS: (keyof MonthlySummary)[] = [
-  "firstVisitCount", "revisitCount", "insuranceRevenue", "selfPayRevenue", "cancellationCount",
-]
-
-export type MonthStatus = "full" | "partial" | "empty"
-
-export function getMonthStatus(summary: MonthlySummary | null): MonthStatus {
-  if (!summary) return "empty"
-  const filled = INPUT_FIELDS.filter((k) => summary[k] != null).length
-  if (filled === 0) return "empty"
-  if (filled === INPUT_FIELDS.length) return "full"
-  return "partial"
-}
+import { getMonthStatus } from "@/lib/metrics-utils"
+import type { MonthlySummary, MonthStatus } from "@/lib/metrics-utils"
 
 // 2025年1月から当月までの月リストを生成
 function generateMonthOptions(): { year: number; month: number; label: string }[] {
