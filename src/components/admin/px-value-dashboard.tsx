@@ -125,10 +125,10 @@ export function PxValueDashboard() {
         {data && data.clinics.length > 0 && (
           <>
             {/* Desktop table */}
-            <div className="hidden sm:block">
+            <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                  <tr className="border-b text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground whitespace-nowrap">
                     <th className="pb-2 pr-3">#</th>
                     <th className="pb-2 pr-3">クリニック</th>
                     <th className="pb-2 pr-3 text-center">{messages.pxValue.rank}</th>
@@ -141,7 +141,7 @@ export function PxValueDashboard() {
                 </thead>
                 <tbody>
                   {data.clinics.map((clinic) => (
-                    <tr key={clinic.clinicId} className="border-b last:border-0">
+                    <tr key={clinic.clinicId} className="border-b last:border-0 whitespace-nowrap">
                       <td className="py-3 pr-3 text-xs font-medium text-muted-foreground">
                         {clinic.rank}
                       </td>
@@ -161,13 +161,13 @@ export function PxValueDashboard() {
                       <td className="py-3 pr-3 text-right tabular-nums">
                         {clinic.responseCount.toLocaleString()}
                       </td>
-                      <td className="w-28 py-3 pr-3">
+                      <td className="min-w-[7rem] py-3 pr-3">
                         <ScoreBar
                           value={clinic.trustAuthenticityRate}
                           color="bg-emerald-500"
                         />
                       </td>
-                      <td className="w-28 py-3">
+                      <td className="min-w-[7rem] py-3">
                         <ScoreBar
                           value={clinic.stabilityScore}
                           color="bg-blue-500"
