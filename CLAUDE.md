@@ -43,9 +43,9 @@
 | キオスクモード | ✅ | iPad受付用。患者属性入力→テンプレート自動選択→連続アンケート対応→自動リセット |
 | ダッシュボード（スタッフ） | ✅ | 挨拶、エンカレッジメント、ランクシステム、ハピネスメーター、日次目標（Confetti付き）、ストリーク（休診日スキップ・マイルストーンバッジ付き）、今週の実績（曜日別チャート）、患者の声、通算マイルストーン、実施中の改善アクション（上位5件）、ヒント |
 | ダッシュボード（管理者） | ✅ | 満足度スコア（トレンドバッジ付き）、InsightCards（自動改善提案）、月次サマリー |
-| 満足度レポート | ✅ | 期間セレクタ（7/30/90/180/365日）、テンプレート別スモールマルチプル（前期比較）、日次トレンド、質問別分析、満足度ヒートマップ（曜日×時間帯）、スタッフリーダーボード |
+| 満足度レポート | ✅ | 期間セレクタ（7/30/90/180/365日+カスタム日付範囲）、患者属性フィルタ（5軸）、テンプレート別スモールマルチプル（前期比較）、日次トレンド、質問別分析、診療内容別満足度、満足度ヒートマップ（曜日×時間帯）、スタッフリーダーボード |
 | スタッフ管理 | ✅ | CRUD、有効/無効切替 |
-| 経営レポート | ✅ | 来院数・売上・自費率入力（サマリータブ+データ入力タブ）、8+KPI自動算出、未入力月の視覚的表示 |
+| 経営レポート | ✅ | 来院数・売上・自費率入力（サマリータブ+データ入力タブ）、8+KPI自動算出、未入力月の視覚的表示、期間セレクタ（6ヶ月/1年/2年/3年+カスタム月範囲） |
 | 回答一覧 | ✅ | ページネーション、患者属性表示、フリーテキスト、ページサイズ選択 |
 | 患者満足度向上のヒント | ✅ | プラットフォーム全体管理（/admin/tips）、クリニック個別カスタム（Clinic.settings JSONB）、ローテーション表示 |
 | 設定 | ✅ | クリニック名、日次目標、営業日数/週、定休日、臨時休診日 |
@@ -70,12 +70,14 @@
 
 ### 管理者ダッシュボードの分析機能
 - **InsightCards**: スコア推移（前月比較）、低スコア質問の自動検出、経営レポート入力促進、高満足度維持通知を自動生成
-- **満足度レポート（/dashboard/analytics）**: 期間セレクタ（7/30/90/180/365日）で以下を動的切替
+- **満足度レポート（/dashboard/analytics）**: 期間セレクタ（7/30/90/180/365日+カスタム日付範囲）+ 患者属性フィルタで以下を動的切替
   - テンプレート別スモールマルチプル: 初診/再診ごとの加重平均スコア + 前期比較（↑↓→トレンド矢印）+ ミニチャート
-  - 日次トレンド: 回答数 + 平均スコアの折れ線グラフ
+  - 日次トレンド: 回答数 + 平均スコアの複合チャート（棒+線）。長期はweek/month粒度に自動切替
   - 質問別分析: テンプレートごとの設問別平均スコア（展開可能）
+  - 診療内容別満足度: 保険/自費 × 診療内容のスコア内訳
   - 満足度ヒートマップ: 曜日×時間帯のスコア分布（カラーグラデーション）
   - スタッフリーダーボード: 月次/通算の回答数ランキング
+  - **患者属性フィルタ**: 来院種別・診療区分・診療内容・年代・性別の5軸（キオスクモード回答のみ対象）。全チャートに横断適用
 
 ### 実装フェーズ
 - Phase 0: スキャフォールド ✅
@@ -192,12 +194,13 @@ src/
 
 | コンポーネント | 用途 |
 |--------------|------|
-| `analytics-charts.tsx` | 満足度レポートのクライアント側オーケストレーター。期間セレクタ（7/30/90/180/365日）でAPI再取得 |
+| `analytics-charts.tsx` | 満足度レポートのクライアント側オーケストレーター。期間セレクタ（5プリセット+カスタム日付範囲）、患者属性フィルタ（5軸）でAPI再取得 |
 | `template-trend-small-multiples.tsx` | テンプレート別スモールマルチプル。前期比較（prevData）、加重平均スコア、トレンド矢印、ミニチャート |
 | `template-trend-chart.tsx` | テンプレート別日次推移チャート（折れ線グラフ） |
-| `daily-trend-chart.tsx` | 日次回答数+平均スコアの複合チャート（棒+線） |
+| `daily-trend-chart.tsx` | 日次回答数+平均スコアの複合チャート（棒+線）。filterQuery対応 |
 | `question-breakdown.tsx` | テンプレートごとの設問別平均スコア。展開可能な詳細行 |
-| `satisfaction-heatmap.tsx` | 曜日×時間帯の満足度ヒートマップ。期間セレクタ連動 |
+| `satisfaction-heatmap.tsx` | 曜日×時間帯の満足度ヒートマップ。filterQuery対応 |
+| `purpose-satisfaction.tsx` | 保険/自費×診療内容別の満足度内訳。filterQuery対応 |
 | `staff-leaderboard.tsx` | スタッフ別月次/通算回答数ランキング |
 | `staff-engagement.tsx` | スタッフダッシュボードの主コンポーネント。日次目標、週間チャート、マイルストーンバッジ、ランク、ポジティブコメント、改善アクション表示 |
 | `insight-cards.tsx` | 自動生成インサイト: スコア推移、低スコア質問検出、経営レポート促進、高満足度通知 |
@@ -205,7 +208,8 @@ src/
 | `satisfaction-trend.tsx` | 12ヶ月満足度推移チャート（管理者ダッシュボード用） |
 | `satisfaction-cards.tsx` | 当月満足度概要カード |
 | `monthly-summary-section.tsx` | 当月の経営指標入力フォーム |
-| `monthly-metrics-view.tsx` | 月次サマリー + 自動算出KPI表示 |
+| `monthly-metrics-view.tsx` | 経営レポートのメインビュー。期間セレクタ（プリセット+カスタム月範囲）、月次サマリー + 自動算出KPI表示 |
+| `monthly-trend-summary.tsx` | 経営レポートのトレンドグラフ（来院数・売上・自費率等の推移）。months/customRange対応 |
 | `monthly-chart.tsx` | 月次推移可視化（6ヶ月） |
 | `recent-responses.tsx` | ページネーション付き回答一覧。患者属性表示 |
 | `page-size-selector.tsx` | ページネーションサイズ制御 |
@@ -217,10 +221,11 @@ src/
 ### 分析系（管理者認証必須）
 | ルート | メソッド | 概要 |
 |--------|---------|------|
-| `/api/template-trend?days=30&offset=0` | GET | テンプレート別日次スコア。offset対応で前期比較 |
-| `/api/daily-trend?days=30` | GET | 日次回答数+平均スコア |
-| `/api/question-breakdown?days=30` | GET | テンプレート別設問スコア（7/30/90/180/365日） |
-| `/api/heatmap?days=90` | GET | 曜日×時間帯の満足度ヒートマップ |
+| `/api/template-trend?days=30&offset=0` | GET | テンプレート別日次スコア。offset対応で前期比較。from/to・属性フィルタ対応 |
+| `/api/daily-trend?days=30` | GET | 日次回答数+平均スコア。from/to・属性フィルタ対応。長期は自動でweek/month粒度 |
+| `/api/question-breakdown?days=30` | GET | テンプレート別設問スコア。from/to・属性フィルタ対応 |
+| `/api/heatmap?days=90` | GET | 曜日×時間帯の満足度ヒートマップ。from/to・属性フィルタ対応 |
+| `/api/purpose-satisfaction?days=30` | GET | 保険/自費×診療内容別満足度。from/to・属性フィルタ対応 |
 | `/api/staff-leaderboard` | GET | スタッフ別月次/通算回答数 |
 | `/api/recent-responses` | GET | ページネーション付き回答一覧 |
 
@@ -234,7 +239,7 @@ src/
 ### 経営レポート・設定系（管理者認証必須）
 | ルート | メソッド | 概要 |
 |--------|---------|------|
-| `/api/monthly-metrics` | GET/POST | 月次経営指標の取得/保存 |
+| `/api/monthly-metrics` | GET/POST | 月次経営指標の取得/保存。mode=trendでN月分/カスタム月範囲(fromMonth/toMonth)のトレンド取得 |
 | `/api/settings` | GET/PATCH | クリニック設定（日次目標、営業日数、定休日等） |
 | `/api/closed-dates` | POST/DELETE | 臨時休診日のトグル |
 | `/api/daily-tip` | GET | 本日のヒント取得 |
@@ -271,10 +276,11 @@ src/
 | `getMonthlySurveyQuality(clinicId, year, month)` | `{lowScoreCount, freeTextRate}` | 品質指標（3点以下件数、自由記述率%） |
 | `getCombinedMonthlyTrends(clinicId)` | `{monthlyTrend, satisfactionTrend}` | 12ヶ月分1クエリ→6ヶ月/12ヶ月に分離 |
 | `getQuestionBreakdown(clinicId, months=3)` | `TemplateQuestionScores[]` | 設問別平均スコア（月数指定） |
-| `getQuestionBreakdownByDays(clinicId, days=30)` | `TemplateQuestionScores[]` | 設問別平均スコア（日数指定、満足度レポート用） |
-| `getDailyTrend(clinicId, days=30)` | `DailyTrendPoint[]` | 日次回答数+平均スコア |
-| `getTemplateTrend(clinicId, days=30, offsetDays=0)` | `TemplateTrendPoint[]` | テンプレート別日次スコア（offset=前期比較用） |
-| `getHourlyHeatmapData(clinicId, days=90)` | `HeatmapCell[]` | 曜日×時間帯のスコア分布 |
+| `getQuestionBreakdownByDays(clinicId, days, range?, attrFilters?)` | `TemplateQuestionScores[]` | 設問別平均スコア（日数/日付範囲/属性フィルタ対応） |
+| `getDailyTrend(clinicId, days, range?, attrFilters?)` | `DailyTrendPoint[]` | 日次回答数+平均スコア（自動粒度: day/week/month） |
+| `getTemplateTrend(clinicId, days, offset, range?, attrFilters?)` | `TemplateTrendPoint[]` | テンプレート別日次スコア（offset=前期比較用） |
+| `getHourlyHeatmapData(clinicId, days, range?, attrFilters?)` | `HeatmapCell[]` | 曜日×時間帯のスコア分布 |
+| `getPurposeSatisfaction(clinicId, days, range?, attrFilters?)` | `PurposeSatisfactionRow[]` | 保険/自費×診療内容別満足度 |
 | `getCurrentSatisfactionScore(clinicId)` | `number \| null` | 直近30日の平均スコア |
 | `getQuestionCurrentScore(clinicId, questionId)` | `number \| null` | 特定設問の直近30日平均 |
 | `getQuestionCurrentScores(clinicId, questionIds[])` | `Record<string, number>` | 複数設問の現在スコア一括取得 |
@@ -443,7 +449,9 @@ https://mieru-clinic.com/s/{clinicSlug}
 - **管理者モード→ロールベースナビゲーションに変更**: パスワード認証+Cookie方式を廃止。ビュー切替トグルも廃止し、ユーザーロールに応じてサイドバーメニュー項目を自動制御
 - **改善アクションとスコアの連動**: seedデータでは改善アクションの開始月からスコアへの効果が徐々に反映される設計。デモ時にスコア推移と改善施策の因果関係を説明可能
 - **決定的乱数によるseedデータ**: rng seed固定により毎回同一データを生成。デモ・スクリーンショットの再現性を保証
-- **満足度レポートの期間セレクタ**: 7/30/90/180/365日の5段階。サーバーサイドで初期データ（30日分）をプリフェッチし、クライアント側で期間変更時にAPIを再取得
+- **満足度レポートの期間セレクタ**: 7/30/90/180/365日の5プリセット + カスタム日付範囲（from/to date picker）。サーバーサイドで初期データ（30日分）をプリフェッチし、クライアント側で期間変更時にAPIを再取得。長期（365日超）はweek粒度、1095日超はmonth粒度に自動切替
+- **患者属性フィルタ**: 来院種別（初診/再診）・診療区分（保険/自費）・診療内容・年代・性別の5軸でJSONB `patient_attributes` をフィルタリング。キオスクモード経由の回答のみが属性を持つため、フィルタ適用時はキオスク回答のみが対象になる旨をUIに明記。`Prisma.sql` テンプレートリテラルでSQL断片を動的合成し、SQLインジェクションを防止。エイリアス付きJOINクエリ用に `buildAttrSqlAliased` を別途用意
+- **経営レポートの期間セレクタ**: 6ヶ月/1年/2年/3年のプリセット + カスタム月範囲（from/to month picker）。APIは `fromMonth`/`toMonth` パラメータで月単位の範囲クエリに対応
 - **テンプレート別スモールマルチプルの前期比較**: 同じ日数の前期間データをoffsetパラメータで取得し、加重平均スコアの差分でトレンド矢印（↑↓→）を表示
 - **ストリークの休診日スキップ**: 定休日（regularClosedDays）と臨時休診日（closedDates）をストリーク計算から除外。休診日に回答がなくてもストリークが途切れない
 - **PX-Valueはsystem_admin専用**: クリニック横断比較指標のため、system_admin管理画面のみに表示。clinic_admin/staffには非公開
