@@ -7,6 +7,21 @@ import { messages } from "@/lib/messages"
 import { MonthlySummarySection } from "./monthly-summary-section"
 import type { MonthlySummary } from "./monthly-summary-section"
 
+// The 5 input fields used for completeness check
+const INPUT_FIELDS: (keyof MonthlySummary)[] = [
+  "firstVisitCount", "revisitCount", "insuranceRevenue", "selfPayRevenue", "cancellationCount",
+]
+
+export type MonthStatus = "full" | "partial" | "empty"
+
+export function getMonthStatus(summary: MonthlySummary | null): MonthStatus {
+  if (!summary) return "empty"
+  const filled = INPUT_FIELDS.filter((k) => summary[k] != null).length
+  if (filled === 0) return "empty"
+  if (filled === INPUT_FIELDS.length) return "full"
+  return "partial"
+}
+
 // 2025年1月から当月までの月リストを生成
 function generateMonthOptions(): { year: number; month: number; label: string }[] {
   const now = new Date()
@@ -36,7 +51,7 @@ interface MetricsInputViewProps {
   initialSurveyCount: number
   initialYear: number
   initialMonth: number
-  enteredMonths?: string[]
+  monthStatuses?: Record<string, MonthStatus>
 }
 
 export function MetricsInputView({
@@ -45,25 +60,23 @@ export function MetricsInputView({
   initialSurveyCount,
   initialYear,
   initialMonth,
-  enteredMonths = [],
+  monthStatuses: initialMonthStatuses = {},
 }: MetricsInputViewProps) {
-  const initialEnteredSet = useMemo(() => new Set(enteredMonths), [enteredMonths])
-
   const [year, setYear] = useState(initialYear)
   const [month, setMonth] = useState(initialMonth)
   const [summary, setSummary] = useState<MonthlySummary | null>(initialSummary)
   const [prevSummary, setPrevSummary] = useState<MonthlySummary | null>(initialPrevSummary)
   const [surveyCount, setSurveyCount] = useState(initialSurveyCount)
   const [loading, setLoading] = useState(false)
-  const [entered, setEntered] = useState<Set<string>>(initialEnteredSet)
+  const [monthStatuses, setMonthStatuses] = useState<Record<string, MonthStatus>>(initialMonthStatuses)
   const [selectorYear, setSelectorYear] = useState(initialYear)
 
   const m = messages.monthlyMetrics
 
-  const monthOptions = generateMonthOptions()
+  const monthOptions = useMemo(() => generateMonthOptions(), [])
 
   // 年ごとにグループ化
-  const years = Array.from(new Set(monthOptions.map((o) => o.year)))
+  const years = useMemo(() => Array.from(new Set(monthOptions.map((o) => o.year))), [monthOptions])
 
   async function handleMonthChange(newYear: number, newMonth: number) {
     setYear(newYear)
@@ -76,19 +89,15 @@ export function MetricsInputView({
       )
       if (res.ok) {
         const data = await res.json()
-        setSummary(data.summary ?? null)
+        const fetchedSummary = data.summary ?? null
+        setSummary(fetchedSummary)
         setPrevSummary(data.prevSummary ?? null)
         setSurveyCount(data.surveyCount ?? 0)
         const key = `${newYear}-${newMonth}`
-        if (data.summary) {
-          setEntered((prev) => { const next = new Set(Array.from(prev)); next.add(key); return next })
-        } else {
-          setEntered((prev) => {
-            const next = new Set(prev)
-            next.delete(key)
-            return next
-          })
-        }
+        setMonthStatuses((prev) => ({
+          ...prev,
+          [key]: getMonthStatus(fetchedSummary),
+        }))
       }
     } catch {
       // ignore
@@ -123,23 +132,27 @@ export function MetricsInputView({
                 .sort((a, b) => a.month - b.month)
                 .map((opt) => {
                   const isSelected = year === opt.year && month === opt.month
-                  const isEntered = entered.has(`${opt.year}-${opt.month}`)
+                  const key = `${opt.year}-${opt.month}`
+                  const status = monthStatuses[key] ?? "empty"
+
+                  let statusClass = ""
+                  if (!isSelected) {
+                    if (status === "empty") {
+                      statusClass = "border-red-300 bg-red-50 text-red-700 hover:bg-red-100 hover:border-red-400 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-950/60"
+                    } else if (status === "partial") {
+                      statusClass = "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:border-amber-400 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400 dark:hover:bg-amber-950/60"
+                    }
+                  }
+
                   return (
                     <Button
-                      key={`${opt.year}-${opt.month}`}
+                      key={key}
                       variant={isSelected ? "default" : "outline"}
                       size="sm"
                       onClick={() => handleMonthChange(opt.year, opt.month)}
-                      className={
-                        !isSelected && !isEntered
-                          ? "border-dashed border-amber-300 text-amber-600 hover:border-amber-400 hover:text-amber-700"
-                          : undefined
-                      }
+                      className={statusClass || undefined}
                     >
                       {opt.month}月
-                      {!isEntered && (
-                        <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-amber-400" />
-                      )}
                     </Button>
                   )
                 })}

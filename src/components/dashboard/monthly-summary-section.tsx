@@ -4,16 +4,11 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { messages } from "@/lib/messages"
-import { TrendingUp, TrendingDown, Check, Loader2, ChevronDown, ChevronUp } from "lucide-react"
+import { TrendingUp, TrendingDown, Check, Loader2 } from "lucide-react"
 
 export interface MonthlySummary {
   firstVisitCount: number | null
-  firstVisitInsurance: number | null
-  firstVisitSelfPay: number | null
   revisitCount: number | null
-  revisitInsurance: number | null
-  revisitSelfPay: number | null
-  totalRevenue: number | null
   insuranceRevenue: number | null
   selfPayRevenue: number | null
   cancellationCount: number | null
@@ -33,7 +28,7 @@ function DerivedDelta({ current, prev }: { current: number | null; prev: number 
   if (diff === 0) return null
   const isUp = diff > 0
   return (
-    <span className={`ml-1 text-xs ${isUp ? "text-green-600" : "text-red-500"}`}>
+    <span className={`ml-1 text-xs ${isUp ? "text-emerald-400" : "text-red-400"}`}>
       {isUp ? <TrendingUp className="inline h-3 w-3" /> : <TrendingDown className="inline h-3 w-3" />}
       {" "}{isUp ? "+" : ""}{diff}
     </span>
@@ -45,30 +40,17 @@ export function calcDerived(s: MonthlySummary | null, surveyCount: number) {
   const first = s.firstVisitCount
   const revisit = s.revisitCount
   const totalPatients = first != null && revisit != null ? first + revisit : null
-  const rev = s.totalRevenue
   const insRev = s.insuranceRevenue
   const spRev = s.selfPayRevenue
-  const firstIns = s.firstVisitInsurance
-  const firstSp = s.firstVisitSelfPay
-  const revisitIns = s.revisitInsurance
-  const revisitSp = s.revisitSelfPay
+  const totalRevenue = insRev != null && spRev != null ? insRev + spRev : null
   const cancel = s.cancellationCount
-
-  const totalInsurancePatients = firstIns != null && revisitIns != null ? firstIns + revisitIns : null
-  const totalSelfPayPatients = firstSp != null && revisitSp != null ? firstSp + revisitSp : null
 
   return {
     totalPatients,
-    revenuePerVisit: totalPatients != null && totalPatients > 0 && rev != null
-      ? Math.round((rev / totalPatients) * 10) / 10 : null,
-    revenuePerVisitInsurance: totalInsurancePatients != null && totalInsurancePatients > 0 && insRev != null
-      ? Math.round((insRev / totalInsurancePatients) * 10) / 10 : null,
-    revenuePerVisitSelfPay: totalSelfPayPatients != null && totalSelfPayPatients > 0 && spRev != null
-      ? Math.round((spRev / totalSelfPayPatients) * 10) / 10 : null,
-    selfPayRatioAmount: rev != null && rev > 0 && spRev != null
-      ? Math.round((spRev / rev) * 1000) / 10 : null,
-    selfPayRatioCount: totalPatients != null && totalPatients > 0 && totalSelfPayPatients != null
-      ? Math.round((totalSelfPayPatients / totalPatients) * 1000) / 10 : null,
+    revenuePerVisit: totalPatients != null && totalPatients > 0 && totalRevenue != null
+      ? Math.round((totalRevenue / totalPatients) * 10) / 10 : null,
+    selfPayRatioAmount: totalRevenue != null && totalRevenue > 0 && spRev != null
+      ? Math.round((spRev / totalRevenue) * 1000) / 10 : null,
     returnRate: totalPatients != null && totalPatients > 0 && revisit != null
       ? Math.round((revisit / totalPatients) * 1000) / 10 : null,
     newPatientRate: totalPatients != null && totalPatients > 0 && first != null
@@ -87,21 +69,11 @@ export function MonthlySummarySection({
   prevSummary,
   surveyCount,
 }: MonthlySummarySectionProps) {
-  // State for all input fields
   const [firstVisitCount, setFirstVisitCount] = useState(initialSummary?.firstVisitCount?.toString() ?? "")
-  const [firstVisitInsurance, setFirstVisitInsurance] = useState(initialSummary?.firstVisitInsurance?.toString() ?? "")
-  const [firstVisitSelfPay, setFirstVisitSelfPay] = useState(initialSummary?.firstVisitSelfPay?.toString() ?? "")
   const [revisitCount, setRevisitCount] = useState(initialSummary?.revisitCount?.toString() ?? "")
-  const [revisitInsurance, setRevisitInsurance] = useState(initialSummary?.revisitInsurance?.toString() ?? "")
-  const [revisitSelfPay, setRevisitSelfPay] = useState(initialSummary?.revisitSelfPay?.toString() ?? "")
-  const [totalRevenue, setTotalRevenue] = useState(initialSummary?.totalRevenue?.toString() ?? "")
   const [insuranceRevenue, setInsuranceRevenue] = useState(initialSummary?.insuranceRevenue?.toString() ?? "")
   const [selfPayRevenue, setSelfPayRevenue] = useState(initialSummary?.selfPayRevenue?.toString() ?? "")
   const [cancellationCount, setCancellationCount] = useState(initialSummary?.cancellationCount?.toString() ?? "")
-
-  const [showFirstBreakdown, setShowFirstBreakdown] = useState(true)
-  const [showRevisitBreakdown, setShowRevisitBreakdown] = useState(true)
-  const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(true)
 
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -110,18 +82,10 @@ export function MonthlySummarySection({
 
   useEffect(() => {
     setFirstVisitCount(initialSummary?.firstVisitCount?.toString() ?? "")
-    setFirstVisitInsurance(initialSummary?.firstVisitInsurance?.toString() ?? "")
-    setFirstVisitSelfPay(initialSummary?.firstVisitSelfPay?.toString() ?? "")
     setRevisitCount(initialSummary?.revisitCount?.toString() ?? "")
-    setRevisitInsurance(initialSummary?.revisitInsurance?.toString() ?? "")
-    setRevisitSelfPay(initialSummary?.revisitSelfPay?.toString() ?? "")
-    setTotalRevenue(initialSummary?.totalRevenue?.toString() ?? "")
     setInsuranceRevenue(initialSummary?.insuranceRevenue?.toString() ?? "")
     setSelfPayRevenue(initialSummary?.selfPayRevenue?.toString() ?? "")
     setCancellationCount(initialSummary?.cancellationCount?.toString() ?? "")
-    setShowFirstBreakdown(true)
-    setShowRevisitBreakdown(true)
-    setShowRevenueBreakdown(true)
     setSaved(false)
     isInitialMount.current = true
   }, [year, month, initialSummary])
@@ -132,12 +96,7 @@ export function MonthlySummarySection({
     const payload = {
       year, month,
       firstVisitCount: toInt(firstVisitCount),
-      firstVisitInsurance: toInt(firstVisitInsurance),
-      firstVisitSelfPay: toInt(firstVisitSelfPay),
       revisitCount: toInt(revisitCount),
-      revisitInsurance: toInt(revisitInsurance),
-      revisitSelfPay: toInt(revisitSelfPay),
-      totalRevenue: toInt(totalRevenue),
       insuranceRevenue: toInt(insuranceRevenue),
       selfPayRevenue: toInt(selfPayRevenue),
       cancellationCount: toInt(cancellationCount),
@@ -162,7 +121,7 @@ export function MonthlySummarySection({
     } finally {
       setSaving(false)
     }
-  }, [year, month, firstVisitCount, firstVisitInsurance, firstVisitSelfPay, revisitCount, revisitInsurance, revisitSelfPay, totalRevenue, insuranceRevenue, selfPayRevenue, cancellationCount])
+  }, [year, month, firstVisitCount, revisitCount, insuranceRevenue, selfPayRevenue, cancellationCount])
 
   // Auto-save 1.5s after any input change
   useEffect(() => {
@@ -173,17 +132,12 @@ export function MonthlySummarySection({
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => { doSave() }, 1500)
     return () => { if (timerRef.current) clearTimeout(timerRef.current) }
-  }, [firstVisitCount, firstVisitInsurance, firstVisitSelfPay, revisitCount, revisitInsurance, revisitSelfPay, totalRevenue, insuranceRevenue, selfPayRevenue, cancellationCount, doSave])
+  }, [firstVisitCount, revisitCount, insuranceRevenue, selfPayRevenue, cancellationCount, doSave])
 
   // Build current summary for derived calcs
   const currentSummary: MonthlySummary = {
     firstVisitCount: toInt(firstVisitCount),
-    firstVisitInsurance: toInt(firstVisitInsurance),
-    firstVisitSelfPay: toInt(firstVisitSelfPay),
     revisitCount: toInt(revisitCount),
-    revisitInsurance: toInt(revisitInsurance),
-    revisitSelfPay: toInt(revisitSelfPay),
-    totalRevenue: toInt(totalRevenue),
     insuranceRevenue: toInt(insuranceRevenue),
     selfPayRevenue: toInt(selfPayRevenue),
     cancellationCount: toInt(cancellationCount),
@@ -200,39 +154,26 @@ export function MonthlySummarySection({
     { label: m.totalPatients, value: derived.totalPatients, format: (v: number) => `${v}${m.unitPersons}`, prev: prevDerived?.totalPatients ?? null },
     { label: m.revenuePerVisit, value: derived.revenuePerVisit, format: (v: number) => `${v}${m.unitMan}`, prev: prevDerived?.revenuePerVisit ?? null },
     { label: m.selfPayRatioAmount, value: derived.selfPayRatioAmount, format: (v: number) => `${v}%`, prev: prevDerived?.selfPayRatioAmount ?? null },
-    { label: m.selfPayRatioCount, value: derived.selfPayRatioCount, format: (v: number) => `${v}%`, prev: prevDerived?.selfPayRatioCount ?? null },
     { label: m.returnRate, value: derived.returnRate, format: (v: number) => `${v}%`, prev: prevDerived?.returnRate ?? null },
     { label: m.newPatientRate, value: derived.newPatientRate, format: (v: number) => `${v}%`, prev: prevDerived?.newPatientRate ?? null },
     { label: m.cancellationRate, value: derived.cancellationRate, format: (v: number) => `${v}%`, prev: prevDerived?.cancellationRate ?? null },
     { label: m.surveyResponseRate, value: derived.surveyResponseRate, format: (v: number) => `${v}%`, prev: null as number | null },
   ] : []
 
-  const BreakdownToggle = ({ open, onToggle, label }: { open: boolean; onToggle: () => void; label: string }) => (
-    <button
-      type="button"
-      onClick={onToggle}
-      className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground"
-    >
-      {open ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-      <span>{label}</span>
-      <span className="rounded bg-muted px-1 py-0.5 text-[9px] text-muted-foreground">任意</span>
-    </button>
-  )
-
   return (
-    <Card>
+    <Card className="border-slate-700/50 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 shadow-xl">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-base">{m.summaryTitle}</CardTitle>
-            <p className="text-xs text-muted-foreground">{m.summaryHint}</p>
+            <CardTitle className="text-base text-slate-100">{m.summaryTitle}</CardTitle>
+            <p className="text-xs text-slate-400">{m.summaryHint}</p>
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-xs">
             {saving && (
-              <><Loader2 className="h-3.5 w-3.5 animate-spin" />{m.saving}</>
+              <span className="text-slate-400"><Loader2 className="inline h-3.5 w-3.5 animate-spin" /> {m.saving}</span>
             )}
             {saved && !saving && (
-              <span className="text-green-600 flex items-center gap-1">
+              <span className="text-emerald-400 flex items-center gap-1">
                 <Check className="h-3.5 w-3.5" />{m.autoSaved}
               </span>
             )}
@@ -243,77 +184,47 @@ export function MonthlySummarySection({
         {/* Input fields */}
         <div className="grid gap-4 sm:grid-cols-2">
           {/* 初診実人数 */}
-          <div className="space-y-1.5">
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">{m.firstVisitCount}</label>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-400">{m.firstVisitCount}</label>
             <div className="flex items-center gap-1">
-              <Input type="number" min={0} value={firstVisitCount} onChange={(e) => setFirstVisitCount(e.target.value)} placeholder="0" className="text-right" />
-              <span className="text-sm text-muted-foreground">{m.unitPersons}</span>
+              <Input type="number" min={0} value={firstVisitCount} onChange={(e) => setFirstVisitCount(e.target.value)} placeholder="0" className="border-slate-600 bg-slate-800/80 text-right text-slate-100 placeholder:text-slate-600 focus:border-slate-500 focus:ring-slate-500" />
+              <span className="text-sm text-slate-500">{m.unitPersons}</span>
             </div>
-            <BreakdownToggle open={showFirstBreakdown} onToggle={() => setShowFirstBreakdown(!showFirstBreakdown)} label={m.optionalBreakdown} />
-            {showFirstBreakdown && (
-              <div className="ml-3 grid grid-cols-2 gap-2 border-l-2 border-muted pl-3">
-                <div>
-                  <label className="block text-[10px] text-muted-foreground">{m.insurance}</label>
-                  <Input type="number" min={0} value={firstVisitInsurance} onChange={(e) => setFirstVisitInsurance(e.target.value)} placeholder="0" className="h-8 text-right text-xs" />
-                </div>
-                <div>
-                  <label className="block text-[10px] text-muted-foreground">{m.selfPay}</label>
-                  <Input type="number" min={0} value={firstVisitSelfPay} onChange={(e) => setFirstVisitSelfPay(e.target.value)} placeholder="0" className="h-8 text-right text-xs" />
-                </div>
-              </div>
-            )}
           </div>
 
           {/* 再診実人数 */}
-          <div className="space-y-1.5">
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">{m.revisitCount}</label>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-400">{m.revisitCount}</label>
             <div className="flex items-center gap-1">
-              <Input type="number" min={0} value={revisitCount} onChange={(e) => setRevisitCount(e.target.value)} placeholder="0" className="text-right" />
-              <span className="text-sm text-muted-foreground">{m.unitPersons}</span>
+              <Input type="number" min={0} value={revisitCount} onChange={(e) => setRevisitCount(e.target.value)} placeholder="0" className="border-slate-600 bg-slate-800/80 text-right text-slate-100 placeholder:text-slate-600 focus:border-slate-500 focus:ring-slate-500" />
+              <span className="text-sm text-slate-500">{m.unitPersons}</span>
             </div>
-            <BreakdownToggle open={showRevisitBreakdown} onToggle={() => setShowRevisitBreakdown(!showRevisitBreakdown)} label={m.optionalBreakdown} />
-            {showRevisitBreakdown && (
-              <div className="ml-3 grid grid-cols-2 gap-2 border-l-2 border-muted pl-3">
-                <div>
-                  <label className="block text-[10px] text-muted-foreground">{m.insurance}</label>
-                  <Input type="number" min={0} value={revisitInsurance} onChange={(e) => setRevisitInsurance(e.target.value)} placeholder="0" className="h-8 text-right text-xs" />
-                </div>
-                <div>
-                  <label className="block text-[10px] text-muted-foreground">{m.selfPay}</label>
-                  <Input type="number" min={0} value={revisitSelfPay} onChange={(e) => setRevisitSelfPay(e.target.value)} placeholder="0" className="h-8 text-right text-xs" />
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* 総売上 */}
-          <div className="space-y-1.5">
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">{m.totalRevenue}</label>
+          {/* 保険売上 */}
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-400">{m.insuranceRevenue}</label>
             <div className="flex items-center gap-1">
-              <Input type="number" min={0} value={totalRevenue} onChange={(e) => setTotalRevenue(e.target.value)} placeholder="0" className="text-right" />
-              <span className="text-sm text-muted-foreground">{m.unitMan}</span>
+              <Input type="number" min={0} value={insuranceRevenue} onChange={(e) => setInsuranceRevenue(e.target.value)} placeholder="0" className="border-slate-600 bg-slate-800/80 text-right text-slate-100 placeholder:text-slate-600 focus:border-slate-500 focus:ring-slate-500" />
+              <span className="text-sm text-slate-500">{m.unitMan}</span>
             </div>
-            <BreakdownToggle open={showRevenueBreakdown} onToggle={() => setShowRevenueBreakdown(!showRevenueBreakdown)} label={m.optionalBreakdown} />
-            {showRevenueBreakdown && (
-              <div className="ml-3 grid grid-cols-2 gap-2 border-l-2 border-muted pl-3">
-                <div>
-                  <label className="block text-[10px] text-muted-foreground">{m.insuranceRevenue}</label>
-                  <Input type="number" min={0} value={insuranceRevenue} onChange={(e) => setInsuranceRevenue(e.target.value)} placeholder="0" className="h-8 text-right text-xs" />
-                </div>
-                <div>
-                  <label className="block text-[10px] text-muted-foreground">{m.selfPayRevenue}</label>
-                  <Input type="number" min={0} value={selfPayRevenue} onChange={(e) => setSelfPayRevenue(e.target.value)} placeholder="0" className="h-8 text-right text-xs" />
-                </div>
-              </div>
-            )}
+          </div>
+
+          {/* 自費売上 */}
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-400">{m.selfPayRevenue}</label>
+            <div className="flex items-center gap-1">
+              <Input type="number" min={0} value={selfPayRevenue} onChange={(e) => setSelfPayRevenue(e.target.value)} placeholder="0" className="border-slate-600 bg-slate-800/80 text-right text-slate-100 placeholder:text-slate-600 focus:border-slate-500 focus:ring-slate-500" />
+              <span className="text-sm text-slate-500">{m.unitMan}</span>
+            </div>
           </div>
 
           {/* キャンセル件数 */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">{m.cancellationCount}</label>
+            <label className="mb-1 block text-xs font-medium text-slate-400">{m.cancellationCount}</label>
             <div className="flex items-center gap-1">
-              <Input type="number" min={0} value={cancellationCount} onChange={(e) => setCancellationCount(e.target.value)} placeholder="0" className="text-right" />
-              <span className="text-sm text-muted-foreground">{m.unitCount}</span>
+              <Input type="number" min={0} value={cancellationCount} onChange={(e) => setCancellationCount(e.target.value)} placeholder="0" className="border-slate-600 bg-slate-800/80 text-right text-slate-100 placeholder:text-slate-600 focus:border-slate-500 focus:ring-slate-500" />
+              <span className="text-sm text-slate-500">{m.unitCount}</span>
             </div>
           </div>
         </div>
@@ -321,12 +232,12 @@ export function MonthlySummarySection({
         {/* Derived KPIs */}
         {hasInput && derived && (
           <div>
-            <p className="mb-3 text-xs font-medium text-muted-foreground">{m.derivedTitle}</p>
+            <p className="mb-3 text-xs font-medium text-slate-400">{m.derivedTitle}</p>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {derivedMetrics.map((metric) => (
-                <div key={metric.label} className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground">{metric.label}</p>
-                  <p className="text-lg font-bold">
+                <div key={metric.label} className="rounded-lg border border-slate-700/50 bg-slate-800/60 p-3">
+                  <p className="text-xs text-slate-400">{metric.label}</p>
+                  <p className="text-lg font-bold text-slate-100">
                     {metric.value != null ? metric.format(metric.value) : "-"}
                     <DerivedDelta current={metric.value} prev={metric.prev} />
                   </p>

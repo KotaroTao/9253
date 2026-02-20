@@ -732,14 +732,8 @@ async function main() {
     const firstVisitCount = Math.max(1, Math.round(totalPatients * firstVisitRatio + (rng() - 0.5) * 4))
     const revisitCount = totalPatients - firstVisitCount
 
-    // 自費率（金額）: 30%→35%、患者自費比率はその約半分
+    // 自費率（金額）: 30%→35%
     const selfPayRatio = 0.29 + 0.06 * progress + (rng() - 0.5) * 0.02
-    const patientSelfPayRatio = selfPayRatio * 0.55
-
-    const firstVisitSelfPay = Math.max(0, Math.round(firstVisitCount * patientSelfPayRatio))
-    const firstVisitInsurance = firstVisitCount - firstVisitSelfPay
-    const revisitSelfPay = Math.max(0, Math.round(revisitCount * patientSelfPayRatio))
-    const revisitInsurance = revisitCount - revisitSelfPay
 
     // 売上: 325→425万、季節変動あり
     const baseRevenue = 325 + Math.round(100 * progress)
@@ -753,8 +747,8 @@ async function main() {
 
     await prisma.monthlyClinicMetrics.upsert({
       where: { clinicId_year_month: { clinicId: clinic.id, year, month } },
-      update: { firstVisitCount, firstVisitInsurance, firstVisitSelfPay, revisitCount, revisitInsurance, revisitSelfPay, totalRevenue, insuranceRevenue, selfPayRevenue, cancellationCount },
-      create: { clinicId: clinic.id, year, month, firstVisitCount, firstVisitInsurance, firstVisitSelfPay, revisitCount, revisitInsurance, revisitSelfPay, totalRevenue, insuranceRevenue, selfPayRevenue, cancellationCount },
+      update: { firstVisitCount, revisitCount, totalRevenue, insuranceRevenue, selfPayRevenue, cancellationCount },
+      create: { clinicId: clinic.id, year, month, firstVisitCount, revisitCount, totalRevenue, insuranceRevenue, selfPayRevenue, cancellationCount },
     })
     console.log(`  ${year}-${String(month).padStart(2, "0")}: 実人数${totalPatients}人（初診${firstVisitCount}/再診${revisitCount}）売上${totalRevenue}万円 自費率${Math.round(selfPayRatio * 100)}% キャンセル${cancellationCount}件(${Math.round(cancelRate * 100)}%)`)
   }

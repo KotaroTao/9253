@@ -3,17 +3,13 @@ import { auth } from "@/auth"
 import { getOperatorClinicId } from "@/lib/admin-mode"
 import { prisma } from "@/lib/prisma"
 import { getMonthlySurveyCount } from "@/lib/queries/stats"
-import { MetricsInputView } from "@/components/dashboard/metrics-input-view"
+import { MetricsInputView, getMonthStatus } from "@/components/dashboard/metrics-input-view"
+import type { MonthStatus } from "@/components/dashboard/metrics-input-view"
 import { ROLES } from "@/lib/constants"
 
 const METRICS_SELECT = {
   firstVisitCount: true,
-  firstVisitInsurance: true,
-  firstVisitSelfPay: true,
   revisitCount: true,
-  revisitInsurance: true,
-  revisitSelfPay: true,
-  totalRevenue: true,
   insuranceRevenue: true,
   selfPayRevenue: true,
   cancellationCount: true,
@@ -44,14 +40,19 @@ export default async function MetricsInputPage() {
   const prevYear = prevDate.getFullYear()
   const prevMonth = prevDate.getMonth() + 1
 
-  // Fetch entered months for the last 6 months
+  // Generate month keys from 2025-01 to current month
   const monthKeys: { year: number; month: number }[] = []
-  for (let i = 0; i < 6; i++) {
-    const d = new Date(year, month - 1 - i, 1)
-    monthKeys.push({ year: d.getFullYear(), month: d.getMonth() + 1 })
+  const startYear = 2025
+  const startMonth = 1
+  for (let y = startYear; y <= year; y++) {
+    const mStart = y === startYear ? startMonth : 1
+    const mEnd = y === year ? month : 12
+    for (let m = mStart; m <= mEnd; m++) {
+      monthKeys.push({ year: y, month: m })
+    }
   }
 
-  const [summary, prevSummary, surveyCount, enteredRows] =
+  const [summary, prevSummary, surveyCount, statusRows] =
     await Promise.all([
       prisma.monthlyClinicMetrics.findUnique({
         where: { clinicId_year_month: { clinicId, year, month } },
@@ -67,11 +68,18 @@ export default async function MetricsInputPage() {
           clinicId,
           OR: monthKeys.map((k) => ({ year: k.year, month: k.month })),
         },
-        select: { year: true, month: true },
+        select: { year: true, month: true, ...METRICS_SELECT },
       }),
     ])
 
-  const enteredMonths = enteredRows.map((r) => `${r.year}-${r.month}`)
+  // Build month status map
+  const statusMap = new Map(statusRows.map((r) => [`${r.year}-${r.month}`, r]))
+  const monthStatuses: Record<string, MonthStatus> = {}
+  for (const k of monthKeys) {
+    const key = `${k.year}-${k.month}`
+    const row = statusMap.get(key)
+    monthStatuses[key] = getMonthStatus(row ?? null)
+  }
 
   return (
     <div className="space-y-6">
@@ -81,7 +89,7 @@ export default async function MetricsInputPage() {
         initialSurveyCount={surveyCount}
         initialYear={year}
         initialMonth={month}
-        enteredMonths={enteredMonths}
+        monthStatuses={monthStatuses}
       />
     </div>
   )

@@ -282,10 +282,6 @@ async function main() {
     const firstVisitCount = Math.round(totalPatients * (0.15 + rng() * 0.1))
     const revisitCount = totalPatients - firstVisitCount
     const selfPayRatio = 0.15 + rng() * 0.15
-    const firstVisitInsurance = Math.round(firstVisitCount * (1 - selfPayRatio))
-    const firstVisitSelfPay = firstVisitCount - firstVisitInsurance
-    const revisitInsurance = Math.round(revisitCount * (1 - selfPayRatio * 0.8))
-    const revisitSelfPay = revisitCount - revisitInsurance
     const totalRevenue = Math.round((350 + rng() * 150) * totalPatients / 10000) // 万円単位
     const selfPayRevenue = Math.round(totalRevenue * selfPayRatio)
     const insuranceRevenue = totalRevenue - selfPayRevenue
@@ -296,8 +292,8 @@ async function main() {
 
     await prisma.monthlyClinicMetrics.upsert({
       where: { clinicId_year_month: { clinicId: clinic.id, year, month } },
-      update: { firstVisitCount, firstVisitInsurance, firstVisitSelfPay, revisitCount, revisitInsurance, revisitSelfPay, totalRevenue, insuranceRevenue, selfPayRevenue, cancellationCount },
-      create: { clinicId: clinic.id, year, month, firstVisitCount, firstVisitInsurance, firstVisitSelfPay, revisitCount, revisitInsurance, revisitSelfPay, totalRevenue, insuranceRevenue, selfPayRevenue, cancellationCount },
+      update: { firstVisitCount, revisitCount, totalRevenue, insuranceRevenue, selfPayRevenue, cancellationCount },
+      create: { clinicId: clinic.id, year, month, firstVisitCount, revisitCount, totalRevenue, insuranceRevenue, selfPayRevenue, cancellationCount },
     })
     console.log(`  月次レポート: ${year}-${String(month).padStart(2, "0")} (初診${firstVisitCount}人, 再診${revisitCount}人, 売上${totalRevenue}万円)`)
   }
