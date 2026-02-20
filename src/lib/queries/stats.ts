@@ -274,6 +274,8 @@ export async function getQuestionBreakdown(
 export async function getQuestionBreakdownByDays(
   clinicId: string,
   days: number = 30,
+  fromDate?: Date,
+  toDate?: Date,
 ): Promise<TemplateQuestionScores[]> {
   const templates = await prisma.surveyTemplate.findMany({
     where: { clinicId, isActive: true },
@@ -282,7 +284,8 @@ export async function getQuestionBreakdownByDays(
 
   if (templates.length === 0) return []
 
-  const sinceDate = jstDaysAgo(days)
+  const sinceDate = fromDate ?? jstDaysAgo(days)
+  const untilDate = toDate ?? jstEndOfDay(0)
 
   const templateIds = templates.map((t) => t.id)
   const rows = await prisma.$queryRaw<QuestionBreakdownRow[]>`
@@ -296,12 +299,13 @@ export async function getQuestionBreakdownByDays(
     WHERE clinic_id = ${clinicId}::uuid
       AND template_id = ANY(${templateIds}::uuid[])
       AND responded_at >= ${sinceDate}
+      AND responded_at <= ${untilDate}
     GROUP BY template_id, key
   `
 
   const responseCounts = await prisma.surveyResponse.groupBy({
     by: ["templateId"],
-    where: { clinicId, templateId: { in: templateIds }, respondedAt: { gte: sinceDate } },
+    where: { clinicId, templateId: { in: templateIds }, respondedAt: { gte: sinceDate, lte: untilDate } },
     _count: { _all: true },
   })
   const countMap = new Map(responseCounts.map((r) => [r.templateId, r._count._all]))
@@ -433,8 +437,11 @@ interface DailyTrendRow {
 export async function getDailyTrend(
   clinicId: string,
   days: number = 30,
+  fromDate?: Date,
+  toDate?: Date,
 ): Promise<DailyTrendPoint[]> {
-  const sinceDate = jstDaysAgo(days)
+  const sinceDate = fromDate ?? jstDaysAgo(days)
+  const untilDate = toDate ?? jstEndOfDay(0)
 
   const rows = await prisma.$queryRaw<DailyTrendRow[]>`
     SELECT
@@ -444,6 +451,7 @@ export async function getDailyTrend(
     FROM survey_responses
     WHERE clinic_id = ${clinicId}::uuid
       AND responded_at >= ${sinceDate}
+      AND responded_at <= ${untilDate}
       AND overall_score IS NOT NULL
     GROUP BY (responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date, date_label
     ORDER BY (responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo')::date ASC
@@ -476,9 +484,11 @@ export async function getTemplateTrend(
   clinicId: string,
   days: number = 30,
   offsetDays: number = 0,
+  fromDate?: Date,
+  toDate?: Date,
 ): Promise<TemplateTrendPoint[]> {
-  const untilDate = jstEndOfDay(offsetDays)
-  const sinceDate = jstDaysAgo(offsetDays + days)
+  const untilDate = toDate ?? jstEndOfDay(offsetDays)
+  const sinceDate = fromDate ?? jstDaysAgo(offsetDays + days)
 
   const rows = await prisma.$queryRaw<TemplateTrendRow[]>`
     SELECT
@@ -522,9 +532,12 @@ interface HeatmapRow {
 
 export async function getHourlyHeatmapData(
   clinicId: string,
-  days: number = 90
+  days: number = 90,
+  fromDate?: Date,
+  toDate?: Date,
 ): Promise<HeatmapCell[]> {
-  const sinceDate = jstDaysAgo(days)
+  const sinceDate = fromDate ?? jstDaysAgo(days)
+  const untilDate = toDate ?? jstEndOfDay(0)
 
   const rows = await prisma.$queryRaw<HeatmapRow[]>`
     SELECT
@@ -535,6 +548,7 @@ export async function getHourlyHeatmapData(
     FROM survey_responses
     WHERE clinic_id = ${clinicId}::uuid
       AND responded_at >= ${sinceDate}
+      AND responded_at <= ${untilDate}
       AND overall_score IS NOT NULL
     GROUP BY day_of_week, hour
     ORDER BY day_of_week, hour

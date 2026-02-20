@@ -78,3 +78,15 @@ export function getDayJST(date: Date): number {
 export function jstTodayStr(): string {
   return formatDateKeyJST(new Date())
 }
+
+/** YYYY-MM-DD文字列をJST 00:00:00のUTC Dateとして返す */
+export function jstParseDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split("-").map(Number)
+  return new Date(Date.UTC(y, m - 1, d) - JST_OFFSET_MS)
+}
+
+/** YYYY-MM-DD文字列をJST 23:59:59.999のUTC Dateとして返す */
+export function jstParseDateEnd(dateStr: string): Date {
+  const [y, m, d] = dateStr.split("-").map(Number)
+  return new Date(Date.UTC(y, m - 1, d, 23, 59, 59, 999) - JST_OFFSET_MS)
+}

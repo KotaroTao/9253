@@ -13,15 +13,8 @@ import {
   Legend,
 } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { buildPeriodQuery, getPeriodLabel } from "@/components/dashboard/analytics-charts"
 import type { DailyTrendPoint } from "@/lib/queries/stats"
-
-export const PERIOD_OPTIONS = [
-  { label: "7日", value: 7 },
-  { label: "30日", value: 30 },
-  { label: "90日", value: 90 },
-  { label: "180日", value: 180 },
-  { label: "365日", value: 365 },
-] as const
 
 function CustomTooltip({
   active,
@@ -50,23 +43,22 @@ function CustomTooltip({
 interface DailyTrendChartProps {
   initialData: DailyTrendPoint[]
   selectedPeriod: number
+  customFrom?: string
+  customTo?: string
 }
 
-export function DailyTrendChart({ initialData, selectedPeriod }: DailyTrendChartProps) {
+export function DailyTrendChart({ initialData, selectedPeriod, customFrom, customTo }: DailyTrendChartProps) {
   const [data, setData] = useState<DailyTrendPoint[]>(initialData)
   const [loading, setLoading] = useState(false)
   const isInitialMount = useRef(true)
 
-  const fetchData = useCallback(async (days: number) => {
+  const query = useMemo(() => buildPeriodQuery(selectedPeriod, customFrom, customTo), [selectedPeriod, customFrom, customTo])
+
+  const fetchData = useCallback(async (q: string) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/daily-trend?days=${days}`, {
-        cache: "no-store",
-      })
-      if (res.ok) {
-        const json = await res.json()
-        setData(json)
-      }
+      const res = await fetch(`/api/daily-trend?${q}`, { cache: "no-store" })
+      if (res.ok) setData(await res.json())
     } finally {
       setLoading(false)
     }
@@ -77,8 +69,9 @@ export function DailyTrendChart({ initialData, selectedPeriod }: DailyTrendChart
       isInitialMount.current = false
       return
     }
-    fetchData(selectedPeriod)
-  }, [selectedPeriod, fetchData])
+    if (!query) return
+    fetchData(query)
+  }, [query, fetchData])
 
   const maxCount = Math.max(...data.map((d) => d.count), 1)
   const yCountMax = Math.ceil(maxCount * 1.2)
@@ -92,7 +85,8 @@ export function DailyTrendChart({ initialData, selectedPeriod }: DailyTrendChart
     return { totalCount, avgScore }
   }, [data])
 
-  const periodLabel = PERIOD_OPTIONS.find((o) => o.value === selectedPeriod)?.label ?? ""
+  const periodLabel = getPeriodLabel(selectedPeriod, customFrom, customTo)
+  const periodPrefix = selectedPeriod > 0 ? "直近" : ""
 
   return (
     <Card>
@@ -164,11 +158,11 @@ export function DailyTrendChart({ initialData, selectedPeriod }: DailyTrendChart
             </ResponsiveContainer>
             <div className="mt-4 flex items-center gap-6 border-t pt-3">
               <div>
-                <p className="text-xs text-muted-foreground">直近{periodLabel}の回答数</p>
+                <p className="text-xs text-muted-foreground">{periodPrefix}{periodLabel}の回答数</p>
                 <p className="text-xl font-bold">{summary.totalCount}<span className="text-sm font-normal text-muted-foreground">件</span></p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">直近{periodLabel}の平均満足度</p>
+                <p className="text-xs text-muted-foreground">{periodPrefix}{periodLabel}の平均満足度</p>
                 <p className="text-xl font-bold text-blue-600">
                   {summary.avgScore != null ? summary.avgScore.toFixed(1) : "-"}
                   <span className="text-sm font-normal text-muted-foreground"> / 5.0</span>

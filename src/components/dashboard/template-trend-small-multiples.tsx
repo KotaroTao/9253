@@ -25,6 +25,8 @@ interface Props {
   data: TemplateTrendPoint[]
   prevData: TemplateTrendPoint[]
   selectedPeriod: number
+  customFrom?: string
+  customTo?: string
 }
 
 interface TemplateStats {
@@ -58,9 +60,22 @@ function calcWeightedAvg(points: TemplateTrendPoint[]): number | null {
   return Math.round((weightedSum / totalCount) * 100) / 100
 }
 
-export function TemplateTrendSmallMultiples({ data, prevData, selectedPeriod }: Props) {
-  const currentLabel = formatPeriodLabel(selectedPeriod, 0)
-  const prevLabel = formatPeriodLabel(selectedPeriod, selectedPeriod)
+export function TemplateTrendSmallMultiples({ data, prevData, selectedPeriod, customFrom, customTo }: Props) {
+  const isCustom = selectedPeriod === 0
+  const currentLabel = isCustom && customFrom && customTo
+    ? `${customFrom}〜${customTo}`
+    : formatPeriodLabel(selectedPeriod, 0)
+  const prevLabel = isCustom && customFrom && customTo
+    ? (() => {
+        const fromMs = new Date(customFrom).getTime()
+        const toMs = new Date(customTo).getTime()
+        const duration = toMs - fromMs
+        const pFrom = new Date(fromMs - duration - 86400000)
+        const pTo = new Date(fromMs - 86400000)
+        const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+        return `${fmt(pFrom)}〜${fmt(pTo)}`
+      })()
+    : formatPeriodLabel(selectedPeriod, selectedPeriod)
 
   const templates = useMemo(() => {
     // Group current period by template

@@ -1,26 +1,21 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { buildPeriodQuery, getPeriodLabel } from "@/components/dashboard/analytics-charts"
 import type { HeatmapCell } from "@/lib/queries/stats"
 
 interface SatisfactionHeatmapProps {
   initialData: HeatmapCell[]
   selectedPeriod: number
+  customFrom?: string
+  customTo?: string
 }
 
 // 曜日ラベル（DOW: 0=日, 1=月, ..., 6=土）
 const DAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"]
 // 月〜土〜日の並び順（日本の慣習）
 const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0]
-
-const PERIOD_LABELS: Record<number, string> = {
-  7: "7日",
-  30: "30日",
-  90: "90日",
-  180: "180日",
-  365: "365日",
-}
 
 function getScoreColor(score: number): string {
   if (score >= 4.5) return "bg-blue-600 text-white"
@@ -36,21 +31,18 @@ function getScoreBg(score: number): string {
   return "bg-orange-500"
 }
 
-export function SatisfactionHeatmap({ initialData, selectedPeriod }: SatisfactionHeatmapProps) {
+export function SatisfactionHeatmap({ initialData, selectedPeriod, customFrom, customTo }: SatisfactionHeatmapProps) {
   const [data, setData] = useState<HeatmapCell[]>(initialData)
   const [loading, setLoading] = useState(false)
   const isInitialMount = useRef(true)
 
-  const fetchData = useCallback(async (days: number) => {
+  const query = useMemo(() => buildPeriodQuery(selectedPeriod, customFrom, customTo), [selectedPeriod, customFrom, customTo])
+
+  const fetchData = useCallback(async (q: string) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/heatmap?days=${days}`, {
-        cache: "no-store",
-      })
-      if (res.ok) {
-        const json = await res.json()
-        setData(json)
-      }
+      const res = await fetch(`/api/heatmap?${q}`, { cache: "no-store" })
+      if (res.ok) setData(await res.json())
     } finally {
       setLoading(false)
     }
@@ -61,8 +53,9 @@ export function SatisfactionHeatmap({ initialData, selectedPeriod }: Satisfactio
       isInitialMount.current = false
       return
     }
-    fetchData(selectedPeriod)
-  }, [selectedPeriod, fetchData])
+    if (!query) return
+    fetchData(query)
+  }, [query, fetchData])
 
   if (loading) {
     return (
@@ -113,7 +106,7 @@ export function SatisfactionHeatmap({ initialData, selectedPeriod }: Satisfactio
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base">時間帯別 患者満足度</CardTitle>
-        <p className="text-xs text-muted-foreground">直近{PERIOD_LABELS[selectedPeriod] ?? `${selectedPeriod}日`}のデータ</p>
+        <p className="text-xs text-muted-foreground">{selectedPeriod > 0 ? "直近" : ""}{getPeriodLabel(selectedPeriod, customFrom, customTo)}のデータ</p>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto -mx-2 px-2">

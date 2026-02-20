@@ -15,11 +15,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertTriangle, TrendingUp, Plus } from "lucide-react"
 import Link from "next/link"
 import type { TemplateQuestionScores } from "@/lib/queries/stats"
-import { PERIOD_OPTIONS } from "@/components/dashboard/daily-trend-chart"
+import { PERIOD_OPTIONS, getPeriodLabel } from "@/components/dashboard/analytics-charts"
 
 interface QuestionBreakdownProps {
   data: TemplateQuestionScores[]
   selectedPeriod?: number
+  customFrom?: string
+  customTo?: string
 }
 
 const SCORE_THRESHOLD = 4.0
@@ -85,9 +87,9 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: Array<
   )
 }
 
-export function QuestionBreakdown({ data, selectedPeriod }: QuestionBreakdownProps) {
-  const periodLabel = selectedPeriod
-    ? PERIOD_OPTIONS.find((o) => o.value === selectedPeriod)?.label
+export function QuestionBreakdown({ data, selectedPeriod, customFrom, customTo }: QuestionBreakdownProps) {
+  const periodLabel = selectedPeriod != null
+    ? getPeriodLabel(selectedPeriod, customFrom, customTo)
     : null
   if (data.length === 0) {
     return (
@@ -139,7 +141,7 @@ export function QuestionBreakdown({ data, selectedPeriod }: QuestionBreakdownPro
               <CardTitle className="flex items-center gap-2 text-base">
                 <span>{template.templateName}</span>
                 <span className="text-xs font-normal text-muted-foreground">
-                  （{periodLabel ? `直近${periodLabel} / ` : ""}{template.responseCount}件の回答）
+                  （{periodLabel ? `${selectedPeriod && selectedPeriod > 0 ? "直近" : ""}${periodLabel} / ` : ""}{template.responseCount}件の回答）
                 </span>
               </CardTitle>
             </CardHeader>
