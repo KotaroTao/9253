@@ -198,13 +198,15 @@ export function MonthlyTrendSummary({ months = 12, customRange }: MonthlyTrendSu
   // Transform data for charts
   const chartData = data.map((row) => {
     const derived = calcDerived(row, 0)
+    const totalRevenue = row.insuranceRevenue != null && row.selfPayRevenue != null
+      ? row.insuranceRevenue + row.selfPayRevenue : null
     return {
       month: formatMonth(row.year, row.month),
       monthShort: formatMonthShort(row.year, row.month),
       firstVisitCount: row.firstVisitCount,
       revisitCount: row.revisitCount,
       totalPatients: derived?.totalPatients ?? null,
-      totalRevenue: row.totalRevenue,
+      totalRevenue,
       selfPayRevenue: row.selfPayRevenue,
       insuranceRevenue: row.insuranceRevenue,
       cancellationCount: row.cancellationCount,

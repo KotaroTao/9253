@@ -7,12 +7,7 @@ import { getMonthlySurveyCount } from "@/lib/queries/stats"
 
 const METRICS_SELECT = {
   firstVisitCount: true,
-  firstVisitInsurance: true,
-  firstVisitSelfPay: true,
   revisitCount: true,
-  revisitInsurance: true,
-  revisitSelfPay: true,
-  totalRevenue: true,
   insuranceRevenue: true,
   selfPayRevenue: true,
   cancellationCount: true,
@@ -113,23 +108,18 @@ export async function POST(request: NextRequest) {
   const clampInt = (v: unknown) => v != null ? Math.max(0, Math.round(Number(v))) : null
 
   const firstVisitCount = clampInt(body.firstVisitCount)
-  const firstVisitInsurance = clampInt(body.firstVisitInsurance)
-  const firstVisitSelfPay = clampInt(body.firstVisitSelfPay)
   const revisitCount = clampInt(body.revisitCount)
-  const revisitInsurance = clampInt(body.revisitInsurance)
-  const revisitSelfPay = clampInt(body.revisitSelfPay)
-  const totalRevenue = clampInt(body.totalRevenue)
   const insuranceRevenue = clampInt(body.insuranceRevenue)
   const selfPayRevenue = clampInt(body.selfPayRevenue)
   const cancellationCount = clampInt(body.cancellationCount)
 
+  // Auto-compute totalRevenue from components
+  const totalRevenue = insuranceRevenue != null && selfPayRevenue != null
+    ? insuranceRevenue + selfPayRevenue : null
+
   const data = {
     firstVisitCount,
-    firstVisitInsurance,
-    firstVisitSelfPay,
     revisitCount,
-    revisitInsurance,
-    revisitSelfPay,
     totalRevenue,
     insuranceRevenue,
     selfPayRevenue,
