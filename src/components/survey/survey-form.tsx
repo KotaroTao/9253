@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StarRating } from "@/components/survey/star-rating"
 import { messages } from "@/lib/messages"
 import { DEFAULTS, DENTAL_TIPS } from "@/lib/constants"
-import { Lightbulb } from "lucide-react"
+import { Lightbulb, ExternalLink } from "lucide-react"
 import { Confetti } from "@/components/survey/confetti"
 import type { SurveyPageData, PatientAttributes } from "@/types/survey"
 
@@ -17,11 +17,12 @@ interface SurveyFormProps {
   patientAttributes?: PatientAttributes
   staffId?: string
   deviceUuid?: string
+  googleReviewUrl?: string
 }
 
 type Step = "welcome" | "survey" | "submitting" | "thanks"
 
-export function SurveyForm({ data, onComplete, kioskMode = false, patientAttributes, staffId, deviceUuid }: SurveyFormProps) {
+export function SurveyForm({ data, onComplete, kioskMode = false, patientAttributes, staffId, deviceUuid, googleReviewUrl }: SurveyFormProps) {
   const [step, setStep] = useState<Step>(kioskMode ? "survey" : "welcome")
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [freeText, setFreeText] = useState("")
@@ -278,6 +279,29 @@ export function SurveyForm({ data, onComplete, kioskMode = false, patientAttribu
             </p>
             <p className="text-sm text-blue-800">{randomTip}</p>
           </div>
+          {/* Google口コミ誘導（オプション・全員一律表示） */}
+          {googleReviewUrl && (
+            <div className="mx-auto max-w-xs rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-center">
+              <p className="mb-1 text-sm font-medium text-yellow-800">
+                {messages.googleReview.linkText}
+              </p>
+              <p className="mb-3 text-xs text-yellow-700">
+                {messages.googleReview.linkSubText}
+              </p>
+              <a
+                href={googleReviewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-medium text-yellow-800 shadow-sm ring-1 ring-yellow-300 transition-colors hover:bg-yellow-100"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                {messages.googleReview.openButton}
+              </a>
+              <p className="mt-2 text-[10px] text-yellow-600">
+                {messages.googleReview.note}
+              </p>
+            </div>
+          )}
           <div className="pt-2 text-sm text-muted-foreground">
             <p>{messages.survey.closeMessage}</p>
             <p>{messages.survey.visitAgain}</p>

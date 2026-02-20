@@ -11,6 +11,9 @@ export interface ClinicSettings {
     title: string
     content: string
   }
+  // Google口コミ誘導（オプション）
+  googleReviewEnabled?: boolean // 有効にするとアンケート完了後に口コミリンクを表示
+  googleReviewUrl?: string // Google口コミ投稿ページURL
   // AI Advisory トラッキング
   advisoryThreshold?: number // アンロックに必要な回答数（デフォルト30）
   responsesSinceLastAdvisory?: number // 最終分析以降の新規回答数

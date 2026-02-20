@@ -3,6 +3,7 @@ import { getClinicBySlug } from "@/lib/queries/surveys"
 import { SurveyForm } from "@/components/survey/survey-form"
 import { messages } from "@/lib/messages"
 import type { SurveyPageData } from "@/types/survey"
+import type { ClinicSettings } from "@/types"
 
 interface SurveyPageProps {
   params: { token: string }
@@ -42,10 +43,16 @@ export default async function SurveyPage({ params, searchParams }: SurveyPagePro
     questions: template.questions as unknown as SurveyPageData["questions"],
   }
 
+  // Google口コミ誘導URL（有効時のみ）
+  const settings = (clinic.settings ?? {}) as ClinicSettings
+  const googleReviewUrl = settings.googleReviewEnabled && settings.googleReviewUrl
+    ? settings.googleReviewUrl
+    : undefined
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-8">
       <div className="w-full max-w-md">
-        <SurveyForm data={pageData} />
+        <SurveyForm data={pageData} googleReviewUrl={googleReviewUrl} />
       </div>
     </div>
   )

@@ -11,6 +11,7 @@ import {
   Lightbulb,
   ArrowRight,
   User,
+  ExternalLink,
 } from "lucide-react"
 import { Confetti } from "@/components/survey/confetti"
 import {
@@ -31,6 +32,7 @@ interface KioskSurveyProps {
   templates: SurveyTemplateInfo[]
   initialTodayCount: number
   staff: KioskStaffInfo[]
+  googleReviewUrl?: string
 }
 
 type KioskState = "setup" | "survey" | "thanks"
@@ -103,6 +105,7 @@ export function KioskSurvey({
   templates,
   initialTodayCount,
   staff,
+  googleReviewUrl,
 }: KioskSurveyProps) {
   const router = useRouter()
   const [state, setState] = useState<KioskState>("setup")
@@ -379,6 +382,30 @@ export function KioskSurvey({
               </p>
               <p className="text-sm text-blue-800">{randomTip}</p>
             </div>
+
+            {/* Google口コミ誘導（オプション・全員一律表示） */}
+            {googleReviewUrl && (
+              <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-center">
+                <p className="mb-1 text-sm font-medium text-yellow-800">
+                  {messages.googleReview.linkText}
+                </p>
+                <p className="mb-3 text-xs text-yellow-700">
+                  {messages.googleReview.linkSubText}
+                </p>
+                <a
+                  href={googleReviewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2 text-sm font-medium text-yellow-800 shadow-sm ring-1 ring-yellow-300 transition-colors hover:bg-yellow-100"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  {messages.googleReview.openButton}
+                </a>
+                <p className="mt-2 text-[10px] text-yellow-600">
+                  {messages.googleReview.note}
+                </p>
+              </div>
+            )}
 
             <p className="text-sm text-muted-foreground">{messages.survey.closeMessage}</p>
           </div>

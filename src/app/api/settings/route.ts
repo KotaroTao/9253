@@ -18,7 +18,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { regularClosedDays, ...rest } = body
+    const { regularClosedDays, googleReviewEnabled, googleReviewUrl, ...rest } = body
     const parsed = updateClinicSchema.safeParse(rest)
 
     if (!parsed.success) {
@@ -27,10 +27,22 @@ export async function PATCH(request: NextRequest) {
 
     const updateData: Record<string, unknown> = { ...parsed.data }
 
-    // Merge settings fields (regularClosedDays, closedDates, etc.)
+    // Merge settings fields (regularClosedDays, googleReview, etc.)
     const settingsPatch: Partial<ClinicSettings> = {}
     if (Array.isArray(regularClosedDays) && regularClosedDays.every((d: unknown) => typeof d === "number" && d >= 0 && d <= 6)) {
       settingsPatch.regularClosedDays = regularClosedDays
+    }
+    if (typeof googleReviewEnabled === "boolean") {
+      settingsPatch.googleReviewEnabled = googleReviewEnabled
+    }
+    if (typeof googleReviewUrl === "string") {
+      // URLバリデーション: Google関連URLまたは空文字を許可
+      const trimmed = googleReviewUrl.trim()
+      if (trimmed === "") {
+        settingsPatch.googleReviewUrl = undefined
+      } else if (/^https:\/\/.+/.test(trimmed)) {
+        settingsPatch.googleReviewUrl = trimmed
+      }
     }
     if (Object.keys(settingsPatch).length > 0) {
       const merged = await updateClinicSettings(clinicId, settingsPatch)

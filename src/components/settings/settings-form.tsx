@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
-import { CalendarOff } from "lucide-react"
+import { CalendarOff, Star, ExternalLink, Info } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Switch } from "@/components/ui/switch"
 
 const DAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"] as const
 
@@ -18,12 +19,16 @@ interface SettingsFormProps {
     name: string
   }
   regularClosedDays?: number[]
+  googleReviewEnabled?: boolean
+  googleReviewUrl?: string
 }
 
-export function SettingsForm({ clinic, regularClosedDays = [] }: SettingsFormProps) {
+export function SettingsForm({ clinic, regularClosedDays = [], googleReviewEnabled: initialReviewEnabled = false, googleReviewUrl: initialReviewUrl = "" }: SettingsFormProps) {
   const router = useRouter()
   const [name, setName] = useState(clinic.name)
   const [closedDays, setClosedDays] = useState<number[]>(regularClosedDays)
+  const [reviewEnabled, setReviewEnabled] = useState(initialReviewEnabled)
+  const [reviewUrl, setReviewUrl] = useState(initialReviewUrl)
   const [isLoading, setIsLoading] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState("")
@@ -41,9 +46,11 @@ export function SettingsForm({ clinic, regularClosedDays = [] }: SettingsFormPro
     setSaved(false)
 
     try {
-      const body: Record<string, string | number | number[]> = {
+      const body: Record<string, string | number | number[] | boolean> = {
         name,
         regularClosedDays: closedDays,
+        googleReviewEnabled: reviewEnabled,
+        googleReviewUrl: reviewUrl,
       }
 
       const res = await fetch("/api/settings", {
@@ -118,6 +125,58 @@ export function SettingsForm({ clinic, regularClosedDays = [] }: SettingsFormPro
               </button>
             ))}
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <Star className="h-5 w-5 text-yellow-500" />
+            <div>
+              <CardTitle className="text-base">{messages.settings.googleReviewTitle}</CardTitle>
+              <CardDescription>{messages.settings.googleReviewDesc}</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="googleReviewEnabled" className="text-sm font-medium">
+              {messages.settings.googleReviewEnabledLabel}
+            </Label>
+            <Switch
+              id="googleReviewEnabled"
+              checked={reviewEnabled}
+              onCheckedChange={setReviewEnabled}
+              disabled={isLoading}
+            />
+          </div>
+          {reviewEnabled && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="googleReviewUrl">{messages.settings.googleReviewUrlLabel}</Label>
+                <div className="flex items-center gap-2">
+                  <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <Input
+                    id="googleReviewUrl"
+                    type="url"
+                    value={reviewUrl}
+                    onChange={(e) => setReviewUrl(e.target.value)}
+                    placeholder={messages.settings.googleReviewUrlPlaceholder}
+                    disabled={isLoading}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {messages.settings.googleReviewUrlHint}
+                </p>
+              </div>
+              <div className="flex items-start gap-2 rounded-lg bg-blue-50 p-3">
+                <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+                <p className="text-xs text-blue-800">
+                  {messages.settings.googleReviewComplianceNote}
+                </p>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 

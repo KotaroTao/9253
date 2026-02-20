@@ -33,7 +33,12 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <SettingsForm clinic={clinic} regularClosedDays={regularClosedDays} />
+      <SettingsForm
+        clinic={clinic}
+        regularClosedDays={regularClosedDays}
+        googleReviewEnabled={settings.googleReviewEnabled}
+        googleReviewUrl={settings.googleReviewUrl}
+      />
     </div>
   )
 }

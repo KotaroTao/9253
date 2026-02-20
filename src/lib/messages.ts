@@ -409,6 +409,20 @@ export const messages = {
     customQuestionsNote: "カスタム質問は今後のアップデートで対応予定です",
     regularClosedDaysLabel: "定休日",
     regularClosedDaysDesc: "毎週決まって休診する曜日を選択してください",
+    // Google口コミ誘導
+    googleReviewTitle: "Google口コミ誘導",
+    googleReviewDesc: "アンケート完了後、患者さまにGoogle口コミページへのリンクを表示します。回答内容に関わらず全員に一律表示されます（景品表示法・医療広告ガイドライン準拠）。",
+    googleReviewEnabledLabel: "口コミ誘導を有効にする",
+    googleReviewUrlLabel: "Google口コミページURL",
+    googleReviewUrlPlaceholder: "https://search.google.com/local/writereview?placeid=...",
+    googleReviewUrlHint: "Googleビジネスプロフィールの口コミ投稿リンクを入力してください",
+    googleReviewComplianceNote: "この機能は景品表示法および医療広告ガイドラインに準拠しています。口コミの投稿は患者さまの任意であり、回答結果による表示の出し分けは行いません。",
+  },
+  googleReview: {
+    linkText: "よろしければGoogleに口コミをお寄せください",
+    linkSubText: "皆さまのご意見が、医院の改善に役立ちます",
+    openButton: "Googleで口コミを書く",
+    note: "口コミの投稿は任意です",
   },
   nav: {
     dashboard: "ホーム",
@@ -603,7 +617,7 @@ export const messages = {
       "はい。アンケートでは氏名・連絡先などの個人情報は一切収集しません。不正防止用のIPアドレスもSHA-256でハッシュ化して保存しており、個人を特定することはできません。",
     faq3Q: "Google口コミの誘導機能はありますか？",
     faq3A:
-      "MIERU Clinicは口コミ誘導機能を搭載していません。患者への口コミ依頼は行わず、純粋な患者体験改善に特化したサービスです。",
+      "オプション機能として、アンケート完了後に全患者さまへ一律でGoogle口コミページへのリンクを表示する機能をご用意しています。回答内容やスコアによる表示の出し分けは一切行わず、景品表示法・医療広告ガイドラインに完全準拠した設計です。本機能はクリニックごとに有効/無効を切り替えられます。",
     faq4Q: "既存の紙アンケートとの違いは何ですか？",
     faq4A:
       "紙のアンケートは集計に手間がかかり、回答率も低くなりがちです。MIERU Clinicはタブレットから30秒で回答でき、結果はリアルタイムでダッシュボードに反映。集計作業が不要で、質問別の分析やトレンド把握も自動で行えます。",

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { KioskSurvey } from "@/components/survey/kiosk-survey"
 import { messages } from "@/lib/messages"
 import type { SurveyPageData, SurveyTemplateInfo, KioskStaffInfo } from "@/types/survey"
+import type { ClinicSettings } from "@/types"
 
 interface KioskPageProps {
   params: { token: string }
@@ -58,6 +59,12 @@ export default async function KioskPage({ params }: KioskPageProps) {
     role: s.role,
   }))
 
+  // Google口コミ誘導URL（有効時のみ）
+  const clinicSettings = (clinic.settings ?? {}) as ClinicSettings
+  const googleReviewUrl = clinicSettings.googleReviewEnabled && clinicSettings.googleReviewUrl
+    ? clinicSettings.googleReviewUrl
+    : undefined
+
   return (
     <KioskSurvey
       clinicName={clinic.name}
@@ -65,6 +72,7 @@ export default async function KioskPage({ params }: KioskPageProps) {
       templates={templates}
       initialTodayCount={todayCount}
       staff={staff}
+      googleReviewUrl={googleReviewUrl}
     />
   )
 }
