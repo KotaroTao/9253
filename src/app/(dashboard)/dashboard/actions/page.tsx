@@ -43,7 +43,7 @@ export default async function ActionsPage() {
       },
     }),
     prisma.surveyTemplate.findMany({
-      where: { clinicId },
+      where: { clinicId, isActive: true },
       select: { name: true, questions: true },
       orderBy: { name: "asc" },
     }),
