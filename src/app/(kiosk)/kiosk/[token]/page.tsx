@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { KioskSurvey } from "@/components/survey/kiosk-survey"
 import { messages } from "@/lib/messages"
 import type { SurveyPageData, SurveyTemplateInfo, KioskStaffInfo } from "@/types/survey"
+import type { ClinicSettings, PostSurveyLinks } from "@/types"
 
 interface KioskPageProps {
   params: { token: string }
@@ -58,6 +59,17 @@ export default async function KioskPage({ params }: KioskPageProps) {
     role: s.role,
   }))
 
+  // アンケート完了後の誘導リンク
+  const clinicSettings = (clinic.settings ?? {}) as ClinicSettings
+  const postSurveyLinks: PostSurveyLinks = {
+    googleReviewUrl: clinicSettings.postSurveyAction === "google_review" && clinicSettings.googleReviewUrl
+      ? clinicSettings.googleReviewUrl : undefined,
+    lineUrl: clinicSettings.postSurveyAction === "line" && clinicSettings.lineUrl
+      ? clinicSettings.lineUrl : undefined,
+    clinicHomepageUrl: clinicSettings.clinicHomepageUrl || undefined,
+  }
+  const hasLinks = postSurveyLinks.googleReviewUrl || postSurveyLinks.lineUrl || postSurveyLinks.clinicHomepageUrl
+
   return (
     <KioskSurvey
       clinicName={clinic.name}
@@ -65,6 +77,7 @@ export default async function KioskPage({ params }: KioskPageProps) {
       templates={templates}
       initialTodayCount={todayCount}
       staff={staff}
+      postSurveyLinks={hasLinks ? postSurveyLinks : undefined}
     />
   )
 }

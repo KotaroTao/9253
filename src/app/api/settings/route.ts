@@ -18,7 +18,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { regularClosedDays, ...rest } = body
+    const { regularClosedDays, postSurveyAction, googleReviewUrl, lineUrl, clinicHomepageUrl, ...rest } = body
     const parsed = updateClinicSchema.safeParse(rest)
 
     if (!parsed.success) {
@@ -27,10 +27,25 @@ export async function PATCH(request: NextRequest) {
 
     const updateData: Record<string, unknown> = { ...parsed.data }
 
-    // Merge settings fields (regularClosedDays, closedDates, etc.)
+    // Merge settings fields
     const settingsPatch: Partial<ClinicSettings> = {}
     if (Array.isArray(regularClosedDays) && regularClosedDays.every((d: unknown) => typeof d === "number" && d >= 0 && d <= 6)) {
       settingsPatch.regularClosedDays = regularClosedDays
+    }
+    // postSurveyAction: "none" | "google_review" | "line"
+    if (typeof postSurveyAction === "string" && ["none", "google_review", "line"].includes(postSurveyAction)) {
+      settingsPatch.postSurveyAction = postSurveyAction as ClinicSettings["postSurveyAction"]
+    }
+    // URL fields: validate https:// or clear
+    for (const [key, value] of Object.entries({ googleReviewUrl, lineUrl, clinicHomepageUrl })) {
+      if (typeof value === "string") {
+        const trimmed = value.trim()
+        if (trimmed === "") {
+          settingsPatch[key as keyof ClinicSettings] = undefined as never
+        } else if (/^https?:\/\/.+/.test(trimmed)) {
+          settingsPatch[key as keyof ClinicSettings] = trimmed as never
+        }
+      }
     }
     if (Object.keys(settingsPatch).length > 0) {
       const merged = await updateClinicSettings(clinicId, settingsPatch)

@@ -11,6 +11,8 @@ import {
   Lightbulb,
   ArrowRight,
   User,
+  ExternalLink,
+  Globe,
 } from "lucide-react"
 import { Confetti } from "@/components/survey/confetti"
 import {
@@ -24,6 +26,7 @@ import {
   STAFF_ROLE_LABELS,
 } from "@/lib/constants"
 import type { SurveyPageData, SurveyTemplateInfo, PatientAttributes, KioskStaffInfo } from "@/types/survey"
+import type { PostSurveyLinks } from "@/types"
 
 interface KioskSurveyProps {
   clinicName: string
@@ -31,6 +34,7 @@ interface KioskSurveyProps {
   templates: SurveyTemplateInfo[]
   initialTodayCount: number
   staff: KioskStaffInfo[]
+  postSurveyLinks?: PostSurveyLinks
 }
 
 type KioskState = "setup" | "survey" | "thanks"
@@ -103,6 +107,7 @@ export function KioskSurvey({
   templates,
   initialTodayCount,
   staff,
+  postSurveyLinks,
 }: KioskSurveyProps) {
   const router = useRouter()
   const [state, setState] = useState<KioskState>("setup")
@@ -379,6 +384,70 @@ export function KioskSurvey({
               </p>
               <p className="text-sm text-blue-800">{randomTip}</p>
             </div>
+
+            {/* メイン誘導CTA（Google口コミ or LINE — 全員一律表示） */}
+            {postSurveyLinks?.googleReviewUrl && (
+              <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-center">
+                <p className="mb-1 text-sm font-medium text-yellow-800">
+                  {messages.postSurvey.googleReviewText}
+                </p>
+                <p className="mb-3 text-xs text-yellow-700">
+                  {messages.postSurvey.googleReviewSubText}
+                </p>
+                <a
+                  href={postSurveyLinks.googleReviewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-yellow-800 shadow-sm ring-1 ring-yellow-300 transition-colors hover:bg-yellow-100"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  {messages.postSurvey.googleReviewButton}
+                </a>
+                <p className="mt-2 text-[10px] text-yellow-600">
+                  {messages.postSurvey.googleReviewNote}
+                </p>
+              </div>
+            )}
+            {postSurveyLinks?.lineUrl && (
+              <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-center">
+                <p className="mb-1 text-sm font-medium text-green-800">
+                  {messages.postSurvey.lineText}
+                </p>
+                <p className="mb-3 text-xs text-green-700">
+                  {messages.postSurvey.lineSubText}
+                </p>
+                <a
+                  href={postSurveyLinks.lineUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#06C755] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#05b04d]"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  {messages.postSurvey.lineButton}
+                </a>
+                <p className="mt-2 text-[10px] text-green-600">
+                  {messages.postSurvey.lineNote}
+                </p>
+              </div>
+            )}
+            {/* 医院ホームページリンク（メイン誘導がある場合は控えめ表示） */}
+            {postSurveyLinks?.clinicHomepageUrl && (
+              <div className="text-center">
+                <a
+                  href={postSurveyLinks.clinicHomepageUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={
+                    postSurveyLinks.googleReviewUrl || postSurveyLinks.lineUrl
+                      ? "inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                      : "inline-flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted"
+                  }
+                >
+                  <Globe className="h-3.5 w-3.5" />
+                  {messages.postSurvey.homepageButton}
+                </a>
+              </div>
+            )}
 
             <p className="text-sm text-muted-foreground">{messages.survey.closeMessage}</p>
           </div>

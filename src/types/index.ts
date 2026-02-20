@@ -11,9 +11,21 @@ export interface ClinicSettings {
     title: string
     content: string
   }
+  // アンケート完了後の誘導設定
+  postSurveyAction?: "none" | "google_review" | "line" // デフォルト: "none"
+  googleReviewUrl?: string // Google口コミ投稿ページURL
+  lineUrl?: string // 医院LINE公式アカウントURL
+  clinicHomepageUrl?: string // 医院ホームページURL（postSurveyActionとは独立して表示可能）
   // AI Advisory トラッキング
   advisoryThreshold?: number // アンロックに必要な回答数（デフォルト30）
   responsesSinceLastAdvisory?: number // 最終分析以降の新規回答数
+}
+
+/** アンケート完了後に表示するリンク情報 */
+export interface PostSurveyLinks {
+  googleReviewUrl?: string // Google口コミURL（postSurveyAction=google_review時のみ）
+  lineUrl?: string // LINE URL（postSurveyAction=line時のみ）
+  clinicHomepageUrl?: string // 医院HPリンク（独立して表示可能）
 }
 
 /** AI Advisory レポートのセクション型 */

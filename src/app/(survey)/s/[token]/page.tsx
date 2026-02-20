@@ -3,6 +3,7 @@ import { getClinicBySlug } from "@/lib/queries/surveys"
 import { SurveyForm } from "@/components/survey/survey-form"
 import { messages } from "@/lib/messages"
 import type { SurveyPageData } from "@/types/survey"
+import type { ClinicSettings, PostSurveyLinks } from "@/types"
 
 interface SurveyPageProps {
   params: { token: string }
@@ -42,10 +43,21 @@ export default async function SurveyPage({ params, searchParams }: SurveyPagePro
     questions: template.questions as unknown as SurveyPageData["questions"],
   }
 
+  // アンケート完了後の誘導リンク
+  const settings = (clinic.settings ?? {}) as ClinicSettings
+  const postSurveyLinks: PostSurveyLinks = {
+    googleReviewUrl: settings.postSurveyAction === "google_review" && settings.googleReviewUrl
+      ? settings.googleReviewUrl : undefined,
+    lineUrl: settings.postSurveyAction === "line" && settings.lineUrl
+      ? settings.lineUrl : undefined,
+    clinicHomepageUrl: settings.clinicHomepageUrl || undefined,
+  }
+  const hasLinks = postSurveyLinks.googleReviewUrl || postSurveyLinks.lineUrl || postSurveyLinks.clinicHomepageUrl
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-8">
       <div className="w-full max-w-md">
-        <SurveyForm data={pageData} />
+        <SurveyForm data={pageData} postSurveyLinks={hasLinks ? postSurveyLinks : undefined} />
       </div>
     </div>
   )
