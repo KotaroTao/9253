@@ -16,6 +16,11 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
+  Link2,
+  GitCompareArrows,
+  CalendarClock,
+  Activity,
+  PieChart,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { AdvisoryReportData, AdvisoryProgress } from "@/types"
@@ -46,6 +51,31 @@ const SECTION_CONFIG = {
     label: messages.advisory.sectionAction,
     color: "rose",
   },
+  correlation: {
+    icon: Link2,
+    label: messages.advisory.sectionCorrelation,
+    color: "indigo",
+  },
+  first_revisit_gap: {
+    icon: GitCompareArrows,
+    label: messages.advisory.sectionFirstRevisitGap,
+    color: "teal",
+  },
+  time_pattern: {
+    icon: CalendarClock,
+    label: messages.advisory.sectionTimePattern,
+    color: "orange",
+  },
+  action_effect: {
+    icon: Activity,
+    label: messages.advisory.sectionActionEffect,
+    color: "emerald",
+  },
+  distribution: {
+    icon: PieChart,
+    label: messages.advisory.sectionDistribution,
+    color: "slate",
+  },
 } as const
 
 const COLOR_MAP: Record<string, { border: string; bg: string; icon: string; text: string }> = {
@@ -54,6 +84,11 @@ const COLOR_MAP: Record<string, { border: string; bg: string; icon: string; text
   amber: { border: "border-amber-200", bg: "bg-amber-50", icon: "text-amber-600", text: "text-amber-800" },
   purple: { border: "border-purple-200", bg: "bg-purple-50", icon: "text-purple-600", text: "text-purple-800" },
   rose: { border: "border-rose-200", bg: "bg-rose-50", icon: "text-rose-600", text: "text-rose-800" },
+  indigo: { border: "border-indigo-200", bg: "bg-indigo-50", icon: "text-indigo-600", text: "text-indigo-800" },
+  teal: { border: "border-teal-200", bg: "bg-teal-50", icon: "text-teal-600", text: "text-teal-800" },
+  orange: { border: "border-orange-200", bg: "bg-orange-50", icon: "text-orange-600", text: "text-orange-800" },
+  emerald: { border: "border-emerald-200", bg: "bg-emerald-50", icon: "text-emerald-600", text: "text-emerald-800" },
+  slate: { border: "border-slate-200", bg: "bg-slate-50", icon: "text-slate-600", text: "text-slate-800" },
 }
 
 const TRIGGER_LABELS: Record<string, string> = {

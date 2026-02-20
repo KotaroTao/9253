@@ -20,7 +20,17 @@ export interface ClinicSettings {
 export interface AdvisorySection {
   title: string
   content: string
-  type: "strength" | "improvement" | "action" | "trend" | "summary"
+  type:
+    | "strength"
+    | "improvement"
+    | "action"
+    | "trend"
+    | "summary"
+    | "correlation"
+    | "first_revisit_gap"
+    | "time_pattern"
+    | "action_effect"
+    | "distribution"
 }
 
 /** AI Advisory レポートデータ */
