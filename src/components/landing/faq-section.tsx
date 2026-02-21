@@ -11,13 +11,18 @@ const faqs = [
   { q: messages.landing.faq3Q, a: messages.landing.faq3A },
   { q: messages.landing.faq4Q, a: messages.landing.faq4A },
   { q: messages.landing.faq5Q, a: messages.landing.faq5A },
+  { q: messages.landing.faq6Q, a: messages.landing.faq6A },
+  { q: messages.landing.faq7Q, a: messages.landing.faq7A },
+  { q: messages.landing.faq8Q, a: messages.landing.faq8A },
+  { q: messages.landing.faq9Q, a: messages.landing.faq9A },
+  { q: messages.landing.faq10Q, a: messages.landing.faq10A },
 ]
 
 export function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
 
   return (
-    <section id="faq" className="py-20 lg:py-28">
+    <section id="faq" className="py-20 lg:py-28 animate-on-scroll">
       <div className="container max-w-3xl">
         <div className="mb-14 text-center">
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">

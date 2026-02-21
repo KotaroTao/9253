@@ -97,3 +97,48 @@
   animation: fade-in-up 0.6s ease-out 0.3s forwards;
   opacity: 0;
 }
+
+/* Scroll-triggered animation */
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.animate-on-scroll.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Hero dashboard card stagger */
+.hero-card-1 {
+  animation: fade-in-up 0.6s ease-out 0ms forwards;
+  opacity: 0;
+}
+.hero-card-2 {
+  animation: fade-in-up 0.6s ease-out 150ms forwards;
+  opacity: 0;
+}
+.hero-card-3 {
+  animation: fade-in-up 0.6s ease-out 300ms forwards;
+  opacity: 0;
+}
+
+/* Landing gradient for dark CTA */
+.landing-gradient-dark {
+  background: linear-gradient(135deg, hsl(221 83% 53% / 0.95) 0%, hsl(221 83% 30% / 0.95) 100%);
+}
+
+/* Hover lift for feature cards */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Founder section gradient */
+.founder-gradient {
+  background: linear-gradient(160deg, hsl(221 83% 97%) 0%, hsl(221 83% 53% / 0.06) 50%, hsl(221 83% 97%) 100%);
+}
