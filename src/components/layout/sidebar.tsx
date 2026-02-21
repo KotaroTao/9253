@@ -142,7 +142,7 @@ export function Sidebar({ role, isOperatorMode = false, clinicSlug }: SidebarPro
                 className="flex flex-col items-center gap-1.5 rounded-xl border-2 border-blue-200 bg-gradient-to-b from-blue-50 to-white px-2 py-3 transition-all hover:border-blue-400 hover:shadow-sm active:scale-[0.97]"
               >
                 <Smartphone className="h-5 w-5 text-blue-500" />
-                <span className="text-[11px] font-bold text-blue-800 leading-tight text-center">{messages.dashboard.startKiosk}</span>
+                <span className="text-[11px] font-bold text-blue-800 leading-tight text-center">アンケート<br />（医院端末）</span>
               </a>
             )}
             {patientSurveyUrl && (
@@ -153,7 +153,7 @@ export function Sidebar({ role, isOperatorMode = false, clinicSlug }: SidebarPro
                 className="flex flex-col items-center gap-1.5 rounded-xl border-2 border-emerald-200 bg-gradient-to-b from-emerald-50 to-white px-2 py-3 transition-all hover:border-emerald-400 hover:shadow-sm active:scale-[0.97]"
               >
                 <QrCode className="h-5 w-5 text-emerald-500" />
-                <span className="text-[11px] font-bold text-emerald-800 leading-tight text-center">{messages.dashboard.startPatientSurvey}</span>
+                <span className="text-[11px] font-bold text-emerald-800 leading-tight text-center">アンケート<br />（患者端末）</span>
               </a>
             )}
           </div>
