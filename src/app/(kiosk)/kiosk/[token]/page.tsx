@@ -63,13 +63,11 @@ export default async function KioskPage({ params, searchParams }: KioskPageProps
   // アンケート完了後の誘導リンク
   const clinicSettings = (clinic.settings ?? {}) as ClinicSettings
   const postSurveyLinks: PostSurveyLinks = {
-    googleReviewUrl: clinicSettings.postSurveyAction === "google_review" && clinicSettings.googleReviewUrl
-      ? clinicSettings.googleReviewUrl : undefined,
     lineUrl: clinicSettings.postSurveyAction === "line" && clinicSettings.lineUrl
       ? clinicSettings.lineUrl : undefined,
     clinicHomepageUrl: clinicSettings.clinicHomepageUrl || undefined,
   }
-  const hasLinks = postSurveyLinks.googleReviewUrl || postSurveyLinks.lineUrl || postSurveyLinks.clinicHomepageUrl
+  const hasLinks = postSurveyLinks.lineUrl || postSurveyLinks.clinicHomepageUrl
 
   const isTestMode = searchParams.test === "1"
 

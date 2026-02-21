@@ -47,13 +47,11 @@ export default async function SurveyPage({ params, searchParams }: SurveyPagePro
   // アンケート完了後の誘導リンク
   const settings = (clinic.settings ?? {}) as ClinicSettings
   const postSurveyLinks: PostSurveyLinks = {
-    googleReviewUrl: settings.postSurveyAction === "google_review" && settings.googleReviewUrl
-      ? settings.googleReviewUrl : undefined,
     lineUrl: settings.postSurveyAction === "line" && settings.lineUrl
       ? settings.lineUrl : undefined,
     clinicHomepageUrl: settings.clinicHomepageUrl || undefined,
   }
-  const hasLinks = postSurveyLinks.googleReviewUrl || postSurveyLinks.lineUrl || postSurveyLinks.clinicHomepageUrl
+  const hasLinks = postSurveyLinks.lineUrl || postSurveyLinks.clinicHomepageUrl
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-8">

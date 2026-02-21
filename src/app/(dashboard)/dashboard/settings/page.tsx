@@ -37,7 +37,6 @@ export default async function SettingsPage() {
         clinic={clinic}
         regularClosedDays={regularClosedDays}
         postSurveyAction={settings.postSurveyAction}
-        googleReviewUrl={settings.googleReviewUrl}
         lineUrl={settings.lineUrl}
         clinicHomepageUrl={settings.clinicHomepageUrl}
       />
