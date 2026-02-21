@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
   Users,
-  ClipboardList,
   Settings,
   LogOut,
   Shield,
@@ -59,7 +58,6 @@ const analyticsItems: NavItem[] = [
   { href: "/dashboard/advisory", label: messages.nav.advisory, icon: Brain, feature: "advisory" },
   { href: "/dashboard/metrics", label: messages.nav.monthlyMetrics, icon: FileBarChart, feature: "business_metrics" },
   { href: "/dashboard/metrics/input", label: messages.nav.metricsInput, icon: PenSquare, feature: "business_metrics" },
-  { href: "/dashboard/surveys", label: messages.nav.surveys, icon: ClipboardList, feature: "surveys_list" },
 ]
 
 const actionItems: NavItem[] = [
