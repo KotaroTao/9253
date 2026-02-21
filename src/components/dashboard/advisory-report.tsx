@@ -23,6 +23,12 @@ import {
   PieChart,
   DollarSign,
   Snowflake,
+  Users,
+  MessageSquareText,
+  UserCircle,
+  Stethoscope,
+  HeartPulse,
+  ShieldCheck,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { AdvisoryReportData, AdvisoryProgress } from "@/types"
@@ -88,6 +94,36 @@ const SECTION_CONFIG = {
     label: messages.advisory.sectionSeasonality,
     color: "sky",
   },
+  staff_performance: {
+    icon: Users,
+    label: messages.advisory.sectionStaffPerformance,
+    color: "violet",
+  },
+  comment_themes: {
+    icon: MessageSquareText,
+    label: messages.advisory.sectionCommentThemes,
+    color: "pink",
+  },
+  patient_segments: {
+    icon: UserCircle,
+    label: messages.advisory.sectionPatientSegments,
+    color: "lime",
+  },
+  purpose_deep_dive: {
+    icon: Stethoscope,
+    label: messages.advisory.sectionPurposeDeepDive,
+    color: "fuchsia",
+  },
+  retention_signals: {
+    icon: HeartPulse,
+    label: messages.advisory.sectionRetentionSignals,
+    color: "red",
+  },
+  response_quality: {
+    icon: ShieldCheck,
+    label: messages.advisory.sectionResponseQuality,
+    color: "stone",
+  },
 } as const
 
 const COLOR_MAP: Record<string, { border: string; bg: string; icon: string; text: string }> = {
@@ -103,6 +139,12 @@ const COLOR_MAP: Record<string, { border: string; bg: string; icon: string; text
   slate: { border: "border-slate-200", bg: "bg-slate-50", icon: "text-slate-600", text: "text-slate-800" },
   cyan: { border: "border-cyan-200", bg: "bg-cyan-50", icon: "text-cyan-600", text: "text-cyan-800" },
   sky: { border: "border-sky-200", bg: "bg-sky-50", icon: "text-sky-600", text: "text-sky-800" },
+  violet: { border: "border-violet-200", bg: "bg-violet-50", icon: "text-violet-600", text: "text-violet-800" },
+  pink: { border: "border-pink-200", bg: "bg-pink-50", icon: "text-pink-600", text: "text-pink-800" },
+  lime: { border: "border-lime-200", bg: "bg-lime-50", icon: "text-lime-600", text: "text-lime-800" },
+  fuchsia: { border: "border-fuchsia-200", bg: "bg-fuchsia-50", icon: "text-fuchsia-600", text: "text-fuchsia-800" },
+  red: { border: "border-red-200", bg: "bg-red-50", icon: "text-red-600", text: "text-red-800" },
+  stone: { border: "border-stone-200", bg: "bg-stone-50", icon: "text-stone-600", text: "text-stone-800" },
 }
 
 const TRIGGER_LABELS: Record<string, string> = {

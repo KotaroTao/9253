@@ -932,16 +932,16 @@ async function main() {
     },
   })
 
-  // クリニック設定にadvisoryカウンターを設定（25/30 = 次回分析まであと5件）
+  // クリニック設定にadvisoryカウンターを設定（35/30 = 分析実行可能状態）
   const advisoryPatch = JSON.stringify({
     advisoryThreshold: 30,
-    responsesSinceLastAdvisory: 25,
+    responsesSinceLastAdvisory: 35,
   })
   await prisma.$executeRaw`
     UPDATE clinics SET settings = settings || ${advisoryPatch}::jsonb
     WHERE id = ${clinic.id}::uuid
   `
-  console.log(`\nAI Advisory: 2件のレポート作成、カウンター 25/30 に設定`)
+  console.log(`\nAI Advisory: 2件のレポート作成、カウンター 35/30 に設定（分析実行可能）`)
 
   console.log("\nSeed completed!")
   console.log("\n--- Login Credentials ---")
