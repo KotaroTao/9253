@@ -1,13 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
-import { CalendarOff, MessageCircle, ExternalLink, Info, Globe } from "lucide-react"
+import { CalendarOff, MessageCircle, ExternalLink, Info, Globe, Check, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { ClinicSettings } from "@/types"
 
@@ -33,6 +33,55 @@ interface SettingsFormProps {
   clinicHomepageUrl?: string
 }
 
+type SaveStatus = "idle" | "saving" | "saved" | "error"
+
+function useSaveStatus() {
+  const [status, setStatus] = useState<SaveStatus>("idle")
+  const [errorMsg, setErrorMsg] = useState("")
+  const timerRef = useRef<ReturnType<typeof setTimeout>>()
+
+  const markSaving = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    setStatus("saving")
+    setErrorMsg("")
+  }, [])
+
+  const markSaved = useCallback(() => {
+    setStatus("saved")
+    timerRef.current = setTimeout(() => setStatus("idle"), 2000)
+  }, [])
+
+  const markError = useCallback((msg: string) => {
+    setStatus("error")
+    setErrorMsg(msg)
+  }, [])
+
+  return { status, errorMsg, markSaving, markSaved, markError }
+}
+
+function SaveIndicator({ status, errorMsg }: { status: SaveStatus; errorMsg: string }) {
+  if (status === "saving") {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        {messages.common.loading}
+      </span>
+    )
+  }
+  if (status === "saved") {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs text-green-600">
+        <Check className="h-3 w-3" />
+        {messages.common.saved}
+      </span>
+    )
+  }
+  if (status === "error") {
+    return <span className="text-xs text-destructive">{errorMsg}</span>
+  }
+  return null
+}
+
 export function SettingsForm({
   clinic,
   regularClosedDays = [],
@@ -48,56 +97,96 @@ export function SettingsForm({
   const [googleUrl, setGoogleUrl] = useState(initialGoogleUrl)
   const [lineUrl, setLineUrl] = useState(initialLineUrl)
   const [homepageUrl, setHomepageUrl] = useState(initialHomepageUrl)
-  const [isLoading, setIsLoading] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [error, setError] = useState("")
 
-  function handleToggleClosedDay(day: number) {
-    setClosedDays((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
-    )
+  const clinicNameSave = useSaveStatus()
+  const closedDaysSave = useSaveStatus()
+  const postSurveySave = useSaveStatus()
+  const homepageSave = useSaveStatus()
+
+  const savePartial = useCallback(async (body: Record<string, unknown>) => {
+    const res = await fetch("/api/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    })
+    if (!res.ok) {
+      const data = await res.json()
+      throw new Error(data.error || messages.common.error)
+    }
+    router.refresh()
+  }, [router])
+
+  // 定休日: 即時保存
+  async function handleToggleClosedDay(day: number) {
+    const next = closedDays.includes(day)
+      ? closedDays.filter((d) => d !== day)
+      : [...closedDays, day]
+    setClosedDays(next)
+    closedDaysSave.markSaving()
+    try {
+      await savePartial({ regularClosedDays: next })
+      closedDaysSave.markSaved()
+    } catch (err) {
+      // revert
+      setClosedDays(closedDays)
+      closedDaysSave.markError(err instanceof Error ? err.message : messages.common.error)
+    }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
-    setSaved(false)
-
+  // 誘導先ラジオ: 即時保存
+  async function handleActionChange(value: PostSurveyAction) {
+    const prev = action
+    setAction(value)
+    postSurveySave.markSaving()
     try {
-      const body = {
-        name,
-        regularClosedDays: closedDays,
+      await savePartial({ postSurveyAction: value })
+      postSurveySave.markSaved()
+    } catch (err) {
+      setAction(prev)
+      postSurveySave.markError(err instanceof Error ? err.message : messages.common.error)
+    }
+  }
+
+  // クリニック名: カード内保存
+  async function handleSaveName() {
+    clinicNameSave.markSaving()
+    try {
+      await savePartial({ name })
+      clinicNameSave.markSaved()
+    } catch (err) {
+      clinicNameSave.markError(err instanceof Error ? err.message : messages.common.error)
+    }
+  }
+
+  // 誘導URL: カード内保存
+  async function handleSavePostSurveyUrls() {
+    postSurveySave.markSaving()
+    try {
+      await savePartial({
         postSurveyAction: action,
         googleReviewUrl: googleUrl,
         lineUrl,
-        clinicHomepageUrl: homepageUrl,
-      }
-
-      const res = await fetch("/api/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
       })
+      postSurveySave.markSaved()
+    } catch (err) {
+      postSurveySave.markError(err instanceof Error ? err.message : messages.common.error)
+    }
+  }
 
-      if (!res.ok) {
-        const data = await res.json()
-        setError(data.error || messages.common.error)
-        return
-      }
-
-      setSaved(true)
-      router.refresh()
-      setTimeout(() => setSaved(false), 2000)
-    } catch {
-      setError(messages.common.error)
-    } finally {
-      setIsLoading(false)
+  // ホームページURL: カード内保存
+  async function handleSaveHomepage() {
+    homepageSave.markSaving()
+    try {
+      await savePartial({ clinicHomepageUrl: homepageUrl })
+      homepageSave.markSaved()
+    } catch (err) {
+      homepageSave.markError(err instanceof Error ? err.message : messages.common.error)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="space-y-6">
+      {/* クリニック情報 */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
@@ -111,20 +200,33 @@ export function SettingsForm({
               id="clinicName"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              disabled={isLoading}
+              disabled={clinicNameSave.status === "saving"}
             />
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleSaveName}
+              disabled={clinicNameSave.status === "saving"}
+            >
+              {messages.common.save}
+            </Button>
+            <SaveIndicator status={clinicNameSave.status} errorMsg={clinicNameSave.errorMsg} />
           </div>
         </CardContent>
       </Card>
 
+      {/* 定休日 */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
             <CalendarOff className="h-5 w-5 text-orange-500" />
-            <div>
+            <div className="flex-1">
               <CardTitle className="text-base">{messages.settings.regularClosedDaysLabel}</CardTitle>
               <CardDescription>{messages.settings.regularClosedDaysDesc}</CardDescription>
             </div>
+            <SaveIndicator status={closedDaysSave.status} errorMsg={closedDaysSave.errorMsg} />
           </div>
         </CardHeader>
         <CardContent>
@@ -133,7 +235,7 @@ export function SettingsForm({
               <button
                 key={idx}
                 type="button"
-                disabled={isLoading}
+                disabled={closedDaysSave.status === "saving"}
                 onClick={() => handleToggleClosedDay(idx)}
                 className={cn(
                   "flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium transition-colors disabled:opacity-50",
@@ -163,14 +265,20 @@ export function SettingsForm({
         <CardContent className="space-y-4">
           {/* 3択ラジオ */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">{messages.settings.postSurveyActionLabel}</Label>
+            <div className="flex items-center gap-3">
+              <Label className="text-sm font-medium">{messages.settings.postSurveyActionLabel}</Label>
+              {/* ラジオ変更時のステータス（URL保存中でない場合のみ表示） */}
+              {(action === "none" || (!googleUrl && !lineUrl)) && (
+                <SaveIndicator status={postSurveySave.status} errorMsg={postSurveySave.errorMsg} />
+              )}
+            </div>
             <div className="space-y-2">
               {POST_SURVEY_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
-                  disabled={isLoading}
-                  onClick={() => setAction(opt.value)}
+                  disabled={postSurveySave.status === "saving"}
+                  onClick={() => handleActionChange(opt.value)}
                   className={cn(
                     "flex w-full items-center gap-3 rounded-lg border-2 p-3 text-left transition-all disabled:opacity-50",
                     action === opt.value
@@ -200,36 +308,62 @@ export function SettingsForm({
 
           {/* Google口コミURL入力 */}
           {action === "google_review" && (
-            <div className="space-y-2 rounded-lg bg-muted/50 p-3">
-              <Label htmlFor="googleReviewUrl">{messages.settings.googleReviewUrlLabel}</Label>
-              <div className="flex items-center gap-2">
-                <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <Input
-                  id="googleReviewUrl"
-                  type="url"
-                  value={googleUrl}
-                  onChange={(e) => setGoogleUrl(e.target.value)}
-                  placeholder={messages.settings.googleReviewUrlPlaceholder}
-                  disabled={isLoading}
-                />
+            <div className="space-y-3 rounded-lg bg-muted/50 p-3">
+              <div className="space-y-2">
+                <Label htmlFor="googleReviewUrl">{messages.settings.googleReviewUrlLabel}</Label>
+                <div className="flex items-center gap-2">
+                  <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <Input
+                    id="googleReviewUrl"
+                    type="url"
+                    value={googleUrl}
+                    onChange={(e) => setGoogleUrl(e.target.value)}
+                    placeholder={messages.settings.googleReviewUrlPlaceholder}
+                    disabled={postSurveySave.status === "saving"}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleSavePostSurveyUrls}
+                  disabled={postSurveySave.status === "saving"}
+                >
+                  {messages.common.save}
+                </Button>
+                <SaveIndicator status={postSurveySave.status} errorMsg={postSurveySave.errorMsg} />
               </div>
             </div>
           )}
 
           {/* LINE URL入力 */}
           {action === "line" && (
-            <div className="space-y-2 rounded-lg bg-muted/50 p-3">
-              <Label htmlFor="lineUrl">{messages.settings.lineUrlLabel}</Label>
-              <div className="flex items-center gap-2">
-                <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <Input
-                  id="lineUrl"
-                  type="url"
-                  value={lineUrl}
-                  onChange={(e) => setLineUrl(e.target.value)}
-                  placeholder={messages.settings.lineUrlPlaceholder}
-                  disabled={isLoading}
-                />
+            <div className="space-y-3 rounded-lg bg-muted/50 p-3">
+              <div className="space-y-2">
+                <Label htmlFor="lineUrl">{messages.settings.lineUrlLabel}</Label>
+                <div className="flex items-center gap-2">
+                  <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <Input
+                    id="lineUrl"
+                    type="url"
+                    value={lineUrl}
+                    onChange={(e) => setLineUrl(e.target.value)}
+                    placeholder={messages.settings.lineUrlPlaceholder}
+                    disabled={postSurveySave.status === "saving"}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleSavePostSurveyUrls}
+                  disabled={postSurveySave.status === "saving"}
+                >
+                  {messages.common.save}
+                </Button>
+                <SaveIndicator status={postSurveySave.status} errorMsg={postSurveySave.errorMsg} />
               </div>
             </div>
           )}
@@ -257,7 +391,7 @@ export function SettingsForm({
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="clinicHomepageUrl">{messages.settings.clinicHomepageUrlLabel}</Label>
             <div className="flex items-center gap-2">
@@ -268,13 +402,25 @@ export function SettingsForm({
                 value={homepageUrl}
                 onChange={(e) => setHomepageUrl(e.target.value)}
                 placeholder={messages.settings.clinicHomepageUrlPlaceholder}
-                disabled={isLoading}
+                disabled={homepageSave.status === "saving"}
               />
             </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleSaveHomepage}
+              disabled={homepageSave.status === "saving"}
+            >
+              {messages.common.save}
+            </Button>
+            <SaveIndicator status={homepageSave.status} errorMsg={homepageSave.errorMsg} />
           </div>
         </CardContent>
       </Card>
 
+      {/* アンケート設定（情報のみ） */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
@@ -287,21 +433,6 @@ export function SettingsForm({
           </p>
         </CardContent>
       </Card>
-
-      {error && (
-        <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
-        </div>
-      )}
-
-      <div className="flex items-center gap-3">
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? messages.common.loading : messages.common.save}
-        </Button>
-        {saved && (
-          <span className="text-sm text-green-600">{messages.common.saved}</span>
-        )}
-      </div>
-    </form>
+    </div>
   )
 }
