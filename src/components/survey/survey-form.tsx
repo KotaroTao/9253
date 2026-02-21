@@ -296,29 +296,7 @@ export function SurveyForm({ data, onComplete, kioskMode = false, patientAttribu
             </p>
             <p className="text-sm text-blue-800">{randomTip}</p>
           </div>
-          {/* メイン誘導CTA（Google口コミ or LINE — 全員一律表示） */}
-          {postSurveyLinks?.googleReviewUrl && (
-            <div className="mx-auto max-w-xs rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-center">
-              <p className="mb-1 text-sm font-medium text-yellow-800">
-                {messages.postSurvey.googleReviewText}
-              </p>
-              <p className="mb-3 text-xs text-yellow-700">
-                {messages.postSurvey.googleReviewSubText}
-              </p>
-              <a
-                href={postSurveyLinks.googleReviewUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-yellow-800 shadow-sm ring-1 ring-yellow-300 transition-colors hover:bg-yellow-100"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-                {messages.postSurvey.googleReviewButton}
-              </a>
-              <p className="mt-2 text-[10px] text-yellow-600">
-                {messages.postSurvey.googleReviewNote}
-              </p>
-            </div>
-          )}
+          {/* LINE誘導CTA — 全員一律表示 */}
           {postSurveyLinks?.lineUrl && (
             <div className="mx-auto max-w-xs rounded-xl border border-green-200 bg-green-50 p-4 text-center">
               <p className="mb-1 text-sm font-medium text-green-800">
@@ -350,7 +328,7 @@ export function SurveyForm({ data, onComplete, kioskMode = false, patientAttribu
                 rel="noopener noreferrer"
                 className={cn(
                   "inline-flex items-center gap-1.5 transition-colors",
-                  postSurveyLinks.googleReviewUrl || postSurveyLinks.lineUrl
+                  postSurveyLinks.lineUrl
                     ? "text-xs text-muted-foreground hover:text-foreground"
                     : "rounded-lg border px-4 py-2 text-sm font-medium text-foreground shadow-sm hover:bg-muted"
                 )}

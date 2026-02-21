@@ -17,7 +17,6 @@ type PostSurveyAction = NonNullable<ClinicSettings["postSurveyAction"]>
 
 const POST_SURVEY_OPTIONS: { value: PostSurveyAction; label: string; desc: string; icon: string }[] = [
   { value: "none", label: messages.settings.postSurveyNone, desc: messages.settings.postSurveyNoneDesc, icon: "✅" },
-  { value: "google_review", label: messages.settings.postSurveyGoogleReview, desc: messages.settings.postSurveyGoogleReviewDesc, icon: "⭐" },
   { value: "line", label: messages.settings.postSurveyLine, desc: messages.settings.postSurveyLineDesc, icon: "💬" },
 ]
 
@@ -28,7 +27,6 @@ interface SettingsFormProps {
   }
   regularClosedDays?: number[]
   postSurveyAction?: PostSurveyAction
-  googleReviewUrl?: string
   lineUrl?: string
   clinicHomepageUrl?: string
 }
@@ -86,7 +84,6 @@ export function SettingsForm({
   clinic,
   regularClosedDays = [],
   postSurveyAction: initialAction = "none",
-  googleReviewUrl: initialGoogleUrl = "",
   lineUrl: initialLineUrl = "",
   clinicHomepageUrl: initialHomepageUrl = "",
 }: SettingsFormProps) {
@@ -94,7 +91,6 @@ export function SettingsForm({
   const [name, setName] = useState(clinic.name)
   const [closedDays, setClosedDays] = useState<number[]>(regularClosedDays)
   const [action, setAction] = useState<PostSurveyAction>(initialAction)
-  const [googleUrl, setGoogleUrl] = useState(initialGoogleUrl)
   const [lineUrl, setLineUrl] = useState(initialLineUrl)
   const [homepageUrl, setHomepageUrl] = useState(initialHomepageUrl)
 
@@ -164,7 +160,6 @@ export function SettingsForm({
     try {
       await savePartial({
         postSurveyAction: action,
-        googleReviewUrl: googleUrl,
         lineUrl,
       })
       postSurveySave.markSaved()
@@ -268,7 +263,7 @@ export function SettingsForm({
             <div className="flex items-center gap-3">
               <Label className="text-sm font-medium">{messages.settings.postSurveyActionLabel}</Label>
               {/* ラジオ変更時のステータス（URL保存中でない場合のみ表示） */}
-              {(action === "none" || (!googleUrl && !lineUrl)) && (
+              {(action === "none" || !lineUrl) && (
                 <SaveIndicator status={postSurveySave.status} errorMsg={postSurveySave.errorMsg} />
               )}
             </div>
@@ -305,37 +300,6 @@ export function SettingsForm({
               ))}
             </div>
           </div>
-
-          {/* Google口コミURL入力 */}
-          {action === "google_review" && (
-            <div className="space-y-3 rounded-lg bg-muted/50 p-3">
-              <div className="space-y-2">
-                <Label htmlFor="googleReviewUrl">{messages.settings.googleReviewUrlLabel}</Label>
-                <div className="flex items-center gap-2">
-                  <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  <Input
-                    id="googleReviewUrl"
-                    type="url"
-                    value={googleUrl}
-                    onChange={(e) => setGoogleUrl(e.target.value)}
-                    placeholder={messages.settings.googleReviewUrlPlaceholder}
-                    disabled={postSurveySave.status === "saving"}
-                  />
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={handleSavePostSurveyUrls}
-                  disabled={postSurveySave.status === "saving"}
-                >
-                  {messages.common.save}
-                </Button>
-                <SaveIndicator status={postSurveySave.status} errorMsg={postSurveySave.errorMsg} />
-              </div>
-            </div>
-          )}
 
           {/* LINE URL入力 */}
           {action === "line" && (

@@ -18,7 +18,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { regularClosedDays, postSurveyAction, googleReviewUrl, lineUrl, clinicHomepageUrl, ...rest } = body
+    const { regularClosedDays, postSurveyAction, lineUrl, clinicHomepageUrl, ...rest } = body
     const parsed = updateClinicSchema.safeParse(rest)
 
     if (!parsed.success) {
@@ -32,12 +32,12 @@ export async function PATCH(request: NextRequest) {
     if (Array.isArray(regularClosedDays) && regularClosedDays.every((d: unknown) => typeof d === "number" && d >= 0 && d <= 6)) {
       settingsPatch.regularClosedDays = regularClosedDays
     }
-    // postSurveyAction: "none" | "google_review" | "line"
-    if (typeof postSurveyAction === "string" && ["none", "google_review", "line"].includes(postSurveyAction)) {
+    // postSurveyAction: "none" | "line"
+    if (typeof postSurveyAction === "string" && ["none", "line"].includes(postSurveyAction)) {
       settingsPatch.postSurveyAction = postSurveyAction as ClinicSettings["postSurveyAction"]
     }
     // URL fields: validate https:// or clear
-    for (const [key, value] of Object.entries({ googleReviewUrl, lineUrl, clinicHomepageUrl })) {
+    for (const [key, value] of Object.entries({ lineUrl, clinicHomepageUrl })) {
       if (typeof value === "string") {
         const trimmed = value.trim()
         if (trimmed === "") {
