@@ -731,7 +731,7 @@ export default function HomePage() {
               </div>
               <div className="hover-lift rounded-2xl border bg-card p-8 text-center">
                 <p className="text-gradient text-4xl font-bold tracking-tight">
-                  <CountUp end={2200} suffix="+" />
+                  0<span className="text-2xl">円</span>
                 </p>
                 <p className="mt-2 text-base font-semibold">{messages.landing.result4Label}</p>
                 <p className="mt-2 text-sm text-muted-foreground">{messages.landing.result4Desc}</p>
