@@ -33,6 +33,12 @@ export interface AdvisorySection {
     | "distribution"
     | "business_correlation"
     | "seasonality"
+    | "staff_performance"
+    | "comment_themes"
+    | "patient_segments"
+    | "purpose_deep_dive"
+    | "retention_signals"
+    | "response_quality"
 }
 
 /** AI Advisory レポートデータ */

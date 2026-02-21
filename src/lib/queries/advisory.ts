@@ -7,6 +7,13 @@ import {
   DENTAL_INSIGHT_RULES,
   DAY_LABELS,
   getTimeSlotLabel,
+  STAFF_ROLE_LABELS,
+  VISIT_TYPES,
+  INSURANCE_TYPES,
+  INSURANCE_PURPOSES,
+  SELF_PAY_PURPOSES,
+  AGE_GROUPS,
+  GENDERS,
 } from "@/lib/constants"
 import { jstDaysAgo, jstNowParts } from "@/lib/date-jst"
 import {
@@ -56,6 +63,15 @@ interface AnalysisData {
   monthlyMetrics: MonthlyMetricRow[]
   /** 月次満足度トレンド（直近24ヶ月） */
   monthlyScoreTrend: Array<{ month: string; avgScore: number; count: number }>
+  /** スタッフ別集計（直近30日） */
+  staffStats: StaffStatRow[]
+  /** 患者セグメント別集計（直近30日） */
+  segmentStats: SegmentStatRow[]
+  /** 回答品質データ（直近30日） */
+  responseQuality: ResponseQualityRow[]
+  /** 診療内容別詳細（直近90日、前期比較用） */
+  purposeDetailCurrent: PurposeSatisfactionRow[]
+  purposeDetailPrev: PurposeSatisfactionRow[]
 }
 
 interface MonthlyMetricRow {
@@ -66,6 +82,30 @@ interface MonthlyMetricRow {
   insuranceRevenue: number | null
   selfPayRevenue: number | null
   cancellationCount: number | null
+}
+
+interface StaffStatRow {
+  staffId: string
+  staffName: string
+  staffRole: string
+  avgScore: number
+  count: number
+}
+
+interface SegmentStatRow {
+  visitType: string | null
+  insuranceType: string | null
+  ageGroup: string | null
+  gender: string | null
+  avgScore: number
+  count: number
+}
+
+interface ResponseQualityRow {
+  hasFreeText: boolean
+  avgDurationMs: number | null
+  avgScore: number
+  count: number
 }
 
 interface ScoreDistRow {
@@ -154,6 +194,15 @@ export async function getAdvisoryReports(
 async function collectAnalysisData(clinicId: string): Promise<AnalysisData> {
   const prevRange = { from: jstDaysAgo(60), to: jstDaysAgo(30) }
 
+  const since30 = jstDaysAgo(30)
+  const since90 = jstDaysAgo(90)
+  const prevRange90 = { from: jstDaysAgo(180), to: since90 }
+
+  // raw row types for new queries
+  interface StaffStatDbRow { staff_id: string; staff_name: string; staff_role: string; avg_score: number | null; count: bigint }
+  interface SegmentStatDbRow { visit_type: string | null; insurance_type: string | null; age_group: string | null; gender: string | null; avg_score: number | null; count: bigint }
+  interface ResponseQualityDbRow { has_free_text: boolean; avg_duration_ms: number | null; avg_score: number | null; count: bigint }
+
   const [
     stats,
     questionBreakdown,
@@ -166,6 +215,11 @@ async function collectAnalysisData(clinicId: string): Promise<AnalysisData> {
     scoreDistRows,
     monthlyMetrics,
     monthlyScoreTrend,
+    staffStatRows,
+    segmentStatRows,
+    responseQualityRows,
+    purposeDetailCurrent,
+    purposeDetailPrev,
   ] = await Promise.all([
     getDashboardStats(clinicId),
     getQuestionBreakdownByDays(clinicId, 30),
@@ -177,7 +231,7 @@ async function collectAnalysisData(clinicId: string): Promise<AnalysisData> {
       where: {
         clinicId,
         freeText: { not: null },
-        respondedAt: { gte: jstDaysAgo(30) },
+        respondedAt: { gte: since30 },
       },
       select: { freeText: true, overallScore: true },
       orderBy: { respondedAt: "desc" },
@@ -197,7 +251,7 @@ async function collectAnalysisData(clinicId: string): Promise<AnalysisData> {
       SELECT overall_score::int AS score, COUNT(*) AS count
       FROM survey_responses
       WHERE clinic_id = ${clinicId}::uuid
-        AND responded_at >= ${jstDaysAgo(30)}
+        AND responded_at >= ${since30}
         AND overall_score IS NOT NULL
       GROUP BY score
       ORDER BY score
@@ -217,6 +271,56 @@ async function collectAnalysisData(clinicId: string): Promise<AnalysisData> {
       take: 24,
     }),
     getMonthlyTrend(clinicId, 24),
+    // スタッフ別集計（直近30日）
+    prisma.$queryRaw<StaffStatDbRow[]>`
+      SELECT
+        sr.staff_id,
+        s.name AS staff_name,
+        s.role AS staff_role,
+        ROUND(AVG(sr.overall_score)::numeric, 2)::float AS avg_score,
+        COUNT(*) AS count
+      FROM survey_responses sr
+      JOIN staff s ON sr.staff_id = s.id
+      WHERE sr.clinic_id = ${clinicId}::uuid
+        AND sr.responded_at >= ${since30}
+        AND sr.overall_score IS NOT NULL
+        AND sr.staff_id IS NOT NULL
+      GROUP BY sr.staff_id, s.name, s.role
+      ORDER BY avg_score DESC
+    `,
+    // 患者セグメント別集計（直近30日）
+    prisma.$queryRaw<SegmentStatDbRow[]>`
+      SELECT
+        patient_attributes->>'visitType' AS visit_type,
+        patient_attributes->>'insuranceType' AS insurance_type,
+        patient_attributes->>'ageGroup' AS age_group,
+        patient_attributes->>'gender' AS gender,
+        ROUND(AVG(overall_score)::numeric, 2)::float AS avg_score,
+        COUNT(*) AS count
+      FROM survey_responses
+      WHERE clinic_id = ${clinicId}::uuid
+        AND responded_at >= ${since30}
+        AND overall_score IS NOT NULL
+        AND patient_attributes IS NOT NULL
+      GROUP BY visit_type, insurance_type, age_group, gender
+    `,
+    // 回答品質データ（直近30日）
+    prisma.$queryRaw<ResponseQualityDbRow[]>`
+      SELECT
+        (free_text IS NOT NULL AND free_text <> '') AS has_free_text,
+        ROUND(AVG(response_duration_ms)::numeric, 0)::float AS avg_duration_ms,
+        ROUND(AVG(overall_score)::numeric, 2)::float AS avg_score,
+        COUNT(*) AS count
+      FROM survey_responses
+      WHERE clinic_id = ${clinicId}::uuid
+        AND responded_at >= ${since30}
+        AND overall_score IS NOT NULL
+      GROUP BY has_free_text
+    `,
+    // 診療内容別詳細（直近90日）
+    getPurposeSatisfaction(clinicId, 90),
+    // 診療内容別詳細（前期90日）
+    getPurposeSatisfaction(clinicId, 90, prevRange90),
   ])
 
   const scoreDistribution = scoreDistRows.map((r) => ({
@@ -245,6 +349,30 @@ async function collectAnalysisData(clinicId: string): Promise<AnalysisData> {
     }
   }
 
+  const staffStats: StaffStatRow[] = staffStatRows.map((r) => ({
+    staffId: r.staff_id,
+    staffName: r.staff_name,
+    staffRole: r.staff_role,
+    avgScore: r.avg_score ?? 0,
+    count: Number(r.count),
+  }))
+
+  const segmentStats: SegmentStatRow[] = segmentStatRows.map((r) => ({
+    visitType: r.visit_type,
+    insuranceType: r.insurance_type,
+    ageGroup: r.age_group,
+    gender: r.gender,
+    avgScore: r.avg_score ?? 0,
+    count: Number(r.count),
+  }))
+
+  const responseQuality: ResponseQualityRow[] = responseQualityRows.map((r) => ({
+    hasFreeText: r.has_free_text,
+    avgDurationMs: r.avg_duration_ms,
+    avgScore: r.avg_score ?? 0,
+    count: Number(r.count),
+  }))
+
   return {
     stats,
     questionBreakdown,
@@ -259,6 +387,11 @@ async function collectAnalysisData(clinicId: string): Promise<AnalysisData> {
     categoryScores,
     monthlyMetrics,
     monthlyScoreTrend,
+    staffStats,
+    segmentStats,
+    responseQuality,
+    purposeDetailCurrent,
+    purposeDetailPrev,
   }
 }
 
@@ -1051,7 +1184,635 @@ function avg(values: number[]): number | null {
   return values.reduce((a, b) => a + b, 0) / values.length
 }
 
-/** 12. 推奨アクション（全分析結果を統合） */
+// ─── ラベル解決ヘルパー ───
+
+function lookupLabel(value: string | null, list: ReadonlyArray<{ value: string; label: string }>): string {
+  if (!value) return "不明"
+  return list.find((item) => item.value === value)?.label ?? value
+}
+
+function purposeLabel(value: string | null): string {
+  if (!value) return "不明"
+  const found =
+    (INSURANCE_PURPOSES as ReadonlyArray<{ value: string; label: string }>).find((p) => p.value === value) ??
+    (SELF_PAY_PURPOSES as ReadonlyArray<{ value: string; label: string }>).find((p) => p.value === value)
+  return found?.label ?? value
+}
+
+// ─── 新規分析モジュール ───
+
+/** 13. スタッフ別パフォーマンス分析 */
+function analyzeStaffPerformance(data: AnalysisData): AdvisorySection | null {
+  const { staffStats } = data
+  if (staffStats.length < 2) return null
+
+  const totalCount = staffStats.reduce((s, st) => s + st.count, 0)
+  if (totalCount < 10) return null
+
+  // 全体平均
+  const overallAvg = staffStats.reduce((s, st) => s + st.avgScore * st.count, 0) / totalCount
+
+  const lines: string[] = []
+  lines.push(`担当スタッフ別の集計（直近30日、${staffStats.length}名）:`)
+
+  // スタッフランキング
+  const sorted = [...staffStats].sort((a, b) => b.avgScore - a.avgScore)
+  for (const st of sorted) {
+    if (st.count < 3) continue
+    const roleLabel = STAFF_ROLE_LABELS[st.staffRole] ?? st.staffRole
+    const delta = st.avgScore - overallAvg
+    const deltaStr = delta >= 0 ? `+${delta.toFixed(2)}` : delta.toFixed(2)
+    lines.push(`- ${st.staffName}（${roleLabel}）: ${st.avgScore.toFixed(2)}点 / ${st.count}件（全体平均比 ${deltaStr}）`)
+  }
+
+  // ばらつき検出
+  const validStaff = sorted.filter((s) => s.count >= 3)
+  if (validStaff.length >= 2) {
+    const highest = validStaff[0]
+    const lowest = validStaff[validStaff.length - 1]
+    const gap = highest.avgScore - lowest.avgScore
+
+    if (gap >= 0.5) {
+      lines.push(
+        `\n⚠ スタッフ間のスコア差が${gap.toFixed(2)}ポイントあります（${highest.staffName}: ${highest.avgScore.toFixed(2)} vs ${lowest.staffName}: ${lowest.avgScore.toFixed(2)}）。` +
+        `サービス品質の均一化が課題です。高スコアスタッフの接遇を観察・共有し、低スコアスタッフへのOJTを検討してください。`
+      )
+    } else if (gap < 0.2) {
+      lines.push(`\nスタッフ間のスコア差は${gap.toFixed(2)}ポイントと小さく、均質なサービスが提供できています。`)
+    }
+  }
+
+  // 職種別分析
+  const roleAgg = new Map<string, { total: number; count: number }>()
+  for (const st of staffStats) {
+    const entry = roleAgg.get(st.staffRole) ?? { total: 0, count: 0 }
+    entry.total += st.avgScore * st.count
+    entry.count += st.count
+    roleAgg.set(st.staffRole, entry)
+  }
+  if (roleAgg.size >= 2) {
+    const roleScores = Array.from(roleAgg.entries()).map(([role, agg]) => ({
+      role,
+      avg: agg.total / agg.count,
+      count: agg.count,
+    }))
+    roleScores.sort((a, b) => b.avg - a.avg)
+    const roleText = roleScores
+      .map((r) => `${STAFF_ROLE_LABELS[r.role] ?? r.role}: ${r.avg.toFixed(2)}点（${r.count}件）`)
+      .join("、")
+    lines.push(`職種別平均: ${roleText}`)
+  }
+
+  return {
+    title: "スタッフ別パフォーマンス",
+    content: lines.join("\n"),
+    type: "staff_performance",
+  }
+}
+
+/** 14. コメントテーマ分析（フリーテキストマイニング） */
+function analyzeCommentThemes(data: AnalysisData): AdvisorySection | null {
+  const comments = data.recentComments.filter((c) => c.freeText && c.freeText.trim().length > 0)
+  if (comments.length < 5) return null
+
+  // キーワードテーマ辞書（歯科特化）
+  const themes: Array<{ id: string; label: string; keywords: string[]; positive: string[]; negative: string[] }> = [
+    {
+      id: "wait",
+      label: "待ち時間",
+      keywords: ["待", "遅", "時間", "予約", "早"],
+      positive: ["早かった", "待たず", "スムーズ", "時間通り", "予約通り"],
+      negative: ["待った", "遅い", "長い", "待ち時間"],
+    },
+    {
+      id: "pain",
+      label: "痛み・不安",
+      keywords: ["痛", "怖", "不安", "緊張", "麻酔"],
+      positive: ["痛くな", "安心", "怖くな", "リラックス"],
+      negative: ["痛い", "痛かった", "怖い", "不安"],
+    },
+    {
+      id: "explanation",
+      label: "説明・コミュニケーション",
+      keywords: ["説明", "分かり", "丁寧", "教え", "話", "聞"],
+      positive: ["分かりやすい", "丁寧", "しっかり説明", "教えて"],
+      negative: ["分からない", "説明不足", "聞いてない"],
+    },
+    {
+      id: "staff",
+      label: "スタッフ対応",
+      keywords: ["スタッフ", "先生", "衛生士", "受付", "対応", "優しい", "親切"],
+      positive: ["優しい", "親切", "感じが良い", "丁寧な対応"],
+      negative: ["冷たい", "無愛想", "対応が悪い"],
+    },
+    {
+      id: "facility",
+      label: "院内環境・清潔感",
+      keywords: ["きれい", "清潔", "院内", "設備", "椅子", "トイレ"],
+      positive: ["きれい", "清潔", "新しい", "おしゃれ"],
+      negative: ["汚い", "古い", "狭い"],
+    },
+    {
+      id: "cost",
+      label: "費用",
+      keywords: ["費用", "料金", "値段", "高い", "安い", "金額", "お金"],
+      positive: ["良心的", "リーズナブル", "明確"],
+      negative: ["高い", "想定外", "聞いてない"],
+    },
+  ]
+
+  type ThemeResult = { id: string; label: string; mentions: number; positiveCount: number; negativeCount: number }
+  const results: ThemeResult[] = []
+
+  for (const theme of themes) {
+    let mentions = 0
+    let positiveCount = 0
+    let negativeCount = 0
+
+    for (const c of comments) {
+      const text = c.freeText!
+      const matched = theme.keywords.some((kw) => text.includes(kw))
+      if (!matched) continue
+      mentions++
+      if (theme.positive.some((p) => text.includes(p))) positiveCount++
+      if (theme.negative.some((n) => text.includes(n))) negativeCount++
+    }
+
+    if (mentions >= 2) {
+      results.push({ id: theme.id, label: theme.label, mentions, positiveCount, negativeCount })
+    }
+  }
+
+  if (results.length === 0) return null
+
+  results.sort((a, b) => b.mentions - a.mentions)
+
+  const lines: string[] = []
+  lines.push(`直近30日のフリーテキスト（${comments.length}件）から検出されたテーマ:`)
+
+  for (const r of results.slice(0, 5)) {
+    const sentiment = r.positiveCount > r.negativeCount
+      ? "（ポジティブ傾向）"
+      : r.negativeCount > r.positiveCount
+        ? "（ネガティブ傾向）"
+        : ""
+    lines.push(
+      `- ${r.label}: ${r.mentions}件の言及${sentiment}` +
+      (r.positiveCount > 0 || r.negativeCount > 0
+        ? `（好意的${r.positiveCount}件 / 否定的${r.negativeCount}件）`
+        : "")
+    )
+  }
+
+  // ネガティブが多いテーマの具体例
+  const negativeThemes = results.filter((r) => r.negativeCount >= 2)
+  if (negativeThemes.length > 0) {
+    lines.push(`\n否定的な言及が多いテーマ: ${negativeThemes.map((t) => `「${t.label}」`).join("、")}`)
+    lines.push("該当するフリーテキストを回答一覧画面で確認し、具体的な改善策を検討してください。")
+  }
+
+  // フリーテキスト回答率とスコアの関係
+  const withText = comments.filter((c) => c.overallScore !== null)
+  if (withText.length >= 5) {
+    const avgWithText = withText.reduce((s, c) => s + (c.overallScore ?? 0), 0) / withText.length
+    lines.push(
+      `\nフリーテキスト回答者の平均スコア: ${avgWithText.toFixed(2)}点` +
+      (avgWithText < data.stats.averageScore - 0.2
+        ? "（全体平均より低め — 不満を持つ患者がコメントを残す傾向があります）"
+        : avgWithText > data.stats.averageScore + 0.2
+          ? "（全体平均より高め — 満足した患者がコメントを残す傾向があります）"
+          : "")
+    )
+  }
+
+  return {
+    title: "コメントテーマ分析",
+    content: lines.join("\n"),
+    type: "comment_themes",
+  }
+}
+
+/** 15. 患者セグメント分析 */
+function analyzePatientSegments(data: AnalysisData): AdvisorySection | null {
+  const { segmentStats } = data
+  if (segmentStats.length === 0) return null
+
+  const totalCount = segmentStats.reduce((s, seg) => s + seg.count, 0)
+  if (totalCount < 10) return null
+
+  const lines: string[] = []
+
+  // 軸別に集計してスコア差を検出
+  type AxisResult = { label: string; avg: number; count: number }
+
+  function aggregateByAxis(
+    extractor: (seg: SegmentStatRow) => string | null,
+    labelFn: (value: string) => string,
+  ): AxisResult[] {
+    const agg = new Map<string, { total: number; count: number }>()
+    for (const seg of segmentStats) {
+      const val = extractor(seg)
+      if (!val) continue
+      const entry = agg.get(val) ?? { total: 0, count: 0 }
+      entry.total += seg.avgScore * seg.count
+      entry.count += seg.count
+      agg.set(val, entry)
+    }
+    return Array.from(agg.entries())
+      .filter(([, v]) => v.count >= ADVISORY.MIN_SAMPLES_FOR_INSIGHT)
+      .map(([key, v]) => ({ label: labelFn(key), avg: v.total / v.count, count: v.count }))
+      .sort((a, b) => a.avg - b.avg)
+  }
+
+  // 来院種別
+  const visitResults = aggregateByAxis(
+    (s) => s.visitType,
+    (v) => lookupLabel(v, VISIT_TYPES as unknown as Array<{ value: string; label: string }>),
+  )
+  if (visitResults.length >= 2) {
+    const gap = visitResults[visitResults.length - 1].avg - visitResults[0].avg
+    if (gap >= 0.15) {
+      lines.push(`来院種別: ${visitResults.map((r) => `${r.label} ${r.avg.toFixed(2)}点（${r.count}件）`).join(" / ")}`)
+    }
+  }
+
+  // 保険/自費
+  const insuranceResults = aggregateByAxis(
+    (s) => s.insuranceType,
+    (v) => lookupLabel(v, INSURANCE_TYPES as unknown as Array<{ value: string; label: string }>),
+  )
+  if (insuranceResults.length >= 2) {
+    const gap = insuranceResults[insuranceResults.length - 1].avg - insuranceResults[0].avg
+    if (gap >= 0.15) {
+      lines.push(`診療区分: ${insuranceResults.map((r) => `${r.label} ${r.avg.toFixed(2)}点（${r.count}件）`).join(" / ")}`)
+      if (insuranceResults[0].label === "自費診療" && gap >= 0.3) {
+        lines.push("→ 自費診療患者の満足度が相対的に低い傾向です。費用説明の丁寧さや期待値管理が課題の可能性があります。")
+      }
+    }
+  }
+
+  // 年代別
+  const ageResults = aggregateByAxis(
+    (s) => s.ageGroup,
+    (v) => lookupLabel(v, AGE_GROUPS as unknown as Array<{ value: string; label: string }>),
+  )
+  if (ageResults.length >= 3) {
+    const gap = ageResults[ageResults.length - 1].avg - ageResults[0].avg
+    if (gap >= 0.2) {
+      lines.push(`年代別スコア幅: ${gap.toFixed(2)}ポイント`)
+      lines.push(`  最低: ${ageResults[0].label}（${ageResults[0].avg.toFixed(2)}点/${ageResults[0].count}件）`)
+      lines.push(`  最高: ${ageResults[ageResults.length - 1].label}（${ageResults[ageResults.length - 1].avg.toFixed(2)}点/${ageResults[ageResults.length - 1].count}件）`)
+
+      // 若年層が低い場合のアドバイス
+      if (ageResults[0].label === "〜10代" || ageResults[0].label === "20代") {
+        lines.push("→ 若年層のスコアが低めです。説明のデジタル化（タブレット活用）やSNS世代に合った接遇を意識すると効果的です。")
+      }
+      // 高齢者が低い場合
+      if (ageResults[0].label === "60代〜") {
+        lines.push("→ 高齢患者のスコアが低めです。ゆっくり丁寧な説明、大きな文字の資料、バリアフリー動線の確認を検討してください。")
+      }
+    }
+  }
+
+  // 性別
+  const genderResults = aggregateByAxis(
+    (s) => s.gender,
+    (v) => lookupLabel(v, GENDERS as unknown as Array<{ value: string; label: string }>),
+  )
+  if (genderResults.length >= 2) {
+    const gap = genderResults[genderResults.length - 1].avg - genderResults[0].avg
+    if (gap >= 0.2) {
+      lines.push(`性別: ${genderResults.map((r) => `${r.label} ${r.avg.toFixed(2)}点（${r.count}件）`).join(" / ")}`)
+    }
+  }
+
+  if (lines.length === 0) return null
+
+  return {
+    title: "患者セグメント分析",
+    content: `患者属性によるスコア差（直近30日、キオスク回答${totalCount}件）:\n${lines.join("\n")}`,
+    type: "patient_segments",
+  }
+}
+
+/** 16. 診療内容別深掘り分析 */
+function analyzePurposeDeepDive(data: AnalysisData): AdvisorySection | null {
+  const { purposeDetailCurrent, purposeDetailPrev } = data
+  if (purposeDetailCurrent.length < 3) return null
+
+  const totalCount = purposeDetailCurrent.reduce((s, p) => s + p.count, 0)
+  if (totalCount < 15) return null
+
+  const overallAvg = purposeDetailCurrent.reduce((s, p) => s + p.avgScore * p.count, 0) / totalCount
+
+  // 前期データのマップ
+  const prevMap = new Map(purposeDetailPrev.map((p) => [`${p.insuranceType}:${p.purpose}`, p]))
+
+  const lines: string[] = []
+  lines.push(`診療内容別の満足度分析（直近90日、${totalCount}件）:`)
+
+  // ソート（件数が十分なもののみ）
+  const valid = purposeDetailCurrent.filter((p) => p.count >= 3).sort((a, b) => a.avgScore - b.avgScore)
+
+  if (valid.length === 0) return null
+
+  // 低スコアの診療内容（全体平均-0.3以下）
+  const lowPurposes = valid.filter((p) => p.avgScore < overallAvg - 0.3)
+  if (lowPurposes.length > 0) {
+    lines.push("\n▼ 注意が必要な診療内容:")
+    for (const p of lowPurposes.slice(0, 3)) {
+      const insLabel = lookupLabel(p.insuranceType, INSURANCE_TYPES as unknown as Array<{ value: string; label: string }>)
+      const purLabel = purposeLabel(p.purpose)
+      const prev = prevMap.get(`${p.insuranceType}:${p.purpose}`)
+      let trend = ""
+      if (prev && prev.count >= 3) {
+        const delta = p.avgScore - prev.avgScore
+        trend = delta > 0.1 ? ` ↑改善中(前期${prev.avgScore.toFixed(2)})` : delta < -0.1 ? ` ↓悪化中(前期${prev.avgScore.toFixed(2)})` : " →横ばい"
+      }
+      lines.push(`- ${insLabel}・${purLabel}: ${p.avgScore.toFixed(2)}点（${p.count}件）${trend}`)
+    }
+  }
+
+  // 高スコアの診療内容（全体平均+0.3以上）
+  const highPurposes = valid.filter((p) => p.avgScore > overallAvg + 0.3)
+  if (highPurposes.length > 0) {
+    lines.push("\n▲ 高評価の診療内容:")
+    for (const p of highPurposes.slice(0, 3)) {
+      const insLabel = lookupLabel(p.insuranceType, INSURANCE_TYPES as unknown as Array<{ value: string; label: string }>)
+      const purLabel = purposeLabel(p.purpose)
+      lines.push(`- ${insLabel}・${purLabel}: ${p.avgScore.toFixed(2)}点（${p.count}件）`)
+    }
+  }
+
+  // 保険 vs 自費の全体比較
+  const insuranceAgg = new Map<string, { total: number; count: number }>()
+  for (const p of purposeDetailCurrent) {
+    const entry = insuranceAgg.get(p.insuranceType) ?? { total: 0, count: 0 }
+    entry.total += p.avgScore * p.count
+    entry.count += p.count
+    insuranceAgg.set(p.insuranceType, entry)
+  }
+  const insuranceResults = Array.from(insuranceAgg.entries()).filter(([, v]) => v.count >= 5)
+  if (insuranceResults.length === 2) {
+    const scores = insuranceResults.map(([type, agg]) => ({
+      type,
+      avg: agg.total / agg.count,
+      count: agg.count,
+    }))
+    const gap = Math.abs(scores[0].avg - scores[1].avg)
+    if (gap >= 0.2) {
+      const lower = scores[0].avg < scores[1].avg ? scores[0] : scores[1]
+      const lowerLabel = lookupLabel(lower.type, INSURANCE_TYPES as unknown as Array<{ value: string; label: string }>)
+      lines.push(`\n保険/自費の全体差: ${gap.toFixed(2)}ポイント（${lowerLabel}が低め）`)
+    }
+  }
+
+  // 急患・応急処置の特別チェック
+  const emergency = purposeDetailCurrent.find((p) => p.purpose === "emergency")
+  if (emergency && emergency.count >= 3 && emergency.avgScore < overallAvg - 0.2) {
+    lines.push(
+      `\n急患・応急処置のスコアが${emergency.avgScore.toFixed(2)}点と低めです。` +
+      "急患は痛みと不安を抱えて来院するため、迅速な対応と丁寧な声かけが特に重要です。"
+    )
+  }
+
+  return {
+    title: "診療内容別深掘り",
+    content: lines.join("\n"),
+    type: "purpose_deep_dive",
+  }
+}
+
+/** 17. リテンションシグナル分析 */
+function analyzeRetentionSignals(data: AnalysisData): AdvisorySection | null {
+  const { monthlyMetrics, monthlyScoreTrend, stats } = data
+
+  // 最低3ヶ月分の経営データが必要
+  if (monthlyMetrics.length < 3) return null
+
+  const lines: string[] = []
+
+  // 初診率のトレンド
+  const metricsWithVisits = monthlyMetrics.filter(
+    (m) => m.firstVisitCount != null && m.revisitCount != null &&
+           (m.firstVisitCount + m.revisitCount) > 0
+  )
+
+  if (metricsWithVisits.length >= 3) {
+    const firstVisitRates = metricsWithVisits.map((m) => ({
+      key: `${m.year}-${String(m.month).padStart(2, "0")}`,
+      rate: m.firstVisitCount! / (m.firstVisitCount! + m.revisitCount!),
+      firstVisit: m.firstVisitCount!,
+      revisit: m.revisitCount!,
+    }))
+
+    // 直近3ヶ月 vs 前3ヶ月の初診率変化
+    if (firstVisitRates.length >= 6) {
+      const recent = firstVisitRates.slice(-3)
+      const prev = firstVisitRates.slice(-6, -3)
+      const recentAvgRate = recent.reduce((s, r) => s + r.rate, 0) / recent.length
+      const prevAvgRate = prev.reduce((s, r) => s + r.rate, 0) / prev.length
+      const rateChange = (recentAvgRate - prevAvgRate) * 100
+
+      if (Math.abs(rateChange) >= 3) {
+        lines.push(
+          `初診率の変化: ${(prevAvgRate * 100).toFixed(1)}% → ${(recentAvgRate * 100).toFixed(1)}%（${rateChange > 0 ? "+" : ""}${rateChange.toFixed(1)}pt）`
+        )
+        if (rateChange > 5) {
+          lines.push("→ 初診率が上昇しています。新規患者の獲得は順調ですが、再診率の維持にも注目してください。")
+        } else if (rateChange < -5) {
+          lines.push("→ 初診率が低下しています。既存患者のリテンションは良好ですが、新規集患の施策を検討する時期かもしれません。")
+        }
+      }
+    }
+
+    // 再診比率と満足度の関係
+    const lastMonth = firstVisitRates[firstVisitRates.length - 1]
+    const revisitRate = 1 - lastMonth.rate
+    if (revisitRate >= 0.7 && stats.averageScore >= 4.0) {
+      lines.push(
+        `直近月の再診率は${(revisitRate * 100).toFixed(0)}%と高く、満足度スコア（${stats.averageScore.toFixed(2)}点）と合わせて良好なリテンションを示しています。`
+      )
+    } else if (revisitRate < 0.5 && stats.averageScore < 3.8) {
+      lines.push(
+        `直近月の再診率が${(revisitRate * 100).toFixed(0)}%と低めで、満足度スコア（${stats.averageScore.toFixed(2)}点）も低下傾向です。患者体験の改善が再来院率の回復に直結します。`
+      )
+    }
+  }
+
+  // キャンセル率のトレンド
+  const metricsWithCancel = monthlyMetrics.filter(
+    (m) => m.cancellationCount != null && m.firstVisitCount != null && m.revisitCount != null &&
+           (m.firstVisitCount + m.revisitCount) > 0
+  )
+
+  if (metricsWithCancel.length >= 3) {
+    const cancelRates = metricsWithCancel.map((m) => ({
+      rate: m.cancellationCount! / (m.firstVisitCount! + m.revisitCount!),
+      count: m.cancellationCount!,
+    }))
+
+    const recentCancel = cancelRates.slice(-3)
+    const avgCancelRate = recentCancel.reduce((s, r) => s + r.rate, 0) / recentCancel.length
+
+    if (avgCancelRate >= 0.1) {
+      lines.push(
+        `直近3ヶ月の平均キャンセル率: ${(avgCancelRate * 100).toFixed(1)}%。` +
+        "10%を超えるキャンセル率は経営への影響が大きいため、リマインド連絡の強化や予約システムの見直しを検討してください。"
+      )
+    }
+
+    // キャンセル率が改善傾向にあるか
+    if (cancelRates.length >= 6) {
+      const prevCancel = cancelRates.slice(-6, -3)
+      const prevAvgRate = prevCancel.reduce((s, r) => s + r.rate, 0) / prevCancel.length
+      const change = (avgCancelRate - prevAvgRate) * 100
+      if (change < -2) {
+        lines.push(`キャンセル率は前期比${change.toFixed(1)}ptの改善傾向です。`)
+      } else if (change > 2) {
+        lines.push(`キャンセル率が前期比+${change.toFixed(1)}ptで悪化傾向です。`)
+      }
+    }
+  }
+
+  // 満足度と紹介意向の関係（紹介意向 = loyalty カテゴリ）
+  const loyaltyAvg = getCategoryAvg(data.categoryScores, "loyalty")
+  if (loyaltyAvg !== null) {
+    if (loyaltyAvg >= 4.2) {
+      lines.push(
+        `紹介意向スコア: ${loyaltyAvg.toFixed(2)}点（良好）。患者が自然に周囲に推薦する水準です。口コミによる集患効果が期待できます。`
+      )
+    } else if (loyaltyAvg < 3.5) {
+      lines.push(
+        `紹介意向スコア: ${loyaltyAvg.toFixed(2)}点（低め）。治療品質や接遇以外の「+α」の体験設計が必要です。` +
+        "ビフォーアフターの写真共有や個別化された声がけなど、「特別な体験」を意識してください。"
+      )
+    }
+  }
+
+  // 月次スコアトレンドの安定性
+  if (monthlyScoreTrend.length >= 6) {
+    const recentScores = monthlyScoreTrend.slice(-6).map((m) => m.avgScore)
+    const mean = recentScores.reduce((a, b) => a + b, 0) / recentScores.length
+    const variance = recentScores.reduce((s, v) => s + (v - mean) ** 2, 0) / recentScores.length
+    const stddev = Math.sqrt(variance)
+
+    if (stddev < 0.15) {
+      lines.push(`直近6ヶ月の満足度は安定しています（標準偏差${stddev.toFixed(2)}）。継続的な体験管理ができている証拠です。`)
+    } else if (stddev > 0.3) {
+      lines.push(`直近6ヶ月の満足度のばらつきが大きい状態です（標準偏差${stddev.toFixed(2)}）。月によって体験品質に差があります。`)
+    }
+  }
+
+  if (lines.length === 0) return null
+
+  return {
+    title: "リテンションシグナル",
+    content: lines.join("\n"),
+    type: "retention_signals",
+  }
+}
+
+/** 18. 回答品質分析 */
+function analyzeResponseQuality(data: AnalysisData): AdvisorySection | null {
+  const { responseQuality, stats, dailyTrend } = data
+
+  const totalCount = responseQuality.reduce((s, r) => s + r.count, 0)
+  if (totalCount < 10) return null
+
+  const lines: string[] = []
+
+  // フリーテキスト回答率
+  const withText = responseQuality.find((r) => r.hasFreeText)
+  const withoutText = responseQuality.find((r) => !r.hasFreeText)
+
+  if (withText && withoutText) {
+    const textRate = (withText.count / totalCount) * 100
+    lines.push(`フリーテキスト回答率: ${textRate.toFixed(0)}%（${withText.count}件/${totalCount}件）`)
+
+    // テキストありなしでスコア差がある場合
+    const scoreDiff = withText.avgScore - withoutText.avgScore
+    if (Math.abs(scoreDiff) >= 0.2) {
+      if (scoreDiff < 0) {
+        lines.push(
+          `テキスト回答者のスコアが${Math.abs(scoreDiff).toFixed(2)}点低い傾向です。不満を伝えたい患者がコメントを残す傾向があり、重要なフィードバック源です。`
+        )
+      } else {
+        lines.push(
+          `テキスト回答者のスコアが${scoreDiff.toFixed(2)}点高い傾向です。満足した患者が感謝のコメントを残す傾向があります。`
+        )
+      }
+    }
+
+    if (textRate < 15) {
+      lines.push("フリーテキスト回答率が低めです。「お気づきの点がありましたらご記入ください」等の声がけで回答率を向上させると、より質の高いフィードバックが得られます。")
+    }
+  }
+
+  // 回答所要時間の分析
+  const durationsAvailable = responseQuality.filter((r) => r.avgDurationMs != null)
+  if (durationsAvailable.length > 0) {
+    const totalDurationCount = durationsAvailable.reduce((s, r) => s + r.count, 0)
+    const avgDuration = durationsAvailable.reduce((s, r) => s + (r.avgDurationMs ?? 0) * r.count, 0) / totalDurationCount
+    const avgSec = avgDuration / 1000
+
+    lines.push(`平均回答時間: ${avgSec.toFixed(0)}秒`)
+
+    if (avgSec < 15) {
+      lines.push("回答時間が非常に短いです。患者が十分に考えずに回答している可能性があります。スコアの信頼性に注意してください。")
+    } else if (avgSec > 120) {
+      lines.push("回答時間が長めです。アンケートの設問数や操作性に改善の余地があるかもしれません。")
+    }
+  }
+
+  // 回答頻度の安定性（日次トレンドから）
+  const activeDays = dailyTrend.filter((d) => d.count > 0)
+  if (activeDays.length >= 7) {
+    const counts = activeDays.map((d) => d.count)
+    const avgCount = counts.reduce((a, b) => a + b, 0) / counts.length
+    const variance = counts.reduce((s, c) => s + (c - avgCount) ** 2, 0) / counts.length
+    const cv = Math.sqrt(variance) / avgCount // 変動係数
+
+    if (cv > 1.0) {
+      lines.push(
+        `回答数の日次ばらつきが大きい状態です（変動係数${cv.toFixed(2)}）。` +
+        "アンケート配布が特定の日に偏っていないか確認してください。均一な配布が統計的に安定した結果につながります。"
+      )
+    } else if (cv < 0.4 && avgCount >= 3) {
+      lines.push(`回答数は安定しています（平均${avgCount.toFixed(1)}件/日）。継続的なアンケート運用ができています。`)
+    }
+  }
+
+  // スコア分布の歪み（極端な1点/5点の比率）
+  const dist = data.scoreDistribution
+  if (dist.length > 0) {
+    const total = dist.reduce((s, d) => s + d.count, 0)
+    const score1Pct = (dist.find((d) => d.score === 1)?.count ?? 0) / total * 100
+    const score5Pct = (dist.find((d) => d.score === 5)?.count ?? 0) / total * 100
+
+    if (score5Pct >= 70) {
+      lines.push(
+        `5点の割合が${score5Pct.toFixed(0)}%と非常に高いです。「社交辞令回答」の可能性があります。` +
+        "アンケートが対面で配布されている場合、スタッフの目が届かない環境での回答を検討してください。"
+      )
+    }
+    if (score1Pct >= 10) {
+      lines.push(
+        `1点回答が${score1Pct.toFixed(0)}%あります。特定の体験に強い不満を持つ患者がいます。フリーテキストで原因を確認してください。`
+      )
+    }
+  }
+
+  if (lines.length === 0) return null
+
+  return {
+    title: "回答品質分析",
+    content: lines.join("\n"),
+    type: "response_quality",
+  }
+}
+
+/** 19. 推奨アクション（全分析結果を統合） */
 function buildRecommendations(
   data: AnalysisData,
   findings: AdvisorySection[]
@@ -1180,6 +1941,42 @@ function buildRecommendations(
     })
   }
 
+  // スタッフ間のばらつき対策
+  const staffSection = findings.find((f) => f.type === "staff_performance")
+  if (staffSection && staffSection.content.includes("スコア差が")) {
+    actions.push({
+      priority: 3,
+      text: "スタッフ間の満足度スコアに差があります。高スコアスタッフの接遇をチーム全体で共有し、均質なサービス品質を目指してください。",
+    })
+  }
+
+  // コメントテーマからの推奨
+  const commentSection = findings.find((f) => f.type === "comment_themes")
+  if (commentSection && commentSection.content.includes("ネガティブ傾向")) {
+    actions.push({
+      priority: 4,
+      text: "フリーテキストでネガティブなコメントが検出されています。回答一覧画面で具体的な内容を確認し、改善施策に反映してください。",
+    })
+  }
+
+  // 特定セグメントへの対応
+  const segmentSection = findings.find((f) => f.type === "patient_segments")
+  if (segmentSection && segmentSection.content.includes("スコアが低め")) {
+    actions.push({
+      priority: 5,
+      text: "特定の患者セグメントでスコアが低い傾向が検出されています。セグメント別の体験改善策を検討してください。",
+    })
+  }
+
+  // 回答品質の問題
+  const qualitySection = findings.find((f) => f.type === "response_quality")
+  if (qualitySection && qualitySection.content.includes("社交辞令回答")) {
+    actions.push({
+      priority: 6,
+      text: "回答の信頼性に懸念があります。スタッフの目が届かない環境でのアンケート配布を検討し、より正確なフィードバックを得られるようにしてください。",
+    })
+  }
+
   if (actions.length === 0) {
     actions.push({
       priority: 10,
@@ -1217,6 +2014,12 @@ export async function generateAdvisoryReport(
     analyzeTrend(data),
     analyzeBusinessCorrelation(data),
     analyzeSeasonality(data),
+    analyzeStaffPerformance(data),
+    analyzeCommentThemes(data),
+    analyzePatientSegments(data),
+    analyzePurposeDeepDive(data),
+    analyzeRetentionSignals(data),
+    analyzeResponseQuality(data),
   ].filter((s): s is AdvisorySection => s !== null)
 
   // 推奨アクション（全分析結果を統合）
