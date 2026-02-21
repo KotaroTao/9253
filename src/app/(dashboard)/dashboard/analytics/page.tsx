@@ -3,7 +3,10 @@ import { auth } from "@/auth"
 import { getOperatorClinicId } from "@/lib/admin-mode"
 import { getHourlyHeatmapData, getDailyTrend, getTemplateTrend, getQuestionBreakdownByDays } from "@/lib/queries/stats"
 import { AnalyticsCharts } from "@/components/dashboard/analytics-charts"
+import { UpgradePrompt } from "@/components/dashboard/upgrade-prompt"
 import { ROLES } from "@/lib/constants"
+import { getClinicPlanInfo, hasFeature } from "@/lib/plan"
+import { messages } from "@/lib/messages"
 
 export default async function AnalyticsPage() {
   const session = await auth()
@@ -22,6 +25,21 @@ export default async function AnalyticsPage() {
   const clinicId = operatorClinicId ?? session.user.clinicId
   if (!clinicId) {
     redirect("/login")
+  }
+
+  // プランゲート（system_adminは常にアクセス可）
+  if (role !== "system_admin") {
+    const planInfo = await getClinicPlanInfo(clinicId)
+    if (!hasFeature(planInfo.effectivePlan, "analytics")) {
+      return (
+        <UpgradePrompt
+          feature="analytics"
+          featureLabel={messages.plan.featureAnalytics}
+          requiredPlan="standard"
+          planInfo={planInfo}
+        />
+      )
+    }
   }
 
   const [heatmapData, dailyTrend, templateTrend, templateTrendPrev, questionBreakdown] =

@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils"
 import { Shield, X, ChevronDown, ArrowLeftRight, Search } from "lucide-react"
 import { messages } from "@/lib/messages"
 
+import type { PlanInfo } from "@/types"
+
 interface DashboardShellProps {
   children: React.ReactNode
   role: string
@@ -16,6 +18,7 @@ interface DashboardShellProps {
   isOperatorMode?: boolean
   operatorClinicId?: string
   allClinics?: Array<{ id: string; name: string }>
+  planInfo?: PlanInfo
 }
 
 export function DashboardShell({
@@ -26,6 +29,7 @@ export function DashboardShell({
   isOperatorMode = false,
   operatorClinicId,
   allClinics = [],
+  planInfo,
 }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [switcherOpen, setSwitcherOpen] = useState(false)
@@ -178,6 +182,7 @@ export function DashboardShell({
           role={role}
           isOperatorMode={isOperatorMode}
           clinicSlug={clinicSlug}
+          planInfo={planInfo}
         />
       </div>
       <div className="flex flex-1 flex-col overflow-hidden">

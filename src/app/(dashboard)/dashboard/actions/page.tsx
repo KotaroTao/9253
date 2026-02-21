@@ -3,8 +3,11 @@ import { auth } from "@/auth"
 import { getOperatorClinicId } from "@/lib/admin-mode"
 import { prisma } from "@/lib/prisma"
 import { ImprovementActionsView } from "@/components/dashboard/improvement-actions"
+import { UpgradePrompt } from "@/components/dashboard/upgrade-prompt"
 import { ROLES } from "@/lib/constants"
 import { getQuestionCurrentScores } from "@/lib/queries/stats"
+import { getClinicPlanInfo, hasFeature } from "@/lib/plan"
+import { messages } from "@/lib/messages"
 
 interface TemplateQuestion {
   id: string
@@ -32,6 +35,21 @@ export default async function ActionsPage() {
 
   if (session.user.role === "staff") {
     redirect("/dashboard")
+  }
+
+  // プランゲート
+  if (session.user.role !== "system_admin") {
+    const planInfo = await getClinicPlanInfo(clinicId)
+    if (!hasFeature(planInfo.effectivePlan, "improvement_actions")) {
+      return (
+        <UpgradePrompt
+          feature="improvement_actions"
+          featureLabel={messages.plan.featureActions}
+          requiredPlan="standard"
+          planInfo={planInfo}
+        />
+      )
+    }
   }
 
   const [actions, templates] = await Promise.all([

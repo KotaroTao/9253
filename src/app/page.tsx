@@ -3,7 +3,7 @@ import Image from "next/image"
 import type { Metadata } from "next"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { APP_NAME } from "@/lib/constants"
+import { APP_NAME, PLANS, PLAN_ORDER } from "@/lib/constants"
 import { messages } from "@/lib/messages"
 import { LandingHeader } from "@/components/landing/mobile-nav"
 import { FAQSection } from "@/components/landing/faq-section"
@@ -818,53 +818,89 @@ export default function HomePage() {
         {/* ===== Pricing ===== */}
         <section id="pricing" className="py-20 lg:py-28">
           <div className="container">
-            <div className="mx-auto mb-14 max-w-2xl text-center animate-on-scroll">
+            <div className="mx-auto mb-4 max-w-2xl text-center animate-on-scroll">
               <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
                 {messages.landing.pricingTitle}
               </h2>
             </div>
-            <div className="mx-auto grid max-w-3xl gap-6 sm:grid-cols-2 animate-on-scroll">
-              {/* Free Plan */}
-              <div className="relative rounded-2xl border-2 border-primary bg-card p-8 shadow-lg">
-                <Badge className="absolute -top-3 left-6 bg-primary">おすすめ</Badge>
-                <h3 className="text-xl font-bold">{messages.landing.pricingFreeTitle}</h3>
-                <p className="mt-2 text-2xl font-bold text-primary">{messages.landing.pricingFreePrice}</p>
-                <ul className="mt-6 space-y-3">
-                  {messages.landing.pricingFreeFeatures.map((f, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Button asChild size="lg" className="mt-8 w-full shadow-lg shadow-primary/25">
-                  <Link href="/login">
-                    {messages.landing.pricingFreeCta}
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-                <p className="mt-3 text-center text-xs text-muted-foreground">
-                  {messages.landing.pricingFreeNote}
-                </p>
-              </div>
-              {/* Premium Plan */}
-              <div className="rounded-2xl border bg-card p-8">
-                <h3 className="text-xl font-bold">{messages.landing.pricingPremiumTitle}</h3>
-                <p className="mt-2 text-2xl font-bold">{messages.landing.pricingPremiumPrice}</p>
-                <ul className="mt-6 space-y-3">
-                  {messages.landing.pricingPremiumFeatures.map((f, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Button asChild variant="outline" size="lg" className="mt-8 w-full">
-                  <a href="#cta">
-                    {messages.landing.pricingPremiumCta}
-                  </a>
-                </Button>
-              </div>
+            <p className="mx-auto mb-14 max-w-lg text-center text-sm text-muted-foreground animate-on-scroll">
+              {messages.landing.pricingSubtitle}
+            </p>
+            <div className="mx-auto grid max-w-6xl gap-5 sm:grid-cols-2 lg:grid-cols-4 animate-on-scroll">
+              {PLAN_ORDER.map((tier) => {
+                const plan = PLANS[tier]
+                const isHighlighted = plan.highlighted
+                const ctaLabels: Record<string, string> = {
+                  free: messages.landing.pricingFreeCta,
+                  starter: messages.landing.pricingStarterCta,
+                  standard: messages.landing.pricingStandardCta,
+                  enterprise: messages.landing.pricingEnterpriseCta,
+                }
+                const ctaHrefs: Record<string, string> = {
+                  free: "/login",
+                  starter: "#cta",
+                  standard: "#cta",
+                  enterprise: "#cta",
+                }
+                return (
+                  <div
+                    key={tier}
+                    className={`relative flex flex-col rounded-2xl bg-card p-7 ${
+                      isHighlighted
+                        ? "border-2 border-primary shadow-lg ring-1 ring-primary/20"
+                        : "border"
+                    }`}
+                  >
+                    {isHighlighted && (
+                      <Badge className="absolute -top-3 left-6 bg-primary">
+                        {messages.landing.pricingRecommended}
+                      </Badge>
+                    )}
+                    <h3 className="text-lg font-bold">{plan.name}</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">{plan.description}</p>
+                    <div className="mt-4">
+                      <span className={`text-3xl font-bold ${isHighlighted ? "text-primary" : ""}`}>
+                        {plan.priceLabel}
+                      </span>
+                      <span className="ml-1 text-sm text-muted-foreground">{plan.priceNote}</span>
+                    </div>
+                    <ul className="mt-6 flex-1 space-y-2.5">
+                      {plan.features.map((f, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm">
+                          <Check className={`mt-0.5 h-4 w-4 shrink-0 ${isHighlighted ? "text-primary" : "text-emerald-600"}`} />
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    {tier === "free" ? (
+                      <Button asChild size="lg" className={`mt-8 w-full ${isHighlighted ? "shadow-lg shadow-primary/25" : ""}`}>
+                        <Link href={ctaHrefs[tier]}>
+                          {ctaLabels[tier]}
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                      </Button>
+                    ) : tier === "standard" ? (
+                      <Button asChild size="lg" className="mt-8 w-full shadow-lg shadow-primary/25">
+                        <a href={ctaHrefs[tier]}>
+                          {ctaLabels[tier]}
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </a>
+                      </Button>
+                    ) : (
+                      <Button asChild variant="outline" size="lg" className="mt-8 w-full">
+                        <a href={ctaHrefs[tier]}>
+                          {ctaLabels[tier]}
+                        </a>
+                      </Button>
+                    )}
+                    {tier === "free" && (
+                      <p className="mt-3 text-center text-xs text-muted-foreground">
+                        {messages.landing.pricingFreeNote}
+                      </p>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
         </section>

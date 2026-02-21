@@ -4,9 +4,12 @@ import { getOperatorClinicId } from "@/lib/admin-mode"
 import { prisma } from "@/lib/prisma"
 import { getMonthlySurveyCount } from "@/lib/queries/stats"
 import { MetricsInputView } from "@/components/dashboard/metrics-input-view"
+import { UpgradePrompt } from "@/components/dashboard/upgrade-prompt"
 import { getMonthStatus } from "@/lib/metrics-utils"
 import type { MonthStatus } from "@/lib/metrics-utils"
 import { ROLES } from "@/lib/constants"
+import { getClinicPlanInfo, hasFeature } from "@/lib/plan"
+import { messages } from "@/lib/messages"
 
 const METRICS_SELECT = {
   firstVisitCount: true,
@@ -31,6 +34,21 @@ export default async function MetricsInputPage() {
   const clinicId = operatorClinicId ?? session.user.clinicId
   if (!clinicId) {
     redirect("/login")
+  }
+
+  // プランゲート
+  if (session.user.role !== "system_admin") {
+    const planInfo = await getClinicPlanInfo(clinicId)
+    if (!hasFeature(planInfo.effectivePlan, "business_metrics")) {
+      return (
+        <UpgradePrompt
+          feature="business_metrics"
+          featureLabel={messages.plan.featureMetrics}
+          requiredPlan="standard"
+          planInfo={planInfo}
+        />
+      )
+    }
   }
 
   const now = new Date()
