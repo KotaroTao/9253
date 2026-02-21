@@ -10,6 +10,7 @@ import {
   LogOut,
   Shield,
   Smartphone,
+  QrCode,
   Target,
   PieChart,
   FileBarChart,
@@ -46,11 +47,6 @@ const analyticsItems: NavItem[] = [
 
 const actionItems: NavItem[] = [
   { href: "/dashboard/actions", label: messages.improvementActions.title, icon: Target },
-]
-
-const adminItems: NavItem[] = [
-  { href: "/dashboard/staff", label: messages.nav.staff, icon: Users },
-  { href: "/dashboard/settings", label: messages.nav.settings, icon: Settings },
 ]
 
 function NavSection({ label, items, pathname }: { label: string; items: NavItem[]; pathname: string }) {
@@ -105,13 +101,12 @@ export function Sidebar({ role, isOperatorMode = false, clinicSlug }: SidebarPro
   const isAdmin = role === "clinic_admin" || role === "system_admin"
 
   const kioskUrl = clinicSlug ? `/kiosk/${encodeURIComponent(clinicSlug)}` : null
+  const patientSurveyUrl = clinicSlug ? `/s/${encodeURIComponent(clinicSlug)}` : null
 
-  const dailyItems: NavItem[] = [
-    { href: "/dashboard", label: messages.nav.dashboard, icon: LayoutDashboard },
-    ...(kioskUrl
-      ? [{ href: kioskUrl, label: messages.nav.surveyStart, icon: Smartphone, external: true }]
-      : []),
+  const adminItems: NavItem[] = [
+    { href: "/dashboard/staff", label: messages.nav.staff, icon: Users },
     { href: "/dashboard/test", label: messages.nav.testSurvey, icon: FlaskConical },
+    { href: "/dashboard/settings", label: messages.nav.settings, icon: Settings },
   ]
 
   return (
@@ -122,7 +117,48 @@ export function Sidebar({ role, isOperatorMode = false, clinicSlug }: SidebarPro
         </Link>
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto p-2">
-        <NavSection label={messages.nav.sectionDaily} items={dailyItems} pathname={pathname} />
+        {/* Home link */}
+        <Link
+          href="/dashboard"
+          className={cn(
+            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+            pathname === "/dashboard"
+              ? "bg-primary/10 text-primary"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          )}
+        >
+          <LayoutDashboard className="h-4 w-4" />
+          {messages.nav.dashboard}
+        </Link>
+
+        {/* Survey CTA buttons */}
+        {(kioskUrl || patientSurveyUrl) && (
+          <div className="grid grid-cols-2 gap-1.5 px-1 py-3">
+            {kioskUrl && (
+              <a
+                href={kioskUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center gap-1.5 rounded-xl border-2 border-blue-200 bg-gradient-to-b from-blue-50 to-white px-2 py-3 transition-all hover:border-blue-400 hover:shadow-sm active:scale-[0.97]"
+              >
+                <Smartphone className="h-5 w-5 text-blue-500" />
+                <span className="text-[11px] font-bold text-blue-800 leading-tight text-center">{messages.dashboard.startKiosk}</span>
+              </a>
+            )}
+            {patientSurveyUrl && (
+              <a
+                href={patientSurveyUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center gap-1.5 rounded-xl border-2 border-emerald-200 bg-gradient-to-b from-emerald-50 to-white px-2 py-3 transition-all hover:border-emerald-400 hover:shadow-sm active:scale-[0.97]"
+              >
+                <QrCode className="h-5 w-5 text-emerald-500" />
+                <span className="text-[11px] font-bold text-emerald-800 leading-tight text-center">{messages.dashboard.startPatientSurvey}</span>
+              </a>
+            )}
+          </div>
+        )}
+
         {isAdmin && (
           <>
             <NavSection label={messages.nav.sectionAnalytics} items={analyticsItems} pathname={pathname} />
