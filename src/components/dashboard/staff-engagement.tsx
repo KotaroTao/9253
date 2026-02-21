@@ -111,6 +111,40 @@ export function StaffEngagement({
       {/* Confetti when AI analysis unlocked */}
       {advisoryUnlocked && <Confetti />}
 
+      {/* ⓪ Survey CTA buttons */}
+      <div className="grid grid-cols-2 gap-3">
+        <a
+          href={kioskUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group flex flex-col items-center gap-3 rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-5 transition-all hover:border-blue-400 hover:shadow-md active:scale-[0.98]"
+        >
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-blue-500 text-white shadow-sm">
+            <Smartphone className="h-7 w-7" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-bold text-blue-900">{messages.dashboard.startKiosk}</p>
+            <p className="mt-0.5 text-xs text-blue-600/70">{messages.dashboard.startKioskDesc}</p>
+          </div>
+        </a>
+        {patientSurveyUrl && (
+          <a
+            href={patientSurveyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex flex-col items-center gap-3 rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5 transition-all hover:border-emerald-400 hover:shadow-md active:scale-[0.98]"
+          >
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-sm">
+              <QrCode className="h-7 w-7" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-bold text-emerald-900">{messages.dashboard.startPatientSurvey}</p>
+              <p className="mt-0.5 text-xs text-emerald-600/70">{messages.dashboard.startPatientSurveyDesc}</p>
+            </div>
+          </a>
+        )}
+      </div>
+
       {/* Onboarding for first-time users */}
       {totalCount === 0 && todayCount === 0 && (
         <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-white">
@@ -276,9 +310,20 @@ export function StaffEngagement({
 
                           {/* Bottom label */}
                           {day.isToday ? (
-                            <span className="min-h-[28px] min-w-[36px] flex items-center justify-center rounded-full bg-purple-100 px-2 py-1 text-[10px] font-bold text-purple-600">
-                              本日
-                            </span>
+                            day.isClosed ? (
+                              <button
+                                onClick={() => handleToggleClosed(day.date, true)}
+                                disabled={isToggling}
+                                className="min-h-[28px] min-w-[36px] flex items-center justify-center rounded-full bg-orange-100 px-2 py-1 text-[10px] font-bold text-orange-600 hover:bg-orange-200 transition-colors disabled:opacity-50"
+                                title="診療日に切り替える"
+                              >
+                                本日
+                              </button>
+                            ) : (
+                              <span className="min-h-[28px] min-w-[36px] flex items-center justify-center rounded-full bg-purple-100 px-2 py-1 text-[10px] font-bold text-purple-600">
+                                本日
+                              </span>
+                            )
                           ) : (
                             <button
                               onClick={() => handleToggleClosed(day.date, day.isClosed)}
@@ -344,40 +389,6 @@ export function StaffEngagement({
           </CardContent>
         </Card>
       )}
-
-      {/* ③ Survey CTA buttons */}
-      <div className="grid grid-cols-2 gap-3">
-        <a
-          href={kioskUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="group flex flex-col items-center gap-3 rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-5 transition-all hover:border-blue-400 hover:shadow-md active:scale-[0.98]"
-        >
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-blue-500 text-white shadow-sm">
-            <Smartphone className="h-7 w-7" />
-          </div>
-          <div className="text-center">
-            <p className="text-sm font-bold text-blue-900">{messages.dashboard.startKiosk}</p>
-            <p className="mt-0.5 text-xs text-blue-600/70">{messages.dashboard.startKioskDesc}</p>
-          </div>
-        </a>
-        {patientSurveyUrl && (
-          <a
-            href={patientSurveyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group flex flex-col items-center gap-3 rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5 transition-all hover:border-emerald-400 hover:shadow-md active:scale-[0.98]"
-          >
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-sm">
-              <QrCode className="h-7 w-7" />
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-bold text-emerald-900">{messages.dashboard.startPatientSurvey}</p>
-              <p className="mt-0.5 text-xs text-emerald-600/70">{messages.dashboard.startPatientSurveyDesc}</p>
-            </div>
-          </a>
-        )}
-      </div>
 
       {/* ④ 患者さまの声（格上げ） */}
       {positiveComment && (
