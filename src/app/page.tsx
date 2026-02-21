@@ -372,8 +372,15 @@ export default function HomePage() {
                   <Sparkles className="mr-1.5 h-3.5 w-3.5" />
                   {messages.landing.heroBadge}
                 </span>
-                <h1 className="animate-fade-in-up-delay-1 max-w-xl whitespace-pre-line text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-[3.5rem]">
-                  {messages.landing.heroHeadline}
+                <h1 className="animate-fade-in-up-delay-1">
+                  <span className="flex gap-3 sm:gap-4">
+                    <span className="whitespace-nowrap rounded-xl border-2 border-primary/20 bg-primary/5 px-4 py-2 text-2xl font-extrabold tracking-tight text-primary sm:px-6 sm:py-3 sm:text-3xl lg:text-4xl">
+                      {messages.landing.heroHeadlineLeft}
+                    </span>
+                    <span className="whitespace-nowrap rounded-xl border-2 border-foreground/10 bg-muted/60 px-4 py-2 text-2xl font-extrabold tracking-tight sm:px-6 sm:py-3 sm:text-3xl lg:text-4xl">
+                      {messages.landing.heroHeadlineRight}
+                    </span>
+                  </span>
                 </h1>
                 <p className="animate-fade-in-up-delay-2 mt-6 max-w-lg whitespace-pre-line text-base leading-relaxed text-muted-foreground sm:text-lg">
                   {messages.landing.heroSub}

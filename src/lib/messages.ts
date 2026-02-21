@@ -538,7 +538,8 @@ export const messages = {
     pricingNav: "料金",
 
     // Hero
-    heroHeadline: "患者満足度を「見える化」し、\n選ばれ続ける医院へ。",
+    heroHeadlineLeft: "患者満足度を「見える化」",
+    heroHeadlineRight: "選ばれ続ける歯科医院へ",
     heroSub:
       "30秒のタブレットアンケートで患者の本音を数値化。\n質問別スコア・AI改善提案・経営指標との相関まで、\nデータに基づく患者体験の改善サイクルを実現します。",
     heroCta: "無料で始める",
