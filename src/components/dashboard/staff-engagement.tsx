@@ -329,20 +329,19 @@ export function StaffEngagement({
 
                           {/* Bottom label */}
                           {day.isToday ? (
-                            day.isClosed ? (
-                              <button
-                                onClick={() => handleToggleClosed(day.date, true)}
-                                disabled={isToggling}
-                                className="min-h-[28px] min-w-[36px] flex items-center justify-center rounded-full bg-orange-100 px-2 py-1 text-[10px] font-bold text-orange-600 hover:bg-orange-200 transition-colors disabled:opacity-50"
-                                title="診療日に切り替える"
-                              >
-                                本日
-                              </button>
-                            ) : (
-                              <span className="min-h-[28px] min-w-[36px] flex items-center justify-center rounded-full bg-purple-100 px-2 py-1 text-[10px] font-bold text-purple-600">
-                                本日
-                              </span>
-                            )
+                            <button
+                              onClick={() => handleToggleClosed(day.date, day.isClosed)}
+                              disabled={isToggling}
+                              className={cn(
+                                "min-h-[28px] min-w-[36px] flex items-center justify-center rounded-full px-2 py-1 text-[10px] font-bold transition-colors disabled:opacity-50",
+                                day.isClosed
+                                  ? "bg-orange-100 text-orange-600 hover:bg-orange-200"
+                                  : "bg-purple-100 text-purple-600 hover:bg-purple-200"
+                              )}
+                              title={day.isClosed ? "診療日に切り替える" : "休診日にする"}
+                            >
+                              本日
+                            </button>
                           ) : (
                             <button
                               onClick={() => handleToggleClosed(day.date, day.isClosed)}
