@@ -570,6 +570,16 @@ export const messages = {
     pain3Scenario: "「研修に50万かけたが、本当に効果があったのか…」",
     painWarning: "AIが自動生成する口コミツールは、医療広告ガイドラインに違反するリスクがあります。\nMIERU Clinicは、本質的な患者体験の改善だけに集中します。",
 
+    // こんな医院におすすめ
+    recommendTitle: "こんなお悩みありませんか？",
+    recommendSub: "ひとつでも当てはまるなら、MIERU Clinicがお役に立てます。",
+    recommendItems: [
+      "紙のアンケートは集計が手間で放置している",
+      "患者満足度が売上にどう影響するか分からない",
+      "Googleレビューの低評価にどう対処すべきか悩んでいる",
+      "スタッフが改善提案を出してくれない",
+    ],
+
     // Solution overview
     solutionTitle: "患者体験を数値化し、経営成果につなげる",
     solutionDesc:
