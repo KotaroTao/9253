@@ -4,10 +4,10 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
-import { STREAK_MILESTONES, ADVISORY_MILESTONES } from "@/lib/constants"
+import { STREAK_MILESTONES, ADVISORY_MILESTONES, RANKS } from "@/lib/constants"
 import {
   Flame, Trophy, CalendarOff, Smartphone, QrCode, ArrowRight, Sparkles,
-  Target, TrendingUp, TrendingDown, Brain, MessageCircle, Clock,
+  Target, TrendingUp, TrendingDown, Brain, MessageCircle, Clock, HelpCircle,
 } from "lucide-react"
 import Link from "next/link"
 import { Confetti } from "@/components/survey/confetti"
@@ -72,6 +72,7 @@ export function StaffEngagement({
 
   const router = useRouter()
   const [togglingDate, setTogglingDate] = useState<string | null>(null)
+  const [showRankInfo, setShowRankInfo] = useState(false)
 
   const weekTotal = weekDays.reduce((sum, d) => sum + d.count, 0)
   const { current, threshold, percentage } = advisoryProgress
@@ -356,9 +357,38 @@ export function StaffEngagement({
           <CardContent className="py-4">
             <div className="flex items-center justify-between">
               {/* Rank */}
-              <div className="flex items-center gap-1.5">
+              <div className="relative flex items-center gap-1.5">
                 <span className="text-lg">{rank.emoji}</span>
                 <span className="text-sm font-bold">{rank.name}</span>
+                <button
+                  onClick={() => setShowRankInfo((v) => !v)}
+                  className="text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                  aria-label="ランクシステムについて"
+                >
+                  <HelpCircle className="h-3.5 w-3.5" />
+                </button>
+                {showRankInfo && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowRankInfo(false)} />
+                    <div className="absolute left-0 top-full z-50 mt-2 w-56 rounded-xl border bg-white p-3 shadow-lg">
+                      <p className="text-xs font-bold text-foreground mb-2">ランクシステム</p>
+                      <div className="space-y-1">
+                        {RANKS.map((r) => (
+                          <div
+                            key={r.name}
+                            className={cn(
+                              "flex items-center justify-between rounded-md px-2 py-1 text-xs",
+                              r.name === rank.name ? "bg-blue-50 font-bold text-blue-700" : "text-muted-foreground"
+                            )}
+                          >
+                            <span>{r.emoji} {r.name}</span>
+                            <span className="tabular-nums">{r.minCount.toLocaleString()}件〜</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
               {/* Today count */}
               <div className="text-center">
