@@ -450,6 +450,7 @@ export const messages = {
   postSurvey: {
     lineText: "当院のLINE公式アカウントを友だち追加しませんか？",
     lineSubText: "お得な情報やご予約のご案内をお届けします",
+    lineQrSubText: "スマートフォンで下のQRコードを読み取ってください",
     lineButton: "LINEで友だち追加",
     lineNote: "友だち追加は任意です",
     homepageButton: "医院ホームページを見る",

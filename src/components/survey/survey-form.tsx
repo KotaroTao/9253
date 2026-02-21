@@ -296,28 +296,31 @@ export function SurveyForm({ data, onComplete, kioskMode = false, patientAttribu
             </p>
             <p className="text-sm text-blue-800">{randomTip}</p>
           </div>
-          {/* LINE誘導CTA — 全員一律表示 */}
+          {/* LINE誘導バナー — 患者端末ではタップで直接開く */}
           {postSurveyLinks?.lineUrl && (
-            <div className="mx-auto max-w-xs rounded-xl border border-green-200 bg-green-50 p-4 text-center">
-              <p className="mb-1 text-sm font-medium text-green-800">
-                {messages.postSurvey.lineText}
-              </p>
+            <a
+              href={postSurveyLinks.lineUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mx-auto block max-w-xs rounded-xl border-2 border-[#06C755]/30 bg-gradient-to-r from-[#06C755]/10 to-green-50 p-4 text-center transition-all hover:border-[#06C755]/50 hover:shadow-md active:scale-[0.98]"
+            >
+              <div className="mb-2 flex items-center justify-center gap-2">
+                <span className="text-2xl">💬</span>
+                <p className="text-sm font-bold text-green-800">
+                  {messages.postSurvey.lineText}
+                </p>
+              </div>
               <p className="mb-3 text-xs text-green-700">
                 {messages.postSurvey.lineSubText}
               </p>
-              <a
-                href={postSurveyLinks.lineUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[#06C755] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#05b04d]"
-              >
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#06C755] px-5 py-2.5 text-sm font-bold text-white shadow-sm">
                 <ExternalLink className="h-3.5 w-3.5" />
                 {messages.postSurvey.lineButton}
-              </a>
+              </span>
               <p className="mt-2 text-[10px] text-green-600">
                 {messages.postSurvey.lineNote}
               </p>
-            </div>
+            </a>
           )}
           {/* 医院ホームページリンク（メイン誘導がある場合は控えめ表示） */}
           {postSurveyLinks?.clinicHomepageUrl && (

@@ -11,10 +11,10 @@ import {
   Lightbulb,
   ArrowRight,
   User,
-  ExternalLink,
   Globe,
   FlaskConical,
 } from "lucide-react"
+import { QRCodeSVG } from "qrcode.react"
 import { Confetti } from "@/components/survey/confetti"
 import {
   DENTAL_TIPS,
@@ -400,25 +400,25 @@ export function KioskSurvey({
               <p className="text-sm text-blue-800">{randomTip}</p>
             </div>
 
-            {/* LINE誘導CTA — 全員一律表示 */}
+            {/* LINE誘導QRコード — 医院端末では患者がスマホでスキャン */}
             {postSurveyLinks?.lineUrl && (
-              <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-center">
+              <div className="rounded-xl border border-green-200 bg-green-50 p-5 text-center">
                 <p className="mb-1 text-sm font-medium text-green-800">
                   {messages.postSurvey.lineText}
                 </p>
-                <p className="mb-3 text-xs text-green-700">
-                  {messages.postSurvey.lineSubText}
+                <p className="mb-4 text-xs text-green-700">
+                  {messages.postSurvey.lineQrSubText}
                 </p>
-                <a
-                  href={postSurveyLinks.lineUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#06C755] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-[#05b04d]"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  {messages.postSurvey.lineButton}
-                </a>
-                <p className="mt-2 text-[10px] text-green-600">
+                <div className="mx-auto w-fit rounded-xl bg-white p-3 shadow-sm">
+                  <QRCodeSVG
+                    value={postSurveyLinks.lineUrl}
+                    size={160}
+                    level="M"
+                    bgColor="#ffffff"
+                    fgColor="#06C755"
+                  />
+                </div>
+                <p className="mt-3 text-[10px] text-green-600">
                   {messages.postSurvey.lineNote}
                 </p>
               </div>
