@@ -1,5 +1,8 @@
 export type UserRole = "system_admin" | "clinic_admin" | "staff"
 
+/** 料金プランティア */
+export type PlanTier = "free" | "starter" | "standard" | "enterprise"
+
 /** Clinic.settings JSONB の型定義 */
 export interface ClinicSettings {
   adminPassword?: string
@@ -18,6 +21,22 @@ export interface ClinicSettings {
   // AI Advisory トラッキング
   advisoryThreshold?: number // アンロックに必要な回答数（デフォルト30）
   responsesSinceLastAdvisory?: number // 最終分析以降の新規回答数
+  // 料金プラン
+  plan?: PlanTier // デフォルト: "free"
+  trialPlan?: PlanTier // トライアル中のプラン
+  trialStartedAt?: string // トライアル開始日 ISO8601
+  trialEndsAt?: string // トライアル終了日 ISO8601
+  trialUsed?: boolean // トライアル使用済みフラグ（再トライアル防止）
+}
+
+/** プラン情報（クライアント向け） */
+export interface PlanInfo {
+  plan: PlanTier
+  effectivePlan: PlanTier
+  isTrialActive: boolean
+  trialDaysRemaining: number | null
+  trialPlan: PlanTier | null
+  canStartTrial: boolean
 }
 
 /** アンケート完了後に表示するリンク情報 */

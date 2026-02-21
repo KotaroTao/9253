@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma"
 import { getOperatorClinicId } from "@/lib/admin-mode"
 import { DashboardShell } from "@/components/layout/dashboard-shell"
 import { ROLES } from "@/lib/constants"
+import { buildPlanInfo } from "@/lib/plan"
+import type { ClinicSettings, PlanInfo } from "@/types"
 
 export default async function DashboardLayout({
   children,
@@ -34,13 +36,16 @@ export default async function DashboardLayout({
 
   let clinicName: string | undefined
   let clinicSlug: string | undefined
+  let planInfo: PlanInfo | undefined
   if (clinicId) {
     const clinic = await prisma.clinic.findUnique({
       where: { id: clinicId },
-      select: { name: true, slug: true },
+      select: { name: true, slug: true, settings: true },
     })
     clinicName = clinic?.name ?? undefined
     clinicSlug = clinic?.slug ?? undefined
+    const settings = (clinic?.settings ?? {}) as ClinicSettings
+    planInfo = buildPlanInfo(settings)
   }
 
   // クリニック一覧（運営モードのクリニック切り替え用）
@@ -61,6 +66,7 @@ export default async function DashboardLayout({
       isOperatorMode={isOperatorMode}
       operatorClinicId={operatorClinicId ?? undefined}
       allClinics={allClinics}
+      planInfo={planInfo}
     >
       {children}
     </DashboardShell>

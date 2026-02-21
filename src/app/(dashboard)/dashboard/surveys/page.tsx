@@ -8,6 +8,8 @@ import { messages } from "@/lib/messages"
 import { ROLES } from "@/lib/constants"
 import { PageSizeSelector } from "@/components/dashboard/page-size-selector"
 import { SurveyResponseList } from "@/components/dashboard/survey-response-list"
+import { UpgradePrompt } from "@/components/dashboard/upgrade-prompt"
+import { getClinicPlanInfo, hasFeature } from "@/lib/plan"
 
 const ALLOWED_LIMITS = [10, 20, 50] as const
 
@@ -30,6 +32,21 @@ export default async function SurveysPage({ searchParams }: SurveysPageProps) {
 
   if (session.user.role === "staff") {
     redirect("/dashboard")
+  }
+
+  // プランゲート
+  if (session.user.role !== "system_admin") {
+    const planInfo = await getClinicPlanInfo(clinicId)
+    if (!hasFeature(planInfo.effectivePlan, "surveys_list")) {
+      return (
+        <UpgradePrompt
+          feature="surveys_list"
+          featureLabel={messages.plan.featureSurveys}
+          requiredPlan="starter"
+          planInfo={planInfo}
+        />
+      )
+    }
   }
 
   const page = Number(searchParams.page) || 1
