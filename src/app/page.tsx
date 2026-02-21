@@ -373,11 +373,11 @@ export default function HomePage() {
                   {messages.landing.heroBadge}
                 </span>
                 <h1 className="animate-fade-in-up-delay-1">
-                  <span className="flex gap-3 sm:gap-4">
-                    <span className="whitespace-nowrap rounded-xl border-2 border-primary/20 bg-primary/5 px-4 py-2 text-2xl font-extrabold tracking-tight text-primary sm:px-6 sm:py-3 sm:text-3xl lg:text-4xl">
+                  <span className="flex flex-col gap-3 sm:gap-4">
+                    <span className="w-fit whitespace-nowrap rounded-xl border-2 border-primary/20 bg-primary/5 px-3 py-1.5 text-xl font-extrabold tracking-tight text-primary sm:px-6 sm:py-3 sm:text-3xl lg:text-4xl">
                       {messages.landing.heroHeadlineLeft}
                     </span>
-                    <span className="whitespace-nowrap rounded-xl border-2 border-foreground/10 bg-muted/60 px-4 py-2 text-2xl font-extrabold tracking-tight sm:px-6 sm:py-3 sm:text-3xl lg:text-4xl">
+                    <span className="w-fit whitespace-nowrap rounded-xl border-2 border-foreground/10 bg-muted/60 px-3 py-1.5 text-xl font-extrabold tracking-tight sm:px-6 sm:py-3 sm:text-3xl lg:text-4xl">
                       {messages.landing.heroHeadlineRight}
                     </span>
                   </span>
