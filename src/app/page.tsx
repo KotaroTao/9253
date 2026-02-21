@@ -373,11 +373,11 @@ export default function HomePage() {
                   {messages.landing.heroBadge}
                 </span>
                 <h1 className="animate-fade-in-up-delay-1">
-                  <span className="flex flex-col gap-3 sm:gap-4">
-                    <span className="w-fit whitespace-nowrap rounded-xl border-2 border-primary/20 bg-primary/5 px-3 py-1.5 text-xl font-extrabold tracking-tight text-primary sm:px-6 sm:py-3 sm:text-3xl lg:text-4xl">
+                  <span className="flex flex-col gap-1 sm:gap-2">
+                    <span className="text-xl font-extrabold tracking-tight text-primary sm:text-3xl lg:text-4xl">
                       {messages.landing.heroHeadlineLeft}
                     </span>
-                    <span className="w-fit whitespace-nowrap rounded-xl border-2 border-foreground/10 bg-muted/60 px-3 py-1.5 text-xl font-extrabold tracking-tight sm:px-6 sm:py-3 sm:text-3xl lg:text-4xl">
+                    <span className="text-xl font-extrabold tracking-tight sm:text-3xl lg:text-4xl">
                       {messages.landing.heroHeadlineRight}
                     </span>
                   </span>
@@ -528,6 +528,31 @@ export default function HomePage() {
                   {messages.landing.painWarning}
                 </p>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== こんな医院におすすめ ===== */}
+        <section className="border-t bg-primary/[0.03] py-20 lg:py-28">
+          <div className="container max-w-3xl">
+            <div className="mb-12 text-center animate-on-scroll">
+              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                {messages.landing.recommendTitle}
+              </h2>
+              <p className="mx-auto mt-4 text-sm text-muted-foreground sm:text-base">
+                {messages.landing.recommendSub}
+              </p>
+            </div>
+            <div className="space-y-4 animate-on-scroll">
+              {messages.landing.recommendItems.map((item, i) => (
+                <div
+                  key={i}
+                  className="flex items-start gap-4 rounded-xl border bg-card p-5 transition-shadow hover:shadow-sm"
+                >
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                  <p className="text-sm font-medium leading-relaxed sm:text-base">{item}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>

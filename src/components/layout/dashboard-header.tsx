@@ -10,7 +10,6 @@ const PAGE_TITLES: Record<string, string> = {
   "/dashboard": messages.nav.dashboard,
   "/dashboard/analytics": messages.nav.analytics,
   "/dashboard/actions": messages.improvementActions.title,
-  "/dashboard/surveys": messages.nav.surveys,
   "/dashboard/staff": messages.nav.staff,
   "/dashboard/settings": messages.settings.title,
   "/dashboard/metrics": messages.nav.monthlyMetrics,
