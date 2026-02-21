@@ -534,32 +534,39 @@ export const messages = {
     faq: "よくある質問",
     painNav: "課題",
     resultsNav: "導入効果",
+    pricingNav: "料金",
 
     // Hero
     heroHeadline: "患者満足度を「見える化」し、\n選ばれ続ける医院へ。",
     heroSub:
-      "30秒のタブレットアンケートで患者の本音を数値化。\n質問別スコア・改善提案・経営指標との相関まで、\nデータに基づく患者体験の改善サイクルを実現します。",
+      "30秒のタブレットアンケートで患者の本音を数値化。\n質問別スコア・AI改善提案・経営指標との相関まで、\nデータに基づく患者体験の改善サイクルを実現します。",
     heroCta: "無料で始める",
     heroCtaSub: "機能を詳しく見る",
-    heroBadge: "歯科医院専用 患者満足度向上プラットフォーム",
+    heroBadge: "歯科医師が、歯科医師のために作った",
+    heroSocialProof: "歯科業界20年・1,200医院以上のHP運用実績を持つ歯科医師が開発",
 
     // Trust bar
     trust1: "医療広告ガイドライン準拠",
     trust2: "個人情報非収集",
     trust3: "最短即日導入",
     trust4: "歯科医院専用設計",
+    trust5: "基本無料で始められる",
 
     // Pain points
     painTitle: "こんな課題、感じていませんか？",
     pain1Title: "患者の本音が見えない",
     pain1Desc:
       "口コミは極端な意見に偏り、スタッフからの報告にはバイアスがかかる。改善すべき点が見えないまま、患者が静かに離れていく。",
+    pain1Scenario: "「先月5人の患者が来なくなったが、理由がわからない…」",
     pain2Title: "データ集計に手間がかかる",
     pain2Desc:
       "紙アンケートの配布・回収・集計に時間を取られ、分析まで手が回らない。改善のサイクルが始まらない。",
+    pain2Scenario: "「月末にまとめて集計しても、もう手遅れになっている…」",
     pain3Title: "改善が経営成果につながっているか分からない",
     pain3Desc:
       "接遇研修や設備投資を行っても、来院数や売上への影響を確認する手段がない。改善のPDCAが回せない。",
+    pain3Scenario: "「研修に50万かけたが、本当に効果があったのか…」",
+    painWarning: "AIが自動生成する口コミツールは、医療広告ガイドラインに違反するリスクがあります。\nMIERU Clinicは、本質的な患者体験の改善だけに集中します。",
 
     // Solution overview
     solutionTitle: "患者体験を数値化し、経営成果につなげる",
@@ -584,9 +591,9 @@ export const messages = {
     feature2Title: "リアルタイムダッシュボード",
     feature2Desc:
       "患者満足度スコア・回答数・トレンドをリアルタイム表示。感覚ではなくデータに基づいた改善判断を実現します。",
-    feature3Title: "質問別スコア分析",
+    feature3Title: "AI分析レポート",
     feature3Desc:
-      "質問項目ごとの評価を可視化。改善が必要なポイントを自動検出し、InsightCardsで改善提案を表示します。",
+      "AIが強み・改善ポイント・推奨アクションを自動生成。質問項目ごとの評価を可視化し、改善が必要なポイントを自動検出します。",
     feature4Title: "スタッフの配布習慣化",
     feature4Desc:
       "日次目標・連続記録・Confettiアニメーションなど、ゲーミフィケーションでアンケート配布を日常業務に定着させます。",
@@ -597,9 +604,15 @@ export const messages = {
     feature6Desc:
       "月1回、来院数と売上を入力するだけ。患者単価・自費率・回答率など8つ以上のKPIを自動算出し、満足度スコアや改善アクションとの相関をグラフで可視化します。",
 
+    // Competitor comparison
+    comparisonTitle: "なぜ MIERU Clinic なのか",
+    comparisonSub: "口コミツール・Googleフォームとの違い",
+    comparisonNote: "AI口コミ生成は医療機関が用いると医療広告ガイドライン違反になる可能性があります",
+
     // Flow
     flowTitle: "最短即日、3ステップで導入完了",
     flowSub: "",
+    flowNote: "アプリのインストール不要。iPadなどタブレット1台で即日スタート",
     flow1Title: "アカウント作成",
     flow1Desc:
       "ウェブからクリニック情報を登録。医院専用アカウントを発行します。",
@@ -622,6 +635,22 @@ export const messages = {
     result3Value: "8+",
     result3Label: "自動算出KPI数",
     result3Desc: "月1回の入力で、満足度と経営指標の相関を把握",
+    result4Value: "2,200+",
+    result4Label: "累計アンケート回答件数",
+    result4Desc: "実稼働データに基づく改善サイクル",
+
+    // Founder story
+    founderBadge: "開発者について",
+    founderTitle: "歯科医師が20年越しに辿り着いた答え",
+    founderBody1:
+      "2006年から歯科情報サイト「歯チャンネル」を運営し、1,200以上の歯科医院のHP制作・運用に携わってきた私が、最も頻繁に相談を受けてきた悩みがあります。",
+    founderBody2:
+      "「先生は一生懸命やっているのに、患者さんが静かに減っていく。でも、何が問題なのか誰にも分からない」。",
+    founderBody3:
+      "口コミに頼らない。AIで偽りの声を作らない。患者さんの本物の声だけをデータ化し、医院の本質的な改善につなげる——それがMIERU Clinicを作った理由です。",
+    founderName: "田尾 耕太郎",
+    founderRole: "歯科医師・株式会社ファンクション・ティ 代表",
+    founderCaption: "田尾耕太郎氏（歯科医師・ファンクション・ティ代表）",
 
     // Compliance
     complianceTitle: "医療機関に求められる基準を、標準で満たす",
@@ -635,6 +664,30 @@ export const messages = {
     compliance3Title: "安全なデータ管理",
     compliance3Desc:
       "SSL暗号化通信、医院別データ分離、第三者提供なし。Google Cloud（東京リージョン）で国内運用しています。",
+
+    // Pricing
+    pricingTitle: "まずは無料で始められます",
+    pricingFreeTitle: "Free プラン",
+    pricingFreePrice: "無料・永久無料",
+    pricingFreeFeatures: [
+      "タブレットアンケート配布",
+      "リアルタイムダッシュボード",
+      "質問別スコア分析",
+      "スタッフ習慣化（ゲーミフィケーション）",
+      "AI分析レポート（30件ごと）",
+      "改善アクション管理",
+    ] as readonly string[],
+    pricingFreeCta: "無料で始める",
+    pricingFreeNote: "初期費用なし・クレジットカード不要",
+    pricingPremiumTitle: "Premium プラン",
+    pricingPremiumPrice: "月額（要お問い合わせ）",
+    pricingPremiumFeatures: [
+      "Freeの全機能",
+      "月次経営レポート（来院数・売上・自費率KPI）",
+      "満足度×経営指標の相関グラフ",
+      "優先サポート",
+    ] as readonly string[],
+    pricingPremiumCta: "詳細を問い合わせる",
 
     // FAQ
     faqTitle: "よくある質問",
@@ -653,12 +706,30 @@ export const messages = {
     faq5Q: "スタッフへの説明や研修は必要ですか？",
     faq5A:
       "「お会計の際にタブレットをお渡しください」と伝えるだけで十分です。患者さま側の操作も直感的なので、特別な研修は不要です。",
+    faq6Q: "料金はかかりますか？",
+    faq6A:
+      "基本機能は無料でご利用いただけます。月次経営レポートなど高度な分析機能は有料オプションとなります。まずはクレジットカード不要で無料登録をお試しください。",
+    faq7Q: "他院のデータと混在することはありますか？",
+    faq7A:
+      "医院ごとに完全にデータが分離されています。他院のデータを閲覧したり、混在したりすることは一切ありません。",
+    faq8Q: "複数拠点の医院でも使えますか？",
+    faq8A:
+      "はい。拠点ごとにアカウントを発行し、それぞれ独立したデータで管理できます。詳しくはお問い合わせください。",
+    faq9Q: "サポート体制はどうなっていますか？",
+    faq9A:
+      "メールでのサポートを提供しています。歯科業界専門のサポートチームが対応します。",
+    faq10Q: "Google口コミとの違いは何ですか？",
+    faq10A:
+      "MIERU Clinicは口コミ誘導機能を搭載していません。患者への口コミ依頼は医療広告ガイドライン上リスクが伴う場合があります。MIERU Clinicは内部改善に特化し、満足度向上を通じて口コミが自然に改善するアプローチです。",
 
     // CTA
-    ctaTitle: "患者満足度の向上を、\n今日から始めませんか？",
-    ctaSub: "まずはデモ環境で、すべての機能をお試しください。",
+    ctaTitle: "今日から、患者の本音が見える。",
+    ctaSub: "まずは無料で全機能をお試しください。導入まで最短即日。",
     ctaButton: "無料で始める",
-    ctaNote: "初期費用なし・クレジットカード不要",
+    ctaDemoButton: "デモ画面を体験する",
+    ctaNote1: "初期費用なし",
+    ctaNote2: "クレジットカード不要",
+    ctaNote3: "最短即日導入",
 
     // Footer
     copyright: "© 2025 株式会社ファンクション・ティ. All rights reserved.",

@@ -11,6 +11,7 @@ const navLinks = [
   { href: "#pain", label: messages.landing.painNav },
   { href: "#features", label: messages.landing.features },
   { href: "#flow", label: messages.landing.flow },
+  { href: "#pricing", label: messages.landing.pricingNav },
   { href: "#results", label: messages.landing.resultsNav },
   { href: "#faq", label: messages.landing.faq },
 ]
