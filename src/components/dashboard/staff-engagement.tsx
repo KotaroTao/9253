@@ -4,10 +4,10 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
-import { STREAK_MILESTONES, ADVISORY_MILESTONES } from "@/lib/constants"
+import { STREAK_MILESTONES, ADVISORY_MILESTONES, RANKS } from "@/lib/constants"
 import {
   Flame, Trophy, CalendarOff, Smartphone, QrCode, ArrowRight, Sparkles,
-  Target, TrendingUp, TrendingDown, Brain, MessageCircle, Clock,
+  Target, TrendingUp, TrendingDown, Brain, MessageCircle, Clock, HelpCircle,
 } from "lucide-react"
 import Link from "next/link"
 import { Confetti } from "@/components/survey/confetti"
@@ -72,6 +72,7 @@ export function StaffEngagement({
 
   const router = useRouter()
   const [togglingDate, setTogglingDate] = useState<string | null>(null)
+  const [showRankInfo, setShowRankInfo] = useState(false)
 
   const weekTotal = weekDays.reduce((sum, d) => sum + d.count, 0)
   const { current, threshold, percentage } = advisoryProgress
@@ -110,6 +111,40 @@ export function StaffEngagement({
     <div className="space-y-4">
       {/* Confetti when AI analysis unlocked */}
       {advisoryUnlocked && <Confetti />}
+
+      {/* ⓪ Survey CTA buttons */}
+      <div className="grid grid-cols-2 gap-3">
+        <a
+          href={kioskUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group flex flex-col items-center gap-3 rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-5 transition-all hover:border-blue-400 hover:shadow-md active:scale-[0.98]"
+        >
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-blue-500 text-white shadow-sm">
+            <Smartphone className="h-7 w-7" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-bold text-blue-900">{messages.dashboard.startKiosk}</p>
+            <p className="mt-0.5 text-xs text-blue-600/70">{messages.dashboard.startKioskDesc}</p>
+          </div>
+        </a>
+        {patientSurveyUrl && (
+          <a
+            href={patientSurveyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex flex-col items-center gap-3 rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5 transition-all hover:border-emerald-400 hover:shadow-md active:scale-[0.98]"
+          >
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-sm">
+              <QrCode className="h-7 w-7" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-bold text-emerald-900">{messages.dashboard.startPatientSurvey}</p>
+              <p className="mt-0.5 text-xs text-emerald-600/70">{messages.dashboard.startPatientSurveyDesc}</p>
+            </div>
+          </a>
+        )}
+      </div>
 
       {/* Onboarding for first-time users */}
       {totalCount === 0 && todayCount === 0 && (
@@ -276,9 +311,20 @@ export function StaffEngagement({
 
                           {/* Bottom label */}
                           {day.isToday ? (
-                            <span className="min-h-[28px] min-w-[36px] flex items-center justify-center rounded-full bg-purple-100 px-2 py-1 text-[10px] font-bold text-purple-600">
-                              本日
-                            </span>
+                            day.isClosed ? (
+                              <button
+                                onClick={() => handleToggleClosed(day.date, true)}
+                                disabled={isToggling}
+                                className="min-h-[28px] min-w-[36px] flex items-center justify-center rounded-full bg-orange-100 px-2 py-1 text-[10px] font-bold text-orange-600 hover:bg-orange-200 transition-colors disabled:opacity-50"
+                                title="診療日に切り替える"
+                              >
+                                本日
+                              </button>
+                            ) : (
+                              <span className="min-h-[28px] min-w-[36px] flex items-center justify-center rounded-full bg-purple-100 px-2 py-1 text-[10px] font-bold text-purple-600">
+                                本日
+                              </span>
+                            )
                           ) : (
                             <button
                               onClick={() => handleToggleClosed(day.date, day.isClosed)}
@@ -311,9 +357,38 @@ export function StaffEngagement({
           <CardContent className="py-4">
             <div className="flex items-center justify-between">
               {/* Rank */}
-              <div className="flex items-center gap-1.5">
+              <div className="relative flex items-center gap-1.5">
                 <span className="text-lg">{rank.emoji}</span>
                 <span className="text-sm font-bold">{rank.name}</span>
+                <button
+                  onClick={() => setShowRankInfo((v) => !v)}
+                  className="text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                  aria-label="ランクシステムについて"
+                >
+                  <HelpCircle className="h-3.5 w-3.5" />
+                </button>
+                {showRankInfo && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowRankInfo(false)} />
+                    <div className="absolute left-0 top-full z-50 mt-2 w-56 rounded-xl border bg-white p-3 shadow-lg">
+                      <p className="text-xs font-bold text-foreground mb-2">ランクシステム</p>
+                      <div className="space-y-1">
+                        {RANKS.map((r) => (
+                          <div
+                            key={r.name}
+                            className={cn(
+                              "flex items-center justify-between rounded-md px-2 py-1 text-xs",
+                              r.name === rank.name ? "bg-blue-50 font-bold text-blue-700" : "text-muted-foreground"
+                            )}
+                          >
+                            <span>{r.emoji} {r.name}</span>
+                            <span className="tabular-nums">{r.minCount.toLocaleString()}件〜</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
               {/* Today count */}
               <div className="text-center">
@@ -344,40 +419,6 @@ export function StaffEngagement({
           </CardContent>
         </Card>
       )}
-
-      {/* ③ Survey CTA buttons */}
-      <div className="grid grid-cols-2 gap-3">
-        <a
-          href={kioskUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="group flex flex-col items-center gap-3 rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-5 transition-all hover:border-blue-400 hover:shadow-md active:scale-[0.98]"
-        >
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-blue-500 text-white shadow-sm">
-            <Smartphone className="h-7 w-7" />
-          </div>
-          <div className="text-center">
-            <p className="text-sm font-bold text-blue-900">{messages.dashboard.startKiosk}</p>
-            <p className="mt-0.5 text-xs text-blue-600/70">{messages.dashboard.startKioskDesc}</p>
-          </div>
-        </a>
-        {patientSurveyUrl && (
-          <a
-            href={patientSurveyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group flex flex-col items-center gap-3 rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5 transition-all hover:border-emerald-400 hover:shadow-md active:scale-[0.98]"
-          >
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-sm">
-              <QrCode className="h-7 w-7" />
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-bold text-emerald-900">{messages.dashboard.startPatientSurvey}</p>
-              <p className="mt-0.5 text-xs text-emerald-600/70">{messages.dashboard.startPatientSurveyDesc}</p>
-            </div>
-          </a>
-        )}
-      </div>
 
       {/* ④ 患者さまの声（格上げ） */}
       {positiveComment && (
