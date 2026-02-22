@@ -3,7 +3,7 @@ import Image from "next/image"
 import type { Metadata } from "next"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { APP_NAME } from "@/lib/constants"
+import { APP_NAME, PLANS, PLAN_ORDER } from "@/lib/constants"
 import { messages } from "@/lib/messages"
 import { LandingHeader } from "@/components/landing/mobile-nav"
 import { FAQSection } from "@/components/landing/faq-section"
@@ -372,8 +372,15 @@ export default function HomePage() {
                   <Sparkles className="mr-1.5 h-3.5 w-3.5" />
                   {messages.landing.heroBadge}
                 </span>
-                <h1 className="animate-fade-in-up-delay-1 max-w-xl whitespace-pre-line text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl lg:text-[3.5rem]">
-                  {messages.landing.heroHeadline}
+                <h1 className="animate-fade-in-up-delay-1">
+                  <span className="flex flex-col gap-1 sm:gap-2">
+                    <span className="text-xl font-extrabold tracking-tight text-primary sm:text-3xl lg:text-4xl">
+                      {messages.landing.heroHeadlineLeft}
+                    </span>
+                    <span className="text-xl font-extrabold tracking-tight sm:text-3xl lg:text-4xl">
+                      {messages.landing.heroHeadlineRight}
+                    </span>
+                  </span>
                 </h1>
                 <p className="animate-fade-in-up-delay-2 mt-6 max-w-lg whitespace-pre-line text-base leading-relaxed text-muted-foreground sm:text-lg">
                   {messages.landing.heroSub}
@@ -521,6 +528,31 @@ export default function HomePage() {
                   {messages.landing.painWarning}
                 </p>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== こんな医院におすすめ ===== */}
+        <section className="border-t bg-primary/[0.03] py-20 lg:py-28">
+          <div className="container max-w-3xl">
+            <div className="mb-12 text-center animate-on-scroll">
+              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                {messages.landing.recommendTitle}
+              </h2>
+              <p className="mx-auto mt-4 text-sm text-muted-foreground sm:text-base">
+                {messages.landing.recommendSub}
+              </p>
+            </div>
+            <div className="space-y-4 animate-on-scroll">
+              {messages.landing.recommendItems.map((item, i) => (
+                <div
+                  key={i}
+                  className="flex items-start gap-4 rounded-xl border bg-card p-5 transition-shadow hover:shadow-sm"
+                >
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                  <p className="text-sm font-medium leading-relaxed sm:text-base">{item}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -724,7 +756,7 @@ export default function HomePage() {
               </div>
               <div className="hover-lift rounded-2xl border bg-card p-8 text-center">
                 <p className="text-gradient text-4xl font-bold tracking-tight">
-                  <CountUp end={2200} suffix="+" />
+                  0<span className="text-2xl">円</span>
                 </p>
                 <p className="mt-2 text-base font-semibold">{messages.landing.result4Label}</p>
                 <p className="mt-2 text-sm text-muted-foreground">{messages.landing.result4Desc}</p>
@@ -811,53 +843,89 @@ export default function HomePage() {
         {/* ===== Pricing ===== */}
         <section id="pricing" className="py-20 lg:py-28">
           <div className="container">
-            <div className="mx-auto mb-14 max-w-2xl text-center animate-on-scroll">
+            <div className="mx-auto mb-4 max-w-2xl text-center animate-on-scroll">
               <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
                 {messages.landing.pricingTitle}
               </h2>
             </div>
-            <div className="mx-auto grid max-w-3xl gap-6 sm:grid-cols-2 animate-on-scroll">
-              {/* Free Plan */}
-              <div className="relative rounded-2xl border-2 border-primary bg-card p-8 shadow-lg">
-                <Badge className="absolute -top-3 left-6 bg-primary">おすすめ</Badge>
-                <h3 className="text-xl font-bold">{messages.landing.pricingFreeTitle}</h3>
-                <p className="mt-2 text-2xl font-bold text-primary">{messages.landing.pricingFreePrice}</p>
-                <ul className="mt-6 space-y-3">
-                  {messages.landing.pricingFreeFeatures.map((f, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Button asChild size="lg" className="mt-8 w-full shadow-lg shadow-primary/25">
-                  <Link href="/login">
-                    {messages.landing.pricingFreeCta}
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-                <p className="mt-3 text-center text-xs text-muted-foreground">
-                  {messages.landing.pricingFreeNote}
-                </p>
-              </div>
-              {/* Premium Plan */}
-              <div className="rounded-2xl border bg-card p-8">
-                <h3 className="text-xl font-bold">{messages.landing.pricingPremiumTitle}</h3>
-                <p className="mt-2 text-2xl font-bold">{messages.landing.pricingPremiumPrice}</p>
-                <ul className="mt-6 space-y-3">
-                  {messages.landing.pricingPremiumFeatures.map((f, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Button asChild variant="outline" size="lg" className="mt-8 w-full">
-                  <a href="#cta">
-                    {messages.landing.pricingPremiumCta}
-                  </a>
-                </Button>
-              </div>
+            <p className="mx-auto mb-14 max-w-lg text-center text-sm text-muted-foreground animate-on-scroll">
+              {messages.landing.pricingSubtitle}
+            </p>
+            <div className="mx-auto grid max-w-6xl gap-5 sm:grid-cols-2 lg:grid-cols-4 animate-on-scroll">
+              {PLAN_ORDER.map((tier) => {
+                const plan = PLANS[tier]
+                const isHighlighted = plan.highlighted
+                const ctaLabels: Record<string, string> = {
+                  free: messages.landing.pricingFreeCta,
+                  starter: messages.landing.pricingStarterCta,
+                  standard: messages.landing.pricingStandardCta,
+                  enterprise: messages.landing.pricingEnterpriseCta,
+                }
+                const ctaHrefs: Record<string, string> = {
+                  free: "/login",
+                  starter: "#cta",
+                  standard: "#cta",
+                  enterprise: "#cta",
+                }
+                return (
+                  <div
+                    key={tier}
+                    className={`relative flex flex-col rounded-2xl bg-card p-7 ${
+                      isHighlighted
+                        ? "border-2 border-primary shadow-lg ring-1 ring-primary/20"
+                        : "border"
+                    }`}
+                  >
+                    {isHighlighted && (
+                      <Badge className="absolute -top-3 left-6 bg-primary">
+                        {messages.landing.pricingRecommended}
+                      </Badge>
+                    )}
+                    <h3 className="text-lg font-bold">{plan.name}</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">{plan.description}</p>
+                    <div className="mt-4">
+                      <span className={`text-3xl font-bold ${isHighlighted ? "text-primary" : ""}`}>
+                        {plan.priceLabel}
+                      </span>
+                      <span className="ml-1 text-sm text-muted-foreground">{plan.priceNote}</span>
+                    </div>
+                    <ul className="mt-6 flex-1 space-y-2.5">
+                      {plan.features.map((f, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm">
+                          <Check className={`mt-0.5 h-4 w-4 shrink-0 ${isHighlighted ? "text-primary" : "text-emerald-600"}`} />
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    {tier === "free" ? (
+                      <Button asChild size="lg" className={`mt-8 w-full ${isHighlighted ? "shadow-lg shadow-primary/25" : ""}`}>
+                        <Link href={ctaHrefs[tier]}>
+                          {ctaLabels[tier]}
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                      </Button>
+                    ) : tier === "standard" ? (
+                      <Button asChild size="lg" className="mt-8 w-full shadow-lg shadow-primary/25">
+                        <a href={ctaHrefs[tier]}>
+                          {ctaLabels[tier]}
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </a>
+                      </Button>
+                    ) : (
+                      <Button asChild variant="outline" size="lg" className="mt-8 w-full">
+                        <a href={ctaHrefs[tier]}>
+                          {ctaLabels[tier]}
+                        </a>
+                      </Button>
+                    )}
+                    {tier === "free" && (
+                      <p className="mt-3 text-center text-xs text-muted-foreground">
+                        {messages.landing.pricingFreeNote}
+                      </p>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
         </section>

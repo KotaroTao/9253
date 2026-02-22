@@ -23,14 +23,20 @@ export interface WeekDayData {
   isToday: boolean
 }
 
+export interface PatientComment {
+  text: string
+  score: number
+  respondedAt: string // ISO string
+}
+
 export interface EngagementData {
   todayCount: number
   streak: number
   totalCount: number
   currentMilestone: number | null
   nextMilestone: number | null
-  positiveComment: string | null
-  positiveCommentScore: number | null
+  patientComments: PatientComment[]
+  improvementComments: PatientComment[]
   // Rank system
   rank: Rank
   nextRank: Rank | null
@@ -66,7 +72,7 @@ export async function getStaffEngagementData(
     week_avg: number | null
   }
 
-  const [aggRows, streakResponses, positiveComments, clinic] =
+  const [aggRows, streakResponses, positiveComments, lowScoreComments, clinic] =
     await Promise.all([
       prisma.$queryRaw<AggRow[]>`
         SELECT
@@ -89,13 +95,27 @@ export async function getStaffEngagementData(
       prisma.surveyResponse.findMany({
         where: {
           clinicId,
-          overallScore: { gte: 4 },
+          overallScore: { gte: 4.5 },
           freeText: { not: null },
+          isVerified: true,
           respondedAt: { gte: commentStart },
         },
-        select: { freeText: true, overallScore: true },
+        select: { freeText: true, overallScore: true, respondedAt: true },
         orderBy: { respondedAt: "desc" },
-        take: 20,
+        take: 10,
+      }),
+
+      prisma.surveyResponse.findMany({
+        where: {
+          clinicId,
+          overallScore: { lte: 3.0 },
+          freeText: { not: null },
+          isVerified: true,
+          respondedAt: { gte: commentStart },
+        },
+        select: { freeText: true, overallScore: true, respondedAt: true },
+        orderBy: { respondedAt: "desc" },
+        take: 5,
       }),
 
       prisma.clinic.findUnique({
@@ -193,14 +213,22 @@ export async function getStaffEngagementData(
     MILESTONES.filter((m) => totalCount >= m).pop() ?? null
   const nextMilestone = MILESTONES.find((m) => totalCount < m) ?? null
 
-  // Pick a random positive comment (with score)
-  const candidates = positiveComments.filter((c) => c.freeText)
-  const picked =
-    candidates.length > 0
-      ? candidates[Math.floor(Math.random() * candidates.length)]
-      : null
-  const positiveComment = picked?.freeText ?? null
-  const positiveCommentScore = picked?.overallScore ?? null
+  // Build patient comment arrays (positive + improvement hints)
+  const patientComments: PatientComment[] = positiveComments
+    .filter((c) => c.freeText && c.overallScore != null)
+    .map((c) => ({
+      text: c.freeText!,
+      score: c.overallScore!,
+      respondedAt: c.respondedAt.toISOString(),
+    }))
+
+  const improvementComments: PatientComment[] = lowScoreComments
+    .filter((c) => c.freeText && c.overallScore != null)
+    .map((c) => ({
+      text: c.freeText!,
+      score: c.overallScore!,
+      respondedAt: c.respondedAt.toISOString(),
+    }))
 
   // Rank system
   const rank = getRank(totalCount)
@@ -218,8 +246,8 @@ export async function getStaffEngagementData(
     totalCount,
     currentMilestone,
     nextMilestone,
-    positiveComment,
-    positiveCommentScore,
+    patientComments,
+    improvementComments,
     rank,
     nextRank: nextRankObj,
     rankProgress,

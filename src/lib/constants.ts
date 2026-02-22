@@ -1,5 +1,122 @@
+import type { PlanTier } from "@/types"
+
 export const APP_NAME = "MIERU Clinic"
 export const APP_DESCRIPTION = "患者体験の見える化"
+
+// ─── 料金プラン定義 ───
+
+export const PLAN_ORDER: PlanTier[] = ["free", "starter", "standard", "enterprise"]
+
+export interface PlanDefinition {
+  tier: PlanTier
+  name: string
+  price: number // 月額（税抜）、0 = 無料
+  priceLabel: string
+  priceNote: string
+  description: string
+  monthlyResponseLimit: number | null // null = 無制限
+  staffLimit: number | null // null = 無制限
+  dataRetentionMonths: number | null // null = 無制限
+  features: readonly string[]
+  highlighted?: boolean // LPでおすすめ表示
+}
+
+export const PLANS: Record<PlanTier, PlanDefinition> = {
+  free: {
+    tier: "free",
+    name: "フリー",
+    price: 0,
+    priceLabel: "¥0",
+    priceNote: "永久無料",
+    description: "まずは試してみたい医院向け",
+    monthlyResponseLimit: 50,
+    staffLimit: 1,
+    dataRetentionMonths: 3,
+    features: [
+      "アンケート月50件まで",
+      "スタッフ1名",
+      "基本ダッシュボード",
+      "ゲーミフィケーション",
+      "データ保持3ヶ月",
+    ],
+  },
+  starter: {
+    tier: "starter",
+    name: "スターター",
+    price: 9800,
+    priceLabel: "¥9,800",
+    priceNote: "/月（税抜）",
+    description: "アンケートを本格運用したい医院向け",
+    monthlyResponseLimit: 300,
+    staffLimit: 3,
+    dataRetentionMonths: 12,
+    features: [
+      "アンケート月300件まで",
+      "スタッフ3名まで",
+      "日次トレンド分析",
+      "質問別スコア分析",
+      "アンケート一覧",
+      "データ保持12ヶ月",
+    ],
+  },
+  standard: {
+    tier: "standard",
+    name: "スタンダード",
+    price: 19800,
+    priceLabel: "¥19,800",
+    priceNote: "/月（税抜）",
+    description: "データで経営改善を実現したい医院向け",
+    monthlyResponseLimit: null,
+    staffLimit: 10,
+    dataRetentionMonths: null,
+    highlighted: true,
+    features: [
+      "アンケート無制限",
+      "スタッフ10名まで",
+      "満足度レポート全機能",
+      "AI分析レポート",
+      "経営レポート・KPI自動算出",
+      "改善アクション管理",
+      "患者属性フィルタ（5軸）",
+      "LINE・HP誘導",
+      "データ保持無制限",
+    ],
+  },
+  enterprise: {
+    tier: "enterprise",
+    name: "エンタープライズ",
+    price: 39800,
+    priceLabel: "¥39,800〜",
+    priceNote: "/月（税抜）",
+    description: "複数院を一元管理したい医療法人向け",
+    monthlyResponseLimit: null,
+    staffLimit: null,
+    dataRetentionMonths: null,
+    features: [
+      "スタンダード全機能",
+      "スタッフ無制限",
+      "本院＋1分院（計2院）",
+      "追加院 ¥14,800/月",
+      "法人横断ダッシュボード",
+      "専任サポート",
+    ],
+  },
+} as const
+
+/** 機能ごとに必要な最低プラン */
+export const FEATURE_REQUIREMENTS: Record<string, PlanTier> = {
+  analytics: "standard",
+  advisory: "standard",
+  improvement_actions: "standard",
+  business_metrics: "standard",
+  surveys_list: "starter",
+  staff_management: "starter",
+  patient_filters_full: "standard",
+  line_integration: "standard",
+  multi_clinic: "enterprise",
+} as const
+
+export const TRIAL_DURATION_DAYS = 14
 
 export const ROLES = {
   SYSTEM_ADMIN: "system_admin",

@@ -446,6 +446,7 @@ export const messages = {
   postSurvey: {
     lineText: "当院のLINE公式アカウントを友だち追加しませんか？",
     lineSubText: "お得な情報やご予約のご案内をお届けします",
+    lineQrSubText: "スマートフォンで下のQRコードを読み取ってください",
     lineButton: "LINEで友だち追加",
     lineNote: "友だち追加は任意です",
     homepageButton: "医院ホームページを見る",
@@ -533,7 +534,8 @@ export const messages = {
     pricingNav: "料金",
 
     // Hero
-    heroHeadline: "患者満足度を「見える化」し、\n選ばれ続ける医院へ。",
+    heroHeadlineLeft: "患者満足度を「見える化」",
+    heroHeadlineRight: "選ばれ続ける歯科医院へ",
     heroSub:
       "30秒のタブレットアンケートで患者の本音を数値化。\n質問別スコア・AI改善提案・経営指標との相関まで、\nデータに基づく患者体験の改善サイクルを実現します。",
     heroCta: "無料で始める",
@@ -564,6 +566,16 @@ export const messages = {
     pain3Scenario: "「研修に50万かけたが、本当に効果があったのか…」",
     painWarning: "AIが自動生成する口コミツールは、医療広告ガイドラインに違反するリスクがあります。\nMIERU Clinicは、本質的な患者体験の改善だけに集中します。",
 
+    // こんな医院におすすめ
+    recommendTitle: "こんなお悩みありませんか？",
+    recommendSub: "ひとつでも当てはまるなら、MIERU Clinicがお役に立てます。",
+    recommendItems: [
+      "紙のアンケートは集計が手間で放置している",
+      "患者満足度が売上にどう影響するか分からない",
+      "Googleレビューの低評価にどう対処すべきか悩んでいる",
+      "スタッフが改善提案を出してくれない",
+    ],
+
     // Solution overview
     solutionTitle: "患者体験を数値化し、経営成果につなげる",
     solutionDesc:
@@ -592,7 +604,7 @@ export const messages = {
       "AIが強み・改善ポイント・推奨アクションを自動生成。質問項目ごとの評価を可視化し、改善が必要なポイントを自動検出します。",
     feature4Title: "スタッフの配布習慣化",
     feature4Desc:
-      "日次目標・連続記録・Confettiアニメーションなど、ゲーミフィケーションでアンケート配布を日常業務に定着させます。",
+      "日次目標・連続記録・一定アンケート数でAI分析実施など、ゲーミフィケーションでアンケート配布を日常業務に定着させます。",
     feature5Title: "改善アクション管理",
     feature5Desc:
       "改善施策の登録・効果測定。ベースラインスコアと結果スコアで施策の成果を数値で確認できます。",
@@ -631,19 +643,20 @@ export const messages = {
     result3Value: "8+",
     result3Label: "自動算出KPI数",
     result3Desc: "月1回の入力で、満足度と経営指標の相関を把握",
-    result4Value: "2,200+",
-    result4Label: "累計アンケート回答件数",
-    result4Desc: "実稼働データに基づく改善サイクル",
+    result4Value: "0円",
+    result4Label: "基本プラン月額",
+    result4Desc: "まずは無料で導入効果を実感",
 
     // Founder story
     founderBadge: "開発者について",
-    founderTitle: "歯科医師が20年越しに辿り着いた答え",
+    founderTitle:
+      "もう、口コミの「星の数」に一喜一憂するのはやめませんか。",
     founderBody1:
-      "2006年から歯科情報サイト「歯チャンネル」を運営し、1,200以上の歯科医院のHP制作・運用に携わってきた私が、最も頻繁に相談を受けてきた悩みがあります。",
+      "日本最大級の歯科相談サイトを運営し、1,200以上の医院を支援し続ける中で見つけた、歯科経営の致命的な課題。それは「数字を追うあまり、患者さんとの本質的な対話が失われている」ことでした。",
     founderBody2:
-      "「先生は一生懸命やっているのに、患者さんが静かに減っていく。でも、何が問題なのか誰にも分からない」。",
+      "私たちは、口コミ誘導機能を捨てました。なぜなら、医療の質を評価するのは「操作された数字」ではなく、「患者さんの心からの納得」でなければならないからです。",
     founderBody3:
-      "口コミに頼らない。AIで偽りの声を作らない。患者さんの本物の声だけをデータ化し、医院の本質的な改善につなげる——それがMIERU Clinicを作った理由です。",
+      "「口コミに頼らない。AIで作らない。」患者さんの本音を可視化し、医院を内側から劇的に変える。歯科医師が、歯科医師としての誇りを守るために作ったPX（患者満足度）向上プラットフォーム。それが「MIERU Clinic」です。",
     founderName: "田尾 耕太郎",
     founderRole: "歯科医師・株式会社ファンクション・ティ 代表",
     founderCaption: "田尾耕太郎氏（歯科医師・ファンクション・ティ代表）",
@@ -663,27 +676,14 @@ export const messages = {
 
     // Pricing
     pricingTitle: "まずは無料で始められます",
-    pricingFreeTitle: "Free プラン",
-    pricingFreePrice: "無料・永久無料",
-    pricingFreeFeatures: [
-      "タブレットアンケート配布",
-      "リアルタイムダッシュボード",
-      "質問別スコア分析",
-      "スタッフ習慣化（ゲーミフィケーション）",
-      "AI分析レポート（30件ごと）",
-      "改善アクション管理",
-    ] as readonly string[],
+    pricingSubtitle: "年間契約で2ヶ月無料（17%OFF）",
     pricingFreeCta: "無料で始める",
+    pricingStarterCta: "スターターを始める",
+    pricingStandardCta: "スタンダードを始める",
+    pricingEnterpriseCta: "お問い合わせ",
     pricingFreeNote: "初期費用なし・クレジットカード不要",
-    pricingPremiumTitle: "Premium プラン",
-    pricingPremiumPrice: "月額（要お問い合わせ）",
-    pricingPremiumFeatures: [
-      "Freeの全機能",
-      "月次経営レポート（来院数・売上・自費率KPI）",
-      "満足度×経営指標の相関グラフ",
-      "優先サポート",
-    ] as readonly string[],
-    pricingPremiumCta: "詳細を問い合わせる",
+    pricingRecommended: "おすすめ",
+    pricingIncludes: "の全機能 +",
 
     // FAQ
     faqTitle: "よくある質問",
@@ -704,7 +704,7 @@ export const messages = {
       "「お会計の際にタブレットをお渡しください」と伝えるだけで十分です。患者さま側の操作も直感的なので、特別な研修は不要です。",
     faq6Q: "料金はかかりますか？",
     faq6A:
-      "基本機能は無料でご利用いただけます。月次経営レポートなど高度な分析機能は有料オプションとなります。まずはクレジットカード不要で無料登録をお試しください。",
+      "基本機能は永久無料でご利用いただけます。スターター（月額9,800円）、スタンダード（月額19,800円）、エンタープライズ（月額39,800円〜）の有料プランでは、高度な分析・経営レポート・改善アクション管理などが利用可能です。14日間の無料トライアルもご用意しています。",
     faq7Q: "他院のデータと混在することはありますか？",
     faq7A:
       "医院ごとに完全にデータが分離されています。他院のデータを閲覧したり、混在したりすることは一切ありません。",
@@ -735,5 +735,31 @@ export const messages = {
     footerCompany: "運営会社",
     footerPrivacy: "プライバシーポリシー",
     footerContact: "お問い合わせ",
+  },
+  plan: {
+    currentPlan: "現在のプラン",
+    freePlan: "フリー",
+    starterPlan: "スターター",
+    standardPlan: "スタンダード",
+    enterprisePlan: "エンタープライズ",
+    upgrade: "アップグレード",
+    trialActive: "トライアル中",
+    trialDaysRemaining: "残り{days}日",
+    trialExpired: "トライアル終了",
+    startTrial: "14日間無料体験",
+    startTrialDesc: "クレジットカード不要で、上位プランの全機能を14日間お試しいただけます。",
+    trialStarted: "トライアルを開始しました",
+    trialAlreadyUsed: "トライアルは既にご利用済みです",
+    upgradeRequired: "この機能を利用するにはプランのアップグレードが必要です",
+    upgradePromptTitle: "上位プランで利用可能な機能です",
+    upgradePromptDesc: "この機能は{plan}プラン以上でご利用いただけます。",
+    upgradePromptTrialCta: "まずは14日間無料で体験する",
+    upgradePromptUpgradeCta: "プランをアップグレードする",
+    featureAnalytics: "満足度レポート",
+    featureAdvisory: "AI分析レポート",
+    featureActions: "改善アクション管理",
+    featureMetrics: "経営レポート・KPI",
+    featureSurveys: "アンケート一覧",
+    contactForUpgrade: "アップグレードのお問い合わせ",
   },
 } as const

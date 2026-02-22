@@ -1,13 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
-import { STREAK_MILESTONES, ADVISORY_MILESTONES } from "@/lib/constants"
+import { STREAK_MILESTONES, ADVISORY_MILESTONES, RANKS } from "@/lib/constants"
 import {
   Flame, Trophy, CalendarOff, Smartphone, ArrowRight, Sparkles,
-  Target, TrendingUp, TrendingDown, Brain, MessageCircle, Clock,
+  Target, TrendingUp, TrendingDown, Brain, MessageCircle, Clock, HelpCircle,
+  ChevronLeft, ChevronRight, AlertTriangle,
 } from "lucide-react"
 import Link from "next/link"
 import { Confetti } from "@/components/survey/confetti"
@@ -60,8 +61,8 @@ export function StaffEngagement({
     totalCount,
     nextMilestone,
     weekDays,
-    positiveComment,
-    positiveCommentScore,
+    patientComments,
+    improvementComments,
     todayAvgScore,
     rank,
     nextRank,
@@ -70,6 +71,24 @@ export function StaffEngagement({
 
   const router = useRouter()
   const [togglingDate, setTogglingDate] = useState<string | null>(null)
+  const [showRankInfo, setShowRankInfo] = useState(false)
+  const [commentIndex, setCommentIndex] = useState(0)
+  const [autoPaused, setAutoPaused] = useState(false)
+
+  const commentCount = patientComments.length
+  const goNext = useCallback(() => {
+    if (commentCount > 1) setCommentIndex((i) => (i + 1) % commentCount)
+  }, [commentCount])
+  const goPrev = useCallback(() => {
+    if (commentCount > 1) setCommentIndex((i) => (i - 1 + commentCount) % commentCount)
+  }, [commentCount])
+
+  // Auto-rotate every 6 seconds
+  useEffect(() => {
+    if (commentCount <= 1 || autoPaused) return
+    const timer = setInterval(goNext, 6000)
+    return () => clearInterval(timer)
+  }, [commentCount, autoPaused, goNext])
 
   const weekTotal = weekDays.reduce((sum, d) => sum + d.count, 0)
   const { current, threshold, percentage } = advisoryProgress
@@ -108,6 +127,22 @@ export function StaffEngagement({
     <div className="space-y-4">
       {/* Confetti when AI analysis unlocked */}
       {advisoryUnlocked && <Confetti />}
+
+      {/* ⓪ Survey CTA button */}
+      <a
+        href={kioskUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group flex items-center gap-4 rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-5 transition-all hover:border-blue-400 hover:shadow-md active:scale-[0.98]"
+      >
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-500 text-white shadow-sm">
+          <Smartphone className="h-7 w-7" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-blue-900">{messages.dashboard.startKiosk}</p>
+          <p className="mt-0.5 text-xs text-blue-600/70">{messages.dashboard.startKioskDesc}</p>
+        </div>
+      </a>
 
       {/* Onboarding for first-time users */}
       {totalCount === 0 && todayCount === 0 && (
@@ -274,9 +309,19 @@ export function StaffEngagement({
 
                           {/* Bottom label */}
                           {day.isToday ? (
-                            <span className="min-h-[28px] min-w-[36px] flex items-center justify-center rounded-full bg-purple-100 px-2 py-1 text-[10px] font-bold text-purple-600">
+                            <button
+                              onClick={() => handleToggleClosed(day.date, day.isClosed)}
+                              disabled={isToggling}
+                              className={cn(
+                                "min-h-[28px] min-w-[36px] flex items-center justify-center rounded-full px-2 py-1 text-[10px] font-bold transition-colors disabled:opacity-50",
+                                day.isClosed
+                                  ? "bg-orange-100 text-orange-600 hover:bg-orange-200"
+                                  : "bg-purple-100 text-purple-600 hover:bg-purple-200"
+                              )}
+                              title={day.isClosed ? "診療日に切り替える" : "休診日にする"}
+                            >
                               本日
-                            </span>
+                            </button>
                           ) : (
                             <button
                               onClick={() => handleToggleClosed(day.date, day.isClosed)}
@@ -309,9 +354,38 @@ export function StaffEngagement({
           <CardContent className="py-4">
             <div className="flex items-center justify-between">
               {/* Rank */}
-              <div className="flex items-center gap-1.5">
+              <div className="relative flex items-center gap-1.5">
                 <span className="text-lg">{rank.emoji}</span>
                 <span className="text-sm font-bold">{rank.name}</span>
+                <button
+                  onClick={() => setShowRankInfo((v) => !v)}
+                  className="text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                  aria-label="ランクシステムについて"
+                >
+                  <HelpCircle className="h-3.5 w-3.5" />
+                </button>
+                {showRankInfo && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowRankInfo(false)} />
+                    <div className="absolute left-0 top-full z-50 mt-2 w-56 rounded-xl border bg-white p-3 shadow-lg">
+                      <p className="text-xs font-bold text-foreground mb-2">ランクシステム</p>
+                      <div className="space-y-1">
+                        {RANKS.map((r) => (
+                          <div
+                            key={r.name}
+                            className={cn(
+                              "flex items-center justify-between rounded-md px-2 py-1 text-xs",
+                              r.name === rank.name ? "bg-blue-50 font-bold text-blue-700" : "text-muted-foreground"
+                            )}
+                          >
+                            <span>{r.emoji} {r.name}</span>
+                            <span className="tabular-nums">{r.minCount.toLocaleString()}件〜</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
               {/* Today count */}
               <div className="text-center">
@@ -343,40 +417,91 @@ export function StaffEngagement({
         </Card>
       )}
 
-      {/* ③ Survey CTA button */}
-      <a
-        href={kioskUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="group flex items-center gap-4 rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-5 transition-all hover:border-blue-400 hover:shadow-md active:scale-[0.98]"
-      >
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-500 text-white shadow-sm">
-          <Smartphone className="h-7 w-7" />
-        </div>
-        <div>
-          <p className="text-sm font-bold text-blue-900">{messages.dashboard.startKiosk}</p>
-          <p className="mt-0.5 text-xs text-blue-600/70">{messages.dashboard.startKioskDesc}</p>
-        </div>
-      </a>
-
-      {/* ④ 患者さまの声（格上げ） */}
-      {positiveComment && (
-        <Card className="border-amber-200 bg-gradient-to-r from-amber-50/50 to-white">
-          <CardContent className="py-5">
-            <div className="flex items-center gap-2 text-amber-700 mb-3">
-              <MessageCircle className="h-4 w-4" />
-              <p className="text-sm font-bold">{messages.dashboard.patientVoice}</p>
-            </div>
-            <blockquote className="text-sm leading-relaxed text-foreground/80 italic pl-3 border-l-2 border-amber-200">
-              「{positiveComment}」
-            </blockquote>
-            {positiveCommentScore && (
-              <div className="mt-2 flex justify-end">
+      {/* ④ 患者さまの声（カルーセル） */}
+      {patientComments.length > 0 && (() => {
+        const current = patientComments[commentIndex]
+        if (!current) return null
+        const commentDate = new Date(current.respondedAt).toLocaleDateString("ja-JP", {
+          month: "short",
+          day: "numeric",
+        })
+        return (
+          <Card
+            className="border-amber-200 bg-gradient-to-r from-amber-50/50 to-white"
+            onMouseEnter={() => setAutoPaused(true)}
+            onMouseLeave={() => setAutoPaused(false)}
+          >
+            <CardContent className="py-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2 text-amber-700">
+                  <MessageCircle className="h-4 w-4" />
+                  <p className="text-sm font-bold">{messages.dashboard.patientVoice}</p>
+                </div>
+                {commentCount > 1 && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={goPrev}
+                      className="rounded-full p-0.5 text-amber-400 hover:text-amber-600 hover:bg-amber-100 transition-colors"
+                      aria-label="前のコメント"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <span className="text-[10px] text-amber-500 tabular-nums min-w-[2rem] text-center">
+                      {commentIndex + 1}/{commentCount}
+                    </span>
+                    <button
+                      onClick={goNext}
+                      className="rounded-full p-0.5 text-amber-400 hover:text-amber-600 hover:bg-amber-100 transition-colors"
+                      aria-label="次のコメント"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+              <blockquote className="text-sm leading-relaxed text-foreground/80 italic pl-3 border-l-2 border-amber-200">
+                「{current.text}」
+              </blockquote>
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-[10px] text-muted-foreground">{commentDate}</span>
                 <span className="text-xs text-amber-600 font-medium">
-                  {"⭐".repeat(Math.round(positiveCommentScore))} {positiveCommentScore.toFixed(1)}
+                  {"⭐".repeat(Math.round(current.score))} {current.score.toFixed(1)}
                 </span>
               </div>
-            )}
+            </CardContent>
+          </Card>
+        )
+      })()}
+
+      {/* ④-b 改善のヒント（管理者のみ） */}
+      {isAdmin && improvementComments.length > 0 && (
+        <Card className="border-orange-200 bg-gradient-to-r from-orange-50/30 to-white">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-2 text-orange-600 mb-3">
+              <AlertTriangle className="h-4 w-4" />
+              <p className="text-xs font-bold">改善のヒント（管理者のみ表示）</p>
+            </div>
+            <div className="space-y-2">
+              {improvementComments.map((c, i) => {
+                const d = new Date(c.respondedAt).toLocaleDateString("ja-JP", {
+                  month: "short",
+                  day: "numeric",
+                })
+                return (
+                  <div key={i} className="rounded-md bg-orange-50/50 px-3 py-2">
+                    <p className="text-xs leading-relaxed text-foreground/70">
+                      「{c.text}」
+                    </p>
+                    <div className="mt-1 flex items-center justify-between">
+                      <span className="text-[10px] text-muted-foreground">{d}</span>
+                      <span className="text-[10px] text-orange-500 font-medium">
+                        {c.score.toFixed(1)}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </CardContent>
         </Card>
       )}
