@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
 import { MonthlySummarySection } from "./monthly-summary-section"
 import { getMonthStatus } from "@/lib/metrics-utils"
 import type { MonthlySummary, MonthStatus } from "@/lib/metrics-utils"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
 // 2025年1月から当月までの月リストを生成
 function generateMonthOptions(): { year: number; month: number; label: string }[] {
@@ -55,18 +56,32 @@ export function MetricsInputView({
   const [surveyCount, setSurveyCount] = useState(initialSurveyCount)
   const [loading, setLoading] = useState(false)
   const [monthStatuses, setMonthStatuses] = useState<Record<string, MonthStatus>>(initialMonthStatuses)
-  const [selectorYear, setSelectorYear] = useState(initialYear)
+  const [showMonthPicker, setShowMonthPicker] = useState(false)
+  const [pickerYear, setPickerYear] = useState(initialYear)
+  const pickerRef = useRef<HTMLDivElement>(null)
 
   const m = messages.monthlyMetrics
 
   const monthOptions = useMemo(() => generateMonthOptions(), [])
-
-  // 年ごとにグループ化
   const years = useMemo(() => Array.from(new Set(monthOptions.map((o) => o.year))), [monthOptions])
+
+  // Close month picker on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setShowMonthPicker(false)
+      }
+    }
+    if (showMonthPicker) {
+      document.addEventListener("mousedown", handleClickOutside)
+      return () => document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [showMonthPicker])
 
   async function handleMonthChange(newYear: number, newMonth: number) {
     setYear(newYear)
     setMonth(newMonth)
+    setShowMonthPicker(false)
     setLoading(true)
 
     try {
@@ -92,60 +107,133 @@ export function MetricsInputView({
     }
   }
 
+  // Navigate to prev/next month
+  function navigateMonth(direction: -1 | 1) {
+    const idx = monthOptions.findIndex((o) => o.year === year && o.month === month)
+    // monthOptions is sorted descending (newest first)
+    const nextIdx = idx - direction
+    if (nextIdx >= 0 && nextIdx < monthOptions.length) {
+      const opt = monthOptions[nextIdx]
+      handleMonthChange(opt.year, opt.month)
+    }
+  }
+
+  const canGoPrev = monthOptions.findIndex((o) => o.year === year && o.month === month) < monthOptions.length - 1
+  const canGoNext = monthOptions.findIndex((o) => o.year === year && o.month === month) > 0
+
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">{m.summaryHint}</p>
+      {/* Sticky header with title + month selector */}
+      <div className="sticky top-0 z-20 -mx-4 px-4 py-3 bg-background/95 backdrop-blur-sm border-b">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground hidden sm:block">{m.summaryHint}</p>
+          <p className="text-sm text-muted-foreground sm:hidden">月次データを入力</p>
 
-      {/* Month selector — year dropdown + month buttons */}
-      <Card>
-        <CardContent className="py-4">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <select
-                value={selectorYear}
-                onChange={(e) => setSelectorYear(Number(e.target.value))}
-                className="rounded-md border bg-card px-3 py-1.5 text-sm font-medium"
-              >
-                {years.map((y) => (
-                  <option key={y} value={y}>{y}年</option>
-                ))}
-              </select>
-              <span className="text-xs text-muted-foreground">月を選択</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {monthOptions
-                .filter((opt) => opt.year === selectorYear)
-                .sort((a, b) => a.month - b.month)
-                .map((opt) => {
-                  const isSelected = year === opt.year && month === opt.month
-                  const key = `${opt.year}-${opt.month}`
-                  const status = monthStatuses[key] ?? "empty"
+          {/* Month selector: arrows + current month button */}
+          <div className="relative flex items-center gap-1 shrink-0" ref={pickerRef}>
+            <button
+              onClick={() => navigateMonth(-1)}
+              disabled={!canGoPrev || loading}
+              className="rounded-md p-1.5 text-muted-foreground hover:bg-muted disabled:opacity-30 transition-colors"
+              aria-label="前月"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
 
-                  let statusClass = ""
-                  if (!isSelected) {
-                    if (status === "empty") {
-                      statusClass = "border-red-300 bg-red-50 text-red-700 hover:bg-red-100 hover:border-red-400 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-950/60"
-                    } else if (status === "partial") {
-                      statusClass = "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:border-amber-400 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400 dark:hover:bg-amber-950/60"
+            <button
+              onClick={() => {
+                setPickerYear(year)
+                setShowMonthPicker((v) => !v)
+              }}
+              className="rounded-lg border bg-card px-3 py-1.5 text-sm font-medium hover:bg-muted transition-colors min-w-[100px] text-center"
+            >
+              {year}年{month}月
+            </button>
+
+            <button
+              onClick={() => navigateMonth(1)}
+              disabled={!canGoNext || loading}
+              className="rounded-md p-1.5 text-muted-foreground hover:bg-muted disabled:opacity-30 transition-colors"
+              aria-label="翌月"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+
+            {/* Month picker dropdown */}
+            {showMonthPicker && (
+              <div className="absolute right-0 top-full mt-2 w-72 rounded-xl border bg-card p-4 shadow-lg">
+                {/* Year selector */}
+                <div className="flex items-center justify-between mb-3">
+                  <button
+                    onClick={() => setPickerYear((y) => Math.max(y - 1, years[years.length - 1]))}
+                    disabled={pickerYear <= years[years.length - 1]}
+                    className="rounded-md p-1 text-muted-foreground hover:bg-muted disabled:opacity-30"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <span className="text-sm font-bold">{pickerYear}年</span>
+                  <button
+                    onClick={() => setPickerYear((y) => Math.min(y + 1, years[0]))}
+                    disabled={pickerYear >= years[0]}
+                    className="rounded-md p-1 text-muted-foreground hover:bg-muted disabled:opacity-30"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+
+                {/* Month grid */}
+                <div className="grid grid-cols-4 gap-1.5">
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((mo) => {
+                    const opt = monthOptions.find((o) => o.year === pickerYear && o.month === mo)
+                    if (!opt) {
+                      return (
+                        <div key={mo} className="rounded-md px-2 py-2 text-center text-sm text-muted-foreground/30">
+                          {mo}月
+                        </div>
+                      )
                     }
-                  }
 
-                  return (
-                    <Button
-                      key={key}
-                      variant={isSelected ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => handleMonthChange(opt.year, opt.month)}
-                      className={statusClass || undefined}
-                    >
-                      {opt.month}月
-                    </Button>
-                  )
-                })}
-            </div>
+                    const isSelected = year === opt.year && month === opt.month
+                    const key = `${opt.year}-${opt.month}`
+                    const status = monthStatuses[key] ?? "empty"
+
+                    let statusDot = ""
+                    if (!isSelected) {
+                      if (status === "empty") statusDot = "bg-red-400"
+                      else if (status === "partial") statusDot = "bg-amber-400"
+                      else statusDot = "bg-emerald-400"
+                    }
+
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => handleMonthChange(opt.year, opt.month)}
+                        className={`relative rounded-md px-2 py-2 text-center text-sm font-medium transition-colors ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground"
+                            : "hover:bg-muted"
+                        }`}
+                      >
+                        {mo}月
+                        {statusDot && (
+                          <span className={`absolute top-1 right-1 h-1.5 w-1.5 rounded-full ${statusDot}`} />
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Legend */}
+                <div className="mt-3 flex items-center justify-center gap-3 text-[10px] text-muted-foreground">
+                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400 inline-block" />入力済</span>
+                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-amber-400 inline-block" />一部入力</span>
+                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-red-400 inline-block" />未入力</span>
+                </div>
+              </div>
+            )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {loading && (
         <Card>

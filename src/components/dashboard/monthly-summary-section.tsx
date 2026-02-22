@@ -22,7 +22,7 @@ function DerivedDelta({ current, prev }: { current: number | null; prev: number 
   if (diff === 0) return null
   const isUp = diff > 0
   return (
-    <span className={`ml-1 text-xs ${isUp ? "text-emerald-400" : "text-red-400"}`}>
+    <span className={`ml-1 text-xs ${isUp ? "text-emerald-600" : "text-red-500"}`}>
       {isUp ? <TrendingUp className="inline h-3 w-3" /> : <TrendingDown className="inline h-3 w-3" />}
       {" "}{isUp ? "+" : ""}{diff}
     </span>
@@ -113,107 +113,86 @@ export function MonthlySummarySection({
   const derived = calcDerived(currentSummary, surveyCount)
   const prevDerived = calcDerived(prevSummary, 0)
 
-  const hasInput = Object.values(currentSummary).some((v) => v != null)
-
   const m = messages.monthlyMetrics
 
-  const derivedMetrics = derived ? [
-    { label: m.totalPatients, value: derived.totalPatients, format: (v: number) => `${v}${m.unitPersons}`, prev: prevDerived?.totalPatients ?? null },
-    { label: m.revenuePerVisit, value: derived.revenuePerVisit, format: (v: number) => `${v}${m.unitMan}`, prev: prevDerived?.revenuePerVisit ?? null },
-    { label: m.selfPayRatioAmount, value: derived.selfPayRatioAmount, format: (v: number) => `${v}%`, prev: prevDerived?.selfPayRatioAmount ?? null },
-    { label: m.returnRate, value: derived.returnRate, format: (v: number) => `${v}%`, prev: prevDerived?.returnRate ?? null },
-    { label: m.newPatientRate, value: derived.newPatientRate, format: (v: number) => `${v}%`, prev: prevDerived?.newPatientRate ?? null },
-    { label: m.cancellationRate, value: derived.cancellationRate, format: (v: number) => `${v}%`, prev: prevDerived?.cancellationRate ?? null },
-    { label: m.surveyResponseRate, value: derived.surveyResponseRate, format: (v: number) => `${v}%`, prev: null as number | null },
-  ] : []
+  const derivedMetrics = [
+    { label: m.totalPatients, value: derived?.totalPatients ?? null, format: (v: number) => `${v}${m.unitPersons}`, prev: prevDerived?.totalPatients ?? null },
+    { label: m.revenuePerVisit, value: derived?.revenuePerVisit ?? null, format: (v: number) => `${v}${m.unitMan}`, prev: prevDerived?.revenuePerVisit ?? null },
+    { label: m.selfPayRatioAmount, value: derived?.selfPayRatioAmount ?? null, format: (v: number) => `${v}%`, prev: prevDerived?.selfPayRatioAmount ?? null },
+    { label: m.returnRate, value: derived?.returnRate ?? null, format: (v: number) => `${v}%`, prev: prevDerived?.returnRate ?? null },
+    { label: m.newPatientRate, value: derived?.newPatientRate ?? null, format: (v: number) => `${v}%`, prev: prevDerived?.newPatientRate ?? null },
+    { label: m.cancellationRate, value: derived?.cancellationRate ?? null, format: (v: number) => `${v}%`, prev: prevDerived?.cancellationRate ?? null },
+    { label: m.surveyResponseRate, value: derived?.surveyResponseRate ?? null, format: (v: number) => `${v}%`, prev: null as number | null },
+  ]
+
+  const inputFields = [
+    { label: m.firstVisitCount, value: firstVisitCount, onChange: setFirstVisitCount, unit: m.unitPersons },
+    { label: m.revisitCount, value: revisitCount, onChange: setRevisitCount, unit: m.unitPersons },
+    { label: m.insuranceRevenue, value: insuranceRevenue, onChange: setInsuranceRevenue, unit: m.unitMan },
+    { label: m.selfPayRevenue, value: selfPayRevenue, onChange: setSelfPayRevenue, unit: m.unitMan },
+    { label: m.cancellationCount, value: cancellationCount, onChange: setCancellationCount, unit: m.unitCount },
+  ]
 
   return (
-    <Card className="border-slate-700/50 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 shadow-xl">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-base text-white">{m.summaryTitle}</CardTitle>
-            <p className="text-xs text-slate-300">{m.summaryHint}</p>
-          </div>
-          <div className="flex items-center gap-1.5 text-xs">
-            {saving && (
-              <span className="text-slate-400"><Loader2 className="inline h-3.5 w-3.5 animate-spin" /> {m.saving}</span>
-            )}
-            {saved && !saving && (
-              <span className="text-emerald-400 flex items-center gap-1">
-                <Check className="h-3.5 w-3.5" />{m.autoSaved}
-              </span>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        {/* Input fields */}
-        <div className="grid gap-4 sm:grid-cols-2">
-          {/* 初診実人数 */}
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-200">{m.firstVisitCount}</label>
-            <div className="flex items-center gap-1">
-              <Input type="number" min={0} value={firstVisitCount} onChange={(e) => setFirstVisitCount(e.target.value)} placeholder="0" className="border-slate-600 bg-slate-800/80 text-right text-white placeholder:text-slate-500 focus:border-slate-500 focus:ring-slate-500" />
-              <span className="text-sm text-slate-300">{m.unitPersons}</span>
+    <div className="space-y-4">
+      {/* Input fields card */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">{m.summaryTitle}</CardTitle>
+            <div className="flex items-center gap-1.5 text-xs">
+              {saving && (
+                <span className="text-muted-foreground"><Loader2 className="inline h-3.5 w-3.5 animate-spin" /> {m.saving}</span>
+              )}
+              {saved && !saving && (
+                <span className="text-emerald-600 flex items-center gap-1">
+                  <Check className="h-3.5 w-3.5" />{m.autoSaved}
+                </span>
+              )}
             </div>
           </div>
-
-          {/* 再診実人数 */}
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-200">{m.revisitCount}</label>
-            <div className="flex items-center gap-1">
-              <Input type="number" min={0} value={revisitCount} onChange={(e) => setRevisitCount(e.target.value)} placeholder="0" className="border-slate-600 bg-slate-800/80 text-right text-white placeholder:text-slate-500 focus:border-slate-500 focus:ring-slate-500" />
-              <span className="text-sm text-slate-300">{m.unitPersons}</span>
-            </div>
-          </div>
-
-          {/* 保険売上 */}
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-200">{m.insuranceRevenue}</label>
-            <div className="flex items-center gap-1">
-              <Input type="number" min={0} value={insuranceRevenue} onChange={(e) => setInsuranceRevenue(e.target.value)} placeholder="0" className="border-slate-600 bg-slate-800/80 text-right text-white placeholder:text-slate-500 focus:border-slate-500 focus:ring-slate-500" />
-              <span className="text-sm text-slate-300">{m.unitMan}</span>
-            </div>
-          </div>
-
-          {/* 自費売上 */}
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-200">{m.selfPayRevenue}</label>
-            <div className="flex items-center gap-1">
-              <Input type="number" min={0} value={selfPayRevenue} onChange={(e) => setSelfPayRevenue(e.target.value)} placeholder="0" className="border-slate-600 bg-slate-800/80 text-right text-white placeholder:text-slate-500 focus:border-slate-500 focus:ring-slate-500" />
-              <span className="text-sm text-slate-300">{m.unitMan}</span>
-            </div>
-          </div>
-
-          {/* キャンセル件数 */}
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-200">{m.cancellationCount}</label>
-            <div className="flex items-center gap-1">
-              <Input type="number" min={0} value={cancellationCount} onChange={(e) => setCancellationCount(e.target.value)} placeholder="0" className="border-slate-600 bg-slate-800/80 text-right text-white placeholder:text-slate-500 focus:border-slate-500 focus:ring-slate-500" />
-              <span className="text-sm text-slate-300">{m.unitCount}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Derived KPIs */}
-        {hasInput && derived && (
-          <div>
-            <p className="mb-3 text-xs font-medium text-slate-200">{m.derivedTitle}</p>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {derivedMetrics.map((metric) => (
-                <div key={metric.label} className="rounded-lg border border-slate-700/50 bg-slate-800/60 p-3">
-                  <p className="text-xs text-slate-300">{metric.label}</p>
-                  <p className="text-lg font-bold text-white">
-                    {metric.value != null ? metric.format(metric.value) : "-"}
-                    <DerivedDelta current={metric.value} prev={metric.prev} />
-                  </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            {inputFields.map((field) => (
+              <div key={field.label}>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">{field.label}</label>
+                <div className="flex items-center gap-1">
+                  <Input
+                    type="number"
+                    min={0}
+                    value={field.value}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    placeholder="0"
+                    className="text-right"
+                  />
+                  <span className="text-sm text-muted-foreground">{field.unit}</span>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      {/* Derived KPIs — always visible */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">{m.derivedTitle}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+            {derivedMetrics.map((metric) => (
+              <div key={metric.label} className="rounded-lg border bg-muted/30 p-3">
+                <p className="text-xs text-muted-foreground">{metric.label}</p>
+                <p className="text-lg font-bold">
+                  {metric.value != null ? metric.format(metric.value) : <span className="text-muted-foreground/50">-</span>}
+                  <DerivedDelta current={metric.value} prev={metric.prev} />
+                </p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   )
 }
