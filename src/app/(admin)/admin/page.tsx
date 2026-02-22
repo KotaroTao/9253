@@ -8,6 +8,8 @@ import { Lightbulb, HardDrive, ArrowRight, ChevronLeft, ChevronRight, TrendingUp
 import { ClinicSearch } from "@/components/admin/clinic-search"
 import { ClinicRow } from "@/components/admin/clinic-row"
 import { PxValueDashboard } from "@/components/admin/px-value-dashboard"
+import { AddClinicDialog } from "@/components/admin/add-clinic-dialog"
+import type { ClinicSettings, PlanTier } from "@/types"
 
 function ScoreBadge({ score, prevScore }: { score: number | null; prevScore: number | null }) {
   if (score == null) {
@@ -227,9 +229,12 @@ export default async function AdminPage({
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle className="text-base">
-              {messages.admin.clinicList}
-            </CardTitle>
+            <div className="flex items-center gap-3">
+              <CardTitle className="text-base">
+                {messages.admin.clinicList}
+              </CardTitle>
+              <AddClinicDialog />
+            </div>
             <div className="w-full sm:w-72">
               <Suspense>
                 <ClinicSearch />
@@ -246,8 +251,9 @@ export default async function AdminPage({
             <div className="space-y-2">
               {clinics.map((clinic) => {
                 const health = healthMap.get(clinic.id)
+                const clinicPlan = ((clinic.settings as ClinicSettings)?.plan ?? "free") as PlanTier
                 return (
-                  <ClinicRow key={clinic.id} clinicId={clinic.id} clinicName={clinic.name}>
+                  <ClinicRow key={clinic.id} clinicId={clinic.id} clinicName={clinic.name} plan={clinicPlan}>
                     {/* Row 1: Clinic name + status */}
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
