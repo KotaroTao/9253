@@ -36,6 +36,10 @@ import {
   CalendarClock,
   BarChart3,
   Tag,
+  Megaphone,
+  ExternalLink,
+  Check,
+  Sparkles,
 } from "lucide-react"
 
 interface ActionLog {
@@ -55,9 +59,22 @@ interface ImprovementAction {
   baselineScore: number | null
   resultScore: number | null
   status: string
+  platformActionId?: string | null
   startedAt: string | Date
   completedAt: string | Date | null
   logs?: ActionLog[]
+}
+
+interface PlatformActionData {
+  id: string
+  title: string
+  description: string | null
+  detailedContent: string | null
+  targetQuestionIds: string[] | null
+  category: string | null
+  isPickup: boolean
+  serviceUrl: string | null
+  serviceProvider: string | null
 }
 
 interface TemplateQuestion {
@@ -75,9 +92,17 @@ interface Props {
   initialActions: ImprovementAction[]
   templateQuestions?: TemplateData[]
   questionScores?: Record<string, number>
+  platformActions?: PlatformActionData[]
+  adoptedPlatformActionIds?: string[]
 }
 
-export function ImprovementActionsView({ initialActions, templateQuestions = [], questionScores = {} }: Props) {
+export function ImprovementActionsView({
+  initialActions,
+  templateQuestions = [],
+  questionScores = {},
+  platformActions = [],
+  adoptedPlatformActionIds: initialAdopted = [],
+}: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [actions, setActions] = useState(initialActions)
@@ -85,6 +110,10 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [],
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [adoptedIds, setAdoptedIds] = useState<Set<string>>(new Set(initialAdopted))
+  const [adoptingId, setAdoptingId] = useState<string | null>(null)
+  const [adoptQuestionSelect, setAdoptQuestionSelect] = useState<{ platformActionId: string; questionIds: string[] } | null>(null)
+  const [selectedAdoptQuestionId, setSelectedAdoptQuestionId] = useState("")
 
   // Form state
   const [selectedQuestionId, setSelectedQuestionId] = useState("")
@@ -289,6 +318,48 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [],
     handleSelectQuestion(questionId)
   }
 
+  // Adopt a platform action
+  async function handleAdopt(platformActionId: string, targetQuestionId?: string) {
+    setAdoptingId(platformActionId)
+    setErrorMsg(null)
+    try {
+      const res = await fetch("/api/improvement-actions/adopt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ platformActionId, targetQuestionId }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setActions([data, ...actions])
+        setAdoptedIds(new Set([...Array.from(adoptedIds), platformActionId]))
+        setAdoptQuestionSelect(null)
+        router.refresh()
+      } else {
+        const err = await res.json().catch(() => null)
+        setErrorMsg(err?.error || messages.improvementActions.saveFailed)
+      }
+    } catch {
+      setErrorMsg(messages.improvementActions.saveFailed)
+    } finally {
+      setAdoptingId(null)
+    }
+  }
+
+  function handleAdoptClick(pa: PlatformActionData) {
+    const questionIds = pa.targetQuestionIds ?? []
+    if (questionIds.length > 1) {
+      // Multiple target questions — show selection dialog
+      setAdoptQuestionSelect({ platformActionId: pa.id, questionIds })
+      setSelectedAdoptQuestionId(questionIds[0])
+    } else {
+      // 0 or 1 target question — adopt directly
+      handleAdopt(pa.id, questionIds[0])
+    }
+  }
+
+  // Pickup (isPickup) platform actions to show
+  const pickupActions = platformActions.filter((pa) => pa.isPickup)
+
   return (
     <div className="space-y-4">
       {/* Summary stats */}
@@ -318,6 +389,151 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [],
             )}
           </div>
         </div>
+      )}
+
+      {/* Pickup platform actions */}
+      {!showForm && pickupActions.length > 0 && (
+        <Card className="border-purple-200 bg-gradient-to-r from-purple-50/40 to-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold text-purple-800">
+              <Megaphone className="h-4 w-4" />
+              {messages.platformActions.pickup}
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              {messages.platformActions.pickupDesc}
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {pickupActions.map((pa) => {
+              const isAdopted = adoptedIds.has(pa.id)
+              const isAdopting = adoptingId === pa.id
+              const categoryLabel = pa.category ? CATEGORY_LABELS[pa.category] : null
+              const targetQIds = pa.targetQuestionIds ?? []
+              return (
+                <div
+                  key={pa.id}
+                  className="rounded-lg border border-purple-100 bg-white p-3 space-y-2"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-medium">{pa.title}</p>
+                        {categoryLabel && (
+                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+                            {categoryLabel}
+                          </span>
+                        )}
+                        {pa.serviceProvider && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {messages.platformActions.provider}: {pa.serviceProvider}
+                          </span>
+                        )}
+                      </div>
+                      {pa.description && (
+                        <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                          {pa.description}
+                        </p>
+                      )}
+                      {/* Target question scores */}
+                      {targetQIds.length > 0 && (
+                        <div className="mt-1.5 flex flex-wrap gap-2">
+                          {targetQIds.map((qId) => {
+                            const q = allQuestions.get(qId)
+                            const score = questionScores[qId]
+                            if (!q) return null
+                            return (
+                              <span key={qId} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                                {q.text}
+                                {score != null && (
+                                  <span className="font-semibold text-amber-700">{score}</span>
+                                )}
+                              </span>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {isAdopted ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+                        <Check className="h-3 w-3" />
+                        {messages.platformActions.adopted}
+                      </span>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => handleAdoptClick(pa)}
+                        disabled={isAdopting}
+                        className="bg-purple-600 hover:bg-purple-700"
+                      >
+                        {isAdopting ? (
+                          messages.common.loading
+                        ) : (
+                          <>
+                            <Sparkles className="mr-1 h-3.5 w-3.5" />
+                            {messages.platformActions.adopt}
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    {pa.serviceUrl && (
+                      <a
+                        href={pa.serviceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-50"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        {messages.platformActions.learnMore}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Question selection dialog for adopt */}
+      {adoptQuestionSelect && (
+        <Card className="border-purple-300 bg-purple-50/50">
+          <CardContent className="py-4 space-y-3">
+            <p className="text-sm font-medium">{messages.platformActions.selectTargetQuestion}</p>
+            <select
+              value={selectedAdoptQuestionId}
+              onChange={(e) => setSelectedAdoptQuestionId(e.target.value)}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              {adoptQuestionSelect.questionIds.map((qId) => {
+                const q = allQuestions.get(qId)
+                return (
+                  <option key={qId} value={qId}>
+                    {q ? q.text : qId}
+                  </option>
+                )
+              })}
+            </select>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={() => handleAdopt(adoptQuestionSelect.platformActionId, selectedAdoptQuestionId)}
+                disabled={adoptingId !== null}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                {adoptingId ? messages.common.loading : messages.platformActions.adopt}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setAdoptQuestionSelect(null)}
+              >
+                {messages.common.cancel}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Add action button */}
@@ -676,6 +892,12 @@ function ActionCard({
               <p className="text-sm font-medium truncate">{action.title}</p>
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-1.5 pl-6">
+              {action.platformActionId && (
+                <span className="inline-flex items-center gap-0.5 rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-medium text-purple-600">
+                  <Megaphone className="h-2.5 w-2.5" />
+                  {messages.platformActions.fromPlatform}
+                </span>
+              )}
               {categoryLabel && (
                 <span className="inline-flex items-center gap-0.5 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
                   <Tag className="h-2.5 w-2.5" />
