@@ -31,6 +31,11 @@ import {
   Ban,
   RefreshCw,
   AlertTriangle,
+  MessageSquarePlus,
+  StickyNote,
+  CalendarClock,
+  BarChart3,
+  Tag,
 } from "lucide-react"
 
 interface ActionLog {
@@ -233,8 +238,31 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [],
 
   const activeActions = actions.filter((a) => a.status === "active")
   const completedActions = actions.filter((a) => a.status !== "active")
+  const doneActions = actions.filter((a) => a.status === "completed")
+  const cancelledActions = actions.filter((a) => a.status === "cancelled")
 
   const hasTemplates = templateQuestions.length > 0
+
+  // Summary statistics
+  const summaryStats = useMemo(() => {
+    const completedWithScores = doneActions.filter(
+      (a) => a.baselineScore != null && a.resultScore != null
+    )
+    const avgImprovement =
+      completedWithScores.length > 0
+        ? completedWithScores.reduce(
+            (sum, a) => sum + (a.resultScore! - a.baselineScore!),
+            0
+          ) / completedWithScores.length
+        : null
+    return {
+      activeCount: activeActions.length,
+      completedCount: doneActions.length,
+      cancelledCount: cancelledActions.length,
+      avgImprovement:
+        avgImprovement != null ? Math.round(avgImprovement * 100) / 100 : null,
+    }
+  }, [activeActions.length, doneActions, cancelledActions.length])
 
   // Compute top 3 lowest-score questions (excluding those with active actions)
   const recommendedItems = useMemo(() => {
@@ -263,6 +291,35 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [],
 
   return (
     <div className="space-y-4">
+      {/* Summary stats */}
+      {actions.length > 0 && !showForm && (
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-lg border bg-blue-50/50 p-3 text-center">
+            <p className="text-2xl font-bold text-blue-700">{summaryStats.activeCount}</p>
+            <p className="text-[11px] text-blue-600/70">{messages.improvementActions.summaryActive}</p>
+          </div>
+          <div className="rounded-lg border bg-green-50/50 p-3 text-center">
+            <p className="text-2xl font-bold text-green-700">{summaryStats.completedCount}</p>
+            <p className="text-[11px] text-green-600/70">{messages.improvementActions.summaryCompleted}</p>
+          </div>
+          <div className="rounded-lg border bg-muted/30 p-3 text-center">
+            {summaryStats.avgImprovement != null ? (
+              <>
+                <p className={`text-2xl font-bold ${summaryStats.avgImprovement >= 0 ? "text-green-700" : "text-red-600"}`}>
+                  {summaryStats.avgImprovement > 0 ? "+" : ""}{summaryStats.avgImprovement}
+                </p>
+                <p className="text-[11px] text-muted-foreground">{messages.improvementActions.summaryAvgImprovement}</p>
+              </>
+            ) : (
+              <>
+                <p className="text-lg font-medium text-muted-foreground/50">—</p>
+                <p className="text-[11px] text-muted-foreground/50">{messages.improvementActions.summaryNoCompletedYet}</p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Add action button */}
       {!showForm && (
         <Button onClick={() => setShowForm(true)} className="w-full" variant="outline">
@@ -495,6 +552,7 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [],
           {activeActions.map((action) => {
             const q = action.targetQuestionId ? allQuestions.get(action.targetQuestionId) : null
             const questionLabel = q ? `${q.text}（${q.templateName}）` : action.targetQuestion
+            const category = action.targetQuestionId ? QUESTION_CATEGORY_MAP[action.targetQuestionId] : undefined
             return (
               <ActionCard
                 key={action.id}
@@ -504,9 +562,16 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [],
                 onStatusChange={handleStatusChange}
                 onDelete={handleDelete}
                 onLogUpdated={handleLogUpdated}
+                onLogAdded={(actionId, newLog) => {
+                  setActions(actions.map((a) => {
+                    if (a.id !== actionId) return a
+                    return { ...a, logs: [...(a.logs ?? []), newLog] }
+                  }))
+                }}
                 loading={loading}
                 currentQuestionScore={action.targetQuestionId ? questionScores[action.targetQuestionId] : undefined}
                 questionLabel={questionLabel}
+                category={category}
               />
             )
           })}
@@ -522,6 +587,7 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [],
           {completedActions.map((action) => {
             const q = action.targetQuestionId ? allQuestions.get(action.targetQuestionId) : null
             const questionLabel = q ? `${q.text}（${q.templateName}）` : action.targetQuestion
+            const category = action.targetQuestionId ? QUESTION_CATEGORY_MAP[action.targetQuestionId] : undefined
             return (
               <ActionCard
                 key={action.id}
@@ -531,8 +597,10 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [],
                 onStatusChange={handleStatusChange}
                 onDelete={handleDelete}
                 onLogUpdated={handleLogUpdated}
+                onLogAdded={() => {}}
                 loading={loading}
                 questionLabel={questionLabel}
+                category={category}
               />
             )
           })}
@@ -549,9 +617,11 @@ function ActionCard({
   onStatusChange,
   onDelete,
   onLogUpdated,
+  onLogAdded,
   loading,
   currentQuestionScore,
   questionLabel,
+  category,
 }: {
   action: ImprovementAction
   expanded: boolean
@@ -559,12 +629,21 @@ function ActionCard({
   onStatusChange: (id: string, status: string) => void
   onDelete: (id: string) => void
   onLogUpdated: (actionId: string, updatedLog: ActionLog) => void
+  onLogAdded: (actionId: string, newLog: ActionLog) => void
   loading: boolean
   currentQuestionScore?: number
   questionLabel?: string | null
+  category?: string
 }) {
   const isActive = action.status === "active"
   const isCompleted = action.status === "completed"
+
+  // Elapsed days since start
+  const elapsedDays = useMemo(() => {
+    const start = new Date(action.startedAt)
+    const end = action.completedAt ? new Date(action.completedAt) : new Date()
+    return Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+  }, [action.startedAt, action.completedAt])
 
   // For active: compare baseline vs current question score
   // For completed: compare baseline vs resultScore (auto-captured at completion)
@@ -573,6 +652,8 @@ function ActionCard({
     compareScore != null && action.baselineScore != null
       ? Math.round((compareScore - action.baselineScore) * 10) / 10
       : null
+
+  const categoryLabel = category ? CATEGORY_LABELS[category] : null
 
   return (
     <Card
@@ -594,11 +675,25 @@ function ActionCard({
               <Target className="h-4 w-4 shrink-0 text-blue-500" />
               <p className="text-sm font-medium truncate">{action.title}</p>
             </div>
-            {(questionLabel || action.targetQuestion) && (
-              <p className="mt-1 text-xs text-muted-foreground pl-6">
-                {questionLabel || action.targetQuestion}
-              </p>
-            )}
+            <div className="mt-1 flex flex-wrap items-center gap-1.5 pl-6">
+              {categoryLabel && (
+                <span className="inline-flex items-center gap-0.5 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+                  <Tag className="h-2.5 w-2.5" />
+                  {categoryLabel}
+                </span>
+              )}
+              {isActive && elapsedDays > 0 && (
+                <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-100/70 px-2 py-0.5 text-[10px] font-medium text-blue-600">
+                  <CalendarClock className="h-2.5 w-2.5" />
+                  {elapsedDays}{messages.improvementActions.elapsedDays}
+                </span>
+              )}
+              {(questionLabel || action.targetQuestion) && (
+                <span className="text-xs text-muted-foreground truncate">
+                  {questionLabel || action.targetQuestion}
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2 shrink-0 ml-2">
             {/* Score change badge */}
@@ -725,6 +820,11 @@ function ActionCard({
               </div>
             )}
 
+            {/* Add progress note */}
+            {isActive && (
+              <AddLogForm actionId={action.id} onLogAdded={onLogAdded} />
+            )}
+
             {/* Actions */}
             {isActive && (
               <div className="flex items-center gap-2">
@@ -808,6 +908,12 @@ const LOG_ACTION_CONFIG: Record<string, {
     icon: RefreshCw,
     color: "text-amber-600",
     dotColor: "bg-amber-500",
+  },
+  note: {
+    label: messages.improvementActions.addLog,
+    icon: StickyNote,
+    color: "text-purple-600",
+    dotColor: "bg-purple-400",
   },
 }
 
@@ -955,6 +1061,77 @@ function ActionTimeline({ logs, onLogUpdated }: { logs: ActionLog[]; onLogUpdate
             </div>
           )
         })}
+      </div>
+    </div>
+  )
+}
+
+function AddLogForm({ actionId, onLogAdded }: { actionId: string; onLogAdded: (actionId: string, newLog: ActionLog) => void }) {
+  const [open, setOpen] = useState(false)
+  const [note, setNote] = useState("")
+  const [saving, setSaving] = useState(false)
+
+  async function handleSave() {
+    if (!note.trim() || saving) return
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/improvement-actions/${actionId}/logs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note: note.trim() }),
+      })
+      if (res.ok) {
+        const newLog = await res.json()
+        onLogAdded(actionId, newLog)
+        setNote("")
+        setOpen(false)
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="flex items-center gap-1.5 text-xs text-purple-600 hover:text-purple-800 transition-colors"
+      >
+        <MessageSquarePlus className="h-3.5 w-3.5" />
+        {messages.improvementActions.addLog}
+      </button>
+    )
+  }
+
+  return (
+    <div className="space-y-2 rounded-md border border-purple-200 bg-purple-50/30 p-2.5">
+      <div className="flex items-center gap-1.5 text-xs font-medium text-purple-700">
+        <StickyNote className="h-3.5 w-3.5" />
+        {messages.improvementActions.addLog}
+      </div>
+      <input
+        type="text"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder={messages.improvementActions.addLogPlaceholder}
+        className="w-full rounded border bg-background px-2.5 py-1.5 text-xs"
+        onKeyDown={(e) => e.key === "Enter" && handleSave()}
+        autoFocus
+      />
+      <div className="flex gap-1.5">
+        <button
+          onClick={handleSave}
+          disabled={!note.trim() || saving}
+          className="rounded bg-purple-600 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-purple-700 disabled:opacity-50"
+        >
+          {saving ? messages.common.loading : messages.common.save}
+        </button>
+        <button
+          onClick={() => { setOpen(false); setNote("") }}
+          className="rounded px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-muted"
+        >
+          {messages.common.cancel}
+        </button>
       </div>
     </div>
   )

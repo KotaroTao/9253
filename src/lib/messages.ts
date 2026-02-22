@@ -283,6 +283,19 @@ export const messages = {
     recommendedDesc: "特に満足度が低い項目です。クリックして改善アクションを開始できます",
     recommendedScore: "現在スコア",
     recommendedAlreadyActive: "すべての低スコア項目に対して改善アクションが実施中です",
+    // Summary stats
+    summaryActive: "実施中",
+    summaryCompleted: "完了",
+    summaryCancelled: "中止",
+    summaryAvgImprovement: "平均スコア改善",
+    summaryNoCompletedYet: "完了アクションなし",
+    // Elapsed days
+    elapsedDays: "日経過",
+    // Add log
+    addLog: "メモを追加",
+    addLogPlaceholder: "進捗メモを入力",
+    addLogSaved: "メモを保存しました",
+    addLogFailed: "メモの保存に失敗しました",
     tips: [
       "多くの改善アクションを一度にやるのではなく、「満足度が低い」カテゴリから1～2項目だけ選び、朝礼などで「今月はこれを全員でやろう！」と決めて実行するのがおすすめです。",
       "改善アクションは「開始時スコア → 現在スコア」で効果を数値化できるので、スコアが動いたらミーティングなどでチームに共有して、成功体験をみんなで積み上げていきましょう。",
