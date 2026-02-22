@@ -175,3 +175,186 @@ export function calcWorkingDays(
 
   return count
 }
+
+// ===== ベンチマーク判定 =====
+
+export type BenchmarkStatus = "good" | "warning" | "danger"
+
+interface BenchmarkRange {
+  good: [number, number]  // [min, max] — この範囲内なら良好
+  warning: [number, number] // この範囲なら注意
+  // それ以外は要改善
+  lowerIsBetter?: boolean // true = 値が小さいほど良い（キャンセル率、人件費率等）
+}
+
+const BENCHMARKS: Record<string, BenchmarkRange> = {
+  selfPayRatioAmount: { good: [20, 100], warning: [15, 20] },
+  newPatientRate: { good: [15, 30], warning: [10, 15] },
+  returnRate: { good: [75, 100], warning: [65, 75] },
+  cancellationRate: { good: [0, 8], warning: [8, 12], lowerIsBetter: true },
+  revenuePerVisit: { good: [1.0, 100], warning: [0.7, 1.0] },
+  laborCostRatio: { good: [0, 30], warning: [30, 35], lowerIsBetter: true },
+}
+
+export function getBenchmarkStatus(key: string, value: number | null): BenchmarkStatus | null {
+  if (value == null) return null
+  const b = BENCHMARKS[key]
+  if (!b) return null
+  if (value >= b.good[0] && value <= b.good[1]) return "good"
+  if (value >= b.warning[0] && value <= b.warning[1]) return "warning"
+  return "danger"
+}
+
+export const BENCHMARK_COLORS: Record<BenchmarkStatus, string> = {
+  good: "text-emerald-600",
+  warning: "text-amber-600",
+  danger: "text-red-600",
+}
+
+export const BENCHMARK_BG: Record<BenchmarkStatus, string> = {
+  good: "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-900/50",
+  warning: "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900/50",
+  danger: "bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-900/50",
+}
+
+export const BENCHMARK_DOT: Record<BenchmarkStatus, string> = {
+  good: "bg-emerald-500",
+  warning: "bg-amber-500",
+  danger: "bg-red-500",
+}
+
+// ===== インサイト自動生成 =====
+
+export interface MetricsInsight {
+  type: "positive" | "warning" | "info"
+  message: string
+}
+
+interface InsightInput {
+  current: ReturnType<typeof calcDerived>
+  prev: ReturnType<typeof calcDerived>
+  yoy: ReturnType<typeof calcDerived>
+  currentSummary: MonthlySummary | null
+  prevSummary: MonthlySummary | null
+  yoySummary: MonthlySummary | null
+  satisfactionScore: number | null
+  prevSatisfactionScore: number | null
+}
+
+export function generateInsights(input: InsightInput): MetricsInsight[] {
+  const insights: MetricsInsight[] = []
+  const { current, prev, yoy, currentSummary, satisfactionScore, prevSatisfactionScore } = input
+
+  if (!current || !currentSummary) return insights
+
+  // 自費率の変動
+  if (current.selfPayRatioAmount != null && prev?.selfPayRatioAmount != null) {
+    const delta = Math.round((current.selfPayRatioAmount - prev.selfPayRatioAmount) * 10) / 10
+    if (delta >= 2) {
+      insights.push({
+        type: "positive",
+        message: `自費率が前月比+${delta}pt上昇し${current.selfPayRatioAmount}%に。${current.selfPayRatioAmount >= 25 ? "高水準を維持しています" : "改善傾向です"}`,
+      })
+    } else if (delta <= -3) {
+      insights.push({
+        type: "warning",
+        message: `自費率が前月比${delta}pt低下し${current.selfPayRatioAmount}%に。自費メニューの提案強化を検討してください`,
+      })
+    }
+  }
+
+  // キャンセル率の悪化
+  if (current.cancellationRate != null && prev?.cancellationRate != null) {
+    const delta = Math.round((current.cancellationRate - prev.cancellationRate) * 10) / 10
+    if (delta >= 1.5) {
+      insights.push({
+        type: "warning",
+        message: `キャンセル率が前月比+${delta}ptで${current.cancellationRate}%に上昇。リマインド施策の見直しを推奨します`,
+      })
+    }
+  }
+
+  // 新患数の前年同月比
+  if (currentSummary.firstVisitCount != null && input.yoySummary?.firstVisitCount != null && input.yoySummary.firstVisitCount > 0) {
+    const ratio = Math.round((currentSummary.firstVisitCount / input.yoySummary.firstVisitCount) * 100) - 100
+    if (ratio >= 15) {
+      insights.push({
+        type: "positive",
+        message: `新患数が前年同月比+${ratio}%。集患施策が効果を発揮しています`,
+      })
+    } else if (ratio <= -20) {
+      insights.push({
+        type: "warning",
+        message: `新患数が前年同月比${ratio}%。集患チャネルの見直しを検討してください`,
+      })
+    }
+  }
+
+  // 満足度と売上の連動
+  if (satisfactionScore != null && prevSatisfactionScore != null) {
+    const scoreDelta = Math.round((satisfactionScore - prevSatisfactionScore) * 100) / 100
+    if (scoreDelta >= 0.2 && current.totalPatients != null && prev?.totalPatients != null && current.totalPatients > prev.totalPatients) {
+      insights.push({
+        type: "positive",
+        message: `満足度スコアが${prevSatisfactionScore.toFixed(1)}→${satisfactionScore.toFixed(1)}に改善。来院数も増加傾向で、PX改善の成果が表れています`,
+      })
+    }
+  }
+
+  // 前年同月比の売上
+  if (currentSummary.totalRevenue != null && input.yoySummary?.totalRevenue != null && input.yoySummary.totalRevenue > 0) {
+    const ratio = Math.round((currentSummary.totalRevenue / input.yoySummary.totalRevenue) * 100) - 100
+    if (ratio >= 10) {
+      insights.push({
+        type: "positive",
+        message: `総売上が前年同月比+${ratio}%で成長中`,
+      })
+    }
+  }
+
+  // 人件費率
+  if (yoy) {
+    // using yoy just for reference
+  }
+
+  return insights.slice(0, 3)
+}
+
+// ===== KPIヘルスマップ用 =====
+
+export interface KpiHealthItem {
+  key: string
+  label: string
+  value: number | null
+  format: (v: number) => string
+  status: BenchmarkStatus | null
+  momDelta: number | null // 前月比
+  yoyDelta: number | null // 前年同月比
+}
+
+export function buildKpiHealthItems(
+  current: ReturnType<typeof calcDerived>,
+  prev: ReturnType<typeof calcDerived>,
+  yoy: ReturnType<typeof calcDerived>,
+): KpiHealthItem[] {
+  if (!current) return []
+
+  const items: { key: string; label: string; value: number | null; format: (v: number) => string }[] = [
+    { key: "selfPayRatioAmount", label: "自費率", value: current.selfPayRatioAmount, format: (v) => `${v}%` },
+    { key: "newPatientRate", label: "新患比率", value: current.newPatientRate, format: (v) => `${v}%` },
+    { key: "returnRate", label: "再来院率", value: current.returnRate, format: (v) => `${v}%` },
+    { key: "cancellationRate", label: "キャンセル率", value: current.cancellationRate, format: (v) => `${v}%` },
+    { key: "revenuePerVisit", label: "患者単価", value: current.revenuePerVisit, format: (v) => `${v}万` },
+  ]
+
+  return items.map((item) => ({
+    ...item,
+    status: getBenchmarkStatus(item.key, item.value),
+    momDelta: item.value != null && prev?.[item.key as keyof typeof prev] != null
+      ? Math.round((item.value - (prev[item.key as keyof typeof prev] as number)) * 10) / 10
+      : null,
+    yoyDelta: item.value != null && yoy?.[item.key as keyof typeof yoy] != null
+      ? Math.round((item.value - (yoy[item.key as keyof typeof yoy] as number)) * 10) / 10
+      : null,
+  }))
+}

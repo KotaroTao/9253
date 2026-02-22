@@ -393,6 +393,30 @@ export const messages = {
     missingDataAlert: "未入力の月があります",
     missingDataAlertDetail: "経営データを入力すると、自費率・患者単価などの指標を自動算出できます。",
     dismissAlert: "閉じる",
+    // Scorecard
+    scorecardTitle: "経営スコアカード",
+    momChange: "前月比",
+    yoyChange: "前年同月比",
+    noYoyData: "前年データなし",
+    // PX highlight
+    pxHighlightTitle: "PX × 経営トレンド",
+    satisfactionScore: "満足度スコア",
+    // KPI health
+    kpiHealthTitle: "KPI ヘルスチェック",
+    statusGood: "良好",
+    statusWarning: "注意",
+    statusDanger: "要改善",
+    // Insights
+    insightTitle: "月次インサイト",
+    noInsights: "インサイトを表示するにはデータ入力が必要です",
+    // Tabs
+    tabVisits: "来院数",
+    tabRevenue: "売上",
+    tabKpi: "経営指標",
+    tabUnitPrice: "患者単価",
+    tabCancel: "キャンセル",
+    showDataTable: "データ表を表示",
+    hideDataTable: "データ表を非表示",
     // KPI help descriptions
     kpiHelp: {
       totalPatients: { desc: "初診＋再診の実人数合計。医院規模の基本指標", benchmark: "チェア5台で月450〜600人" },
