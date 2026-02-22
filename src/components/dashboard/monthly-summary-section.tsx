@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { messages } from "@/lib/messages"
 import { TrendingUp, TrendingDown, Check, Loader2, HelpCircle, X } from "lucide-react"
-import { calcDerived, calcProfileDerived } from "@/lib/metrics-utils"
-import type { MonthlySummary, ClinicProfile } from "@/lib/metrics-utils"
+import { calcDerived, calcProfileDerived, getBenchmarkStatus } from "@/lib/metrics-utils"
+import type { MonthlySummary, ClinicProfile, BenchmarkStatus } from "@/lib/metrics-utils"
 
 interface ProfileDefaults {
   chairCount: number | null
@@ -310,17 +310,17 @@ export function MonthlySummarySection({
   const m = messages.monthlyMetrics
 
   // Derived KPIs (totalPatients removed — now a direct input)
-  const derivedMetrics: { label: string; value: number | null; format: (v: number) => string; prev: number | null; helpKey?: KpiHelpKey }[] = [
-    { label: m.revenuePerVisit, value: derived?.revenuePerVisit ?? null, format: (v: number) => `${v}${m.unitMan}`, prev: prevDerived?.revenuePerVisit ?? null, helpKey: "revenuePerVisit" },
-    { label: m.selfPayRatioAmount, value: derived?.selfPayRatioAmount ?? null, format: (v: number) => `${v}%`, prev: prevDerived?.selfPayRatioAmount ?? null, helpKey: "selfPayRatioAmount" },
-    { label: m.returnRate, value: derived?.returnRate ?? null, format: (v: number) => `${v}%`, prev: prevDerived?.returnRate ?? null, helpKey: "returnRate" },
-    { label: m.newPatientRate, value: derived?.newPatientRate ?? null, format: (v: number) => `${v}%`, prev: prevDerived?.newPatientRate ?? null, helpKey: "newPatientRate" },
-    { label: m.cancellationRate, value: derived?.cancellationRate ?? null, format: (v: number) => `${v}%`, prev: prevDerived?.cancellationRate ?? null, helpKey: "cancellationRate" },
+  const derivedMetrics: { label: string; value: number | null; format: (v: number) => string; prev: number | null; helpKey?: KpiHelpKey; benchmarkKey?: string }[] = [
+    { label: m.revenuePerVisit, value: derived?.revenuePerVisit ?? null, format: (v: number) => `${v}${m.unitMan}`, prev: prevDerived?.revenuePerVisit ?? null, helpKey: "revenuePerVisit", benchmarkKey: "revenuePerVisit" },
+    { label: m.selfPayRatioAmount, value: derived?.selfPayRatioAmount ?? null, format: (v: number) => `${v}%`, prev: prevDerived?.selfPayRatioAmount ?? null, helpKey: "selfPayRatioAmount", benchmarkKey: "selfPayRatioAmount" },
+    { label: m.returnRate, value: derived?.returnRate ?? null, format: (v: number) => `${v}%`, prev: prevDerived?.returnRate ?? null, helpKey: "returnRate", benchmarkKey: "returnRate" },
+    { label: m.newPatientRate, value: derived?.newPatientRate ?? null, format: (v: number) => `${v}%`, prev: prevDerived?.newPatientRate ?? null, helpKey: "newPatientRate", benchmarkKey: "newPatientRate" },
+    { label: m.cancellationRate, value: derived?.cancellationRate ?? null, format: (v: number) => `${v}%`, prev: prevDerived?.cancellationRate ?? null, helpKey: "cancellationRate", benchmarkKey: "cancellationRate" },
     { label: m.surveyResponseRate, value: derived?.surveyResponseRate ?? null, format: (v: number) => `${v}%`, prev: null as number | null, helpKey: "surveyResponseRate" },
   ]
 
   // Extended profile-based KPIs (+ revenuePerChair)
-  const extendedMetrics: { label: string; value: number | null; format: (v: number) => string; prev: number | null; helpKey?: KpiHelpKey }[] = [
+  const extendedMetrics: { label: string; value: number | null; format: (v: number) => string; prev: number | null; helpKey?: KpiHelpKey; benchmarkKey?: string }[] = [
     { label: m.dailyPatients, value: profileDerived?.dailyPatients ?? null, format: (v: number) => `${v}${m.unitVisitsPerDay}`, prev: prevProfileDerived?.dailyPatients ?? null, helpKey: "dailyPatients" },
     { label: m.dailyRevenue, value: profileDerived?.dailyRevenue ?? null, format: (v: number) => `${v}${m.unitMan}`, prev: prevProfileDerived?.dailyRevenue ?? null, helpKey: "dailyRevenue" },
     { label: m.chairDailyVisits, value: profileDerived?.chairDailyVisits ?? null, format: (v: number) => `${v}${m.unitVisitsPerChairDay}`, prev: prevProfileDerived?.chairDailyVisits ?? null, helpKey: "chairDailyVisits" },
@@ -330,7 +330,7 @@ export function MonthlySummarySection({
     { label: m.revenuePerDentist, value: profileDerived?.revenuePerDentist ?? null, format: (v: number) => `${v}${m.unitMan}`, prev: prevProfileDerived?.revenuePerDentist ?? null, helpKey: "revenuePerDentist" },
     { label: m.patientsPerDentist, value: profileDerived?.patientsPerDentist ?? null, format: (v: number) => `${v}${m.unitPersons}`, prev: prevProfileDerived?.patientsPerDentist ?? null, helpKey: "patientsPerDentist" },
     { label: m.patientsPerHygienist, value: profileDerived?.patientsPerHygienist ?? null, format: (v: number) => `${v}${m.unitPersons}`, prev: prevProfileDerived?.patientsPerHygienist ?? null, helpKey: "patientsPerHygienist" },
-    { label: m.laborCostRatio, value: profileDerived?.laborCostRatio ?? null, format: (v: number) => `${v}%`, prev: prevProfileDerived?.laborCostRatio ?? null, helpKey: "laborCostRatio" },
+    { label: m.laborCostRatio, value: profileDerived?.laborCostRatio ?? null, format: (v: number) => `${v}%`, prev: prevProfileDerived?.laborCostRatio ?? null, helpKey: "laborCostRatio", benchmarkKey: "laborCostRatio" },
     { label: m.revenuePerStaff, value: profileDerived?.revenuePerStaff ?? null, format: (v: number) => `${v}${m.unitMan}`, prev: prevProfileDerived?.revenuePerStaff ?? null, helpKey: "revenuePerStaff" },
   ]
 
@@ -404,18 +404,37 @@ export function MonthlySummarySection({
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
-            {derivedMetrics.map((metric) => (
-              <div key={metric.label} className="rounded-lg border bg-muted/30 p-3">
-                <p className="text-xs text-muted-foreground">
-                  {metric.label}
-                  <KpiHelpButton helpKey={metric.helpKey} />
-                </p>
-                <p className="text-lg font-bold">
-                  {metric.value != null ? metric.format(metric.value) : <span className="text-muted-foreground/50">-</span>}
-                  <DerivedDelta current={metric.value} prev={metric.prev} />
-                </p>
-              </div>
-            ))}
+            {derivedMetrics.map((metric) => {
+              const status: BenchmarkStatus | null = metric.benchmarkKey ? getBenchmarkStatus(metric.benchmarkKey, metric.value) : null
+              return (
+                <div key={metric.label} className={`rounded-lg border p-3 ${
+                  status === "good" ? "bg-emerald-50/50 border-emerald-200/50 dark:bg-emerald-950/10 dark:border-emerald-900/30" :
+                  status === "warning" ? "bg-amber-50/50 border-amber-200/50 dark:bg-amber-950/10 dark:border-amber-900/30" :
+                  status === "danger" ? "bg-red-50/50 border-red-200/50 dark:bg-red-950/10 dark:border-red-900/30" :
+                  "bg-muted/30"
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      {metric.label}
+                      <KpiHelpButton helpKey={metric.helpKey} />
+                    </p>
+                    {status && (
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                        status === "good" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" :
+                        status === "warning" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400" :
+                        "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
+                      }`}>
+                        {status === "good" ? m.statusGood : status === "warning" ? m.statusWarning : m.statusDanger}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-lg font-bold">
+                    {metric.value != null ? metric.format(metric.value) : <span className="text-muted-foreground/50">-</span>}
+                    <DerivedDelta current={metric.value} prev={metric.prev} />
+                  </p>
+                </div>
+              )
+            })}
           </div>
         </CardContent>
       </Card>
@@ -428,18 +447,37 @@ export function MonthlySummarySection({
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-              {visibleExtendedMetrics.map((metric) => (
-                <div key={metric.label} className="rounded-lg border bg-muted/30 p-3">
-                  <p className="text-xs text-muted-foreground">
-                    {metric.label}
-                    <KpiHelpButton helpKey={metric.helpKey} />
-                  </p>
-                  <p className="text-lg font-bold">
-                    {metric.value != null ? metric.format(metric.value) : <span className="text-muted-foreground/50">-</span>}
-                    <DerivedDelta current={metric.value} prev={metric.prev} />
-                  </p>
-                </div>
-              ))}
+              {visibleExtendedMetrics.map((metric) => {
+                const status: BenchmarkStatus | null = metric.benchmarkKey ? getBenchmarkStatus(metric.benchmarkKey, metric.value) : null
+                return (
+                  <div key={metric.label} className={`rounded-lg border p-3 ${
+                    status === "good" ? "bg-emerald-50/50 border-emerald-200/50 dark:bg-emerald-950/10 dark:border-emerald-900/30" :
+                    status === "warning" ? "bg-amber-50/50 border-amber-200/50 dark:bg-amber-950/10 dark:border-amber-900/30" :
+                    status === "danger" ? "bg-red-50/50 border-red-200/50 dark:bg-red-950/10 dark:border-red-900/30" :
+                    "bg-muted/30"
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground">
+                        {metric.label}
+                        <KpiHelpButton helpKey={metric.helpKey} />
+                      </p>
+                      {status && (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                          status === "good" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" :
+                          status === "warning" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400" :
+                          "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
+                        }`}>
+                          {status === "good" ? m.statusGood : status === "warning" ? m.statusWarning : m.statusDanger}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-lg font-bold">
+                      {metric.value != null ? metric.format(metric.value) : <span className="text-muted-foreground/50">-</span>}
+                      <DerivedDelta current={metric.value} prev={metric.prev} />
+                    </p>
+                  </div>
+                )
+              })}
             </div>
           </CardContent>
         </Card>

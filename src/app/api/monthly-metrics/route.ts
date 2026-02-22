@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma"
 import { getMonthlySurveyCount } from "@/lib/queries/stats"
 import { calcWorkingDays } from "@/lib/metrics-utils"
 import type { ClinicSettings } from "@/types"
+import { jstStartOfMonth, jstEndOfMonth } from "@/lib/date-jst"
 
 const METRICS_SELECT = {
   totalPatientCount: true,
@@ -47,6 +48,7 @@ export async function GET(request: NextRequest) {
   if (request.nextUrl.searchParams.get("mode") === "trend") {
     const fromMonth = request.nextUrl.searchParams.get("fromMonth") // YYYY-MM
     const toMonth = request.nextUrl.searchParams.get("toMonth")     // YYYY-MM
+    const withSatisfaction = request.nextUrl.searchParams.get("withSatisfaction") === "1"
 
     if (fromMonth && toMonth) {
       const [fy, fm] = fromMonth.split("-").map(Number)
@@ -64,6 +66,11 @@ export async function GET(request: NextRequest) {
         select: { year: true, month: true, ...FULL_SELECT },
         orderBy: [{ year: "asc" }, { month: "asc" }],
       })
+
+      if (withSatisfaction) {
+        const enriched = await enrichWithSatisfaction(clinicId, rows)
+        return successResponse(enriched)
+      }
       return successResponse(rows)
     }
 
@@ -75,19 +82,26 @@ export async function GET(request: NextRequest) {
       orderBy: [{ year: "desc" }, { month: "desc" }],
       take,
     })
-    return successResponse(rows.reverse())
+    const sorted = rows.reverse()
+
+    if (withSatisfaction) {
+      const enriched = await enrichWithSatisfaction(clinicId, sorted)
+      return successResponse(enriched)
+    }
+    return successResponse(sorted)
   }
 
   const now = new Date()
   const year = yearParam ? parseInt(yearParam) : now.getFullYear()
   const month = monthParam ? parseInt(monthParam) : now.getMonth() + 1
 
-  // Fetch current and previous month
+  // Fetch current, previous month, and YoY (same month last year)
   const prevDate = new Date(year, month - 2, 1)
   const prevYear = prevDate.getFullYear()
   const prevMonth = prevDate.getMonth() + 1
+  const yoyYear = year - 1
 
-  const [summary, prevSummary, surveyCount, clinic] =
+  const [summary, prevSummary, yoySummary, surveyCount, clinic] =
     await Promise.all([
       prisma.monthlyClinicMetrics.findUnique({
         where: { clinicId_year_month: { clinicId, year, month } },
@@ -95,6 +109,10 @@ export async function GET(request: NextRequest) {
       }),
       prisma.monthlyClinicMetrics.findUnique({
         where: { clinicId_year_month: { clinicId, year: prevYear, month: prevMonth } },
+        select: FULL_SELECT,
+      }),
+      prisma.monthlyClinicMetrics.findUnique({
+        where: { clinicId_year_month: { clinicId, year: yoyYear, month } },
         select: FULL_SELECT,
       }),
       getMonthlySurveyCount(clinicId, year, month),
@@ -120,12 +138,21 @@ export async function GET(request: NextRequest) {
     hygienistCount: prevSummary?.hygienistCount ?? null,
   }
 
+  // 満足度スコア（当月・前月）
+  const [satisfactionScore, prevSatisfactionScore] = await Promise.all([
+    getMonthSatisfactionScore(clinicId, year, month),
+    getMonthSatisfactionScore(clinicId, prevYear, prevMonth),
+  ])
+
   return successResponse({
     summary: summary ?? null,
     prevSummary: prevSummary?.totalPatientCount != null || prevSummary?.firstVisitCount != null ? prevSummary : null,
+    yoySummary: yoySummary ?? null,
     surveyCount,
     autoWorkingDays,
     profileDefaults,
+    satisfactionScore,
+    prevSatisfactionScore,
   })
 }
 
@@ -188,4 +215,65 @@ export async function POST(request: NextRequest) {
   })
 
   return successResponse(result)
+}
+
+// Helper: get average satisfaction score for a specific month
+async function getMonthSatisfactionScore(
+  clinicId: string,
+  year: number,
+  month: number,
+): Promise<number | null> {
+  const startDate = jstStartOfMonth(year, month)
+  const endDate = jstEndOfMonth(year, month)
+
+  interface ScoreRow { avg_score: number | null }
+  const rows = await prisma.$queryRaw<ScoreRow[]>`
+    SELECT ROUND(AVG(overall_score)::numeric, 2)::float AS avg_score
+    FROM survey_responses
+    WHERE clinic_id = ${clinicId}::uuid
+      AND responded_at >= ${startDate}
+      AND responded_at <= ${endDate}
+      AND overall_score IS NOT NULL
+  `
+  return rows[0]?.avg_score ?? null
+}
+
+// Helper: enrich trend data with monthly satisfaction scores
+async function enrichWithSatisfaction(
+  clinicId: string,
+  rows: Array<{ year: number; month: number; [key: string]: unknown }>,
+) {
+  if (rows.length === 0) return rows
+
+  const minRow = rows[0]
+  const maxRow = rows[rows.length - 1]
+  const startDate = jstStartOfMonth(minRow.year, minRow.month)
+  const endDate = jstEndOfMonth(maxRow.year, maxRow.month)
+
+  interface MonthScoreRow { ym: string; avg_score: number | null; count: bigint }
+  const scoreRows = await prisma.$queryRaw<MonthScoreRow[]>`
+    SELECT
+      TO_CHAR(responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'YYYY-MM') as ym,
+      ROUND(AVG(overall_score)::numeric, 2)::float as avg_score,
+      COUNT(*) as count
+    FROM survey_responses
+    WHERE clinic_id = ${clinicId}::uuid
+      AND responded_at >= ${startDate}
+      AND responded_at <= ${endDate}
+      AND overall_score IS NOT NULL
+    GROUP BY ym
+    ORDER BY ym
+  `
+
+  const scoreMap = new Map(scoreRows.map((r) => [r.ym, { avgScore: r.avg_score, surveyCount: Number(r.count) }]))
+
+  return rows.map((row) => {
+    const key = `${row.year}-${String(row.month).padStart(2, "0")}`
+    const scoreData = scoreMap.get(key)
+    return {
+      ...row,
+      satisfactionScore: scoreData?.avgScore ?? null,
+      surveyCount: scoreData?.surveyCount ?? 0,
+    }
+  })
 }
