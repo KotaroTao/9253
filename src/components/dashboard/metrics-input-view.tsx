@@ -1,12 +1,11 @@
 "use client"
 
 import { useState, useMemo, useRef, useEffect } from "react"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
 import { MonthlySummarySection } from "./monthly-summary-section"
 import { getMonthStatus } from "@/lib/metrics-utils"
-import type { MonthlySummary, MonthStatus } from "@/lib/metrics-utils"
+import type { MonthlySummary, ClinicProfile, MonthStatus } from "@/lib/metrics-utils"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
 // 2025年1月から当月までの月リストを生成
@@ -32,6 +31,12 @@ function generateMonthOptions(): { year: number; month: number; label: string }[
   return options
 }
 
+interface ProfileDefaults {
+  chairCount: number | null
+  dentistCount: number | null
+  hygienistCount: number | null
+}
+
 interface MetricsInputViewProps {
   initialSummary: MonthlySummary | null
   initialPrevSummary: MonthlySummary | null
@@ -39,6 +44,10 @@ interface MetricsInputViewProps {
   initialYear: number
   initialMonth: number
   monthStatuses?: Record<string, MonthStatus>
+  initialProfile: ClinicProfile | null
+  initialPrevProfile: ClinicProfile | null
+  initialAutoWorkingDays: number
+  initialProfileDefaults: ProfileDefaults
 }
 
 export function MetricsInputView({
@@ -48,6 +57,10 @@ export function MetricsInputView({
   initialYear,
   initialMonth,
   monthStatuses: initialMonthStatuses = {},
+  initialProfile,
+  initialPrevProfile,
+  initialAutoWorkingDays,
+  initialProfileDefaults,
 }: MetricsInputViewProps) {
   const [year, setYear] = useState(initialYear)
   const [month, setMonth] = useState(initialMonth)
@@ -59,6 +72,12 @@ export function MetricsInputView({
   const [showMonthPicker, setShowMonthPicker] = useState(false)
   const [pickerYear, setPickerYear] = useState(initialYear)
   const pickerRef = useRef<HTMLDivElement>(null)
+
+  // Profile state
+  const [profile, setProfile] = useState<ClinicProfile | null>(initialProfile)
+  const [prevProfile, setPrevProfile] = useState<ClinicProfile | null>(initialPrevProfile)
+  const [autoWorkingDays, setAutoWorkingDays] = useState(initialAutoWorkingDays)
+  const [profileDefaults, setProfileDefaults] = useState<ProfileDefaults>(initialProfileDefaults)
 
   const m = messages.monthlyMetrics
 
@@ -94,6 +113,38 @@ export function MetricsInputView({
         setSummary(fetchedSummary)
         setPrevSummary(data.prevSummary ?? null)
         setSurveyCount(data.surveyCount ?? 0)
+        setAutoWorkingDays(data.autoWorkingDays ?? 0)
+        setProfileDefaults(data.profileDefaults ?? { chairCount: null, dentistCount: null, hygienistCount: null })
+
+        // Extract profile from summary
+        if (fetchedSummary) {
+          setProfile({
+            chairCount: fetchedSummary.chairCount ?? null,
+            dentistCount: fetchedSummary.dentistCount ?? null,
+            hygienistCount: fetchedSummary.hygienistCount ?? null,
+            totalVisitCount: fetchedSummary.totalVisitCount ?? null,
+            workingDays: fetchedSummary.workingDays ?? null,
+            laborCost: fetchedSummary.laborCost ?? null,
+          })
+        } else {
+          setProfile(null)
+        }
+
+        // Extract prev profile
+        const prev = data.prevSummary
+        if (prev) {
+          setPrevProfile({
+            chairCount: prev.chairCount ?? null,
+            dentistCount: prev.dentistCount ?? null,
+            hygienistCount: prev.hygienistCount ?? null,
+            totalVisitCount: prev.totalVisitCount ?? null,
+            workingDays: prev.workingDays ?? null,
+            laborCost: prev.laborCost ?? null,
+          })
+        } else {
+          setPrevProfile(null)
+        }
+
         const key = `${newYear}-${newMonth}`
         setMonthStatuses((prev) => ({
           ...prev,
@@ -250,6 +301,10 @@ export function MetricsInputView({
           initialSummary={summary}
           prevSummary={prevSummary}
           surveyCount={surveyCount}
+          initialProfile={profile}
+          prevProfile={prevProfile}
+          autoWorkingDays={autoWorkingDays}
+          profileDefaults={profileDefaults}
         />
       )}
     </div>
