@@ -702,15 +702,34 @@ async function main() {
   // =========================================================================
   // 月次経営レポート（12ヶ月分。当月は未入力=InsightBanner表示用）
   // =========================================================================
-  // 1年前: 実人数約300人(初診30,再診270), 売上330万, 自費率30%, キャンセル率10%
-  // 現在:  売上約425万, 全体的に改善
-  // 季節変動: 8月(お盆)・12月(年末)=低め、3-4月・10月=高め
+  // ストーリー: チェア5台の歯科医院（Dr2名、DH3名）が患者体験改善に取り組み、
+  //   1年間で主要KPIが約20%改善。途中でチェア1台増設・パートDH採用。
+  //
+  // 【強み（大幅改善）】
+  //   - キャンセル率: 9.5% → 3.8%（-60%。体験改善による患者定着）
+  //   - 自費率: 22.5% → 32%（30%超の高水準。丁寧な説明→自費選択増）
+  //   - 初診数: 46 → 72人/月（+57%。口コミ・紹介増加）
+  //   - 労働分配率: 31% → 27%（適正化。DH採用で効率UP）
+  //
+  // 【弱み（横ばい・課題残存）】
+  //   - 患者単価: 1.34万/人（横ばい。自費増加分が来院数増加で希釈）
+  //   - チェア当たり売上: 123→123万（増設チェアの稼働率がまだ低い）
+  //   - レセプト単価: 0.67→0.61万（通院回数増で1回あたり単価は低下）
+  //
+  // 【全体】実人数+20%、売上+20%、日商+20%、Dr売上+20%
+  //
+  // ベンチマーク参考（チェア5台の場合）:
+  //   実人数 450〜600人/月, 日商 30〜45万, チェア当たり売上 120〜180万,
+  //   Dr売上 250〜400万, DH担当患者 80〜120人, 労働分配率 25〜30%
+  //
+  // 季節変動: 歯科特有（8月お盆↓、5月GW↓、3-4月/6月/10月↑、12-1月年末年始↓）
 
   await prisma.monthlyClinicMetrics.deleteMany({ where: { clinicId: clinic.id } })
 
+  // 季節係数（歯科の来院パターン: 学校検診後の6月↑、お盆の8月↓↓）
   const SEASONAL_FACTORS: Record<number, number> = {
-    1: 0.95, 2: 0.98, 3: 1.03, 4: 1.03, 5: 1.01, 6: 1.00,
-    7: 1.00, 8: 0.90, 9: 1.02, 10: 1.04, 11: 1.01, 12: 0.93,
+    1: 0.92, 2: 0.96, 3: 1.05, 4: 1.04, 5: 0.94, 6: 1.06,
+    7: 1.00, 8: 0.88, 9: 1.02, 10: 1.05, 11: 1.02, 12: 0.95,
   }
 
   console.log(`\n月次経営レポート:`)
@@ -723,47 +742,51 @@ async function main() {
     // progress: 0（12ヶ月前）→ 1（先月）
     const progress = (12 - m) / 11
 
-    // 患者数: 300→355、季節変動あり
-    const basePatients = 295 + Math.round(60 * progress)
-    const totalPatients = Math.round(basePatients * seasonal + (rng() - 0.5) * 15)
+    // === 医院体制（半固定: 途中でチェア増設・DH採用） ===
+    // チェア: 5台→6台（6ヶ月前に増設）
+    const chairCount = m <= 6 ? 6 : 5
+    // Dr: 常勤2名（変動なし）
+    const dentistCount = 2.0
+    // DH: 3.0→3.5人（4ヶ月前にパートDH採用）
+    const hygienistCount = m <= 4 ? 3.5 : 3.0
 
-    // 初診比率: 10%→12%（口コミ効果で増加）
-    const firstVisitRatio = 0.10 + 0.02 * progress
-    const firstVisitCount = Math.max(1, Math.round(totalPatients * firstVisitRatio + (rng() - 0.5) * 4))
+    // === 患者数: 440→560人（+27%基準。季節変動後の実効値で約20%改善） ===
+    const basePatients = Math.round(440 + 120 * progress)
+    const totalPatients = Math.max(100, Math.round(basePatients * seasonal + (rng() - 0.5) * 20))
+
+    // 初診比率: 10%→13%（口コミ効果で初診が大幅増加=強み）
+    const firstVisitRatio = 0.10 + 0.03 * progress
+    const firstVisitCount = Math.max(1, Math.round(totalPatients * firstVisitRatio + (rng() - 0.5) * 5))
     const revisitCount = totalPatients - firstVisitCount
 
-    // 自費率（金額）: 30%→35%
-    const selfPayRatio = 0.29 + 0.06 * progress + (rng() - 0.5) * 0.02
+    // === 売上: 患者単価 × 患者数 ===
+    // 患者単価: ~1.34万/人（横ばい=弱み。自費増加分は来院構成変化で相殺）
+    const revenuePerPatient = 1.34 + (rng() - 0.5) * 0.06
+    const totalRevenue = Math.max(100, Math.round(totalPatients * revenuePerPatient))
 
-    // 売上: 325→425万、季節変動あり
-    const baseRevenue = 325 + Math.round(100 * progress)
-    const totalRevenue = Math.max(80, Math.round(baseRevenue * seasonal + (rng() - 0.5) * 13))
+    // 自費率（金額ベース）: 22.5%→32%（大幅改善=強み。30%超で高水準）
+    const selfPayRatio = 0.225 + 0.095 * progress + (rng() - 0.5) * 0.015
     const selfPayRevenue = Math.round(totalRevenue * selfPayRatio)
     const insuranceRevenue = totalRevenue - selfPayRevenue
 
-    // キャンセル率: 10%→5%
-    const cancelRate = 0.105 - 0.055 * progress + (rng() - 0.5) * 0.01
+    // === キャンセル率: 9.5%→3.8%（劇的改善=最大の強み） ===
+    const cancelRate = 0.095 - 0.057 * progress + (rng() - 0.5) * 0.008
     const cancellationCount = Math.max(0, Math.round(totalPatients * cancelRate))
 
-    // 医院体制データ（半固定: 途中でチェア・DH増加のストーリー）
-    // チェア: 5台→6台（6ヶ月目にチェア増設）
-    const chairCount = m <= 6 ? 5 : 6
-    // Dr: 2.0人（常勤2名）
-    const dentistCount = 2.0
-    // DH: 3.0→3.5（8ヶ月目にパートDH採用）
-    const hygienistCount = m <= 4 ? 3.0 : 3.5
-    // 延べ来院数: 実人数の約2.5倍（通院回数）
-    const avgVisits = 2.4 + 0.2 * progress + (rng() - 0.5) * 0.15
+    // === 延べ来院数: 平均通院回数 2.0→2.2（リテンション改善） ===
+    const avgVisits = 2.0 + 0.2 * progress + (rng() - 0.5) * 0.08
     const totalVisitCount = Math.round(totalPatients * avgVisits)
-    // 診療日数: 月〜土（日曜休診）、月によって22-26日
+
+    // 診療日数: 月〜土営業（日曜休診）
     const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
     let workingDays = 0
     for (let day = 1; day <= daysInMonth; day++) {
       const dow = new Date(d.getFullYear(), d.getMonth(), day).getDay()
-      if (dow !== 0) workingDays++ // 日曜以外
+      if (dow !== 0) workingDays++
     }
-    // 人件費: 150→170万（DH採用による増加）
-    const laborCost = Math.round(150 + 20 * progress + (rng() - 0.5) * 5)
+
+    // 人件費: 185→200万（DH採用で金額微増だが、労働分配率は31%→27%に改善=強み）
+    const laborCost = Math.round(185 + 15 * progress + (rng() - 0.5) * 5)
 
     await prisma.monthlyClinicMetrics.upsert({
       where: { clinicId_year_month: { clinicId: clinic.id, year, month } },
