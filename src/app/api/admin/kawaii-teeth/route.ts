@@ -23,7 +23,7 @@ export async function GET() {
   return successResponse(characters)
 }
 
-const MAX_IMAGE_SIZE = 500_000 // ~500KB base64
+const MAX_IMAGE_SIZE = 3_000_000 // ~3MB base64 (≈2MB binary)
 
 /** POST /api/admin/kawaii-teeth — キャラ新規作成 */
 export async function POST(request: NextRequest) {
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     return errorResponse("画像をアップロードしてください", 400)
   }
   if (imageData.length > MAX_IMAGE_SIZE) {
-    return errorResponse("画像サイズが大きすぎます（500KB以下）", 400)
+    return errorResponse("画像サイズが大きすぎます（2MB以下）", 400)
   }
 
   const character = await prisma.kawaiiTeeth.create({

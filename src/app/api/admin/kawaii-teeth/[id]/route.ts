@@ -3,7 +3,7 @@ import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { prisma } from "@/lib/prisma"
 
-const MAX_IMAGE_SIZE = 500_000
+const MAX_IMAGE_SIZE = 3_000_000 // ~3MB base64 (≈2MB binary)
 
 /** PATCH /api/admin/kawaii-teeth/[id] — キャラ更新 */
 export async function PATCH(
@@ -35,7 +35,7 @@ export async function PATCH(
       return errorResponse("画像形式が不正です", 400)
     }
     if (body.imageData.length > MAX_IMAGE_SIZE) {
-      return errorResponse("画像サイズが大きすぎます（500KB以下）", 400)
+      return errorResponse("画像サイズが大きすぎます（2MB以下）", 400)
     }
     data.imageData = body.imageData
   }
