@@ -129,7 +129,7 @@ export const messages = {
     happinessOkay: "まずまず",
     happinessLow: "改善のチャンス",
     // Encouragement messages
-    encourageAlmostUnlock: "あと{remaining}件でAI分析がアンロック！",
+    encourageAlmostUnlock: "あとアンケート{remaining}件でAI分析がアンロック！",
     encourageUnlocked: "AI分析が利用可能です！結果を確認しましょう",
     encourageStreak: "連続記録を更新中！この調子です",
     encourageHighScore: "患者さまの笑顔が増えています",

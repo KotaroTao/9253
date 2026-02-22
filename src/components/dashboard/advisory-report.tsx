@@ -340,6 +340,8 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
   // 個別セクションの展開状態（レポートID:インデックス）
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set())
   const [acquiredChar, setAcquiredChar] = useState<AcquiredCharacter | null>(null)
+  // 生成直後のレポートID（キャラ獲得演出後にスクロール対象）
+  const [newReportId, setNewReportId] = useState<string | null>(null)
 
   function toggleSection(reportId: string, index: number) {
     const key = `${reportId}:${index}`
@@ -354,6 +356,20 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
     })
   }
 
+  function handleRevealClose() {
+    setAcquiredChar(null)
+    // キャラ獲得演出が閉じたら、新規レポートにスクロール
+    if (newReportId) {
+      setExpandedReport(newReportId)
+      setNewReportId(null)
+      // DOM更新後にスクロール
+      setTimeout(() => {
+        const el = document.getElementById(`report-${newReportId}`)
+        el?.scrollIntoView({ behavior: "smooth", block: "start" })
+      }, 100)
+    }
+  }
+
   async function handleGenerate() {
     if (!confirm(messages.advisory.generateConfirm)) return
 
@@ -361,17 +377,33 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
     try {
       const res = await fetch("/api/advisory", { method: "POST" })
       if (res.ok) {
+        const { report } = await res.json()
+        const reportId = report?.id as string | undefined
+
         // AI分析成功 → Kawaii Teethをランダム獲得
+        let charAcquired = false
         try {
           const acquireRes = await fetch("/api/kawaii-teeth/acquire", { method: "POST" })
           if (acquireRes.ok) {
             const acquired = await acquireRes.json()
             setAcquiredChar(acquired)
+            charAcquired = true
+            if (reportId) setNewReportId(reportId)
           }
         } catch {
           // キャラ獲得失敗はサイレントに無視
         }
+
         router.refresh()
+
+        // キャラ獲得演出がなかった場合は直接レポートへスクロール
+        if (!charAcquired && reportId) {
+          setExpandedReport(reportId)
+          setTimeout(() => {
+            const el = document.getElementById(`report-${reportId}`)
+            el?.scrollIntoView({ behavior: "smooth", block: "start" })
+          }, 300)
+        }
       } else {
         const data = await res.json()
         alert(data.error || messages.advisory.generateFailed)
@@ -539,7 +571,7 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
             ).length
 
             return (
-              <Card key={report.id}>
+              <Card key={report.id} id={`report-${report.id}`}>
                 <CardHeader
                   className="cursor-pointer pb-3"
                   onClick={() => setExpandedReport(isExpanded ? null : report.id)}
@@ -608,7 +640,7 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
       {/* Kawaii Teeth reveal overlay */}
       <KawaiiTeethReveal
         acquired={acquiredChar}
-        onClose={() => setAcquiredChar(null)}
+        onClose={handleRevealClose}
       />
     </div>
   )
