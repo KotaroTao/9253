@@ -312,6 +312,28 @@ export const QUESTION_CATEGORY_MAP: Record<string, string> = {
   tr6: "loyalty",
 }
 
+/** 全アンケート質問の一覧（チェックリスト表示用） */
+export const ALL_SURVEY_QUESTIONS = [
+  { group: "初診", questions: [
+    { id: "fv1", text: "医院の第一印象（清潔さ・雰囲気）はいかがでしたか？" },
+    { id: "fv2", text: "受付の対応は丁寧でしたか？" },
+    { id: "fv3", text: "待ち時間は気にならない程度でしたか？" },
+    { id: "fv4", text: "お悩みや症状についてのヒアリングは十分でしたか？" },
+    { id: "fv5", text: "今後の方針や内容の説明は分かりやすかったですか？" },
+    { id: "fv6", text: "費用に関する説明は十分でしたか？" },
+    { id: "fv7", text: "不安や疑問を相談しやすい雰囲気でしたか？" },
+    { id: "fv8", text: "当院をご家族・知人にも紹介したいと思いますか？" },
+  ]},
+  { group: "再診", questions: [
+    { id: "tr1", text: "本日の診療についての説明は分かりやすかったですか？" },
+    { id: "tr2", text: "不安や痛みへの配慮は十分でしたか？" },
+    { id: "tr3", text: "質問や相談がしやすい雰囲気でしたか？" },
+    { id: "tr4", text: "待ち時間は気にならない程度でしたか？" },
+    { id: "tr5", text: "スタッフの対応は丁寧でしたか？" },
+    { id: "tr6", text: "当院をご家族・知人にも紹介したいと思いますか？" },
+  ]},
+]
+
 export interface ImprovementSuggestion {
   title: string
   description: string

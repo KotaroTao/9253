@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
-import { CATEGORY_LABELS } from "@/lib/constants"
+import { CATEGORY_LABELS, ALL_SURVEY_QUESTIONS } from "@/lib/constants"
 
 interface PlatformAction {
   id: string
@@ -45,7 +45,7 @@ type FormData = {
   title: string
   description: string
   detailedContent: string
-  targetQuestionIds: string
+  targetQuestionIds: string[]
   category: string
   isPickup: boolean
   serviceUrl: string
@@ -57,7 +57,7 @@ const EMPTY_FORM: FormData = {
   title: "",
   description: "",
   detailedContent: "",
-  targetQuestionIds: "",
+  targetQuestionIds: [],
   category: "",
   isPickup: false,
   serviceUrl: "",
@@ -106,7 +106,7 @@ export function PlatformActionsManager() {
       title: action.title,
       description: action.description ?? "",
       detailedContent: action.detailedContent ?? "",
-      targetQuestionIds: action.targetQuestionIds?.join(", ") ?? "",
+      targetQuestionIds: action.targetQuestionIds ?? [],
       category: action.category ?? "",
       isPickup: action.isPickup,
       serviceUrl: action.serviceUrl ?? "",
@@ -128,16 +128,11 @@ export function PlatformActionsManager() {
     setError("")
     setSuccess("")
 
-    const questionIds = form.targetQuestionIds
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-
     const body = {
       title: form.title,
       description: form.description,
       detailedContent: form.detailedContent,
-      targetQuestionIds: questionIds.length > 0 ? questionIds : null,
+      targetQuestionIds: form.targetQuestionIds.length > 0 ? form.targetQuestionIds : null,
       category: form.category || null,
       isPickup: form.isPickup,
       serviceUrl: form.serviceUrl,
@@ -265,28 +260,54 @@ export function PlatformActionsManager() {
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm min-h-[80px] resize-y"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>{messages.platformActions.formCategory}</Label>
-                <select
-                  value={form.category}
-                  onChange={(e) => setForm({ ...form, category: e.target.value })}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  <option value="">未設定</option>
-                  {categoryOptions.map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
-                  ))}
-                </select>
+            <div className="space-y-1.5">
+              <Label>{messages.platformActions.formCategory}</Label>
+              <select
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">未設定</option>
+                {categoryOptions.map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>{messages.platformActions.formTargetQuestions}</Label>
+              <div className="rounded-md border border-input bg-background p-3 space-y-3 max-h-[240px] overflow-y-auto">
+                {ALL_SURVEY_QUESTIONS.map((group) => (
+                  <div key={group.group}>
+                    <p className="text-xs font-semibold text-muted-foreground mb-1.5">{group.group}</p>
+                    <div className="space-y-1">
+                      {group.questions.map((q) => (
+                        <label key={q.id} className="flex items-start gap-2 cursor-pointer rounded px-1.5 py-1 hover:bg-muted/50">
+                          <input
+                            type="checkbox"
+                            checked={form.targetQuestionIds.includes(q.id)}
+                            onChange={(e) => {
+                              const ids = e.target.checked
+                                ? [...form.targetQuestionIds, q.id]
+                                : form.targetQuestionIds.filter((id) => id !== q.id)
+                              setForm({ ...form, targetQuestionIds: ids })
+                            }}
+                            className="mt-0.5 h-4 w-4 rounded border-gray-300"
+                          />
+                          <span className="text-xs leading-snug">
+                            <span className="font-mono text-muted-foreground">{q.id}</span>{" "}
+                            {q.text}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="space-y-1.5">
-                <Label>{messages.platformActions.formTargetQuestions}</Label>
-                <Input
-                  value={form.targetQuestionIds}
-                  onChange={(e) => setForm({ ...form, targetQuestionIds: e.target.value })}
-                  placeholder="例: fv2, tr5"
-                />
-              </div>
+              {form.targetQuestionIds.length > 0 && (
+                <p className="text-[11px] text-muted-foreground">
+                  選択中: {form.targetQuestionIds.join(", ")}
+                </p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
