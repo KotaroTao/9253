@@ -32,7 +32,6 @@ export const TRUST_WEIGHTS = {
 
 // ─── Device Weights ───
 export const DEVICE_WEIGHTS: Record<string, number> = {
-  patient_url: 1.5,
   kiosk_authorized: 1.0,
   kiosk_unauthorized: 0.8,
 } as const

@@ -29,7 +29,6 @@ export default async function DashboardPage() {
     select: { slug: true },
   })
   const kioskUrl = clinic ? `/kiosk/${encodeURIComponent(clinic.slug)}` : "/dashboard/survey-start"
-  const patientSurveyUrl = clinic ? `/s/${encodeURIComponent(clinic.slug)}` : null
 
   const isAdmin = session.user.role === ROLES.CLINIC_ADMIN || session.user.role === ROLES.SYSTEM_ADMIN
 
@@ -72,7 +71,6 @@ export default async function DashboardPage() {
       <StaffEngagement
         data={engagement}
         kioskUrl={kioskUrl}
-        patientSurveyUrl={patientSurveyUrl}
         advisoryProgress={advisoryProgress}
         isAdmin={isAdmin}
         advisoryReportCount={advisoryReportCount}

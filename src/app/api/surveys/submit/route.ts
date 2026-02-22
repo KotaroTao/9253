@@ -75,7 +75,6 @@ export async function POST(request: NextRequest) {
         : null
 
     // PX-Value engine: verification + weighted score
-    const isKiosk = !!patientAttributes
     const pxResult = await processSubmission({
       clinicId: clinic.id,
       staffId: staffId ?? undefined,
@@ -86,7 +85,6 @@ export async function POST(request: NextRequest) {
       patientAttributes: patientAttributes ?? undefined,
       responseDurationMs,
       deviceUuid,
-      isKiosk,
     })
 
     // Save response with PX-Value engine results

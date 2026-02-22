@@ -947,7 +947,7 @@ async function main() {
   console.log("\n--- Login Credentials ---")
   console.log("System Admin: mail@function-t.com / MUNP1687")
   console.log("Clinic Admin: clinic@demo.com / clinic123")
-  console.log(`\nSurvey URL (demo): /s/demo-dental`)
+  console.log(`\nKiosk URL (demo): /kiosk/demo-dental`)
 }
 
 main()

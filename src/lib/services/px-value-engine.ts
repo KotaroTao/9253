@@ -35,7 +35,6 @@ export interface ProcessSubmissionInput {
   }
   responseDurationMs?: number
   deviceUuid?: string
-  isKiosk: boolean
 }
 
 export interface ProcessSubmissionResult {
@@ -54,9 +53,7 @@ export async function processSubmission(
 ): Promise<ProcessSubmissionResult> {
   // 1. Determine device type
   let deviceType: string
-  if (!input.isKiosk) {
-    deviceType = "patient_url"
-  } else if (input.deviceUuid) {
+  if (input.deviceUuid) {
     const device = await prisma.authorizedDevice.findUnique({
       where: { deviceUuid: input.deviceUuid },
       select: { isAuthorized: true },
