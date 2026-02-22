@@ -140,47 +140,49 @@ export function PurposeSatisfaction({ selectedPeriod, customRange = null, filter
       <CardHeader className="pb-3">
         <CardTitle className="text-base">診療区分×内容別 満足度</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {sortedTypes.map((type) => {
-          const rows = grouped[type]
-          const total = typeTotals[type]
-          const colors = INSURANCE_TYPE_COLORS[type] ?? INSURANCE_TYPE_COLORS.insurance
+      <CardContent>
+        <div className={`grid gap-4 ${sortedTypes.length > 1 ? "md:grid-cols-2" : ""}`}>
+          {sortedTypes.map((type) => {
+            const rows = grouped[type]
+            const total = typeTotals[type]
+            const colors = INSURANCE_TYPE_COLORS[type] ?? INSURANCE_TYPE_COLORS.insurance
 
-          return (
-            <div key={type}>
-              {/* Insurance type header */}
-              <div className="mb-2 flex items-center gap-2">
-                <span className={`rounded-md px-2 py-0.5 text-xs font-bold ${colors.badge}`}>
-                  {INSURANCE_TYPE_LABELS[type] ?? type}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {total.count}件
-                </span>
-                <ScoreBar score={total.avgScore} color={colors.bar} />
-              </div>
+            return (
+              <div key={type}>
+                {/* Insurance type header */}
+                <div className="mb-2 flex items-center gap-2">
+                  <span className={`rounded-md px-2 py-0.5 text-xs font-bold ${colors.badge}`}>
+                    {INSURANCE_TYPE_LABELS[type] ?? type}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {total.count}件
+                  </span>
+                  <ScoreBar score={total.avgScore} color={colors.bar} />
+                </div>
 
-              {/* Purpose rows */}
-              <div className="space-y-1 pl-2">
-                {rows.map((row) => (
-                  <div
-                    key={`${type}-${row.purpose}`}
-                    className="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-muted/50"
-                  >
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="text-muted-foreground">
-                        {PURPOSE_LABELS[row.purpose] ?? row.purpose}
-                      </span>
-                      <span className="text-xs text-muted-foreground/60">
-                        {row.count}件
-                      </span>
+                {/* Purpose rows */}
+                <div className="space-y-1 pl-2">
+                  {rows.map((row) => (
+                    <div
+                      key={`${type}-${row.purpose}`}
+                      className="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-muted/50"
+                    >
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-muted-foreground">
+                          {PURPOSE_LABELS[row.purpose] ?? row.purpose}
+                        </span>
+                        <span className="text-xs text-muted-foreground/60">
+                          {row.count}件
+                        </span>
+                      </div>
+                      <ScoreBar score={row.avgScore} color={colors.bar} />
                     </div>
-                    <ScoreBar score={row.avgScore} color={colors.bar} />
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
       </CardContent>
     </Card>
   )
