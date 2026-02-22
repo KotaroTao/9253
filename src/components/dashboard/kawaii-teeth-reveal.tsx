@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { Sparkles, X } from "lucide-react"
 import { messages } from "@/lib/messages"
 import { Confetti } from "@/components/survey/confetti"
@@ -44,7 +45,7 @@ export function KawaiiTeethReveal({ acquired, onClose }: KawaiiTeethRevealProps)
   const { character, count, isNew } = acquired
   const m = messages.kawaiiTeeth
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/60" />
 
@@ -68,49 +69,57 @@ export function KawaiiTeethReveal({ acquired, onClose }: KawaiiTeethRevealProps)
 
         {/* Reveal phase + Done */}
         {(phase === "reveal" || phase === "done") && (
-          <div className="max-h-[90vh] overflow-y-auto rounded-2xl border bg-card p-6 shadow-2xl text-center animate-in zoom-in-75 duration-500">
+          <div className="flex flex-col rounded-2xl border bg-card shadow-2xl text-center animate-in zoom-in-75 duration-500" style={{ maxHeight: "calc(100dvh - 32px)" }}>
             <button
               type="button"
               onClick={onClose}
-              className="absolute right-3 top-3 rounded-md p-1 text-muted-foreground hover:bg-muted"
+              className="absolute right-3 top-3 z-10 rounded-md p-1 text-muted-foreground hover:bg-muted"
             >
               <X className="h-4 w-4" />
             </button>
 
-            <p className="text-xs font-bold text-pink-600 uppercase tracking-wider mb-3">
-              {isNew ? m.revealNew : m.revealDuplicate}
-            </p>
+            <div className="shrink-0 pt-6 px-6">
+              <p className="text-xs font-bold text-pink-600 uppercase tracking-wider mb-3">
+                {isNew ? m.revealNew : m.revealDuplicate}
+              </p>
 
-            <div className="mx-auto h-28 w-28 overflow-hidden rounded-2xl border-2 border-pink-300 bg-gradient-to-br from-pink-50 to-white p-2 shadow-lg">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={character.imageData}
-                alt={character.name}
-                className="h-full w-full object-contain"
-              />
+              <div className="mx-auto h-28 w-28 overflow-hidden rounded-2xl border-2 border-pink-300 bg-gradient-to-br from-pink-50 to-white p-2 shadow-lg">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={character.imageData}
+                  alt={character.name}
+                  className="h-full w-full object-contain"
+                />
+              </div>
+
+              <h3 className="mt-4 text-xl font-bold">{character.name}</h3>
             </div>
 
-            <h3 className="mt-4 text-xl font-bold">{character.name}</h3>
-            <p className="mt-2 text-sm text-muted-foreground leading-relaxed whitespace-pre-line break-words">
-              {character.description}
-            </p>
-
-            {!isNew && (
-              <p className="mt-3 text-xs text-pink-600 font-medium">
-                {m.ownedCount}: {count}{m.ownedCountUnit}
+            <div className="min-h-0 overflow-y-auto px-6 py-2">
+              <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line break-words">
+                {character.description}
               </p>
-            )}
+            </div>
 
-            <button
-              type="button"
-              onClick={onClose}
-              className="mt-5 w-full rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 py-2.5 text-sm font-medium text-white shadow-sm transition-opacity hover:opacity-90"
-            >
-              {m.revealClose}
-            </button>
+            <div className="shrink-0 px-6 pb-6">
+              {!isNew && (
+                <p className="mb-3 text-xs text-pink-600 font-medium">
+                  {m.ownedCount}: {count}{m.ownedCountUnit}
+                </p>
+              )}
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 py-2.5 text-sm font-medium text-white shadow-sm transition-opacity hover:opacity-90"
+              >
+                {m.revealClose}
+              </button>
+            </div>
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
