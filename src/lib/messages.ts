@@ -594,6 +594,20 @@ export const messages = {
     operatorLogin: "ログイン",
     operatorLoginDesc: "運営モードでダッシュボードを開く",
     searchPlaceholder: "クリニック名・スラッグで検索",
+    // 新規追加
+    clinicName: "クリニック名",
+    clinicSlug: "スラッグ（URL用）",
+    clinicSlugHint: "アンケートURLに使用されます（英小文字・数字・ハイフン）",
+    adminEmail: "管理者メールアドレス",
+    adminPassword: "管理者パスワード",
+    planLabel: "プラン",
+    addClinicSubmit: "作成する",
+    addSuccess: "クリニックを作成しました",
+    // プラン切替
+    planSwitch: "プラン変更",
+    planSwitchSubmit: "変更を保存",
+    planSwitchSuccess: "プランを変更しました",
+    currentPlan: "現在のプラン",
   },
   operatorMode: {
     banner: "運営モード",
