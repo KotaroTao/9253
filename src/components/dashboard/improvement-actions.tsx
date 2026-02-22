@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect, useCallback } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -22,6 +22,8 @@ import {
   XCircle,
   RotateCcw,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
   Lightbulb,
   Pencil,
@@ -1666,32 +1668,37 @@ function AddLogForm({ actionId, onLogAdded }: { actionId: string; onLogAdded: (a
 function RotatingTip() {
   const tips = messages.improvementActions.tips
   const [index, setIndex] = useState(() => Math.floor(Math.random() * tips.length))
-  const [visible, setVisible] = useState(true)
 
-  const advance = useCallback(() => {
-    setVisible(false)
-    const timer = setTimeout(() => {
-      setIndex((prev) => (prev + 1) % tips.length)
-      setVisible(true)
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [tips.length])
+  function goPrev() {
+    setIndex((prev) => (prev - 1 + tips.length) % tips.length)
+  }
 
-  useEffect(() => {
-    const id = setInterval(advance, 6000)
-    return () => clearInterval(id)
-  }, [advance])
+  function goNext() {
+    setIndex((prev) => (prev + 1) % tips.length)
+  }
 
   return (
-    <div className="flex gap-2.5 rounded-lg border border-blue-100 bg-blue-50/50 px-4 py-3 min-h-[56px]">
-      <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
-      <p
-        className={`text-xs leading-relaxed text-blue-800 transition-opacity duration-300 ${
-          visible ? "opacity-100" : "opacity-0"
-        }`}
+    <div className="flex items-center gap-1 rounded-lg border border-blue-100 bg-blue-50/50 px-3 py-3 min-h-[56px]">
+      <button
+        type="button"
+        onClick={goPrev}
+        className="shrink-0 rounded p-0.5 text-blue-400 hover:text-blue-600 hover:bg-blue-100 transition-colors"
+        aria-label="前のヒント"
       >
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+      <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
+      <p className="flex-1 text-xs leading-relaxed text-blue-800">
         {tips[index]}
       </p>
+      <button
+        type="button"
+        onClick={goNext}
+        className="shrink-0 rounded p-0.5 text-blue-400 hover:text-blue-600 hover:bg-blue-100 transition-colors"
+        aria-label="次のヒント"
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
     </div>
   )
 }
