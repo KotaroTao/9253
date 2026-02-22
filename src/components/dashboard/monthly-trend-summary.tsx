@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react"
 import {
   ComposedChart,
-  BarChart,
   Bar,
   Line,
   XAxis,
@@ -14,12 +13,14 @@ import {
   Legend,
   ReferenceLine,
 } from "recharts"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
 import {
-  Users, Banknote, XCircle, Heart,
+  Users, Banknote, XCircle,
   TrendingUp, TrendingDown, Minus,
-  BarChart3, AlertCircle, HelpCircle, X,
+  AlertCircle, HelpCircle, X, ChevronDown,
+  Gauge, Briefcase, Lightbulb,
+  BarChart3,
 } from "lucide-react"
 import { calcDerived, calcProfileDerived, getBenchmarkStatus, generateInsights } from "@/lib/metrics-utils"
 import type { MonthlySummary, ClinicProfile, MetricsInsight, BenchmarkStatus, ClinicType } from "@/lib/metrics-utils"
@@ -108,43 +109,22 @@ function DataTable({ rows, data }: {
   )
 }
 
-// Chart section wrapper
-function ChartSection({ icon, title, accentColor, children }: {
-  icon: React.ReactNode
-  title: string
-  accentColor: string
-  children: React.ReactNode
-}) {
-  return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="flex items-center gap-2 mb-3">
-          <span
-            className="flex h-6 w-6 items-center justify-center rounded-md"
-            style={{ backgroundColor: `${accentColor}15`, color: accentColor }}
-          >
-            {icon}
-          </span>
-          <span className="text-sm font-medium">{title}</span>
-        </div>
-        {children}
-      </CardContent>
-    </Card>
-  )
-}
-
-// Scorecard stat item
-function ScorecardStat({ label, value, sub, momDelta, yoyDelta, statusColor }: {
+// KPI card for section headers
+function KpiCard({ label, value, sub, momDelta, yoyDelta, statusColor, helpKey }: {
   label: string
   value: string
   sub?: string
   momDelta?: string | null
   yoyDelta?: string | null
   statusColor?: string
+  helpKey?: KpiHelpKey
 }) {
   return (
     <div className={`rounded-xl border p-4 ${statusColor ? statusColor : "bg-card"}`}>
-      <p className="text-xs font-medium text-muted-foreground mb-1">{label}</p>
+      <p className="text-xs font-medium text-muted-foreground mb-1">
+        {label}
+        {helpKey && <KpiHelpButton helpKey={helpKey} />}
+      </p>
       <p className="text-2xl font-bold tabular-nums">
         {value}
         {sub && <span className="ml-1 text-sm font-normal text-muted-foreground">{sub}</span>}
@@ -166,25 +146,22 @@ function ScorecardStat({ label, value, sub, momDelta, yoyDelta, statusColor }: {
   )
 }
 
+// Sub-metric (small inline display below cards)
+function SubMetric({ label, value, unit }: { label: string; value: string | null; unit: string }) {
+  return (
+    <span className="text-xs text-muted-foreground">
+      {label}{" "}
+      <span className="font-medium text-foreground tabular-nums">{value ?? "-"}</span>
+      {value != null && unit}
+    </span>
+  )
+}
+
 function formatDelta(current: number | null, prev: number | null, unit: string = ""): string | null {
   if (current == null || prev == null) return null
   const diff = Math.round((current - prev) * 10) / 10
   if (diff === 0) return "±0" + unit
   return `${diff > 0 ? "+" : ""}${diff}${unit}`
-}
-
-// Derived KPI delta indicator
-function DerivedDelta({ current, prev }: { current: number | null; prev: number | null }) {
-  if (current == null || prev == null) return null
-  const diff = Math.round((current - prev) * 10) / 10
-  if (diff === 0) return null
-  const isUp = diff > 0
-  return (
-    <span className={`ml-1 text-xs ${isUp ? "text-emerald-600" : "text-red-500"}`}>
-      {isUp ? <TrendingUp className="inline h-3 w-3" /> : <TrendingDown className="inline h-3 w-3" />}
-      {" "}{isUp ? "+" : ""}{diff}
-    </span>
-  )
 }
 
 // KPI help tooltip
@@ -236,6 +213,120 @@ function KpiHelpButton({ helpKey }: { helpKey?: KpiHelpKey }) {
           </p>
         </div>
       )}
+    </span>
+  )
+}
+
+// Section wrapper with icon + title
+function Section({ icon, title, accentColor, children }: {
+  icon: React.ReactNode
+  title: string
+  accentColor: string
+  children: React.ReactNode
+}) {
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <div className="flex items-center gap-2 mb-4">
+          <span
+            className="flex h-7 w-7 items-center justify-center rounded-lg"
+            style={{ backgroundColor: `${accentColor}15`, color: accentColor }}
+          >
+            {icon}
+          </span>
+          <h3 className="text-sm font-semibold">{title}</h3>
+        </div>
+        {children}
+      </CardContent>
+    </Card>
+  )
+}
+
+// Collapsible section
+function CollapsibleSection({ icon, title, accentColor, children }: {
+  icon: React.ReactNode
+  title: string
+  accentColor: string
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex w-full items-center justify-between"
+        >
+          <div className="flex items-center gap-2">
+            <span
+              className="flex h-7 w-7 items-center justify-center rounded-lg"
+              style={{ backgroundColor: `${accentColor}15`, color: accentColor }}
+            >
+              {icon}
+            </span>
+            <h3 className="text-sm font-semibold">{title}</h3>
+          </div>
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
+        {open && <div className="mt-4">{children}</div>}
+      </CardContent>
+    </Card>
+  )
+}
+
+// Derived KPI card in a grid
+function DerivedKpiCard({ label, value, format, prev, helpKey, benchmarkKey, ct }: {
+  label: string
+  value: number | null
+  format: (v: number) => string
+  prev: number | null
+  helpKey?: KpiHelpKey
+  benchmarkKey?: string
+  ct: ClinicType
+}) {
+  const status: BenchmarkStatus | null = benchmarkKey ? getBenchmarkStatus(benchmarkKey, value, ct) : null
+  const m = messages.monthlyMetrics
+  return (
+    <div className={`rounded-lg border p-3 ${
+      status === "good" ? "bg-emerald-50/50 border-emerald-200/50 dark:bg-emerald-950/10 dark:border-emerald-900/30" :
+      status === "warning" ? "bg-amber-50/50 border-amber-200/50 dark:bg-amber-950/10 dark:border-amber-900/30" :
+      status === "danger" ? "bg-red-50/50 border-red-200/50 dark:bg-red-950/10 dark:border-red-900/30" :
+      "bg-muted/30"
+    }`}>
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">
+          {label}
+          <KpiHelpButton helpKey={helpKey} />
+        </p>
+        {status && (
+          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+            status === "good" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" :
+            status === "warning" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400" :
+            "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
+          }`}>
+            {status === "good" ? m.statusGood : status === "warning" ? m.statusWarning : m.statusDanger}
+          </span>
+        )}
+      </div>
+      <p className="text-lg font-bold">
+        {value != null ? format(value) : <span className="text-muted-foreground/50">-</span>}
+        <DerivedDelta current={value} prev={prev} />
+      </p>
+    </div>
+  )
+}
+
+// Derived KPI delta indicator
+function DerivedDelta({ current, prev }: { current: number | null; prev: number | null }) {
+  if (current == null || prev == null) return null
+  const diff = Math.round((current - prev) * 10) / 10
+  if (diff === 0) return null
+  const isUp = diff > 0
+  return (
+    <span className={`ml-1 text-xs ${isUp ? "text-emerald-600" : "text-red-500"}`}>
+      {isUp ? <TrendingUp className="inline h-3 w-3" /> : <TrendingDown className="inline h-3 w-3" />}
+      {" "}{isUp ? "+" : ""}{diff}
     </span>
   )
 }
@@ -328,7 +419,7 @@ export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSum
   const profileDerived = calcProfileDerived(summary, currentProfile)
   const prevProfileDerived = calcProfileDerived(prevSummary, prevProfileData)
 
-  // Total revenue for scorecard
+  // Total revenue
   const totalRevenue = summary?.insuranceRevenue != null && summary?.selfPayRevenue != null
     ? summary.insuranceRevenue + summary.selfPayRevenue : (summary?.totalRevenue ?? null)
   const prevTotalRevenue = prevSummary?.insuranceRevenue != null && prevSummary?.selfPayRevenue != null
@@ -371,31 +462,6 @@ export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSum
     }
   })
 
-  // Derived KPIs list
-  const derivedMetrics: { label: string; value: number | null; format: (v: number) => string; prev: number | null; helpKey?: KpiHelpKey; benchmarkKey?: string }[] = [
-    { label: m.revenuePerVisit, value: derived?.revenuePerVisit ?? null, format: (v) => `${v}${m.unitMan}`, prev: prevDerived?.revenuePerVisit ?? null, helpKey: "revenuePerVisit", benchmarkKey: "revenuePerVisit" },
-    { label: m.selfPayRatioAmount, value: derived?.selfPayRatioAmount ?? null, format: (v) => `${v}%`, prev: prevDerived?.selfPayRatioAmount ?? null, helpKey: "selfPayRatioAmount", benchmarkKey: "selfPayRatioAmount" },
-    { label: m.returnRate, value: derived?.returnRate ?? null, format: (v) => `${v}%`, prev: prevDerived?.returnRate ?? null, helpKey: "returnRate", benchmarkKey: "returnRate" },
-    { label: m.newPatientRate, value: derived?.newPatientRate ?? null, format: (v) => `${v}%`, prev: prevDerived?.newPatientRate ?? null, helpKey: "newPatientRate", benchmarkKey: "newPatientRate" },
-    { label: m.cancellationRate, value: derived?.cancellationRate ?? null, format: (v) => `${v}%`, prev: prevDerived?.cancellationRate ?? null, helpKey: "cancellationRate", benchmarkKey: "cancellationRate" },
-    { label: m.surveyResponseRate, value: derived?.surveyResponseRate ?? null, format: (v) => `${v}%`, prev: null, helpKey: "surveyResponseRate" },
-  ]
-
-  // Extended profile KPIs
-  const extendedMetrics: { label: string; value: number | null; format: (v: number) => string; prev: number | null; helpKey?: KpiHelpKey; benchmarkKey?: string }[] = [
-    { label: m.dailyPatients, value: profileDerived?.dailyPatients ?? null, format: (v) => `${v}${m.unitVisitsPerDay}`, prev: prevProfileDerived?.dailyPatients ?? null, helpKey: "dailyPatients" },
-    { label: m.dailyRevenue, value: profileDerived?.dailyRevenue ?? null, format: (v) => `${v}${m.unitMan}`, prev: prevProfileDerived?.dailyRevenue ?? null, helpKey: "dailyRevenue" },
-    { label: m.chairDailyVisits, value: profileDerived?.chairDailyVisits ?? null, format: (v) => `${v}${m.unitVisitsPerChairDay}`, prev: prevProfileDerived?.chairDailyVisits ?? null, helpKey: "chairDailyVisits" },
-    { label: m.revenuePerChair, value: profileDerived?.revenuePerChair ?? null, format: (v) => `${v}${m.unitMan}`, prev: prevProfileDerived?.revenuePerChair ?? null, helpKey: "revenuePerChair" },
-    { label: m.revenuePerReceipt, value: profileDerived?.revenuePerReceipt ?? null, format: (v) => `${v}${m.unitMan}`, prev: prevProfileDerived?.revenuePerReceipt ?? null, helpKey: "revenuePerReceipt" },
-    { label: m.avgVisitsPerPatient, value: profileDerived?.avgVisitsPerPatient ?? null, format: (v) => `${v}${m.unitTimes}`, prev: prevProfileDerived?.avgVisitsPerPatient ?? null, helpKey: "avgVisitsPerPatient" },
-    { label: m.revenuePerDentist, value: profileDerived?.revenuePerDentist ?? null, format: (v) => `${v}${m.unitMan}`, prev: prevProfileDerived?.revenuePerDentist ?? null, helpKey: "revenuePerDentist" },
-    { label: m.patientsPerDentist, value: profileDerived?.patientsPerDentist ?? null, format: (v) => `${v}${m.unitPersons}`, prev: prevProfileDerived?.patientsPerDentist ?? null, helpKey: "patientsPerDentist" },
-    { label: m.patientsPerHygienist, value: profileDerived?.patientsPerHygienist ?? null, format: (v) => `${v}${m.unitPersons}`, prev: prevProfileDerived?.patientsPerHygienist ?? null, helpKey: "patientsPerHygienist" },
-    { label: m.laborCostRatio, value: profileDerived?.laborCostRatio ?? null, format: (v) => `${v}%`, prev: prevProfileDerived?.laborCostRatio ?? null, helpKey: "laborCostRatio", benchmarkKey: "laborCostRatio" },
-    { label: m.revenuePerStaff, value: profileDerived?.revenuePerStaff ?? null, format: (v) => `${v}${m.unitMan}`, prev: prevProfileDerived?.revenuePerStaff ?? null, helpKey: "revenuePerStaff" },
-  ]
-
   const hasNoData = !summary
 
   const COLORS = {
@@ -408,6 +474,17 @@ export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSum
     redDark: "hsl(0, 60%, 45%)",
     teal: "hsl(174, 72%, 40%)",
     tealLight: "hsl(174, 55%, 65%)",
+    purple: "hsl(262, 60%, 50%)",
+  }
+
+  if (hasNoData) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center">
+          <p className="text-sm text-muted-foreground">{m.noData}</p>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -422,230 +499,51 @@ export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSum
         </div>
       )}
 
-      {/* 1. 経営スコアカード */}
-      <div>
-        <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-          <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          {m.scorecardTitleWithMonth(year, month)}
-        </h3>
-        {hasNoData ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-sm text-muted-foreground">{m.noData}</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <ScorecardStat
-              label="総売上"
-              value={totalRevenue != null ? `${totalRevenue}` : "-"}
-              sub="万円"
-              momDelta={formatDelta(totalRevenue, prevTotalRevenue)}
-              yoyDelta={formatDelta(totalRevenue, yoyTotalRevenue)}
-            />
-            <ScorecardStat
-              label="総実人数"
-              value={derived?.totalPatients != null ? `${derived.totalPatients}` : "-"}
-              sub="人"
-              momDelta={formatDelta(derived?.totalPatients ?? null, prevDerived?.totalPatients ?? null)}
-              yoyDelta={formatDelta(derived?.totalPatients ?? null, yoyDerived?.totalPatients ?? null)}
-            />
-            <ScorecardStat
-              label="新患数"
-              value={summary?.firstVisitCount != null ? `${summary.firstVisitCount}` : "-"}
-              sub="人"
-              momDelta={formatDelta(summary?.firstVisitCount ?? null, prevSummary?.firstVisitCount ?? null)}
-              yoyDelta={formatDelta(summary?.firstVisitCount ?? null, yoySummary?.firstVisitCount ?? null)}
-            />
-            <ScorecardStat
-              label="自費率"
-              value={derived?.selfPayRatioAmount != null ? `${derived.selfPayRatioAmount}` : "-"}
-              sub="%"
-              momDelta={formatDelta(derived?.selfPayRatioAmount ?? null, prevDerived?.selfPayRatioAmount ?? null, "pt")}
-              statusColor={getBenchmarkStatus("selfPayRatioAmount", derived?.selfPayRatioAmount ?? null, ct) === "good" ? "bg-emerald-50/50 dark:bg-emerald-950/20" : undefined}
-            />
-            <ScorecardStat
-              label="再来院率"
-              value={derived?.returnRate != null ? `${derived.returnRate}` : "-"}
-              sub="%"
-              momDelta={formatDelta(derived?.returnRate ?? null, prevDerived?.returnRate ?? null, "pt")}
-              statusColor={getBenchmarkStatus("returnRate", derived?.returnRate ?? null, ct) === "good" ? "bg-emerald-50/50 dark:bg-emerald-950/20" : undefined}
-            />
-            <ScorecardStat
-              label="キャンセル率"
-              value={derived?.cancellationRate != null ? `${derived.cancellationRate}` : "-"}
-              sub="%"
-              momDelta={formatDelta(derived?.cancellationRate ?? null, prevDerived?.cancellationRate ?? null, "pt")}
-              statusColor={getBenchmarkStatus("cancellationRate", derived?.cancellationRate ?? null, ct) === "danger" ? "bg-red-50/50 dark:bg-red-950/20" : undefined}
-            />
-            <ScorecardStat
-              label={m.satisfactionScoreLabel}
-              value={monthData?.satisfactionScore != null ? monthData.satisfactionScore.toFixed(1) : "-"}
-              sub="/5.0"
-              momDelta={formatDelta(monthData?.satisfactionScore ?? null, monthData?.prevSatisfactionScore ?? null)}
-            />
-            <ScorecardStat
-              label={m.surveyCountLabel}
-              value={surveyCount > 0 ? `${surveyCount}` : "-"}
-              sub="件"
-            />
-          </div>
-        )}
-      </div>
-
-      {/* 2. 自動算出指標 */}
-      {!hasNoData && derivedMetrics.some((dm) => dm.value != null) && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">{m.derivedTitle}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
-              {derivedMetrics.map((metric) => {
-                const status: BenchmarkStatus | null = metric.benchmarkKey ? getBenchmarkStatus(metric.benchmarkKey, metric.value, ct) : null
-                return (
-                  <div key={metric.label} className={`rounded-lg border p-3 ${
-                    status === "good" ? "bg-emerald-50/50 border-emerald-200/50 dark:bg-emerald-950/10 dark:border-emerald-900/30" :
-                    status === "warning" ? "bg-amber-50/50 border-amber-200/50 dark:bg-amber-950/10 dark:border-amber-900/30" :
-                    status === "danger" ? "bg-red-50/50 border-red-200/50 dark:bg-red-950/10 dark:border-red-900/30" :
-                    "bg-muted/30"
-                  }`}>
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-muted-foreground">
-                        {metric.label}
-                        <KpiHelpButton helpKey={metric.helpKey} />
-                      </p>
-                      {status && (
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                          status === "good" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" :
-                          status === "warning" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400" :
-                          "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
-                        }`}>
-                          {status === "good" ? m.statusGood : status === "warning" ? m.statusWarning : m.statusDanger}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-lg font-bold">
-                      {metric.value != null ? metric.format(metric.value) : <span className="text-muted-foreground/50">-</span>}
-                      <DerivedDelta current={metric.value} prev={metric.prev} />
-                    </p>
-                  </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 3. 体制・生産性指標 */}
-      {!hasNoData && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">{m.extendedDerivedTitle}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-              {extendedMetrics.map((metric) => {
-                const status: BenchmarkStatus | null = metric.benchmarkKey ? getBenchmarkStatus(metric.benchmarkKey, metric.value, ct) : null
-                return (
-                  <div key={metric.label} className={`rounded-lg border p-3 ${
-                    status === "good" ? "bg-emerald-50/50 border-emerald-200/50 dark:bg-emerald-950/10 dark:border-emerald-900/30" :
-                    status === "warning" ? "bg-amber-50/50 border-amber-200/50 dark:bg-amber-950/10 dark:border-amber-900/30" :
-                    status === "danger" ? "bg-red-50/50 border-red-200/50 dark:bg-red-950/10 dark:border-red-900/30" :
-                    "bg-muted/30"
-                  }`}>
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-muted-foreground">
-                        {metric.label}
-                        <KpiHelpButton helpKey={metric.helpKey} />
-                      </p>
-                      {status && (
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                          status === "good" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" :
-                          status === "warning" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400" :
-                          "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
-                        }`}>
-                          {status === "good" ? m.statusGood : status === "warning" ? m.statusWarning : m.statusDanger}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-lg font-bold">
-                      {metric.value != null ? metric.format(metric.value) : <span className="text-muted-foreground/50">-</span>}
-                      <DerivedDelta current={metric.value} prev={metric.prev} />
-                    </p>
-                  </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 4. 月次インサイト */}
-      {insights.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">{m.insightTitle}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {insights.map((insight: MetricsInsight, i: number) => (
-                <div
-                  key={i}
-                  className={`flex items-start gap-2.5 rounded-lg border px-4 py-3 text-sm ${
-                    insight.type === "positive" ? "border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/50 dark:bg-emerald-950/20" :
-                    insight.type === "warning" ? "border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/20" :
-                    "border-blue-200 bg-blue-50/50 dark:border-blue-900/50 dark:bg-blue-950/20"
-                  }`}
-                >
-                  <span className="mt-0.5">
-                    {insight.type === "positive" ? <TrendingUp className="h-4 w-4 text-emerald-600" /> :
-                     insight.type === "warning" ? <TrendingDown className="h-4 w-4 text-amber-600" /> :
-                     <BarChart3 className="h-4 w-4 text-blue-600" />}
-                  </span>
-                  <p className="leading-relaxed">{insight.message}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 5. トレンドチャート（タブなし・順次表示） */}
-      {chartData.length > 0 && (
-        <>
-          {/* ① 満足度スコア・回答数推移 */}
-          <ChartSection icon={<Heart className="h-3.5 w-3.5" />} title={m.satisfactionTrendTitle} accentColor={COLORS.teal}>
-            <ResponsiveContainer width="100%" height={260}>
-              <ComposedChart data={chartData} margin={{ top: 5, right: 10, bottom: 0, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
-                <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis yAxisId="left" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis yAxisId="right" orientation="right" fontSize={11} tickLine={false} axisLine={false} domain={[1, 5]} />
-                <Tooltip
-                  contentStyle={{ borderRadius: "8px", border: "1px solid hsl(var(--border))", fontSize: "12px" }}
-                  formatter={(value: number, name: string) => {
-                    if (name === m.satisfactionScoreLabel) return value?.toFixed(1) ?? "-"
-                    return `${value}件`
-                  }}
-                />
-                <Legend wrapperStyle={{ fontSize: "11px" }} />
-                <Bar yAxisId="left" dataKey="surveyCount" name={m.surveyCountLabel} fill={COLORS.tealLight} radius={[3, 3, 0, 0]} opacity={0.7} />
-                <Line yAxisId="right" type="monotone" dataKey="satisfactionScore" name={m.satisfactionScoreLabel} stroke={COLORS.teal} strokeWidth={2.5} dot={{ r: 3.5 }} connectNulls />
-              </ComposedChart>
-            </ResponsiveContainer>
-            <DataTable
-              data={chartData}
-              rows={[
-                { label: m.surveyCountLabel, key: "surveyCount", color: COLORS.tealLight, format: (v) => `${v}件` },
-                { label: m.satisfactionScoreLabel, key: "satisfactionScore", color: COLORS.teal, format: (v) => v.toFixed(1) },
-              ]}
-            />
-          </ChartSection>
-
-          {/* ② 売上推移 ＋ 自費率推移 */}
-          <ChartSection icon={<Banknote className="h-3.5 w-3.5" />} title="売上推移 ＋ 自費率推移" accentColor={COLORS.gold}>
-            <ResponsiveContainer width="100%" height={280}>
+      {/* ① 売上・収益 */}
+      <Section icon={<Banknote className="h-4 w-4" />} title="売上・収益" accentColor={COLORS.gold}>
+        {/* Main KPI cards */}
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <KpiCard
+            label="総売上"
+            value={totalRevenue != null ? `${totalRevenue}` : "-"}
+            sub="万円"
+            momDelta={formatDelta(totalRevenue, prevTotalRevenue)}
+            yoyDelta={formatDelta(totalRevenue, yoyTotalRevenue)}
+          />
+          <KpiCard
+            label={m.selfPayRatioAmount}
+            value={derived?.selfPayRatioAmount != null ? `${derived.selfPayRatioAmount}` : "-"}
+            sub="%"
+            momDelta={formatDelta(derived?.selfPayRatioAmount ?? null, prevDerived?.selfPayRatioAmount ?? null, "pt")}
+            statusColor={getBenchmarkStatus("selfPayRatioAmount", derived?.selfPayRatioAmount ?? null, ct) === "good" ? "bg-emerald-50/50 dark:bg-emerald-950/20" : undefined}
+            helpKey="selfPayRatioAmount"
+          />
+          <KpiCard
+            label={m.revenuePerVisit}
+            value={derived?.revenuePerVisit != null ? `${derived.revenuePerVisit}` : "-"}
+            sub="万円"
+            momDelta={formatDelta(derived?.revenuePerVisit ?? null, prevDerived?.revenuePerVisit ?? null)}
+            helpKey="revenuePerVisit"
+          />
+          <KpiCard
+            label={m.dailyRevenue}
+            value={profileDerived?.dailyRevenue != null ? `${profileDerived.dailyRevenue}` : "-"}
+            sub="万円"
+            momDelta={formatDelta(profileDerived?.dailyRevenue ?? null, prevProfileDerived?.dailyRevenue ?? null)}
+            helpKey="dailyRevenue"
+          />
+        </div>
+        {/* Sub-metrics */}
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 px-1">
+          <SubMetric label={m.insuranceRevenue} value={summary?.insuranceRevenue != null ? `${summary.insuranceRevenue}` : null} unit="万円" />
+          <SubMetric label={m.selfPayRevenue} value={summary?.selfPayRevenue != null ? `${summary.selfPayRevenue}` : null} unit="万円" />
+          <SubMetric label={m.revenuePerReceipt} value={profileDerived?.revenuePerReceipt != null ? `${profileDerived.revenuePerReceipt}` : null} unit="万円" />
+        </div>
+        {/* Revenue trend chart */}
+        {chartData.length > 0 && (
+          <div className="mt-5">
+            <p className="text-xs font-medium text-muted-foreground mb-2">売上推移</p>
+            <ResponsiveContainer width="100%" height={240}>
               <ComposedChart data={chartData} margin={{ top: 5, right: 10, bottom: 0, left: -10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
                 <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} />
@@ -673,11 +571,48 @@ export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSum
                 { label: m.selfPayRatioAmount, key: "selfPayRatioAmount", color: COLORS.goldDark, format: (v) => `${v}%` },
               ]}
             />
-          </ChartSection>
+          </div>
+        )}
+      </Section>
 
-          {/* ③ 来院数推移 ＋ 再来院率推移 */}
-          <ChartSection icon={<Users className="h-3.5 w-3.5" />} title="来院数推移 ＋ 再来院率推移" accentColor={COLORS.blue}>
-            <ResponsiveContainer width="100%" height={280}>
+      {/* ② 患者数・集患 */}
+      <Section icon={<Users className="h-4 w-4" />} title="患者数・集患" accentColor={COLORS.blue}>
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <KpiCard
+            label={m.totalPatients}
+            value={derived?.totalPatients != null ? `${derived.totalPatients}` : "-"}
+            sub="人"
+            momDelta={formatDelta(derived?.totalPatients ?? null, prevDerived?.totalPatients ?? null)}
+            yoyDelta={formatDelta(derived?.totalPatients ?? null, yoyDerived?.totalPatients ?? null)}
+          />
+          <KpiCard
+            label="新患数"
+            value={summary?.firstVisitCount != null ? `${summary.firstVisitCount}` : "-"}
+            sub="人"
+            momDelta={formatDelta(summary?.firstVisitCount ?? null, prevSummary?.firstVisitCount ?? null)}
+            yoyDelta={formatDelta(summary?.firstVisitCount ?? null, yoySummary?.firstVisitCount ?? null)}
+          />
+          <KpiCard
+            label={m.newPatientRate}
+            value={derived?.newPatientRate != null ? `${derived.newPatientRate}` : "-"}
+            sub="%"
+            momDelta={formatDelta(derived?.newPatientRate ?? null, prevDerived?.newPatientRate ?? null, "pt")}
+            helpKey="newPatientRate"
+          />
+          <KpiCard
+            label={m.returnRate}
+            value={derived?.returnRate != null ? `${derived.returnRate}` : "-"}
+            sub="%"
+            momDelta={formatDelta(derived?.returnRate ?? null, prevDerived?.returnRate ?? null, "pt")}
+            statusColor={getBenchmarkStatus("returnRate", derived?.returnRate ?? null, ct) === "good" ? "bg-emerald-50/50 dark:bg-emerald-950/20" : undefined}
+            helpKey="returnRate"
+          />
+        </div>
+        {/* Patient trend chart */}
+        {chartData.length > 0 && (
+          <div className="mt-5">
+            <p className="text-xs font-medium text-muted-foreground mb-2">来院数推移</p>
+            <ResponsiveContainer width="100%" height={240}>
               <ComposedChart data={chartData} margin={{ top: 5, right: 10, bottom: 0, left: -10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
                 <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} />
@@ -705,11 +640,46 @@ export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSum
                 { label: m.returnRate, key: "returnRate", color: COLORS.green, format: (v) => `${v}%` },
               ]}
             />
-          </ChartSection>
+          </div>
+        )}
+      </Section>
 
-          {/* ④ キャンセル率推移 */}
-          <ChartSection icon={<XCircle className="h-3.5 w-3.5" />} title="キャンセル件数・キャンセル率推移" accentColor={COLORS.red}>
-            <ResponsiveContainer width="100%" height={260}>
+      {/* ③ 運営効率 */}
+      <Section icon={<Gauge className="h-4 w-4" />} title="運営効率" accentColor={COLORS.red}>
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <KpiCard
+            label={m.cancellationCount}
+            value={summary?.cancellationCount != null ? `${summary.cancellationCount}` : "-"}
+            sub="件"
+            momDelta={formatDelta(summary?.cancellationCount ?? null, prevSummary?.cancellationCount ?? null)}
+          />
+          <KpiCard
+            label={m.cancellationRate}
+            value={derived?.cancellationRate != null ? `${derived.cancellationRate}` : "-"}
+            sub="%"
+            momDelta={formatDelta(derived?.cancellationRate ?? null, prevDerived?.cancellationRate ?? null, "pt")}
+            statusColor={getBenchmarkStatus("cancellationRate", derived?.cancellationRate ?? null, ct) === "danger" ? "bg-red-50/50 dark:bg-red-950/20" : undefined}
+            helpKey="cancellationRate"
+          />
+          <KpiCard
+            label={m.chairDailyVisits}
+            value={profileDerived?.chairDailyVisits != null ? `${profileDerived.chairDailyVisits}` : "-"}
+            sub={m.unitVisitsPerChairDay}
+            momDelta={formatDelta(profileDerived?.chairDailyVisits ?? null, prevProfileDerived?.chairDailyVisits ?? null)}
+            helpKey="chairDailyVisits"
+          />
+          <KpiCard
+            label={m.surveyResponseRate}
+            value={derived?.surveyResponseRate != null ? `${derived.surveyResponseRate}` : "-"}
+            sub="%"
+            helpKey="surveyResponseRate"
+          />
+        </div>
+        {/* Cancellation trend chart */}
+        {chartData.length > 0 && (
+          <div className="mt-5">
+            <p className="text-xs font-medium text-muted-foreground mb-2">キャンセル推移</p>
+            <ResponsiveContainer width="100%" height={240}>
               <ComposedChart data={chartData} margin={{ top: 5, right: 5, bottom: 0, left: -10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
                 <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} />
@@ -732,8 +702,47 @@ export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSum
                 { label: m.cancellationRate, key: "cancellationRate", color: COLORS.redDark, format: (v) => `${v}%` },
               ]}
             />
-          </ChartSection>
-        </>
+          </div>
+        )}
+      </Section>
+
+      {/* ④ 生産性・スタッフ（折りたたみ可能） */}
+      <CollapsibleSection icon={<Briefcase className="h-4 w-4" />} title="生産性・スタッフ" accentColor={COLORS.purple}>
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+          <DerivedKpiCard label={m.revenuePerDentist} value={profileDerived?.revenuePerDentist ?? null} format={(v) => `${v}${m.unitMan}`} prev={prevProfileDerived?.revenuePerDentist ?? null} helpKey="revenuePerDentist" ct={ct} />
+          <DerivedKpiCard label={m.patientsPerDentist} value={profileDerived?.patientsPerDentist ?? null} format={(v) => `${v}${m.unitPersons}`} prev={prevProfileDerived?.patientsPerDentist ?? null} helpKey="patientsPerDentist" ct={ct} />
+          <DerivedKpiCard label={m.patientsPerHygienist} value={profileDerived?.patientsPerHygienist ?? null} format={(v) => `${v}${m.unitPersons}`} prev={prevProfileDerived?.patientsPerHygienist ?? null} helpKey="patientsPerHygienist" ct={ct} />
+          <DerivedKpiCard label={m.revenuePerChair} value={profileDerived?.revenuePerChair ?? null} format={(v) => `${v}${m.unitMan}`} prev={prevProfileDerived?.revenuePerChair ?? null} helpKey="revenuePerChair" ct={ct} />
+          <DerivedKpiCard label={m.revenuePerStaff} value={profileDerived?.revenuePerStaff ?? null} format={(v) => `${v}${m.unitMan}`} prev={prevProfileDerived?.revenuePerStaff ?? null} helpKey="revenuePerStaff" ct={ct} />
+          <DerivedKpiCard label={m.laborCostRatio} value={profileDerived?.laborCostRatio ?? null} format={(v) => `${v}%`} prev={prevProfileDerived?.laborCostRatio ?? null} helpKey="laborCostRatio" benchmarkKey="laborCostRatio" ct={ct} />
+          <DerivedKpiCard label={m.avgVisitsPerPatient} value={profileDerived?.avgVisitsPerPatient ?? null} format={(v) => `${v}${m.unitTimes}`} prev={prevProfileDerived?.avgVisitsPerPatient ?? null} helpKey="avgVisitsPerPatient" ct={ct} />
+          <DerivedKpiCard label={m.dailyPatients} value={profileDerived?.dailyPatients ?? null} format={(v) => `${v}${m.unitVisitsPerDay}`} prev={prevProfileDerived?.dailyPatients ?? null} helpKey="dailyPatients" ct={ct} />
+        </div>
+      </CollapsibleSection>
+
+      {/* ⑤ 月次インサイト */}
+      {insights.length > 0 && (
+        <Section icon={<Lightbulb className="h-4 w-4" />} title={m.insightTitle} accentColor={COLORS.teal}>
+          <div className="space-y-2">
+            {insights.map((insight: MetricsInsight, i: number) => (
+              <div
+                key={i}
+                className={`flex items-start gap-2.5 rounded-lg border px-4 py-3 text-sm ${
+                  insight.type === "positive" ? "border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/50 dark:bg-emerald-950/20" :
+                  insight.type === "warning" ? "border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/20" :
+                  "border-blue-200 bg-blue-50/50 dark:border-blue-900/50 dark:bg-blue-950/20"
+                }`}
+              >
+                <span className="mt-0.5">
+                  {insight.type === "positive" ? <TrendingUp className="h-4 w-4 text-emerald-600" /> :
+                   insight.type === "warning" ? <TrendingDown className="h-4 w-4 text-amber-600" /> :
+                   <BarChart3 className="h-4 w-4 text-blue-600" />}
+                </span>
+                <p className="leading-relaxed">{insight.message}</p>
+              </div>
+            ))}
+          </div>
+        </Section>
       )}
     </div>
   )
