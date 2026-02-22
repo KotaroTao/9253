@@ -17,14 +17,15 @@ model Clinic {
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
 
-  staff                Staff[]
-  users                User[]
-  surveyTemplates      SurveyTemplate[]
-  surveyResponses      SurveyResponse[]
-  monthlyClinicMetrics MonthlyClinicMetrics[]
-  improvementActions   ImprovementAction[]
-  authorizedDevices    AuthorizedDevice[]
-  advisoryReports      AdvisoryReport[]
+  staff                  Staff[]
+  users                  User[]
+  surveyTemplates        SurveyTemplate[]
+  surveyResponses        SurveyResponse[]
+  monthlyClinicMetrics   MonthlyClinicMetrics[]
+  improvementActions     ImprovementAction[]
+  authorizedDevices      AuthorizedDevice[]
+  advisoryReports        AdvisoryReport[]
+  kawaiiTeethCollections KawaiiTeethCollection[]
 
   @@map("clinics")
 }
@@ -215,6 +216,33 @@ model AdvisoryReport {
   @@index([clinicId])
   @@index([clinicId, generatedAt])
   @@map("advisory_reports")
+}
+
+model KawaiiTeeth {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  description String
+  imageData   String   @map("image_data") @db.Text // base64 data URL
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  collections KawaiiTeethCollection[]
+
+  @@map("kawaii_teeth")
+}
+
+model KawaiiTeethCollection {
+  id            String   @id @default(uuid()) @db.Uuid
+  clinicId      String   @map("clinic_id") @db.Uuid
+  kawaiiTeethId String   @map("kawaii_teeth_id") @db.Uuid
+  acquiredAt    DateTime @default(now()) @map("acquired_at")
+
+  clinic      Clinic      @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  kawaiiTeeth KawaiiTeeth @relation(fields: [kawaiiTeethId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@index([kawaiiTeethId])
+  @@map("kawaii_teeth_collections")
 }
 
 model MonthlyClinicMetrics {

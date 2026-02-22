@@ -4,7 +4,7 @@ import { getAllClinics, getClinicHealthBatch, getPlatformTodayStats } from "@/li
 import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
-import { Lightbulb, HardDrive, Megaphone, ArrowRight, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, AlertTriangle, Activity } from "lucide-react"
+import { Lightbulb, HardDrive, SmilePlus, Megaphone, ArrowRight, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, AlertTriangle, Activity } from "lucide-react"
 import { ClinicSearch } from "@/components/admin/clinic-search"
 import { ClinicRow } from "@/components/admin/clinic-row"
 import { PxValueDashboard } from "@/components/admin/px-value-dashboard"
@@ -230,6 +230,22 @@ export default async function AdminPage({
             <div>
               <p className="text-sm font-medium">{messages.backup.title}</p>
               <p className="text-xs text-muted-foreground">{messages.backup.description}</p>
+            </div>
+          </div>
+          <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </Link>
+
+        <Link
+          href="/admin/kawaii-teeth"
+          className="flex items-center justify-between rounded-lg border border-pink-200 bg-gradient-to-r from-pink-50/80 to-white p-4 transition-colors hover:border-pink-300 hover:shadow-sm"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-pink-100 text-pink-600">
+              <SmilePlus className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">{messages.kawaiiTeeth.adminTitle}</p>
+              <p className="text-xs text-muted-foreground">{messages.kawaiiTeeth.adminDescription}</p>
             </div>
           </div>
           <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
