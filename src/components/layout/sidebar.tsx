@@ -54,9 +54,9 @@ function hasFeatureAccess(effectivePlan: PlanTier, feature: string): boolean {
 
 const analyticsItems: NavItem[] = [
   { href: "/dashboard/analytics", label: messages.nav.analytics, icon: PieChart, feature: "analytics" },
-  { href: "/dashboard/advisory", label: messages.nav.advisory, icon: Brain, feature: "advisory" },
   { href: "/dashboard/metrics", label: messages.nav.monthlyMetrics, icon: FileBarChart, feature: "business_metrics" },
   { href: "/dashboard/metrics/input", label: messages.nav.metricsInput, icon: PenSquare, feature: "business_metrics" },
+  { href: "/dashboard/advisory", label: messages.nav.advisory, icon: Brain, feature: "advisory" },
 ]
 
 const actionItems: NavItem[] = [
