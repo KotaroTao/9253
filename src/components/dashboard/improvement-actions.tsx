@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -307,15 +307,8 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [],
         </Card>
       )}
 
-      {/* Tip */}
-      {!showForm && (
-        <div className="flex gap-2.5 rounded-lg border border-blue-100 bg-blue-50/50 px-4 py-3">
-          <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
-          <p className="text-xs leading-relaxed text-blue-800">
-            {messages.improvementActions.tip}
-          </p>
-        </div>
-      )}
+      {/* Rotating tips */}
+      {!showForm && <RotatingTip />}
 
       {/* Error message */}
       {errorMsg && (
@@ -963,6 +956,39 @@ function ActionTimeline({ logs, onLogUpdated }: { logs: ActionLog[]; onLogUpdate
           )
         })}
       </div>
+    </div>
+  )
+}
+
+function RotatingTip() {
+  const tips = messages.improvementActions.tips
+  const [index, setIndex] = useState(() => Math.floor(Math.random() * tips.length))
+  const [visible, setVisible] = useState(true)
+
+  const advance = useCallback(() => {
+    setVisible(false)
+    const timer = setTimeout(() => {
+      setIndex((prev) => (prev + 1) % tips.length)
+      setVisible(true)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [tips.length])
+
+  useEffect(() => {
+    const id = setInterval(advance, 6000)
+    return () => clearInterval(id)
+  }, [advance])
+
+  return (
+    <div className="flex gap-2.5 rounded-lg border border-blue-100 bg-blue-50/50 px-4 py-3 min-h-[56px]">
+      <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
+      <p
+        className={`text-xs leading-relaxed text-blue-800 transition-opacity duration-300 ${
+          visible ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        {tips[index]}
+      </p>
     </div>
   )
 }
