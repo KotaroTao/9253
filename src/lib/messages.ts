@@ -283,6 +283,7 @@ export const messages = {
     recommendedDesc: "特に満足度が低い項目です。クリックして改善アクションを開始できます",
     recommendedScore: "現在スコア",
     recommendedAlreadyActive: "すべての低スコア項目に対して改善アクションが実施中です",
+    tip: "多くの改善アクションを一度にやるのではなく、「満足度が低い」カテゴリから1～2項目だけ選び、朝礼などで「今月はこれを全員でやろう！」と決めて実行するのがおすすめです。",
   },
   staffLeaderboard: {
     title: "アンケート回収件数",
