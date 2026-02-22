@@ -170,8 +170,9 @@ export function StaffEngagement({
         </Card>
       )}
 
-      {/* ① AI分析クエスト + 週チャート */}
+      {/* ①② AI分析クエスト + パーソナルステータス（PC横並び） */}
       {totalCount > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className={cn(
           "border-purple-200",
           advisoryUnlocked
@@ -346,12 +347,10 @@ export function StaffEngagement({
             </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* ② パーソナルステータスバー */}
-      {totalCount > 0 && (
-        <Card>
-          <CardContent className="py-4">
+        {/* ② パーソナルステータスバー */}
+        <Card className="flex flex-col">
+          <CardContent className="py-4 flex-1">
             <div className="flex items-center justify-between">
               {/* Rank */}
               <div className="relative flex items-center gap-1.5">
@@ -415,6 +414,7 @@ export function StaffEngagement({
             )}
           </CardContent>
         </Card>
+        </div>
       )}
 
       {/* ④ 患者さまの声（カルーセル） */}
