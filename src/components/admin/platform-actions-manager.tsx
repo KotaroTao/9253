@@ -13,6 +13,7 @@ import {
   EyeOff,
   Users,
   TrendingUp,
+  CheckCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -34,7 +35,9 @@ interface PlatformAction {
   serviceProvider: string | null
   displayOrder: number
   adoptCount: number
+  completedCount: number
   avgImprovement: number | null
+  completionReasons: Record<string, number>
   createdAt: string
 }
 
@@ -452,11 +455,17 @@ function ActionRow({
                 <span>対象: {(action.targetQuestionIds as string[]).join(", ")}</span>
               )}
             </div>
-            <div className="mt-1.5 flex items-center gap-4 text-[11px]">
+            <div className="mt-1.5 flex flex-wrap items-center gap-4 text-[11px]">
               <span className="flex items-center gap-1 text-blue-600">
                 <Users className="h-3 w-3" />
                 {messages.platformActions.adoptCount}: {action.adoptCount}
               </span>
+              {action.completedCount > 0 && (
+                <span className="flex items-center gap-1 text-emerald-600">
+                  <CheckCircle className="h-3 w-3" />
+                  {messages.platformActions.completedCount}: {action.completedCount}
+                </span>
+              )}
               {action.avgImprovement != null && (
                 <span className={`flex items-center gap-1 ${action.avgImprovement >= 0 ? "text-green-600" : "text-red-600"}`}>
                   <TrendingUp className="h-3 w-3" />
@@ -464,6 +473,30 @@ function ActionRow({
                 </span>
               )}
             </div>
+            {action.completedCount > 0 && Object.keys(action.completionReasons).length > 0 && (
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px]">
+                {action.completionReasons.established > 0 && (
+                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-green-700">
+                    ✅ {messages.platformActions.reasonEstablished}: {action.completionReasons.established}
+                  </span>
+                )}
+                {action.completionReasons.uncertain > 0 && (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-700">
+                    🔄 {messages.platformActions.reasonUncertain}: {action.completionReasons.uncertain}
+                  </span>
+                )}
+                {action.completionReasons.suspended > 0 && (
+                  <span className="rounded-full bg-orange-100 px-2 py-0.5 text-orange-700">
+                    ⏸️ {messages.platformActions.reasonSuspended}: {action.completionReasons.suspended}
+                  </span>
+                )}
+                {action.completionReasons.none > 0 && (
+                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-gray-500">
+                    {messages.platformActions.reasonNone}: {action.completionReasons.none}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-1 shrink-0">
             <button
