@@ -5,8 +5,9 @@ import { prisma } from "@/lib/prisma"
 import { getMonthlySurveyCount } from "@/lib/queries/stats"
 import { MetricsInputView } from "@/components/dashboard/metrics-input-view"
 import { UpgradePrompt } from "@/components/dashboard/upgrade-prompt"
-import { getMonthStatus } from "@/lib/metrics-utils"
-import type { MonthStatus } from "@/lib/metrics-utils"
+import { getMonthStatus, calcWorkingDays } from "@/lib/metrics-utils"
+import type { MonthStatus, ClinicProfile } from "@/lib/metrics-utils"
+import type { ClinicSettings } from "@/types"
 import { ROLES } from "@/lib/constants"
 import { getClinicPlanInfo, hasFeature } from "@/lib/plan"
 import { messages } from "@/lib/messages"
@@ -18,6 +19,32 @@ const METRICS_SELECT = {
   selfPayRevenue: true,
   cancellationCount: true,
 } as const
+
+const PROFILE_SELECT = {
+  chairCount: true,
+  dentistCount: true,
+  hygienistCount: true,
+  totalVisitCount: true,
+  workingDays: true,
+  laborCost: true,
+} as const
+
+const FULL_SELECT = {
+  ...METRICS_SELECT,
+  ...PROFILE_SELECT,
+} as const
+
+function extractProfile(row: { chairCount: number | null; dentistCount: number | null; hygienistCount: number | null; totalVisitCount: number | null; workingDays: number | null; laborCost: number | null } | null): ClinicProfile | null {
+  if (!row) return null
+  return {
+    chairCount: row.chairCount,
+    dentistCount: row.dentistCount,
+    hygienistCount: row.hygienistCount,
+    totalVisitCount: row.totalVisitCount,
+    workingDays: row.workingDays,
+    laborCost: row.laborCost,
+  }
+}
 
 export default async function MetricsInputPage() {
   const session = await auth()
@@ -71,15 +98,15 @@ export default async function MetricsInputPage() {
     }
   }
 
-  const [summary, prevSummary, surveyCount, statusRows] =
+  const [summary, prevSummary, surveyCount, statusRows, clinic] =
     await Promise.all([
       prisma.monthlyClinicMetrics.findUnique({
         where: { clinicId_year_month: { clinicId, year, month } },
-        select: METRICS_SELECT,
+        select: FULL_SELECT,
       }),
       prisma.monthlyClinicMetrics.findUnique({
         where: { clinicId_year_month: { clinicId, year: prevYear, month: prevMonth } },
-        select: METRICS_SELECT,
+        select: FULL_SELECT,
       }),
       getMonthlySurveyCount(clinicId, year, month),
       prisma.monthlyClinicMetrics.findMany({
@@ -88,6 +115,10 @@ export default async function MetricsInputPage() {
           OR: monthKeys.map((k) => ({ year: k.year, month: k.month })),
         },
         select: { year: true, month: true, ...METRICS_SELECT },
+      }),
+      prisma.clinic.findUnique({
+        where: { id: clinicId },
+        select: { unitCount: true, settings: true },
       }),
     ])
 
@@ -100,6 +131,22 @@ export default async function MetricsInputPage() {
     monthStatuses[key] = getMonthStatus(row ?? null)
   }
 
+  // Auto-calculate working days from clinic calendar
+  const settings = (clinic?.settings ?? {}) as ClinicSettings
+  const autoWorkingDays = calcWorkingDays(
+    year, month,
+    settings.regularClosedDays ?? [],
+    settings.closedDates ?? [],
+    settings.openDates ?? [],
+  )
+
+  // Profile defaults from previous month or clinic settings
+  const profileDefaults = {
+    chairCount: prevSummary?.chairCount ?? clinic?.unitCount ?? null,
+    dentistCount: prevSummary?.dentistCount ?? null,
+    hygienistCount: prevSummary?.hygienistCount ?? null,
+  }
+
   return (
     <div className="space-y-6">
       <MetricsInputView
@@ -109,6 +156,10 @@ export default async function MetricsInputPage() {
         initialYear={year}
         initialMonth={month}
         monthStatuses={monthStatuses}
+        initialProfile={extractProfile(summary)}
+        initialPrevProfile={extractProfile(prevSummary)}
+        initialAutoWorkingDays={autoWorkingDays}
+        initialProfileDefaults={profileDefaults}
       />
     </div>
   )

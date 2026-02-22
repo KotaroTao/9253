@@ -745,12 +745,32 @@ async function main() {
     const cancelRate = 0.105 - 0.055 * progress + (rng() - 0.5) * 0.01
     const cancellationCount = Math.max(0, Math.round(totalPatients * cancelRate))
 
+    // 医院体制データ（半固定: 途中でチェア・DH増加のストーリー）
+    // チェア: 5台→6台（6ヶ月目にチェア増設）
+    const chairCount = m <= 6 ? 5 : 6
+    // Dr: 2.0人（常勤2名）
+    const dentistCount = 2.0
+    // DH: 3.0→3.5（8ヶ月目にパートDH採用）
+    const hygienistCount = m <= 4 ? 3.0 : 3.5
+    // 延べ来院数: 実人数の約2.5倍（通院回数）
+    const avgVisits = 2.4 + 0.2 * progress + (rng() - 0.5) * 0.15
+    const totalVisitCount = Math.round(totalPatients * avgVisits)
+    // 診療日数: 月〜土（日曜休診）、月によって22-26日
+    const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+    let workingDays = 0
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dow = new Date(d.getFullYear(), d.getMonth(), day).getDay()
+      if (dow !== 0) workingDays++ // 日曜以外
+    }
+    // 人件費: 150→170万（DH採用による増加）
+    const laborCost = Math.round(150 + 20 * progress + (rng() - 0.5) * 5)
+
     await prisma.monthlyClinicMetrics.upsert({
       where: { clinicId_year_month: { clinicId: clinic.id, year, month } },
-      update: { firstVisitCount, revisitCount, totalRevenue, insuranceRevenue, selfPayRevenue, cancellationCount },
-      create: { clinicId: clinic.id, year, month, firstVisitCount, revisitCount, totalRevenue, insuranceRevenue, selfPayRevenue, cancellationCount },
+      update: { firstVisitCount, revisitCount, totalRevenue, insuranceRevenue, selfPayRevenue, cancellationCount, chairCount, dentistCount, hygienistCount, totalVisitCount, workingDays, laborCost },
+      create: { clinicId: clinic.id, year, month, firstVisitCount, revisitCount, totalRevenue, insuranceRevenue, selfPayRevenue, cancellationCount, chairCount, dentistCount, hygienistCount, totalVisitCount, workingDays, laborCost },
     })
-    console.log(`  ${year}-${String(month).padStart(2, "0")}: 実人数${totalPatients}人（初診${firstVisitCount}/再診${revisitCount}）売上${totalRevenue}万円 自費率${Math.round(selfPayRatio * 100)}% キャンセル${cancellationCount}件(${Math.round(cancelRate * 100)}%)`)
+    console.log(`  ${year}-${String(month).padStart(2, "0")}: 実人数${totalPatients}人（初診${firstVisitCount}/再診${revisitCount}）売上${totalRevenue}万円 自費率${Math.round(selfPayRatio * 100)}% キャンセル${cancellationCount}件(${Math.round(cancelRate * 100)}%) チェア${chairCount} Dr${dentistCount} DH${hygienistCount} 延べ${totalVisitCount} 診療${workingDays}日 人件費${laborCost}万`)
   }
 
   // Seed default patient tips to PlatformSetting

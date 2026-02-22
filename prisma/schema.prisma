@@ -210,6 +210,15 @@ model MonthlyClinicMetrics {
   insuranceRevenue           Int?     @map("insurance_revenue")
   selfPayRevenue             Int?     @map("self_pay_revenue")
   cancellationCount          Int?     @map("cancellation_count")
+  // 医院体制（半固定: 前月値を自動コピー）
+  chairCount                 Int?     @map("chair_count")
+  dentistCount               Float?   @map("dentist_count")
+  hygienistCount             Float?   @map("hygienist_count")
+  // 毎月入力
+  totalVisitCount            Int?     @map("total_visit_count")
+  workingDays                Int?     @map("working_days")
+  // オプション
+  laborCost                  Int?     @map("labor_cost")
   createdAt                  DateTime @default(now()) @map("created_at")
   updatedAt                  DateTime @updatedAt @map("updated_at")
 
