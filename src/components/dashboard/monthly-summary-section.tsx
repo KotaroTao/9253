@@ -91,6 +91,32 @@ function KpiHelpButton({ helpKey }: { helpKey?: KpiHelpKey }) {
   )
 }
 
+function NumberInput({
+  label, value, onChange, unit, step, disabled,
+}: {
+  label: string; value: string; onChange: (v: string) => void; unit: string
+  step?: string; disabled?: boolean
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-medium text-muted-foreground">{label}</label>
+      <div className="flex items-center gap-1">
+        <Input
+          type="number"
+          min={0}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="0"
+          className={`text-right ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}
+          disabled={disabled}
+        />
+        <span className="text-sm text-muted-foreground whitespace-nowrap">{unit}</span>
+      </div>
+    </div>
+  )
+}
+
 export function MonthlySummarySection({
   year,
   month,
@@ -102,14 +128,20 @@ export function MonthlySummarySection({
   autoWorkingDays,
   profileDefaults,
 }: MonthlySummarySectionProps) {
-  // Existing input state
+  // Summary input state
+  const [totalVisitCount, setTotalVisitCount] = useState(initialProfile?.totalVisitCount?.toString() ?? "")
+  const [totalPatientCount, setTotalPatientCount] = useState(initialSummary?.totalPatientCount?.toString() ?? "")
   const [firstVisitCount, setFirstVisitCount] = useState(initialSummary?.firstVisitCount?.toString() ?? "")
   const [revisitCount, setRevisitCount] = useState(initialSummary?.revisitCount?.toString() ?? "")
+  const [totalRevenue, setTotalRevenue] = useState(initialSummary?.totalRevenue?.toString() ?? "")
   const [insuranceRevenue, setInsuranceRevenue] = useState(initialSummary?.insuranceRevenue?.toString() ?? "")
   const [selfPayRevenue, setSelfPayRevenue] = useState(initialSummary?.selfPayRevenue?.toString() ?? "")
   const [cancellationCount, setCancellationCount] = useState(initialSummary?.cancellationCount?.toString() ?? "")
+  const [workingDays, setWorkingDays] = useState(
+    initialProfile?.workingDays?.toString() ?? autoWorkingDays.toString()
+  )
 
-  // Profile input state (use saved value > previous month > defaults)
+  // Profile input state (semi-static)
   const [chairCount, setChairCount] = useState(
     initialProfile?.chairCount?.toString() ?? profileDefaults.chairCount?.toString() ?? ""
   )
@@ -119,10 +151,6 @@ export function MonthlySummarySection({
   const [hygienistCount, setHygienistCount] = useState(
     initialProfile?.hygienistCount?.toString() ?? profileDefaults.hygienistCount?.toString() ?? ""
   )
-  const [totalVisitCount, setTotalVisitCount] = useState(initialProfile?.totalVisitCount?.toString() ?? "")
-  const [workingDays, setWorkingDays] = useState(
-    initialProfile?.workingDays?.toString() ?? autoWorkingDays.toString()
-  )
   const [laborCost, setLaborCost] = useState(initialProfile?.laborCost?.toString() ?? "")
 
   const [saving, setSaving] = useState(false)
@@ -131,17 +159,19 @@ export function MonthlySummarySection({
   const isInitialMount = useRef(true)
 
   useEffect(() => {
+    setTotalVisitCount(initialProfile?.totalVisitCount?.toString() ?? "")
+    setTotalPatientCount(initialSummary?.totalPatientCount?.toString() ?? "")
     setFirstVisitCount(initialSummary?.firstVisitCount?.toString() ?? "")
     setRevisitCount(initialSummary?.revisitCount?.toString() ?? "")
+    setTotalRevenue(initialSummary?.totalRevenue?.toString() ?? "")
     setInsuranceRevenue(initialSummary?.insuranceRevenue?.toString() ?? "")
     setSelfPayRevenue(initialSummary?.selfPayRevenue?.toString() ?? "")
     setCancellationCount(initialSummary?.cancellationCount?.toString() ?? "")
+    setWorkingDays(initialProfile?.workingDays?.toString() ?? autoWorkingDays.toString())
 
     setChairCount(initialProfile?.chairCount?.toString() ?? profileDefaults.chairCount?.toString() ?? "")
     setDentistCount(initialProfile?.dentistCount?.toString() ?? profileDefaults.dentistCount?.toString() ?? "")
     setHygienistCount(initialProfile?.hygienistCount?.toString() ?? profileDefaults.hygienistCount?.toString() ?? "")
-    setTotalVisitCount(initialProfile?.totalVisitCount?.toString() ?? "")
-    setWorkingDays(initialProfile?.workingDays?.toString() ?? autoWorkingDays.toString())
     setLaborCost(initialProfile?.laborCost?.toString() ?? "")
 
     setSaved(false)
@@ -154,8 +184,10 @@ export function MonthlySummarySection({
   const doSave = useCallback(async () => {
     const payload = {
       year, month,
+      totalPatientCount: toInt(totalPatientCount),
       firstVisitCount: toInt(firstVisitCount),
       revisitCount: toInt(revisitCount),
+      totalRevenue: toInt(totalRevenue),
       insuranceRevenue: toInt(insuranceRevenue),
       selfPayRevenue: toInt(selfPayRevenue),
       cancellationCount: toInt(cancellationCount),
@@ -166,7 +198,6 @@ export function MonthlySummarySection({
       workingDays: toInt(workingDays),
       laborCost: toInt(laborCost),
     }
-    // Don't save if all fields are empty
     const valueKeys = Object.keys(payload).filter((k) => k !== "year" && k !== "month")
     if (valueKeys.every((k) => (payload as Record<string, unknown>)[k] == null)) return
 
@@ -187,10 +218,10 @@ export function MonthlySummarySection({
     } finally {
       setSaving(false)
     }
-  }, [year, month, firstVisitCount, revisitCount, insuranceRevenue, selfPayRevenue, cancellationCount,
+  }, [year, month, totalPatientCount, firstVisitCount, revisitCount, totalRevenue,
+    insuranceRevenue, selfPayRevenue, cancellationCount,
     chairCount, dentistCount, hygienistCount, totalVisitCount, workingDays, laborCost])
 
-  // Auto-save 1.5s after any input change
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false
@@ -199,13 +230,64 @@ export function MonthlySummarySection({
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => { doSave() }, 1500)
     return () => { if (timerRef.current) clearTimeout(timerRef.current) }
-  }, [firstVisitCount, revisitCount, insuranceRevenue, selfPayRevenue, cancellationCount,
+  }, [totalPatientCount, firstVisitCount, revisitCount, totalRevenue,
+    insuranceRevenue, selfPayRevenue, cancellationCount,
     chairCount, dentistCount, hygienistCount, totalVisitCount, workingDays, laborCost, doSave])
+
+  // --- Auto-calc helpers for paired fields ---
+  const autoCalcStr = (total: string, part: string) => {
+    const t = parseInt(total)
+    const p = parseInt(part)
+    if (!isNaN(t) && !isNaN(p)) {
+      const r = t - p
+      return r >= 0 ? r.toString() : "0"
+    }
+    return ""
+  }
+
+  const handleTotalPatientCount = (v: string) => {
+    setTotalPatientCount(v)
+    if (v && firstVisitCount) {
+      setRevisitCount(autoCalcStr(v, firstVisitCount))
+    } else if (v && revisitCount) {
+      setFirstVisitCount(autoCalcStr(v, revisitCount))
+    }
+  }
+  const handleFirstVisitCount = (v: string) => {
+    setFirstVisitCount(v)
+    if (totalPatientCount) setRevisitCount(autoCalcStr(totalPatientCount, v))
+  }
+  const handleRevisitCount = (v: string) => {
+    setRevisitCount(v)
+    if (totalPatientCount) setFirstVisitCount(autoCalcStr(totalPatientCount, v))
+  }
+
+  const handleTotalRevenue = (v: string) => {
+    setTotalRevenue(v)
+    if (v && insuranceRevenue) {
+      setSelfPayRevenue(autoCalcStr(v, insuranceRevenue))
+    } else if (v && selfPayRevenue) {
+      setInsuranceRevenue(autoCalcStr(v, selfPayRevenue))
+    }
+  }
+  const handleInsuranceRevenue = (v: string) => {
+    setInsuranceRevenue(v)
+    if (totalRevenue) setSelfPayRevenue(autoCalcStr(totalRevenue, v))
+  }
+  const handleSelfPayRevenue = (v: string) => {
+    setSelfPayRevenue(v)
+    if (totalRevenue) setInsuranceRevenue(autoCalcStr(totalRevenue, v))
+  }
+
+  const patientSubDisabled = !totalPatientCount
+  const revenueSubDisabled = !totalRevenue
 
   // Build current summary for derived calcs
   const currentSummary: MonthlySummary = {
+    totalPatientCount: toInt(totalPatientCount),
     firstVisitCount: toInt(firstVisitCount),
     revisitCount: toInt(revisitCount),
+    totalRevenue: toInt(totalRevenue),
     insuranceRevenue: toInt(insuranceRevenue),
     selfPayRevenue: toInt(selfPayRevenue),
     cancellationCount: toInt(cancellationCount),
@@ -227,8 +309,8 @@ export function MonthlySummarySection({
 
   const m = messages.monthlyMetrics
 
+  // Derived KPIs (totalPatients removed — now a direct input)
   const derivedMetrics: { label: string; value: number | null; format: (v: number) => string; prev: number | null; helpKey?: KpiHelpKey }[] = [
-    { label: m.totalPatients, value: derived?.totalPatients ?? null, format: (v: number) => `${v}${m.unitPersons}`, prev: prevDerived?.totalPatients ?? null, helpKey: "totalPatients" },
     { label: m.revenuePerVisit, value: derived?.revenuePerVisit ?? null, format: (v: number) => `${v}${m.unitMan}`, prev: prevDerived?.revenuePerVisit ?? null, helpKey: "revenuePerVisit" },
     { label: m.selfPayRatioAmount, value: derived?.selfPayRatioAmount ?? null, format: (v: number) => `${v}%`, prev: prevDerived?.selfPayRatioAmount ?? null, helpKey: "selfPayRatioAmount" },
     { label: m.returnRate, value: derived?.returnRate ?? null, format: (v: number) => `${v}%`, prev: prevDerived?.returnRate ?? null, helpKey: "returnRate" },
@@ -237,11 +319,12 @@ export function MonthlySummarySection({
     { label: m.surveyResponseRate, value: derived?.surveyResponseRate ?? null, format: (v: number) => `${v}%`, prev: null as number | null, helpKey: "surveyResponseRate" },
   ]
 
-  // Extended profile-based KPIs
+  // Extended profile-based KPIs (+ revenuePerChair)
   const extendedMetrics: { label: string; value: number | null; format: (v: number) => string; prev: number | null; helpKey?: KpiHelpKey }[] = [
     { label: m.dailyPatients, value: profileDerived?.dailyPatients ?? null, format: (v: number) => `${v}${m.unitVisitsPerDay}`, prev: prevProfileDerived?.dailyPatients ?? null, helpKey: "dailyPatients" },
     { label: m.dailyRevenue, value: profileDerived?.dailyRevenue ?? null, format: (v: number) => `${v}${m.unitMan}`, prev: prevProfileDerived?.dailyRevenue ?? null, helpKey: "dailyRevenue" },
     { label: m.chairDailyVisits, value: profileDerived?.chairDailyVisits ?? null, format: (v: number) => `${v}${m.unitVisitsPerChairDay}`, prev: prevProfileDerived?.chairDailyVisits ?? null, helpKey: "chairDailyVisits" },
+    { label: m.revenuePerChair, value: profileDerived?.revenuePerChair ?? null, format: (v: number) => `${v}${m.unitMan}`, prev: prevProfileDerived?.revenuePerChair ?? null, helpKey: "revenuePerChair" },
     { label: m.revenuePerReceipt, value: profileDerived?.revenuePerReceipt ?? null, format: (v: number) => `${v}${m.unitMan}`, prev: prevProfileDerived?.revenuePerReceipt ?? null, helpKey: "revenuePerReceipt" },
     { label: m.avgVisitsPerPatient, value: profileDerived?.avgVisitsPerPatient ?? null, format: (v: number) => `${v}${m.unitTimes}`, prev: prevProfileDerived?.avgVisitsPerPatient ?? null, helpKey: "avgVisitsPerPatient" },
     { label: m.revenuePerDentist, value: profileDerived?.revenuePerDentist ?? null, format: (v: number) => `${v}${m.unitMan}`, prev: prevProfileDerived?.revenuePerDentist ?? null, helpKey: "revenuePerDentist" },
@@ -251,33 +334,11 @@ export function MonthlySummarySection({
     { label: m.revenuePerStaff, value: profileDerived?.revenuePerStaff ?? null, format: (v: number) => `${v}${m.unitMan}`, prev: prevProfileDerived?.revenuePerStaff ?? null, helpKey: "revenuePerStaff" },
   ]
 
-  // Only show extended metrics that have values
   const visibleExtendedMetrics = extendedMetrics.filter((metric) => metric.value != null)
-
-  const inputFields = [
-    { label: m.firstVisitCount, value: firstVisitCount, onChange: setFirstVisitCount, unit: m.unitPersons },
-    { label: m.revisitCount, value: revisitCount, onChange: setRevisitCount, unit: m.unitPersons },
-    { label: m.insuranceRevenue, value: insuranceRevenue, onChange: setInsuranceRevenue, unit: m.unitMan },
-    { label: m.selfPayRevenue, value: selfPayRevenue, onChange: setSelfPayRevenue, unit: m.unitMan },
-    { label: m.cancellationCount, value: cancellationCount, onChange: setCancellationCount, unit: m.unitCount },
-  ]
-
-  // Profile fields
-  const profileSemiStaticFields = [
-    { label: m.chairCount, value: chairCount, onChange: setChairCount, unit: m.unitChairs, step: "1" },
-    { label: m.dentistCount, value: dentistCount, onChange: setDentistCount, unit: m.unitPersons, step: "0.5" },
-    { label: m.hygienistCount, value: hygienistCount, onChange: setHygienistCount, unit: m.unitPersons, step: "0.5" },
-  ]
-
-  const profileMonthlyFields = [
-    { label: m.workingDays, value: workingDays, onChange: setWorkingDays, unit: m.unitDays, step: "1" },
-    { label: m.totalVisitCount, value: totalVisitCount, onChange: setTotalVisitCount, unit: m.unitCount, step: "1" },
-    { label: m.laborCost, value: laborCost, onChange: setLaborCost, unit: m.unitMan, step: "1" },
-  ]
 
   return (
     <div className="space-y-4">
-      {/* Input fields card */}
+      {/* 月次サマリー入力カード */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -295,28 +356,38 @@ export function MonthlySummarySection({
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            {inputFields.map((field) => (
-              <div key={field.label}>
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">{field.label}</label>
-                <div className="flex items-center gap-1">
-                  <Input
-                    type="number"
-                    min={0}
-                    value={field.value}
-                    onChange={(e) => field.onChange(e.target.value)}
-                    placeholder="0"
-                    className="text-right"
-                  />
-                  <span className="text-sm text-muted-foreground">{field.unit}</span>
-                </div>
-              </div>
-            ))}
+          {/* 延べ来院数 (top) */}
+          <div className="max-w-xs">
+            <NumberInput label={m.totalVisitCount} value={totalVisitCount} onChange={setTotalVisitCount} unit={m.unitCount} />
+          </div>
+
+          {/* 総実人数 → 初診 / 再診 (horizontal on PC) */}
+          <div className="grid gap-4 sm:grid-cols-3">
+            <NumberInput label={m.totalPatientCount} value={totalPatientCount} onChange={handleTotalPatientCount} unit={m.unitPersons} />
+            <NumberInput label={m.firstVisitCount} value={firstVisitCount} onChange={handleFirstVisitCount} unit={m.unitPersons} disabled={patientSubDisabled} />
+            <NumberInput label={m.revisitCount} value={revisitCount} onChange={handleRevisitCount} unit={m.unitPersons} disabled={patientSubDisabled} />
+          </div>
+
+          {/* 総売上 → 保険 / 自費 (horizontal on PC) */}
+          <div className="grid gap-4 sm:grid-cols-3">
+            <NumberInput label={m.totalRevenue} value={totalRevenue} onChange={handleTotalRevenue} unit={m.unitMan} />
+            <NumberInput label={m.insuranceRevenue} value={insuranceRevenue} onChange={handleInsuranceRevenue} unit={m.unitMan} disabled={revenueSubDisabled} />
+            <NumberInput label={m.selfPayRevenue} value={selfPayRevenue} onChange={handleSelfPayRevenue} unit={m.unitMan} disabled={revenueSubDisabled} />
+          </div>
+
+          {/* キャンセル件数 */}
+          <div className="max-w-xs">
+            <NumberInput label={m.cancellationCount} value={cancellationCount} onChange={setCancellationCount} unit={m.unitCount} />
+          </div>
+
+          {/* 診療日数（自動計算） (bottom) */}
+          <div className="max-w-xs">
+            <NumberInput label={m.workingDays} value={workingDays} onChange={setWorkingDays} unit={m.unitDays} />
           </div>
         </CardContent>
       </Card>
 
-      {/* Clinic profile card */}
+      {/* 医院体制カード (semi-static only) */}
       <Card>
         <CardHeader className="pb-3">
           <div>
@@ -324,58 +395,23 @@ export function MonthlySummarySection({
             <p className="mt-1 text-xs text-muted-foreground">{m.clinicProfileHint}</p>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Semi-static fields (auto-copied from prev month) */}
-          <div className="grid gap-4 sm:grid-cols-3">
-            {profileSemiStaticFields.map((field) => (
-              <div key={field.label}>
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">{field.label}</label>
-                <div className="flex items-center gap-1">
-                  <Input
-                    type="number"
-                    min={0}
-                    step={field.step}
-                    value={field.value}
-                    onChange={(e) => field.onChange(e.target.value)}
-                    placeholder="0"
-                    className="text-right"
-                  />
-                  <span className="text-sm text-muted-foreground">{field.unit}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Monthly input fields */}
-          <div className="grid gap-4 sm:grid-cols-3">
-            {profileMonthlyFields.map((field) => (
-              <div key={field.label}>
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">{field.label}</label>
-                <div className="flex items-center gap-1">
-                  <Input
-                    type="number"
-                    min={0}
-                    step={field.step}
-                    value={field.value}
-                    onChange={(e) => field.onChange(e.target.value)}
-                    placeholder="0"
-                    className="text-right"
-                  />
-                  <span className="text-sm text-muted-foreground">{field.unit}</span>
-                </div>
-              </div>
-            ))}
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <NumberInput label={m.chairCount} value={chairCount} onChange={setChairCount} unit={m.unitChairs} step="1" />
+            <NumberInput label={m.dentistCount} value={dentistCount} onChange={setDentistCount} unit={m.unitPersons} step="0.5" />
+            <NumberInput label={m.hygienistCount} value={hygienistCount} onChange={setHygienistCount} unit={m.unitPersons} step="0.5" />
+            <NumberInput label={m.laborCost} value={laborCost} onChange={setLaborCost} unit={m.unitMan} step="1" />
           </div>
         </CardContent>
       </Card>
 
-      {/* Derived KPIs — always visible */}
+      {/* 自動算出指標 */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">{m.derivedTitle}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
             {derivedMetrics.map((metric) => (
               <div key={metric.label} className="rounded-lg border bg-muted/30 p-3">
                 <p className="text-xs text-muted-foreground">
@@ -392,7 +428,7 @@ export function MonthlySummarySection({
         </CardContent>
       </Card>
 
-      {/* Extended KPIs — only visible when there's data */}
+      {/* 体制・生産性指標 */}
       {visibleExtendedMetrics.length > 0 && (
         <Card>
           <CardHeader className="pb-3">

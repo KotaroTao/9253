@@ -13,8 +13,10 @@ import { getClinicPlanInfo, hasFeature } from "@/lib/plan"
 import { messages } from "@/lib/messages"
 
 const METRICS_SELECT = {
+  totalPatientCount: true,
   firstVisitCount: true,
   revisitCount: true,
+  totalRevenue: true,
   insuranceRevenue: true,
   selfPayRevenue: true,
   cancellationCount: true,
@@ -151,7 +153,7 @@ export default async function MetricsInputPage() {
     <div className="space-y-6">
       <MetricsInputView
         initialSummary={summary ?? null}
-        initialPrevSummary={prevSummary?.firstVisitCount != null ? prevSummary : null}
+        initialPrevSummary={prevSummary?.totalPatientCount != null || prevSummary?.firstVisitCount != null ? prevSummary : null}
         initialSurveyCount={surveyCount}
         initialYear={year}
         initialMonth={month}

@@ -2,8 +2,10 @@
 // This file has NO "use client" directive so it can be imported by both server and client components
 
 export interface MonthlySummary {
+  totalPatientCount: number | null
   firstVisitCount: number | null
   revisitCount: number | null
+  totalRevenue: number | null
   insuranceRevenue: number | null
   selfPayRevenue: number | null
   cancellationCount: number | null
@@ -22,7 +24,7 @@ export interface ClinicProfile {
 export type MonthStatus = "full" | "partial" | "empty"
 
 const INPUT_FIELDS: (keyof MonthlySummary)[] = [
-  "firstVisitCount", "revisitCount", "insuranceRevenue", "selfPayRevenue", "cancellationCount",
+  "totalPatientCount", "firstVisitCount", "revisitCount", "totalRevenue", "insuranceRevenue", "selfPayRevenue", "cancellationCount",
 ]
 
 export function getMonthStatus(summary: MonthlySummary | null): MonthStatus {
@@ -38,10 +40,12 @@ export function calcDerived(s: MonthlySummary | null, surveyCount: number) {
   if (!s) return null
   const first = s.firstVisitCount
   const revisit = s.revisitCount
-  const totalPatients = first != null && revisit != null ? first + revisit : null
+  // 総実人数: 入力値優先、なければ初診+再診から算出
+  const totalPatients = s.totalPatientCount ?? (first != null && revisit != null ? first + revisit : null)
   const insRev = s.insuranceRevenue
   const spRev = s.selfPayRevenue
-  const totalRevenue = insRev != null && spRev != null ? insRev + spRev : null
+  // 総売上: 入力値優先、なければ保険+自費から算出
+  const totalRevenue = s.totalRevenue ?? (insRev != null && spRev != null ? insRev + spRev : null)
   const cancel = s.cancellationCount
 
   return {
@@ -67,10 +71,8 @@ export function calcProfileDerived(s: MonthlySummary | null, profile: ClinicProf
 
   const first = s.firstVisitCount
   const revisit = s.revisitCount
-  const totalPatients = first != null && revisit != null ? first + revisit : null
-  const insRev = s.insuranceRevenue
-  const spRev = s.selfPayRevenue
-  const totalRevenue = insRev != null && spRev != null ? insRev + spRev : null
+  const totalPatients = s.totalPatientCount ?? (first != null && revisit != null ? first + revisit : null)
+  const totalRevenue = s.totalRevenue ?? (s.insuranceRevenue != null && s.selfPayRevenue != null ? s.insuranceRevenue + s.selfPayRevenue : null)
 
   const { chairCount, dentistCount, hygienistCount, totalVisitCount, workingDays, laborCost } = profile
 
@@ -118,6 +120,10 @@ export function calcProfileDerived(s: MonthlySummary | null, profile: ClinicProf
   const revenuePerStaff = totalRevenue != null && totalStaff > 0
     ? round1(totalRevenue / totalStaff) : null
 
+  // チェア1台あたり売上 = 総売上 ÷ チェア数
+  const revenuePerChair = totalRevenue != null && chairCount != null && chairCount > 0
+    ? round1(totalRevenue / chairCount) : null
+
   return {
     dailyPatients,
     dailyRevenue,
@@ -129,6 +135,7 @@ export function calcProfileDerived(s: MonthlySummary | null, profile: ClinicProf
     avgVisitsPerPatient,
     laborCostRatio,
     revenuePerStaff,
+    revenuePerChair,
   }
 }
 

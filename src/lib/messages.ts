@@ -298,6 +298,7 @@ export const messages = {
     tabSummary: "サマリー",
     tabInput: "データ入力",
     // Input fields
+    totalPatientCount: "総実人数（レセプト枚数）",
     firstVisitCount: "初診実人数",
     revisitCount: "再診実人数",
     totalRevenue: "総売上",
@@ -323,7 +324,7 @@ export const messages = {
     dentistCount: "歯科医師数（常勤換算）",
     hygienistCount: "歯科衛生士数（常勤換算）",
     totalVisitCount: "延べ来院数",
-    workingDays: "診療日数",
+    workingDays: "診療日数（自動計算）",
     laborCost: "人件費",
     unitChairs: "台",
     unitDays: "日",
@@ -339,6 +340,7 @@ export const messages = {
     avgVisitsPerPatient: "平均通院回数",
     laborCostRatio: "人件費率",
     revenuePerStaff: "Dr+DH1人あたり売上",
+    revenuePerChair: "チェア1台あたり売上",
     unitVisitsPerDay: "人/日",
     unitVisitsPerChairDay: "人/チェア/日",
     unitTimes: "回",
@@ -370,6 +372,7 @@ export const messages = {
       patientsPerHygienist: { desc: "再診人数÷歯科衛生士数。DH1人あたりの担当患者数", benchmark: "80〜120人/月" },
       laborCostRatio: { desc: "人件費÷総売上×100。経営の健全性を測る最重要指標の一つ", benchmark: "25〜30%が標準。35%超は要注意" },
       revenuePerStaff: { desc: "総売上÷(Dr数+DH数)。受付・助手を除くDr+DHの生産性指標", benchmark: "150〜200万円/月" },
+      revenuePerChair: { desc: "総売上÷チェア数。設備投資の回収効率を測る指標", benchmark: "120〜180万円/台/月" },
     },
   },
   staff: {
