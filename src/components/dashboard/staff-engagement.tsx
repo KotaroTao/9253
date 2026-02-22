@@ -75,6 +75,7 @@ export function StaffEngagement({
   const [showRankInfo, setShowRankInfo] = useState(false)
   const [commentIndex, setCommentIndex] = useState(0)
   const [autoPaused, setAutoPaused] = useState(false)
+  const [activeBadge, setActiveBadge] = useState<string | null>(null)
 
   const commentCount = patientComments.length
   const goNext = useCallback(() => {
@@ -631,22 +632,70 @@ export function StaffEngagement({
               <div className="mt-4 border-t pt-3">
                 <p className="text-[10px] font-medium text-muted-foreground mb-2">獲得バッジ</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {earnedStreakBadges.map((badge) => (
-                    <span
-                      key={badge.days}
-                      className="inline-flex items-center gap-0.5 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-medium text-orange-700"
-                    >
-                      {badge.emoji}{badge.label}
-                    </span>
-                  ))}
-                  {earnedAdvisoryBadges.map((badge) => (
-                    <span
-                      key={badge.count}
-                      className="inline-flex items-center gap-0.5 rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-medium text-purple-700"
-                    >
-                      {badge.emoji}AI×{badge.count}
-                    </span>
-                  ))}
+                  {earnedStreakBadges.map((badge) => {
+                    const badgeKey = `streak-${badge.days}`
+                    const isActive = activeBadge === badgeKey
+                    return (
+                      <div key={badge.days} className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setActiveBadge(isActive ? null : badgeKey)}
+                          className={cn(
+                            "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
+                            isActive
+                              ? "bg-orange-200 text-orange-800 ring-1 ring-orange-300"
+                              : "bg-orange-100 text-orange-700 hover:bg-orange-150"
+                          )}
+                        >
+                          {badge.emoji}{badge.label}
+                        </button>
+                        {isActive && (
+                          <>
+                            <div className="fixed inset-0 z-40" onClick={() => setActiveBadge(null)} />
+                            <div className="absolute left-1/2 -translate-x-1/2 top-full z-50 mt-1.5 w-44 rounded-lg border bg-white p-2.5 shadow-lg">
+                              <div className="absolute left-1/2 -top-1.5 -translate-x-1/2 h-3 w-3 rotate-45 border-l border-t bg-white" />
+                              <p className="text-[10px] font-bold text-orange-700 mb-1">獲得条件</p>
+                              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                                アンケート回答を<span className="font-bold text-orange-600">{badge.days}日連続</span>で記録する（休診日はスキップ）
+                              </p>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )
+                  })}
+                  {earnedAdvisoryBadges.map((badge) => {
+                    const badgeKey = `advisory-${badge.count}`
+                    const isActive = activeBadge === badgeKey
+                    return (
+                      <div key={badge.count} className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setActiveBadge(isActive ? null : badgeKey)}
+                          className={cn(
+                            "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
+                            isActive
+                              ? "bg-purple-200 text-purple-800 ring-1 ring-purple-300"
+                              : "bg-purple-100 text-purple-700 hover:bg-purple-150"
+                          )}
+                        >
+                          {badge.emoji}AI×{badge.count}
+                        </button>
+                        {isActive && (
+                          <>
+                            <div className="fixed inset-0 z-40" onClick={() => setActiveBadge(null)} />
+                            <div className="absolute left-1/2 -translate-x-1/2 top-full z-50 mt-1.5 w-44 rounded-lg border bg-white p-2.5 shadow-lg">
+                              <div className="absolute left-1/2 -top-1.5 -translate-x-1/2 h-3 w-3 rotate-45 border-l border-t bg-white" />
+                              <p className="text-[10px] font-bold text-purple-700 mb-1">獲得条件</p>
+                              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                                AI分析レポートを<span className="font-bold text-purple-600">{badge.count}回</span>実行する
+                              </p>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}
