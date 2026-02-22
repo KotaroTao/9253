@@ -8,8 +8,10 @@ import { calcWorkingDays } from "@/lib/metrics-utils"
 import type { ClinicSettings } from "@/types"
 
 const METRICS_SELECT = {
+  totalPatientCount: true,
   firstVisitCount: true,
   revisitCount: true,
+  totalRevenue: true,
   insuranceRevenue: true,
   selfPayRevenue: true,
   cancellationCount: true,
@@ -120,7 +122,7 @@ export async function GET(request: NextRequest) {
 
   return successResponse({
     summary: summary ?? null,
-    prevSummary: prevSummary?.firstVisitCount != null ? prevSummary : null,
+    prevSummary: prevSummary?.totalPatientCount != null || prevSummary?.firstVisitCount != null ? prevSummary : null,
     surveyCount,
     autoWorkingDays,
     profileDefaults,
@@ -146,13 +148,15 @@ export async function POST(request: NextRequest) {
   const clampInt = (v: unknown) => v != null ? Math.max(0, Math.round(Number(v))) : null
   const clampFloat = (v: unknown) => v != null ? Math.max(0, Math.round(Number(v) * 10) / 10) : null
 
+  const totalPatientCount = clampInt(body.totalPatientCount)
   const firstVisitCount = clampInt(body.firstVisitCount)
   const revisitCount = clampInt(body.revisitCount)
+  const totalRevenue = clampInt(body.totalRevenue)
   const insuranceRevenue = clampInt(body.insuranceRevenue)
   const selfPayRevenue = clampInt(body.selfPayRevenue)
   const cancellationCount = clampInt(body.cancellationCount)
 
-  // New fields
+  // Profile fields
   const chairCount = clampInt(body.chairCount)
   const dentistCount = clampFloat(body.dentistCount)
   const hygienistCount = clampFloat(body.hygienistCount)
@@ -160,11 +164,8 @@ export async function POST(request: NextRequest) {
   const workingDays = clampInt(body.workingDays)
   const laborCost = clampInt(body.laborCost)
 
-  // Auto-compute totalRevenue from components
-  const totalRevenue = insuranceRevenue != null && selfPayRevenue != null
-    ? insuranceRevenue + selfPayRevenue : null
-
   const data = {
+    totalPatientCount,
     firstVisitCount,
     revisitCount,
     totalRevenue,

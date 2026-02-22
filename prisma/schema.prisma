@@ -206,6 +206,7 @@ model MonthlyClinicMetrics {
   revisitCount               Int?     @map("revisit_count")
   revisitInsurance           Int?     @map("revisit_insurance")
   revisitSelfPay             Int?     @map("revisit_self_pay")
+  totalPatientCount          Int?     @map("total_patient_count")
   totalRevenue               Int?     @map("total_revenue")
   insuranceRevenue           Int?     @map("insurance_revenue")
   selfPayRevenue             Int?     @map("self_pay_revenue")
