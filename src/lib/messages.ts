@@ -546,6 +546,14 @@ export const messages = {
     clinicHomepageUrlLabel: "医院ホームページURL",
     clinicHomepageUrlPlaceholder: "https://example-dental.com",
     complianceNote: "LINE誘導は回答内容に関わらず全患者さまに一律表示されます。友だち追加は患者さまの任意です。",
+    // 診療科目
+    clinicTypeTitle: "診療科目",
+    clinicTypeDesc: "経営レポートのKPIベンチマーク基準を診療科目に合わせて最適化します",
+    clinicTypeGeneral: "一般歯科",
+    clinicTypeOrthodontic: "矯正歯科",
+    clinicTypePediatric: "小児歯科",
+    clinicTypeCosmetic: "審美歯科",
+    clinicTypeOralSurgery: "口腔外科",
   },
   testSurvey: {
     title: "アンケートテスト",

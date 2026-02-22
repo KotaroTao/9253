@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { messages } from "@/lib/messages"
 import { TrendingUp, TrendingDown, Check, Loader2, HelpCircle, X } from "lucide-react"
 import { calcDerived, calcProfileDerived, getBenchmarkStatus } from "@/lib/metrics-utils"
-import type { MonthlySummary, ClinicProfile, BenchmarkStatus } from "@/lib/metrics-utils"
+import type { MonthlySummary, ClinicProfile, BenchmarkStatus, ClinicType } from "@/lib/metrics-utils"
 
 interface ProfileDefaults {
   chairCount: number | null
@@ -24,6 +24,7 @@ interface MonthlySummarySectionProps {
   prevProfile: ClinicProfile | null
   autoWorkingDays: number
   profileDefaults: ProfileDefaults
+  clinicType?: ClinicType
 }
 
 function DerivedDelta({ current, prev }: { current: number | null; prev: number | null }) {
@@ -127,6 +128,7 @@ export function MonthlySummarySection({
   prevProfile,
   autoWorkingDays,
   profileDefaults,
+  clinicType,
 }: MonthlySummarySectionProps) {
   // Summary input state
   const [totalVisitCount, setTotalVisitCount] = useState(initialProfile?.totalVisitCount?.toString() ?? "")
@@ -405,7 +407,7 @@ export function MonthlySummarySection({
         <CardContent>
           <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
             {derivedMetrics.map((metric) => {
-              const status: BenchmarkStatus | null = metric.benchmarkKey ? getBenchmarkStatus(metric.benchmarkKey, metric.value) : null
+              const status: BenchmarkStatus | null = metric.benchmarkKey ? getBenchmarkStatus(metric.benchmarkKey, metric.value, clinicType) : null
               return (
                 <div key={metric.label} className={`rounded-lg border p-3 ${
                   status === "good" ? "bg-emerald-50/50 border-emerald-200/50 dark:bg-emerald-950/10 dark:border-emerald-900/30" :
@@ -448,7 +450,7 @@ export function MonthlySummarySection({
           <CardContent>
             <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
               {visibleExtendedMetrics.map((metric) => {
-                const status: BenchmarkStatus | null = metric.benchmarkKey ? getBenchmarkStatus(metric.benchmarkKey, metric.value) : null
+                const status: BenchmarkStatus | null = metric.benchmarkKey ? getBenchmarkStatus(metric.benchmarkKey, metric.value, clinicType) : null
                 return (
                   <div key={metric.label} className={`rounded-lg border p-3 ${
                     status === "good" ? "bg-emerald-50/50 border-emerald-200/50 dark:bg-emerald-950/10 dark:border-emerald-900/30" :

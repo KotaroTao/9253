@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
-import { CalendarOff, MessageCircle, ExternalLink, Info, Globe, Check, Loader2 } from "lucide-react"
+import { CalendarOff, MessageCircle, ExternalLink, Info, Globe, Check, Loader2, Stethoscope } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { ClinicSettings } from "@/types"
+import type { ClinicSettings, ClinicType } from "@/types"
 
 const DAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"] as const
 
@@ -18,6 +18,14 @@ type PostSurveyAction = NonNullable<ClinicSettings["postSurveyAction"]>
 const POST_SURVEY_OPTIONS: { value: PostSurveyAction; label: string; desc: string; icon: string }[] = [
   { value: "none", label: messages.settings.postSurveyNone, desc: messages.settings.postSurveyNoneDesc, icon: "✅" },
   { value: "line", label: messages.settings.postSurveyLine, desc: messages.settings.postSurveyLineDesc, icon: "💬" },
+]
+
+const CLINIC_TYPE_OPTIONS: { value: ClinicType; label: string }[] = [
+  { value: "general", label: messages.settings.clinicTypeGeneral },
+  { value: "orthodontic", label: messages.settings.clinicTypeOrthodontic },
+  { value: "pediatric", label: messages.settings.clinicTypePediatric },
+  { value: "cosmetic", label: messages.settings.clinicTypeCosmetic },
+  { value: "oral_surgery", label: messages.settings.clinicTypeOralSurgery },
 ]
 
 interface SettingsFormProps {
@@ -29,6 +37,7 @@ interface SettingsFormProps {
   postSurveyAction?: PostSurveyAction
   lineUrl?: string
   clinicHomepageUrl?: string
+  clinicType?: ClinicType
 }
 
 type SaveStatus = "idle" | "saving" | "saved" | "error"
@@ -86,6 +95,7 @@ export function SettingsForm({
   postSurveyAction: initialAction = "none",
   lineUrl: initialLineUrl = "",
   clinicHomepageUrl: initialHomepageUrl = "",
+  clinicType: initialClinicType = "general",
 }: SettingsFormProps) {
   const router = useRouter()
   const [name, setName] = useState(clinic.name)
@@ -93,11 +103,13 @@ export function SettingsForm({
   const [action, setAction] = useState<PostSurveyAction>(initialAction)
   const [lineUrl, setLineUrl] = useState(initialLineUrl)
   const [homepageUrl, setHomepageUrl] = useState(initialHomepageUrl)
+  const [selectedClinicType, setSelectedClinicType] = useState<ClinicType>(initialClinicType)
 
   const clinicNameSave = useSaveStatus()
   const closedDaysSave = useSaveStatus()
   const postSurveySave = useSaveStatus()
   const homepageSave = useSaveStatus()
+  const clinicTypeSave = useSaveStatus()
 
   const savePartial = useCallback(async (body: Record<string, unknown>) => {
     const res = await fetch("/api/settings", {
@@ -111,6 +123,20 @@ export function SettingsForm({
     }
     router.refresh()
   }, [router])
+
+  // 診療科目: 即時保存
+  async function handleClinicTypeChange(value: ClinicType) {
+    const prev = selectedClinicType
+    setSelectedClinicType(value)
+    clinicTypeSave.markSaving()
+    try {
+      await savePartial({ clinicType: value })
+      clinicTypeSave.markSaved()
+    } catch (err) {
+      setSelectedClinicType(prev)
+      clinicTypeSave.markError(err instanceof Error ? err.message : messages.common.error)
+    }
+  }
 
   // 定休日: 即時保存
   async function handleToggleClosedDay(day: number) {
@@ -208,6 +234,40 @@ export function SettingsForm({
               {messages.common.save}
             </Button>
             <SaveIndicator status={clinicNameSave.status} errorMsg={clinicNameSave.errorMsg} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 診療科目 */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <Stethoscope className="h-5 w-5 text-indigo-500" />
+            <div className="flex-1">
+              <CardTitle className="text-base">{messages.settings.clinicTypeTitle}</CardTitle>
+              <CardDescription>{messages.settings.clinicTypeDesc}</CardDescription>
+            </div>
+            <SaveIndicator status={clinicTypeSave.status} errorMsg={clinicTypeSave.errorMsg} />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {CLINIC_TYPE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                disabled={clinicTypeSave.status === "saving"}
+                onClick={() => handleClinicTypeChange(opt.value)}
+                className={cn(
+                  "rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all disabled:opacity-50",
+                  selectedClinicType === opt.value
+                    ? "border-indigo-400 bg-indigo-50 text-indigo-700 dark:border-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-300"
+                    : "border-muted text-muted-foreground hover:border-indigo-200 hover:text-foreground"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
           </div>
         </CardContent>
       </Card>

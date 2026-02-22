@@ -162,6 +162,7 @@ export default async function MetricsInputPage() {
         initialPrevProfile={extractProfile(prevSummary)}
         initialAutoWorkingDays={autoWorkingDays}
         initialProfileDefaults={profileDefaults}
+        clinicType={settings.clinicType}
       />
     </div>
   )

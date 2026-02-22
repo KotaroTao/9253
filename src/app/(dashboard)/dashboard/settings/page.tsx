@@ -39,6 +39,7 @@ export default async function SettingsPage() {
         postSurveyAction={settings.postSurveyAction}
         lineUrl={settings.lineUrl}
         clinicHomepageUrl={settings.clinicHomepageUrl}
+        clinicType={settings.clinicType}
       />
     </div>
   )

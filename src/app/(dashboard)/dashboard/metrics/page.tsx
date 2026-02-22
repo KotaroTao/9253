@@ -7,6 +7,7 @@ import { UpgradePrompt } from "@/components/dashboard/upgrade-prompt"
 import { ROLES } from "@/lib/constants"
 import { getClinicPlanInfo, hasFeature } from "@/lib/plan"
 import { messages } from "@/lib/messages"
+import type { ClinicSettings } from "@/types"
 
 export default async function MetricsPage() {
   const session = await auth()
@@ -51,19 +52,26 @@ export default async function MetricsPage() {
     monthKeys.push({ year: d.getFullYear(), month: d.getMonth() + 1 })
   }
 
-  const enteredRows = await prisma.monthlyClinicMetrics.findMany({
-    where: {
-      clinicId,
-      OR: monthKeys.map((k) => ({ year: k.year, month: k.month })),
-    },
-    select: { year: true, month: true },
-  })
+  const [enteredRows, clinic] = await Promise.all([
+    prisma.monthlyClinicMetrics.findMany({
+      where: {
+        clinicId,
+        OR: monthKeys.map((k) => ({ year: k.year, month: k.month })),
+      },
+      select: { year: true, month: true },
+    }),
+    prisma.clinic.findUnique({
+      where: { id: clinicId },
+      select: { settings: true },
+    }),
+  ])
 
   const enteredMonths = enteredRows.map((r) => `${r.year}-${r.month}`)
+  const clinicType = ((clinic?.settings ?? {}) as ClinicSettings).clinicType ?? "general"
 
   return (
     <div className="space-y-6">
-      <MonthlyMetricsView enteredMonths={enteredMonths} />
+      <MonthlyMetricsView enteredMonths={enteredMonths} clinicType={clinicType} />
     </div>
   )
 }

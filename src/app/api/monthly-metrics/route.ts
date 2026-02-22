@@ -153,6 +153,7 @@ export async function GET(request: NextRequest) {
     profileDefaults,
     satisfactionScore,
     prevSatisfactionScore,
+    clinicType: settings.clinicType ?? "general",
   })
 }
 
