@@ -171,6 +171,8 @@ model ImprovementAction {
   baselineScore    Float?   @map("baseline_score")
   targetScore      Float?   @map("target_score")
   resultScore      Float?   @map("result_score")
+  completionReason String?  @map("completion_reason") // established, uncertain, suspended
+  completionNote   String?  @map("completion_note")
   status        String    @default("active") // active, completed, cancelled
   platformActionId String? @map("platform_action_id") @db.Uuid
   startedAt     DateTime  @default(now()) @map("started_at")

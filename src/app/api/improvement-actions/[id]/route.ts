@@ -60,7 +60,17 @@ export async function PATCH(
       }
       if (body.status === "active") {
         updateData.completedAt = null
+        updateData.completionReason = null
+        updateData.completionNote = null
       }
+    }
+
+    // Save completion reason and note
+    if (typeof body.completionReason === "string" && ["established", "uncertain", "suspended"].includes(body.completionReason)) {
+      updateData.completionReason = body.completionReason
+    }
+    if (typeof body.completionNote === "string") {
+      updateData.completionNote = body.completionNote.trim() || null
     }
 
     // Auto-capture scores on status change
@@ -89,11 +99,15 @@ export async function PATCH(
 
       if (statusChanged && newStatus) {
         const logAction = newStatus === "active" ? "reactivated" : newStatus
+        const logNote = typeof body.completionNote === "string" && body.completionNote.trim()
+          ? body.completionNote.trim()
+          : null
         await tx.improvementActionLog.create({
           data: {
             improvementActionId: id,
             action: logAction,
             satisfactionScore: currentScore,
+            note: logNote,
           },
         })
         // Re-fetch with updated logs
