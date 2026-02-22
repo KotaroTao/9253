@@ -13,6 +13,7 @@ import {
 import Link from "next/link"
 import { Confetti } from "@/components/survey/confetti"
 import { cn } from "@/lib/utils"
+import { KawaiiTeethCollection } from "@/components/dashboard/kawaii-teeth-collection"
 import type { EngagementData } from "@/lib/queries/engagement"
 import type { AdvisoryProgress } from "@/types"
 
@@ -416,6 +417,9 @@ export function StaffEngagement({
         </Card>
         </div>
       )}
+
+      {/* ③ Kawaii Teeth コレクション */}
+      <KawaiiTeethCollection />
 
       {/* ④ 患者さまの声（カルーセル） */}
       {patientComments.length > 0 && (() => {

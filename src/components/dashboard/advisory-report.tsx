@@ -31,6 +31,7 @@ import {
   ShieldCheck,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { KawaiiTeethReveal } from "@/components/dashboard/kawaii-teeth-reveal"
 import type { AdvisoryReportData, AdvisoryProgress } from "@/types"
 
 const SECTION_CONFIG = {
@@ -158,12 +159,19 @@ interface AdvisoryReportViewProps {
   reports: AdvisoryReportData[]
 }
 
+interface AcquiredCharacter {
+  character: { id: string; name: string; description: string; imageData: string }
+  count: number
+  isNew: boolean
+}
+
 export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProps) {
   const router = useRouter()
   const [isGenerating, setIsGenerating] = useState(false)
   const [expandedReport, setExpandedReport] = useState<string | null>(
     reports.length > 0 ? reports[0].id : null
   )
+  const [acquiredChar, setAcquiredChar] = useState<AcquiredCharacter | null>(null)
 
   async function handleGenerate() {
     if (!confirm(messages.advisory.generateConfirm)) return
@@ -172,6 +180,16 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
     try {
       const res = await fetch("/api/advisory", { method: "POST" })
       if (res.ok) {
+        // AI分析成功 → Kawaii Teethをランダム獲得
+        try {
+          const acquireRes = await fetch("/api/kawaii-teeth/acquire", { method: "POST" })
+          if (acquireRes.ok) {
+            const acquired = await acquireRes.json()
+            setAcquiredChar(acquired)
+          }
+        } catch {
+          // キャラ獲得失敗はサイレントに無視
+        }
         router.refresh()
       } else {
         const data = await res.json()
@@ -364,6 +382,12 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
           })}
         </div>
       )}
+
+      {/* Kawaii Teeth reveal overlay */}
+      <KawaiiTeethReveal
+        acquired={acquiredChar}
+        onClose={() => setAcquiredChar(null)}
+      />
     </div>
   )
 }
