@@ -278,6 +278,11 @@ export const messages = {
     logReactivated: "再開",
     satisfactionAt: "満足度",
     noLogs: "履歴はまだありません",
+    // Recommended improvements
+    recommendedTitle: "おすすめの改善項目",
+    recommendedDesc: "特に満足度が低い項目です。クリックして改善アクションを開始できます",
+    recommendedScore: "現在スコア",
+    recommendedAlreadyActive: "すべての低スコア項目に対して改善アクションが実施中です",
   },
   staffLeaderboard: {
     title: "アンケート回収件数",

@@ -10,6 +10,7 @@ import { messages } from "@/lib/messages"
 import {
   QUESTION_CATEGORY_MAP,
   IMPROVEMENT_SUGGESTIONS,
+  CATEGORY_LABELS,
 } from "@/lib/constants"
 import type { ImprovementSuggestion } from "@/lib/constants"
 import {
@@ -29,6 +30,7 @@ import {
   Play,
   Ban,
   RefreshCw,
+  AlertTriangle,
 } from "lucide-react"
 
 interface ActionLog {
@@ -234,6 +236,31 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [],
 
   const hasTemplates = templateQuestions.length > 0
 
+  // Compute top 3 lowest-score questions (excluding those with active actions)
+  const recommendedItems = useMemo(() => {
+    const activeQuestionIds = new Set(
+      actions
+        .filter((a) => a.status === "active" && a.targetQuestionId)
+        .map((a) => a.targetQuestionId!)
+    )
+    const scored: { questionId: string; text: string; templateName: string; score: number; category: string }[] = []
+    for (const [qId, score] of Object.entries(questionScores)) {
+      if (activeQuestionIds.has(qId)) continue
+      const q = allQuestions.get(qId)
+      if (!q) continue
+      const category = QUESTION_CATEGORY_MAP[qId]
+      if (!category) continue
+      scored.push({ questionId: qId, text: q.text, templateName: q.templateName, score, category })
+    }
+    scored.sort((a, b) => a.score - b.score)
+    return scored.slice(0, 3)
+  }, [questionScores, actions, allQuestions])
+
+  function handleRecommendedClick(questionId: string) {
+    setShowForm(true)
+    handleSelectQuestion(questionId)
+  }
+
   return (
     <div className="space-y-4">
       {/* Add action button */}
@@ -242,6 +269,42 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [],
           <Plus className="mr-2 h-4 w-4" />
           {messages.improvementActions.addAction}
         </Button>
+      )}
+
+      {/* Recommended improvements */}
+      {!showForm && recommendedItems.length > 0 && (
+        <Card className="border-amber-200 bg-gradient-to-r from-amber-50/40 to-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold text-amber-800">
+              <AlertTriangle className="h-4 w-4" />
+              {messages.improvementActions.recommendedTitle}
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              {messages.improvementActions.recommendedDesc}
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {recommendedItems.map((item) => (
+              <button
+                key={item.questionId}
+                type="button"
+                onClick={() => handleRecommendedClick(item.questionId)}
+                className="flex w-full items-center justify-between rounded-lg border border-amber-100 bg-white px-3 py-2.5 text-left transition-all hover:border-amber-300 hover:bg-amber-50/50"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{item.text}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {item.templateName} ・ {CATEGORY_LABELS[item.category] ?? item.category}
+                  </p>
+                </div>
+                <div className="ml-3 shrink-0 text-right">
+                  <p className="text-lg font-bold text-amber-700">{item.score}</p>
+                  <p className="text-[10px] text-muted-foreground">{messages.improvementActions.recommendedScore}</p>
+                </div>
+              </button>
+            ))}
+          </CardContent>
+        </Card>
       )}
 
       {/* Error message */}
