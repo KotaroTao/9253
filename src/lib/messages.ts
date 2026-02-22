@@ -891,7 +891,12 @@ export const messages = {
     provider: "提供",
     learnMore: "詳しく見る",
     adoptCount: "採用院数",
+    completedCount: "完了数",
     avgImprovement: "平均改善",
+    reasonEstablished: "定着",
+    reasonUncertain: "様子見",
+    reasonSuspended: "中断",
+    reasonNone: "理由未記録",
     fromPlatform: "プラットフォーム提案",
     // 管理画面
     manage: "改善アクション管理",

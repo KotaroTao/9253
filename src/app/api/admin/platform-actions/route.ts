@@ -19,34 +19,44 @@ export async function GET() {
     },
   })
 
-  // Compute average improvement for each platform action
+  // Compute average improvement and completion reason breakdown for each platform action
   const result = await Promise.all(
     actions.map(async (action) => {
       const completedActions = await prisma.improvementAction.findMany({
         where: {
           platformActionId: action.id,
           status: "completed",
-          baselineScore: { not: null },
-          resultScore: { not: null },
         },
-        select: { baselineScore: true, resultScore: true },
+        select: { baselineScore: true, resultScore: true, completionReason: true },
       })
+      const withScores = completedActions.filter(
+        (a) => a.baselineScore != null && a.resultScore != null
+      )
       const avgImprovement =
-        completedActions.length > 0
+        withScores.length > 0
           ? Math.round(
-              (completedActions.reduce(
+              (withScores.reduce(
                 (sum, a) => sum + (a.resultScore! - a.baselineScore!),
                 0
               ) /
-                completedActions.length) *
+                withScores.length) *
                 100
             ) / 100
           : null
+
+      // Completion reason breakdown
+      const completionReasons: Record<string, number> = {}
+      for (const a of completedActions) {
+        const reason = a.completionReason || "none"
+        completionReasons[reason] = (completionReasons[reason] || 0) + 1
+      }
 
       return {
         ...action,
         adoptCount: action._count.clinicActions,
         avgImprovement,
+        completedCount: completedActions.length,
+        completionReasons,
       }
     })
   )
