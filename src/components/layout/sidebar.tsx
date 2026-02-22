@@ -132,6 +132,7 @@ const PLAN_BADGE_STYLES: Record<PlanTier, string> = {
   starter: "bg-blue-100 text-blue-700",
   standard: "bg-primary/10 text-primary",
   enterprise: "bg-amber-100 text-amber-700",
+  demo: "bg-pink-100 text-pink-700",
 }
 
 export function Sidebar({ role, isOperatorMode = false, clinicSlug, planInfo }: SidebarProps) {
