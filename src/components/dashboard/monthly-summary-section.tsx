@@ -356,33 +356,25 @@ export function MonthlySummarySection({
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* 延べ来院数 (top) */}
-          <div className="max-w-xs">
+          {/* 延べ来院数 → キャンセル件数 → 診療日数 (3 columns on PC) */}
+          <div className="grid gap-4 sm:grid-cols-3">
             <NumberInput label={m.totalVisitCount} value={totalVisitCount} onChange={setTotalVisitCount} unit={m.unitCount} />
+            <NumberInput label={m.cancellationCount} value={cancellationCount} onChange={setCancellationCount} unit={m.unitCount} />
+            <NumberInput label={m.workingDays} value={workingDays} onChange={setWorkingDays} unit={m.unitDays} />
           </div>
 
-          {/* 総実人数 → 初診 / 再診 (horizontal on PC) */}
+          {/* 総実人数 → 初診 → 再診 (3 columns on PC) */}
           <div className="grid gap-4 sm:grid-cols-3">
             <NumberInput label={m.totalPatientCount} value={totalPatientCount} onChange={handleTotalPatientCount} unit={m.unitPersons} />
             <NumberInput label={m.firstVisitCount} value={firstVisitCount} onChange={handleFirstVisitCount} unit={m.unitPersons} disabled={patientSubDisabled} />
             <NumberInput label={m.revisitCount} value={revisitCount} onChange={handleRevisitCount} unit={m.unitPersons} disabled={patientSubDisabled} />
           </div>
 
-          {/* 総売上 → 保険 / 自費 (horizontal on PC) */}
+          {/* 総売上 → 保険 → 自費 (3 columns on PC) */}
           <div className="grid gap-4 sm:grid-cols-3">
             <NumberInput label={m.totalRevenue} value={totalRevenue} onChange={handleTotalRevenue} unit={m.unitMan} />
             <NumberInput label={m.insuranceRevenue} value={insuranceRevenue} onChange={handleInsuranceRevenue} unit={m.unitMan} disabled={revenueSubDisabled} />
             <NumberInput label={m.selfPayRevenue} value={selfPayRevenue} onChange={handleSelfPayRevenue} unit={m.unitMan} disabled={revenueSubDisabled} />
-          </div>
-
-          {/* キャンセル件数 */}
-          <div className="max-w-xs">
-            <NumberInput label={m.cancellationCount} value={cancellationCount} onChange={setCancellationCount} unit={m.unitCount} />
-          </div>
-
-          {/* 診療日数（自動計算） (bottom) */}
-          <div className="max-w-xs">
-            <NumberInput label={m.workingDays} value={workingDays} onChange={setWorkingDays} unit={m.unitDays} />
           </div>
         </CardContent>
       </Card>
