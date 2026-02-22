@@ -101,7 +101,7 @@ export function calcProfileDerived(s: MonthlySummary | null, profile: ClinicProf
   const patientsPerHygienist = revisit != null && hygienistCount != null && hygienistCount > 0
     ? round1(revisit / hygienistCount) : null
 
-  // レセプト単価 = 総売上 ÷ 延べ来院数
+  // 来院1回あたり単価 = 総売上 ÷ 延べ来院数
   const revenuePerReceipt = totalRevenue != null && totalVisitCount != null && totalVisitCount > 0
     ? round1(totalRevenue / totalVisitCount) : null
 
@@ -113,7 +113,7 @@ export function calcProfileDerived(s: MonthlySummary | null, profile: ClinicProf
   const laborCostRatio = laborCost != null && totalRevenue != null && totalRevenue > 0
     ? round1((laborCost / totalRevenue) * 100) : null
 
-  // スタッフ1人あたり売上 = 総売上 ÷ 総スタッフ数
+  // Dr+DH1人あたり売上 = 総売上 ÷ (Dr数+DH数)
   const totalStaff = (dentistCount ?? 0) + (hygienistCount ?? 0)
   const revenuePerStaff = totalRevenue != null && totalStaff > 0
     ? round1(totalRevenue / totalStaff) : null
