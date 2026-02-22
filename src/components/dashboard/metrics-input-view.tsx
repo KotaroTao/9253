@@ -39,36 +39,26 @@ interface ProfileDefaults {
 
 interface MetricsInputViewProps {
   initialSummary: MonthlySummary | null
-  initialPrevSummary: MonthlySummary | null
-  initialSurveyCount: number
   initialYear: number
   initialMonth: number
   monthStatuses?: Record<string, MonthStatus>
   initialProfile: ClinicProfile | null
-  initialPrevProfile: ClinicProfile | null
   initialAutoWorkingDays: number
   initialProfileDefaults: ProfileDefaults
-  clinicType?: string
 }
 
 export function MetricsInputView({
   initialSummary,
-  initialPrevSummary,
-  initialSurveyCount,
   initialYear,
   initialMonth,
   monthStatuses: initialMonthStatuses = {},
   initialProfile,
-  initialPrevProfile,
   initialAutoWorkingDays,
   initialProfileDefaults,
-  clinicType,
 }: MetricsInputViewProps) {
   const [year, setYear] = useState(initialYear)
   const [month, setMonth] = useState(initialMonth)
   const [summary, setSummary] = useState<MonthlySummary | null>(initialSummary)
-  const [prevSummary, setPrevSummary] = useState<MonthlySummary | null>(initialPrevSummary)
-  const [surveyCount, setSurveyCount] = useState(initialSurveyCount)
   const [loading, setLoading] = useState(false)
   const [monthStatuses, setMonthStatuses] = useState<Record<string, MonthStatus>>(initialMonthStatuses)
   const [showMonthPicker, setShowMonthPicker] = useState(false)
@@ -77,7 +67,6 @@ export function MetricsInputView({
 
   // Profile state
   const [profile, setProfile] = useState<ClinicProfile | null>(initialProfile)
-  const [prevProfile, setPrevProfile] = useState<ClinicProfile | null>(initialPrevProfile)
   const [autoWorkingDays, setAutoWorkingDays] = useState(initialAutoWorkingDays)
   const [profileDefaults, setProfileDefaults] = useState<ProfileDefaults>(initialProfileDefaults)
 
@@ -113,8 +102,6 @@ export function MetricsInputView({
         const data = await res.json()
         const fetchedSummary = data.summary ?? null
         setSummary(fetchedSummary)
-        setPrevSummary(data.prevSummary ?? null)
-        setSurveyCount(data.surveyCount ?? 0)
         setAutoWorkingDays(data.autoWorkingDays ?? 0)
         setProfileDefaults(data.profileDefaults ?? { chairCount: null, dentistCount: null, hygienistCount: null })
 
@@ -130,21 +117,6 @@ export function MetricsInputView({
           })
         } else {
           setProfile(null)
-        }
-
-        // Extract prev profile
-        const prev = data.prevSummary
-        if (prev) {
-          setPrevProfile({
-            chairCount: prev.chairCount ?? null,
-            dentistCount: prev.dentistCount ?? null,
-            hygienistCount: prev.hygienistCount ?? null,
-            totalVisitCount: prev.totalVisitCount ?? null,
-            workingDays: prev.workingDays ?? null,
-            laborCost: prev.laborCost ?? null,
-          })
-        } else {
-          setPrevProfile(null)
         }
 
         const key = `${newYear}-${newMonth}`
@@ -301,13 +273,9 @@ export function MetricsInputView({
           year={year}
           month={month}
           initialSummary={summary}
-          prevSummary={prevSummary}
-          surveyCount={surveyCount}
           initialProfile={profile}
-          prevProfile={prevProfile}
           autoWorkingDays={autoWorkingDays}
           profileDefaults={profileDefaults}
-          clinicType={clinicType as import("@/lib/metrics-utils").ClinicType | undefined}
         />
       )}
     </div>

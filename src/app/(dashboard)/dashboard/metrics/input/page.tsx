@@ -2,7 +2,6 @@ import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { getOperatorClinicId } from "@/lib/admin-mode"
 import { prisma } from "@/lib/prisma"
-import { getMonthlySurveyCount } from "@/lib/queries/stats"
 import { MetricsInputView } from "@/components/dashboard/metrics-input-view"
 import { UpgradePrompt } from "@/components/dashboard/upgrade-prompt"
 import { getMonthStatus, calcWorkingDays } from "@/lib/metrics-utils"
@@ -100,7 +99,7 @@ export default async function MetricsInputPage() {
     }
   }
 
-  const [summary, prevSummary, surveyCount, statusRows, clinic] =
+  const [summary, prevSummary, statusRows, clinic] =
     await Promise.all([
       prisma.monthlyClinicMetrics.findUnique({
         where: { clinicId_year_month: { clinicId, year, month } },
@@ -110,7 +109,6 @@ export default async function MetricsInputPage() {
         where: { clinicId_year_month: { clinicId, year: prevYear, month: prevMonth } },
         select: FULL_SELECT,
       }),
-      getMonthlySurveyCount(clinicId, year, month),
       prisma.monthlyClinicMetrics.findMany({
         where: {
           clinicId,
@@ -153,16 +151,12 @@ export default async function MetricsInputPage() {
     <div className="space-y-6">
       <MetricsInputView
         initialSummary={summary ?? null}
-        initialPrevSummary={prevSummary?.totalPatientCount != null || prevSummary?.firstVisitCount != null ? prevSummary : null}
-        initialSurveyCount={surveyCount}
         initialYear={year}
         initialMonth={month}
         monthStatuses={monthStatuses}
         initialProfile={extractProfile(summary)}
-        initialPrevProfile={extractProfile(prevSummary)}
         initialAutoWorkingDays={autoWorkingDays}
         initialProfileDefaults={profileDefaults}
-        clinicType={settings.clinicType}
       />
     </div>
   )

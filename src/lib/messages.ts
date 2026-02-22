@@ -395,28 +395,18 @@ export const messages = {
     dismissAlert: "閉じる",
     // Scorecard
     scorecardTitle: "経営スコアカード",
+    scorecardTitleWithMonth: (year: number, month: number) => `経営レポート（${year}年${month}月）`,
+    currentMonthNotice: "当月はまだ月末を迎えていないため、表示中のデータは暫定値です。確定値は翌月にご確認ください。",
     momChange: "前月比",
     yoyChange: "前年同月比",
     noYoyData: "前年データなし",
-    // PX highlight
-    pxHighlightTitle: "PX × 経営トレンド",
-    satisfactionScore: "満足度スコア",
-    // KPI health
-    kpiHealthTitle: "KPI ヘルスチェック",
+    // Benchmark status
     statusGood: "良好",
     statusWarning: "注意",
     statusDanger: "要改善",
     // Insights
     insightTitle: "月次インサイト",
     noInsights: "インサイトを表示するにはデータ入力が必要です",
-    // Tabs
-    tabVisits: "来院数",
-    tabRevenue: "売上",
-    tabKpi: "経営指標",
-    tabUnitPrice: "患者単価",
-    tabCancel: "キャンセル",
-    showDataTable: "データ表を表示",
-    hideDataTable: "データ表を非表示",
     // KPI help descriptions
     kpiHelp: {
       totalPatients: { desc: "初診＋再診の実人数合計。医院規模の基本指標", benchmark: "チェア5台で月450〜600人" },
