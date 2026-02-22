@@ -71,13 +71,16 @@ export default async function ActionsPage() {
     }),
   ])
 
-  // Extract question list grouped by template
-  const templateQuestions: TemplateData[] = templates.map((t) => ({
-    name: t.name,
-    questions: ((t.questions as unknown as TemplateQuestion[]) ?? []).filter(
-      (q) => q.type === "rating"
-    ),
-  }))
+  // Extract question list grouped by template (初診→再診 order)
+  const TEMPLATE_ORDER: Record<string, number> = { "初診": 0, "再診": 1 }
+  const templateQuestions: TemplateData[] = templates
+    .map((t) => ({
+      name: t.name,
+      questions: ((t.questions as unknown as TemplateQuestion[]) ?? []).filter(
+        (q) => q.type === "rating"
+      ),
+    }))
+    .sort((a, b) => (TEMPLATE_ORDER[a.name] ?? 99) - (TEMPLATE_ORDER[b.name] ?? 99))
 
   // Collect all question IDs from templates + active actions' targetQuestionIds
   const allQuestionIds = new Set<string>()
@@ -115,6 +118,7 @@ export default async function ActionsPage() {
           targetQuestionIds: pa.targetQuestionIds as string[] | null,
         }))}
         adoptedPlatformActionIds={adoptedPlatformActionIds}
+        isSystemAdmin={session.user.role === ROLES.SYSTEM_ADMIN}
       />
     </div>
   )

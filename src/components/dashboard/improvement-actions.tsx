@@ -96,6 +96,7 @@ interface Props {
   questionScores?: Record<string, number>
   platformActions?: PlatformActionData[]
   adoptedPlatformActionIds?: string[]
+  isSystemAdmin?: boolean
 }
 
 export function ImprovementActionsView({
@@ -104,6 +105,7 @@ export function ImprovementActionsView({
   questionScores = {},
   platformActions = [],
   adoptedPlatformActionIds: initialAdopted = [],
+  isSystemAdmin = false,
 }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -139,12 +141,14 @@ export function ImprovementActionsView({
     return map
   }, [templateQuestions])
 
-  // Auto-open form with pre-selected question from URL param (?question=fv2)
+  // Auto-open form with pre-selected question from URL param (?question=fv2) — system_admin only
   useEffect(() => {
     const questionParam = searchParams.get("question")
     if (questionParam && allQuestions.has(questionParam)) {
       setShowForm(true)
-      setSelectedQuestionIds(new Set([questionParam]))
+      if (isSystemAdmin) {
+        setSelectedQuestionIds(new Set([questionParam]))
+      }
       // Clean up URL
       router.replace("/dashboard/actions", { scroll: false })
     }
@@ -680,8 +684,8 @@ export function ImprovementActionsView({
             <CardTitle className="text-base">{messages.improvementActions.addAction}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Step 1: Question selector (checkboxes) */}
-            {hasTemplates && (
+            {/* Step 1: Question selector (checkboxes) — system_admin only */}
+            {isSystemAdmin && hasTemplates && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium">
                   {messages.improvementActions.selectQuestion}
@@ -695,8 +699,8 @@ export function ImprovementActionsView({
               </div>
             )}
 
-            {/* Step 2: Suggestion cards (shown when question is selected) */}
-            {selectedQuestionIds.size > 0 && suggestions.length > 0 && (
+            {/* Step 2: Suggestion cards (shown when question is selected) — system_admin only */}
+            {isSystemAdmin && selectedQuestionIds.size > 0 && suggestions.length > 0 && (
               <div className="space-y-2">
                 <div>
                   <p className="text-sm font-medium text-amber-700">
@@ -771,8 +775,8 @@ export function ImprovementActionsView({
               />
             </div>
 
-            {/* Current scores of selected questions (auto-populated, last 30 days) */}
-            {selectedQuestionIds.size > 0 && (
+            {/* Current scores of selected questions (auto-populated, last 30 days) — system_admin only */}
+            {isSystemAdmin && selectedQuestionIds.size > 0 && (
               <SelectedQuestionsScores
                 selectedIds={selectedQuestionIds}
                 questionScores={questionScores}
@@ -877,6 +881,7 @@ export function ImprovementActionsView({
                 templateQuestions={templateQuestions}
                 questionScores={questionScores}
                 allQuestions={allQuestions}
+                isSystemAdmin={isSystemAdmin}
               />
             )
           })}
@@ -935,6 +940,7 @@ export function ImprovementActionsView({
                 templateQuestions={templateQuestions}
                 questionScores={questionScores}
                 allQuestions={allQuestions}
+                isSystemAdmin={isSystemAdmin}
               />
             )
           })}
@@ -969,6 +975,7 @@ function ActionCard({
   templateQuestions,
   questionScores,
   allQuestions,
+  isSystemAdmin,
 }: {
   action: ImprovementAction
   expanded: boolean
@@ -994,6 +1001,7 @@ function ActionCard({
   templateQuestions?: TemplateData[]
   questionScores?: Record<string, number>
   allQuestions?: Map<string, { text: string; templateName: string }>
+  isSystemAdmin?: boolean
 }) {
   const isActive = action.status === "active"
   const isCompleted = action.status === "completed"
@@ -1253,7 +1261,7 @@ function ActionCard({
         )}
 
         {/* Edit mode */}
-        {expanded && isEditing && onCancelEdit && onSaveEdit && onEditTitleChange && onEditDescriptionChange && onEditToggleQuestion && templateQuestions && questionScores && allQuestions && editQuestionIds && (
+        {expanded && isEditing && onCancelEdit && onSaveEdit && onEditTitleChange && onEditDescriptionChange && (
           <div className="mt-3 space-y-4 border-t pt-3">
             <div className="space-y-1.5">
               <Label>{messages.improvementActions.actionTitle}</Label>
@@ -1271,23 +1279,27 @@ function ActionCard({
                 placeholder={messages.improvementActions.descriptionPlaceholder}
               />
             </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">
-                {messages.improvementActions.selectQuestion}
-              </Label>
-              <QuestionCheckboxList
-                templateQuestions={templateQuestions}
-                selectedIds={editQuestionIds}
-                questionScores={questionScores}
-                onToggle={onEditToggleQuestion}
-              />
-            </div>
-            {editQuestionIds.size > 0 && (
-              <SelectedQuestionsScores
-                selectedIds={editQuestionIds}
-                questionScores={questionScores}
-                allQuestions={allQuestions}
-              />
+            {isSystemAdmin && onEditToggleQuestion && templateQuestions && questionScores && allQuestions && editQuestionIds && (
+              <>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    {messages.improvementActions.selectQuestion}
+                  </Label>
+                  <QuestionCheckboxList
+                    templateQuestions={templateQuestions}
+                    selectedIds={editQuestionIds}
+                    questionScores={questionScores}
+                    onToggle={onEditToggleQuestion}
+                  />
+                </div>
+                {editQuestionIds.size > 0 && (
+                  <SelectedQuestionsScores
+                    selectedIds={editQuestionIds}
+                    questionScores={questionScores}
+                    allQuestions={allQuestions}
+                  />
+                )}
+              </>
             )}
             <div className="flex gap-2 pt-2">
               <Button onClick={onSaveEdit} disabled={!(editTitle?.trim()) || loading}>
