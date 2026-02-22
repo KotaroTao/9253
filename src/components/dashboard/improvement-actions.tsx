@@ -307,6 +307,16 @@ export function ImprovementActionsView({ initialActions, templateQuestions = [],
         </Card>
       )}
 
+      {/* Tip */}
+      {!showForm && (
+        <div className="flex gap-2.5 rounded-lg border border-blue-100 bg-blue-50/50 px-4 py-3">
+          <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
+          <p className="text-xs leading-relaxed text-blue-800">
+            {messages.improvementActions.tip}
+          </p>
+        </div>
+      )}
+
       {/* Error message */}
       {errorMsg && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
