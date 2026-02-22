@@ -1,38 +1,29 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { createPortal } from "react-dom"
 import Link from "next/link"
 import { messages } from "@/lib/messages"
 import { MonthlyTrendSummary } from "./monthly-trend-summary"
-import { AlertTriangle, X } from "lucide-react"
+import { AlertTriangle, X, ChevronLeft, ChevronRight } from "lucide-react"
 
-export interface MonthRange {
-  from: string // YYYY-MM
-  to: string   // YYYY-MM
-}
-
-const PERIOD_PRESETS = [
-  { label: "6ヶ月", value: 6 },
-  { label: "1年", value: 12 },
-  { label: "2年", value: 24 },
-  { label: "3年", value: 36 },
-] as const
-
-function formatMonthPreset(months: number): string {
-  if (months >= 12 && months % 12 === 0) return `${months / 12}年`
-  return `${months}ヶ月`
-}
-
-function currentYearMonth(): string {
+// 2025年1月から当月までの月リストを生成
+function generateMonthOptions(): { year: number; month: number; label: string }[] {
   const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
-}
+  const startYear = 2025
+  const startMonth = 1
+  const endYear = now.getFullYear()
+  const endMonth = now.getMonth() + 1
 
-function monthsAgoYearMonth(n: number): string {
-  const now = new Date()
-  const d = new Date(now.getFullYear(), now.getMonth() - n, 1)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
+  const options: { year: number; month: number; label: string }[] = []
+  for (let y = endYear; y >= startYear; y--) {
+    const mEnd = y === endYear ? endMonth : 12
+    const mStart = y === startYear ? startMonth : 1
+    for (let m = mEnd; m >= mStart; m--) {
+      options.push({ year: y, month: m, label: `${y}年${m}月` })
+    }
+  }
+  return options
 }
 
 interface MonthlyMetricsViewProps {
@@ -62,14 +53,21 @@ export function MonthlyMetricsView({
 }: MonthlyMetricsViewProps) {
   const enteredSet = useMemo(() => new Set(enteredMonths), [enteredMonths])
 
-  const [selectedMonths, setSelectedMonths] = useState(12)
-  const [customMonthRange, setCustomMonthRange] = useState<MonthRange | null>(null)
-  const [showCustom, setShowCustom] = useState(false)
-  const [customMonthFrom, setCustomMonthFrom] = useState(() => monthsAgoYearMonth(12))
-  const [customMonthTo, setCustomMonthTo] = useState(currentYearMonth)
+  // Default to previous month
+  const defaultDate = useMemo(() => {
+    const now = new Date()
+    const d = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    return { year: d.getFullYear(), month: d.getMonth() + 1 }
+  }, [])
+
+  const [year, setYear] = useState(defaultDate.year)
+  const [month, setMonth] = useState(defaultDate.month)
+  const [showMonthPicker, setShowMonthPicker] = useState(false)
+  const [pickerYear, setPickerYear] = useState(defaultDate.year)
+  const pickerRef = useRef<HTMLDivElement>(null)
   const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null)
 
-  // Dismissible alert state — persisted per month in localStorage
+  // Dismissible alert state
   const [alertDismissed, setAlertDismissed] = useState(false)
   useEffect(() => {
     const now = new Date()
@@ -81,8 +79,22 @@ export function MonthlyMetricsView({
     setHeaderSlot(document.getElementById("header-actions"))
   }, [])
 
-  // Recalculate missing months reactively
+  // Close month picker on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setShowMonthPicker(false)
+      }
+    }
+    if (showMonthPicker) {
+      document.addEventListener("mousedown", handleClickOutside)
+      return () => document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [showMonthPicker])
+
   const missingRecentMonths = useMemo(() => getRecentMissingMonths(enteredSet), [enteredSet])
+  const monthOptions = useMemo(() => generateMonthOptions(), [])
+  const years = useMemo(() => Array.from(new Set(monthOptions.map((o) => o.year))), [monthOptions])
 
   function dismissAlert() {
     const now = new Date()
@@ -91,131 +103,119 @@ export function MonthlyMetricsView({
     setAlertDismissed(true)
   }
 
+  function handleMonthChange(newYear: number, newMonth: number) {
+    setYear(newYear)
+    setMonth(newMonth)
+    setShowMonthPicker(false)
+  }
+
+  function navigateMonth(direction: -1 | 1) {
+    const idx = monthOptions.findIndex((o) => o.year === year && o.month === month)
+    const nextIdx = idx - direction
+    if (nextIdx >= 0 && nextIdx < monthOptions.length) {
+      const opt = monthOptions[nextIdx]
+      handleMonthChange(opt.year, opt.month)
+    }
+  }
+
+  const canGoPrev = monthOptions.findIndex((o) => o.year === year && o.month === month) < monthOptions.length - 1
+  const canGoNext = monthOptions.findIndex((o) => o.year === year && o.month === month) > 0
+
   const m = messages.monthlyMetrics
 
-  const isPreset = !customMonthRange && PERIOD_PRESETS.some((o) => o.value === selectedMonths)
-  const periodLabel = customMonthRange
-    ? `${customMonthRange.from}〜${customMonthRange.to}`
-    : `直近${formatMonthPreset(selectedMonths)}`
+  const monthSelector = (
+    <div className="relative flex items-center gap-1 shrink-0" ref={pickerRef}>
+      <button
+        onClick={() => navigateMonth(-1)}
+        disabled={!canGoPrev}
+        className="rounded-md p-1.5 text-muted-foreground hover:bg-muted disabled:opacity-30 transition-colors"
+        aria-label="前月"
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </button>
 
-  function handlePresetClick(value: number) {
-    setShowCustom(false)
-    setCustomMonthRange(null)
-    setSelectedMonths(value)
-  }
+      <button
+        onClick={() => {
+          setPickerYear(year)
+          setShowMonthPicker((v) => !v)
+        }}
+        className="rounded-lg border bg-card px-3 py-1.5 text-sm font-medium hover:bg-muted transition-colors min-w-[100px] text-center"
+      >
+        {year}年{month}月
+      </button>
 
-  function handleCustomMonthSubmit() {
-    if (!customMonthFrom || !customMonthTo || customMonthFrom > customMonthTo) return
-    setCustomMonthRange({ from: customMonthFrom, to: customMonthTo })
-    setShowCustom(false)
-  }
+      <button
+        onClick={() => navigateMonth(1)}
+        disabled={!canGoNext}
+        className="rounded-md p-1.5 text-muted-foreground hover:bg-muted disabled:opacity-30 transition-colors"
+        aria-label="翌月"
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
 
-  const periodSelector = (
-    <div className="flex items-center gap-2">
-      <span className="hidden text-xs text-muted-foreground sm:inline">
-        {periodLabel}
-      </span>
-      {/* Desktop: ボタン群 */}
-      <div className="hidden gap-1 sm:flex">
-        {PERIOD_PRESETS.map((opt) => (
-          <button
-            key={opt.value}
-            onClick={() => handlePresetClick(opt.value)}
-            className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
-              !customMonthRange && selectedMonths === opt.value
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            }`}
-          >
-            {opt.label}
-          </button>
-        ))}
-        {showCustom ? (
-          <div className="flex items-center gap-1">
-            <input
-              type="month"
-              value={customMonthFrom}
-              onChange={(e) => setCustomMonthFrom(e.target.value)}
-              className="rounded-md border bg-card px-2 py-1 text-xs"
-            />
-            <span className="text-xs text-muted-foreground">〜</span>
-            <input
-              type="month"
-              value={customMonthTo}
-              max={currentYearMonth()}
-              onChange={(e) => setCustomMonthTo(e.target.value)}
-              className="rounded-md border bg-card px-2 py-1 text-xs"
-            />
+      {/* Month picker dropdown */}
+      {showMonthPicker && (
+        <div className="absolute right-0 top-full mt-2 w-72 rounded-xl border bg-card p-4 shadow-lg z-50">
+          <div className="flex items-center justify-between mb-3">
             <button
-              onClick={handleCustomMonthSubmit}
-              className="rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground shadow-sm"
+              onClick={() => setPickerYear((y) => Math.max(y - 1, years[years.length - 1]))}
+              disabled={pickerYear <= years[years.length - 1]}
+              className="rounded-md p-1 text-muted-foreground hover:bg-muted disabled:opacity-30"
             >
-              適用
+              <ChevronLeft className="h-4 w-4" />
             </button>
+            <span className="text-sm font-bold">{pickerYear}年</span>
             <button
-              onClick={() => setShowCustom(false)}
-              className="rounded-md px-1.5 py-1 text-xs text-muted-foreground hover:bg-muted"
+              onClick={() => setPickerYear((y) => Math.min(y + 1, years[0]))}
+              disabled={pickerYear >= years[0]}
+              className="rounded-md p-1 text-muted-foreground hover:bg-muted disabled:opacity-30"
             >
-              x
+              <ChevronRight className="h-4 w-4" />
             </button>
           </div>
-        ) : (
-          <button
-            onClick={() => setShowCustom(true)}
-            className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
-              customMonthRange
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            }`}
-          >
-            {customMonthRange ? periodLabel : "カスタム"}
-          </button>
-        )}
-      </div>
-      {/* Mobile: セレクト */}
-      <select
-        value={customMonthRange ? "custom" : isPreset ? selectedMonths : "custom"}
-        onChange={(e) => {
-          const val = e.target.value
-          if (val === "custom") {
-            setShowCustom(true)
-          } else {
-            setShowCustom(false)
-            setCustomMonthRange(null)
-            setSelectedMonths(Number(val))
-          }
-        }}
-        className="rounded-md border bg-card px-2 py-1.5 text-xs sm:hidden"
-      >
-        {PERIOD_PRESETS.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            直近{opt.label}
-          </option>
-        ))}
-        <option value="custom">カスタム...</option>
-      </select>
-      {showCustom && (
-        <div className="flex items-center gap-1 sm:hidden">
-          <input
-            type="month"
-            value={customMonthFrom}
-            onChange={(e) => setCustomMonthFrom(e.target.value)}
-            className="rounded-md border bg-card px-2 py-1 text-xs"
-          />
-          <span className="text-xs text-muted-foreground">〜</span>
-          <input
-            type="month"
-            value={customMonthTo}
-            max={currentYearMonth()}
-            onChange={(e) => setCustomMonthTo(e.target.value)}
-            className="rounded-md border bg-card px-2 py-1 text-xs"
-          />
-          <button
-            onClick={handleCustomMonthSubmit}
-            className="rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground shadow-sm"
-          >
-            適用
-          </button>
+
+          <div className="grid grid-cols-4 gap-1.5">
+            {Array.from({ length: 12 }, (_, i) => i + 1).map((mo) => {
+              const opt = monthOptions.find((o) => o.year === pickerYear && o.month === mo)
+              if (!opt) {
+                return (
+                  <div key={mo} className="rounded-md px-2 py-2 text-center text-sm text-muted-foreground/30">
+                    {mo}月
+                  </div>
+                )
+              }
+              const isSelected = year === opt.year && month === opt.month
+              const key = `${opt.year}-${opt.month}`
+              const isEntered = enteredSet.has(key)
+
+              let statusDot = ""
+              if (!isSelected) {
+                statusDot = isEntered ? "bg-emerald-400" : "bg-red-400"
+              }
+
+              return (
+                <button
+                  key={key}
+                  onClick={() => handleMonthChange(opt.year, opt.month)}
+                  className={`relative rounded-md px-2 py-2 text-center text-sm font-medium transition-colors ${
+                    isSelected
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-muted"
+                  }`}
+                >
+                  {mo}月
+                  {statusDot && (
+                    <span className={`absolute top-1 right-1 h-1.5 w-1.5 rounded-full ${statusDot}`} />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="mt-3 flex items-center justify-center gap-3 text-[10px] text-muted-foreground">
+            <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400 inline-block" />入力済</span>
+            <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-red-400 inline-block" />未入力</span>
+          </div>
         </div>
       )}
     </div>
@@ -223,9 +223,9 @@ export function MonthlyMetricsView({
 
   return (
     <div className="space-y-6">
-      {headerSlot && createPortal(periodSelector, headerSlot)}
+      {headerSlot && createPortal(monthSelector, headerSlot)}
 
-      {/* 未入力アラート（非侵入的・dismiss可能） */}
+      {/* 未入力アラート */}
       {missingRecentMonths.length > 0 && !alertDismissed && (
         <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/30">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
@@ -258,8 +258,8 @@ export function MonthlyMetricsView({
         </div>
       )}
 
-      {/* グラフ（期間セレクタと連動） */}
-      <MonthlyTrendSummary months={selectedMonths} customRange={customMonthRange} clinicType={clinicType} />
+      {/* レポート本体 */}
+      <MonthlyTrendSummary year={year} month={month} clinicType={clinicType} />
     </div>
   )
 }

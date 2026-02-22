@@ -4,9 +4,8 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { messages } from "@/lib/messages"
-import { TrendingUp, TrendingDown, Check, Loader2, HelpCircle, X } from "lucide-react"
-import { calcDerived, calcProfileDerived, getBenchmarkStatus } from "@/lib/metrics-utils"
-import type { MonthlySummary, ClinicProfile, BenchmarkStatus, ClinicType } from "@/lib/metrics-utils"
+import { Check, Loader2 } from "lucide-react"
+import type { MonthlySummary, ClinicProfile } from "@/lib/metrics-utils"
 
 interface ProfileDefaults {
   chairCount: number | null
@@ -18,78 +17,9 @@ interface MonthlySummarySectionProps {
   year: number
   month: number
   initialSummary: MonthlySummary | null
-  prevSummary: MonthlySummary | null
-  surveyCount: number
   initialProfile: ClinicProfile | null
-  prevProfile: ClinicProfile | null
   autoWorkingDays: number
   profileDefaults: ProfileDefaults
-  clinicType?: ClinicType
-}
-
-function DerivedDelta({ current, prev }: { current: number | null; prev: number | null }) {
-  if (current == null || prev == null) return null
-  const diff = Math.round((current - prev) * 10) / 10
-  if (diff === 0) return null
-  const isUp = diff > 0
-  return (
-    <span className={`ml-1 text-xs ${isUp ? "text-emerald-600" : "text-red-500"}`}>
-      {isUp ? <TrendingUp className="inline h-3 w-3" /> : <TrendingDown className="inline h-3 w-3" />}
-      {" "}{isUp ? "+" : ""}{diff}
-    </span>
-  )
-}
-
-type KpiHelpKey = keyof typeof messages.monthlyMetrics.kpiHelp
-
-function KpiHelpButton({ helpKey }: { helpKey?: KpiHelpKey }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener("mousedown", handleClick)
-    return () => document.removeEventListener("mousedown", handleClick)
-  }, [open])
-
-  if (!helpKey) return null
-  const help = messages.monthlyMetrics.kpiHelp[helpKey]
-  if (!help) return null
-
-  return (
-    <span className="relative inline-block align-middle" ref={ref}>
-      <button
-        type="button"
-        onClick={(e) => { e.stopPropagation(); setOpen((v) => !v) }}
-        className="ml-1 inline-flex items-center text-muted-foreground/60 hover:text-muted-foreground transition-colors"
-        aria-label="指標の説明"
-      >
-        <HelpCircle className="h-3.5 w-3.5" />
-      </button>
-      {open && (
-        <div className="absolute left-0 bottom-full mb-2 z-50 w-56 rounded-lg border bg-popover p-3 shadow-lg text-left">
-          <div className="flex items-start justify-between gap-1">
-            <p className="text-xs text-popover-foreground leading-relaxed">{help.desc}</p>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="shrink-0 text-muted-foreground/60 hover:text-muted-foreground"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </div>
-          <p className="mt-1.5 text-[10px] text-muted-foreground">
-            <span className="font-medium">目安:</span> {help.benchmark}
-          </p>
-        </div>
-      )}
-    </span>
-  )
 }
 
 function NumberInput({
@@ -122,13 +52,9 @@ export function MonthlySummarySection({
   year,
   month,
   initialSummary,
-  prevSummary,
-  surveyCount,
   initialProfile,
-  prevProfile,
   autoWorkingDays,
   profileDefaults,
-  clinicType,
 }: MonthlySummarySectionProps) {
   // Summary input state
   const [totalVisitCount, setTotalVisitCount] = useState(initialProfile?.totalVisitCount?.toString() ?? "")
@@ -284,59 +210,7 @@ export function MonthlySummarySection({
   const patientSubDisabled = !totalPatientCount
   const revenueSubDisabled = !totalRevenue
 
-  // Build current summary for derived calcs
-  const currentSummary: MonthlySummary = {
-    totalPatientCount: toInt(totalPatientCount),
-    firstVisitCount: toInt(firstVisitCount),
-    revisitCount: toInt(revisitCount),
-    totalRevenue: toInt(totalRevenue),
-    insuranceRevenue: toInt(insuranceRevenue),
-    selfPayRevenue: toInt(selfPayRevenue),
-    cancellationCount: toInt(cancellationCount),
-  }
-
-  const currentProfile: ClinicProfile = {
-    chairCount: toInt(chairCount),
-    dentistCount: toFloat(dentistCount),
-    hygienistCount: toFloat(hygienistCount),
-    totalVisitCount: toInt(totalVisitCount),
-    workingDays: toInt(workingDays),
-    laborCost: toInt(laborCost),
-  }
-
-  const derived = calcDerived(currentSummary, surveyCount)
-  const prevDerived = calcDerived(prevSummary, 0)
-  const profileDerived = calcProfileDerived(currentSummary, currentProfile)
-  const prevProfileDerived = calcProfileDerived(prevSummary, prevProfile)
-
   const m = messages.monthlyMetrics
-
-  // Derived KPIs (totalPatients removed — now a direct input)
-  const derivedMetrics: { label: string; value: number | null; format: (v: number) => string; prev: number | null; helpKey?: KpiHelpKey; benchmarkKey?: string }[] = [
-    { label: m.revenuePerVisit, value: derived?.revenuePerVisit ?? null, format: (v: number) => `${v}${m.unitMan}`, prev: prevDerived?.revenuePerVisit ?? null, helpKey: "revenuePerVisit", benchmarkKey: "revenuePerVisit" },
-    { label: m.selfPayRatioAmount, value: derived?.selfPayRatioAmount ?? null, format: (v: number) => `${v}%`, prev: prevDerived?.selfPayRatioAmount ?? null, helpKey: "selfPayRatioAmount", benchmarkKey: "selfPayRatioAmount" },
-    { label: m.returnRate, value: derived?.returnRate ?? null, format: (v: number) => `${v}%`, prev: prevDerived?.returnRate ?? null, helpKey: "returnRate", benchmarkKey: "returnRate" },
-    { label: m.newPatientRate, value: derived?.newPatientRate ?? null, format: (v: number) => `${v}%`, prev: prevDerived?.newPatientRate ?? null, helpKey: "newPatientRate", benchmarkKey: "newPatientRate" },
-    { label: m.cancellationRate, value: derived?.cancellationRate ?? null, format: (v: number) => `${v}%`, prev: prevDerived?.cancellationRate ?? null, helpKey: "cancellationRate", benchmarkKey: "cancellationRate" },
-    { label: m.surveyResponseRate, value: derived?.surveyResponseRate ?? null, format: (v: number) => `${v}%`, prev: null as number | null, helpKey: "surveyResponseRate" },
-  ]
-
-  // Extended profile-based KPIs (+ revenuePerChair)
-  const extendedMetrics: { label: string; value: number | null; format: (v: number) => string; prev: number | null; helpKey?: KpiHelpKey; benchmarkKey?: string }[] = [
-    { label: m.dailyPatients, value: profileDerived?.dailyPatients ?? null, format: (v: number) => `${v}${m.unitVisitsPerDay}`, prev: prevProfileDerived?.dailyPatients ?? null, helpKey: "dailyPatients" },
-    { label: m.dailyRevenue, value: profileDerived?.dailyRevenue ?? null, format: (v: number) => `${v}${m.unitMan}`, prev: prevProfileDerived?.dailyRevenue ?? null, helpKey: "dailyRevenue" },
-    { label: m.chairDailyVisits, value: profileDerived?.chairDailyVisits ?? null, format: (v: number) => `${v}${m.unitVisitsPerChairDay}`, prev: prevProfileDerived?.chairDailyVisits ?? null, helpKey: "chairDailyVisits" },
-    { label: m.revenuePerChair, value: profileDerived?.revenuePerChair ?? null, format: (v: number) => `${v}${m.unitMan}`, prev: prevProfileDerived?.revenuePerChair ?? null, helpKey: "revenuePerChair" },
-    { label: m.revenuePerReceipt, value: profileDerived?.revenuePerReceipt ?? null, format: (v: number) => `${v}${m.unitMan}`, prev: prevProfileDerived?.revenuePerReceipt ?? null, helpKey: "revenuePerReceipt" },
-    { label: m.avgVisitsPerPatient, value: profileDerived?.avgVisitsPerPatient ?? null, format: (v: number) => `${v}${m.unitTimes}`, prev: prevProfileDerived?.avgVisitsPerPatient ?? null, helpKey: "avgVisitsPerPatient" },
-    { label: m.revenuePerDentist, value: profileDerived?.revenuePerDentist ?? null, format: (v: number) => `${v}${m.unitMan}`, prev: prevProfileDerived?.revenuePerDentist ?? null, helpKey: "revenuePerDentist" },
-    { label: m.patientsPerDentist, value: profileDerived?.patientsPerDentist ?? null, format: (v: number) => `${v}${m.unitPersons}`, prev: prevProfileDerived?.patientsPerDentist ?? null, helpKey: "patientsPerDentist" },
-    { label: m.patientsPerHygienist, value: profileDerived?.patientsPerHygienist ?? null, format: (v: number) => `${v}${m.unitPersons}`, prev: prevProfileDerived?.patientsPerHygienist ?? null, helpKey: "patientsPerHygienist" },
-    { label: m.laborCostRatio, value: profileDerived?.laborCostRatio ?? null, format: (v: number) => `${v}%`, prev: prevProfileDerived?.laborCostRatio ?? null, helpKey: "laborCostRatio", benchmarkKey: "laborCostRatio" },
-    { label: m.revenuePerStaff, value: profileDerived?.revenuePerStaff ?? null, format: (v: number) => `${v}${m.unitMan}`, prev: prevProfileDerived?.revenuePerStaff ?? null, helpKey: "revenuePerStaff" },
-  ]
-
-  const visibleExtendedMetrics = extendedMetrics.filter((metric) => metric.value != null)
 
   return (
     <div className="space-y-4">
@@ -398,92 +272,6 @@ export function MonthlySummarySection({
           </div>
         </CardContent>
       </Card>
-
-      {/* 自動算出指標 */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">{m.derivedTitle}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
-            {derivedMetrics.map((metric) => {
-              const status: BenchmarkStatus | null = metric.benchmarkKey ? getBenchmarkStatus(metric.benchmarkKey, metric.value, clinicType) : null
-              return (
-                <div key={metric.label} className={`rounded-lg border p-3 ${
-                  status === "good" ? "bg-emerald-50/50 border-emerald-200/50 dark:bg-emerald-950/10 dark:border-emerald-900/30" :
-                  status === "warning" ? "bg-amber-50/50 border-amber-200/50 dark:bg-amber-950/10 dark:border-amber-900/30" :
-                  status === "danger" ? "bg-red-50/50 border-red-200/50 dark:bg-red-950/10 dark:border-red-900/30" :
-                  "bg-muted/30"
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">
-                      {metric.label}
-                      <KpiHelpButton helpKey={metric.helpKey} />
-                    </p>
-                    {status && (
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                        status === "good" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" :
-                        status === "warning" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400" :
-                        "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
-                      }`}>
-                        {status === "good" ? m.statusGood : status === "warning" ? m.statusWarning : m.statusDanger}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-lg font-bold">
-                    {metric.value != null ? metric.format(metric.value) : <span className="text-muted-foreground/50">-</span>}
-                    <DerivedDelta current={metric.value} prev={metric.prev} />
-                  </p>
-                </div>
-              )
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 体制・生産性指標 */}
-      {visibleExtendedMetrics.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">{m.extendedDerivedTitle}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-              {visibleExtendedMetrics.map((metric) => {
-                const status: BenchmarkStatus | null = metric.benchmarkKey ? getBenchmarkStatus(metric.benchmarkKey, metric.value, clinicType) : null
-                return (
-                  <div key={metric.label} className={`rounded-lg border p-3 ${
-                    status === "good" ? "bg-emerald-50/50 border-emerald-200/50 dark:bg-emerald-950/10 dark:border-emerald-900/30" :
-                    status === "warning" ? "bg-amber-50/50 border-amber-200/50 dark:bg-amber-950/10 dark:border-amber-900/30" :
-                    status === "danger" ? "bg-red-50/50 border-red-200/50 dark:bg-red-950/10 dark:border-red-900/30" :
-                    "bg-muted/30"
-                  }`}>
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-muted-foreground">
-                        {metric.label}
-                        <KpiHelpButton helpKey={metric.helpKey} />
-                      </p>
-                      {status && (
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                          status === "good" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" :
-                          status === "warning" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400" :
-                          "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
-                        }`}>
-                          {status === "good" ? m.statusGood : status === "warning" ? m.statusWarning : m.statusDanger}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-lg font-bold">
-                      {metric.value != null ? metric.format(metric.value) : <span className="text-muted-foreground/50">-</span>}
-                      <DerivedDelta current={metric.value} prev={metric.prev} />
-                    </p>
-                  </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

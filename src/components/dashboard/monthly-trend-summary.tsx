@@ -1,12 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import {
-  LineChart,
-  Line,
+  ComposedChart,
   BarChart,
   Bar,
-  ComposedChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -16,21 +15,31 @@ import {
   ReferenceLine,
 } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { messages } from "@/lib/messages"
 import {
-  Users, Banknote, BarChart3, Wallet, XCircle,
-  TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp,
-  Heart, Smile,
+  Users, Banknote, XCircle,
+  TrendingUp, TrendingDown, Minus,
+  BarChart3, AlertCircle, HelpCircle, X,
 } from "lucide-react"
-import { calcDerived, getBenchmarkStatus, generateInsights, buildKpiHealthItems, BENCHMARK_DOT } from "@/lib/metrics-utils"
-import type { MonthlySummary, MetricsInsight, KpiHealthItem, ClinicType } from "@/lib/metrics-utils"
+import { calcDerived, calcProfileDerived, getBenchmarkStatus, generateInsights } from "@/lib/metrics-utils"
+import type { MonthlySummary, ClinicProfile, MetricsInsight, BenchmarkStatus, ClinicType } from "@/lib/metrics-utils"
 
 interface TrendRow extends MonthlySummary {
   year: number
   month: number
   satisfactionScore?: number | null
   surveyCount?: number
+}
+
+type FullMetrics = MonthlySummary & ClinicProfile & Record<string, unknown>
+
+interface SingleMonthData {
+  summary: FullMetrics | null
+  prevSummary: FullMetrics | null
+  yoySummary: FullMetrics | null
+  surveyCount: number
+  satisfactionScore: number | null
+  prevSatisfactionScore: number | null
 }
 
 function formatMonth(year: number, month: number) {
@@ -41,83 +50,65 @@ function formatMonthShort(_year: number, month: number) {
   return `${month}月`
 }
 
-interface MonthRange {
-  from: string // YYYY-MM
-  to: string   // YYYY-MM
-}
-
 interface MonthlyTrendSummaryProps {
-  months?: number
-  customRange?: MonthRange | null
+  year: number
+  month: number
   clinicType?: string
 }
 
-// Collapsible data table below charts
+// Data table (always visible)
 function DataTable({ rows, data }: {
   rows: { label: string; key: string; format?: (v: number) => string; color?: string }[]
   data: Record<string, unknown>[]
 }) {
-  const [expanded, setExpanded] = useState(false)
-  const m = messages.monthlyMetrics
   return (
-    <div className="mt-2">
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-      >
-        {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-        {expanded ? m.hideDataTable : m.showDataTable}
-      </button>
-      {expanded && (
-        <div className="mt-2 overflow-x-auto rounded-lg border">
-          <table className="w-full min-w-[500px] text-xs">
-            <thead>
-              <tr className="border-b bg-muted/40">
-                <th className="sticky left-0 z-10 bg-muted/40 px-3 py-2 text-left font-medium text-muted-foreground whitespace-nowrap">
-                  月
-                </th>
-                {data.map((d) => (
-                  <th key={d.month as string} className="px-2.5 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">
-                    {d.monthShort as string}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, i) => (
-                <tr key={row.key} className={i < rows.length - 1 ? "border-b" : ""}>
-                  <td className="sticky left-0 z-10 bg-card px-3 py-1.5 whitespace-nowrap">
-                    <span className="flex items-center gap-1.5">
-                      {row.color && (
-                        <span
-                          className="inline-block h-2.5 w-2.5 rounded-sm shrink-0"
-                          style={{ backgroundColor: row.color }}
-                        />
-                      )}
-                      <span className="font-medium text-muted-foreground">{row.label}</span>
-                    </span>
+    <div className="mt-3 overflow-x-auto rounded-lg border">
+      <table className="w-full min-w-[500px] text-xs">
+        <thead>
+          <tr className="border-b bg-muted/40">
+            <th className="sticky left-0 z-10 bg-muted/40 px-3 py-2 text-left font-medium text-muted-foreground whitespace-nowrap">
+              月
+            </th>
+            {data.map((d) => (
+              <th key={d.month as string} className="px-2.5 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">
+                {d.monthShort as string}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={row.key} className={i < rows.length - 1 ? "border-b" : ""}>
+              <td className="sticky left-0 z-10 bg-card px-3 py-1.5 whitespace-nowrap">
+                <span className="flex items-center gap-1.5">
+                  {row.color && (
+                    <span
+                      className="inline-block h-2.5 w-2.5 rounded-sm shrink-0"
+                      style={{ backgroundColor: row.color }}
+                    />
+                  )}
+                  <span className="font-medium text-muted-foreground">{row.label}</span>
+                </span>
+              </td>
+              {data.map((d) => {
+                const val = d[row.key] as number | null
+                return (
+                  <td key={d.month as string} className="px-2.5 py-1.5 text-right tabular-nums whitespace-nowrap">
+                    {val != null ? (row.format ? row.format(val) : val.toLocaleString()) : (
+                      <span className="text-muted-foreground/40">-</span>
+                    )}
                   </td>
-                  {data.map((d) => {
-                    const val = d[row.key] as number | null
-                    return (
-                      <td key={d.month as string} className="px-2.5 py-1.5 text-right tabular-nums whitespace-nowrap">
-                        {val != null ? (row.format ? row.format(val) : val.toLocaleString()) : (
-                          <span className="text-muted-foreground/40">-</span>
-                        )}
-                      </td>
-                    )
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+                )
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }
 
-// Chart section wrapper with icon and accent
+// Chart section wrapper
 function ChartSection({ icon, title, accentColor, children }: {
   icon: React.ReactNode
   title: string
@@ -125,18 +116,20 @@ function ChartSection({ icon, title, accentColor, children }: {
   children: React.ReactNode
 }) {
   return (
-    <div className="space-y-0">
-      <div className="flex items-center gap-2 mb-3">
-        <span
-          className="flex h-6 w-6 items-center justify-center rounded-md"
-          style={{ backgroundColor: `${accentColor}15`, color: accentColor }}
-        >
-          {icon}
-        </span>
-        <span className="text-sm font-medium">{title}</span>
-      </div>
-      {children}
-    </div>
+    <Card>
+      <CardContent className="pt-6">
+        <div className="flex items-center gap-2 mb-3">
+          <span
+            className="flex h-6 w-6 items-center justify-center rounded-md"
+            style={{ backgroundColor: `${accentColor}15`, color: accentColor }}
+          >
+            {icon}
+          </span>
+          <span className="text-sm font-medium">{title}</span>
+        </div>
+        {children}
+      </CardContent>
+    </Card>
   )
 }
 
@@ -180,30 +173,117 @@ function formatDelta(current: number | null, prev: number | null, unit: string =
   return `${diff > 0 ? "+" : ""}${diff}${unit}`
 }
 
-export function MonthlyTrendSummary({ months = 12, customRange, clinicType }: MonthlyTrendSummaryProps) {
+// Derived KPI delta indicator
+function DerivedDelta({ current, prev }: { current: number | null; prev: number | null }) {
+  if (current == null || prev == null) return null
+  const diff = Math.round((current - prev) * 10) / 10
+  if (diff === 0) return null
+  const isUp = diff > 0
+  return (
+    <span className={`ml-1 text-xs ${isUp ? "text-emerald-600" : "text-red-500"}`}>
+      {isUp ? <TrendingUp className="inline h-3 w-3" /> : <TrendingDown className="inline h-3 w-3" />}
+      {" "}{isUp ? "+" : ""}{diff}
+    </span>
+  )
+}
+
+// KPI help tooltip
+type KpiHelpKey = keyof typeof messages.monthlyMetrics.kpiHelp
+
+function KpiHelpButton({ helpKey }: { helpKey?: KpiHelpKey }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClick)
+    return () => document.removeEventListener("mousedown", handleClick)
+  }, [open])
+
+  if (!helpKey) return null
+  const help = messages.monthlyMetrics.kpiHelp[helpKey]
+  if (!help) return null
+
+  return (
+    <span className="relative inline-block align-middle" ref={ref}>
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); setOpen((v) => !v) }}
+        className="ml-1 inline-flex items-center text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+        aria-label="指標の説明"
+      >
+        <HelpCircle className="h-3.5 w-3.5" />
+      </button>
+      {open && (
+        <div className="absolute left-0 bottom-full mb-2 z-50 w-56 rounded-lg border bg-popover p-3 shadow-lg text-left">
+          <div className="flex items-start justify-between gap-1">
+            <p className="text-xs text-popover-foreground leading-relaxed">{help.desc}</p>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="shrink-0 text-muted-foreground/60 hover:text-muted-foreground"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+          <p className="mt-1.5 text-[10px] text-muted-foreground">
+            <span className="font-medium">目安:</span> {help.benchmark}
+          </p>
+        </div>
+      )}
+    </span>
+  )
+}
+
+export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSummaryProps) {
   const ct = (clinicType ?? "general") as ClinicType
-  const [data, setData] = useState<TrendRow[]>([])
+  const [trendData, setTrendData] = useState<TrendRow[]>([])
+  const [monthData, setMonthData] = useState<SingleMonthData | null>(null)
   const [loading, setLoading] = useState(true)
+
+  // Check if selected month is the current month
+  const now = new Date()
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    async function fetchTrend() {
+
+    async function fetchData() {
       try {
-        const query = customRange
-          ? `mode=trend&fromMonth=${customRange.from}&toMonth=${customRange.to}&withSatisfaction=1`
-          : `mode=trend&months=${months}&withSatisfaction=1`
-        const res = await fetch(`/api/monthly-metrics?${query}`, { cache: "no-store" })
-        if (res.ok && !cancelled) {
-          setData(await res.json())
+        // Calculate 12-month range ending at the selected month
+        const toYM = `${year}-${String(month).padStart(2, "0")}`
+        const fromDate = new Date(year, month - 12, 1)
+        const fromYM = `${fromDate.getFullYear()}-${String(fromDate.getMonth() + 1).padStart(2, "0")}`
+
+        // Fetch single-month data and trend data in parallel
+        const [monthRes, trendRes] = await Promise.all([
+          fetch(`/api/monthly-metrics?year=${year}&month=${month}`, { cache: "no-store" }),
+          fetch(`/api/monthly-metrics?mode=trend&fromMonth=${fromYM}&toMonth=${toYM}&withSatisfaction=1`, { cache: "no-store" }),
+        ])
+
+        if (!cancelled) {
+          if (monthRes.ok) {
+            const data = await monthRes.json()
+            setMonthData(data)
+          }
+          if (trendRes.ok) {
+            setTrendData(await trendRes.json())
+          }
         }
       } finally {
         if (!cancelled) setLoading(false)
       }
     }
-    fetchTrend()
+
+    fetchData()
     return () => { cancelled = true }
-  }, [months, customRange])
+  }, [year, month])
 
   const m = messages.monthlyMetrics
 
@@ -221,203 +301,268 @@ export function MonthlyTrendSummary({ months = 12, customRange, clinicType }: Mo
     )
   }
 
-  if (data.length === 0) {
-    return (
-      <Card>
-        <CardContent className="py-16 text-center">
-          <p className="text-sm text-muted-foreground">{m.noData}</p>
-        </CardContent>
-      </Card>
-    )
-  }
+  // Single month derived data
+  const summary = monthData?.summary ?? null
+  const prevSummary = monthData?.prevSummary ?? null
+  const yoySummary = monthData?.yoySummary ?? null
+  const surveyCount = monthData?.surveyCount ?? 0
 
-  // Transform data for charts
-  const chartData = data.map((row) => {
-    const derived = calcDerived(row, 0)
-    const totalRevenue = row.insuranceRevenue != null && row.selfPayRevenue != null
+  const derived = calcDerived(summary, surveyCount)
+  const prevDerived = calcDerived(prevSummary, 0)
+  const yoyDerived = calcDerived(yoySummary, 0)
+
+  // Profile derived
+  function extractProfile(data: FullMetrics | null): ClinicProfile | null {
+    if (!data) return null
+    return {
+      chairCount: data.chairCount ?? null,
+      dentistCount: data.dentistCount ?? null,
+      hygienistCount: data.hygienistCount ?? null,
+      totalVisitCount: data.totalVisitCount ?? null,
+      workingDays: data.workingDays ?? null,
+      laborCost: data.laborCost ?? null,
+    }
+  }
+  const currentProfile = extractProfile(summary)
+  const prevProfileData = extractProfile(prevSummary)
+  const profileDerived = calcProfileDerived(summary, currentProfile)
+  const prevProfileDerived = calcProfileDerived(prevSummary, prevProfileData)
+
+  // Total revenue for scorecard
+  const totalRevenue = summary?.insuranceRevenue != null && summary?.selfPayRevenue != null
+    ? summary.insuranceRevenue + summary.selfPayRevenue : (summary?.totalRevenue ?? null)
+  const prevTotalRevenue = prevSummary?.insuranceRevenue != null && prevSummary?.selfPayRevenue != null
+    ? prevSummary.insuranceRevenue + prevSummary.selfPayRevenue : (prevSummary?.totalRevenue ?? null)
+  const yoyTotalRevenue = yoySummary?.insuranceRevenue != null && yoySummary?.selfPayRevenue != null
+    ? yoySummary.insuranceRevenue + yoySummary.selfPayRevenue : (yoySummary?.totalRevenue ?? null)
+
+  // Generate insights
+  const insights = generateInsights({
+    current: derived,
+    prev: prevDerived,
+    yoy: yoyDerived,
+    currentSummary: summary,
+    prevSummary: prevSummary,
+    yoySummary: yoySummary,
+    satisfactionScore: monthData?.satisfactionScore ?? null,
+    prevSatisfactionScore: monthData?.prevSatisfactionScore ?? null,
+  })
+
+  // Transform trend data for charts
+  const chartData = trendData.map((row) => {
+    const d = calcDerived(row, 0)
+    const tRev = row.insuranceRevenue != null && row.selfPayRevenue != null
       ? row.insuranceRevenue + row.selfPayRevenue : null
     return {
       month: formatMonth(row.year, row.month),
       monthShort: formatMonthShort(row.year, row.month),
       firstVisitCount: row.firstVisitCount,
       revisitCount: row.revisitCount,
-      totalPatients: derived?.totalPatients ?? null,
-      totalRevenue,
+      totalPatients: d?.totalPatients ?? null,
+      totalRevenue: tRev,
       selfPayRevenue: row.selfPayRevenue,
       insuranceRevenue: row.insuranceRevenue,
       cancellationCount: row.cancellationCount,
-      selfPayRatioAmount: derived?.selfPayRatioAmount ?? null,
-      newPatientRate: derived?.newPatientRate ?? null,
-      returnRate: derived?.returnRate ?? null,
-      cancellationRate: derived?.cancellationRate ?? null,
-      revenuePerVisit: derived?.revenuePerVisit ?? null,
-      satisfactionScore: row.satisfactionScore ?? null,
+      selfPayRatioAmount: d?.selfPayRatioAmount ?? null,
+      returnRate: d?.returnRate ?? null,
+      cancellationRate: d?.cancellationRate ?? null,
     }
   })
 
-  // Latest month summary for scorecard
-  const latest = chartData[chartData.length - 1]
-  const prev = chartData.length > 1 ? chartData[chartData.length - 2] : null
+  // Derived KPIs list
+  const derivedMetrics: { label: string; value: number | null; format: (v: number) => string; prev: number | null; helpKey?: KpiHelpKey; benchmarkKey?: string }[] = [
+    { label: m.revenuePerVisit, value: derived?.revenuePerVisit ?? null, format: (v) => `${v}${m.unitMan}`, prev: prevDerived?.revenuePerVisit ?? null, helpKey: "revenuePerVisit", benchmarkKey: "revenuePerVisit" },
+    { label: m.selfPayRatioAmount, value: derived?.selfPayRatioAmount ?? null, format: (v) => `${v}%`, prev: prevDerived?.selfPayRatioAmount ?? null, helpKey: "selfPayRatioAmount", benchmarkKey: "selfPayRatioAmount" },
+    { label: m.returnRate, value: derived?.returnRate ?? null, format: (v) => `${v}%`, prev: prevDerived?.returnRate ?? null, helpKey: "returnRate", benchmarkKey: "returnRate" },
+    { label: m.newPatientRate, value: derived?.newPatientRate ?? null, format: (v) => `${v}%`, prev: prevDerived?.newPatientRate ?? null, helpKey: "newPatientRate", benchmarkKey: "newPatientRate" },
+    { label: m.cancellationRate, value: derived?.cancellationRate ?? null, format: (v) => `${v}%`, prev: prevDerived?.cancellationRate ?? null, helpKey: "cancellationRate", benchmarkKey: "cancellationRate" },
+    { label: m.surveyResponseRate, value: derived?.surveyResponseRate ?? null, format: (v) => `${v}%`, prev: null, helpKey: "surveyResponseRate" },
+  ]
 
-  // Find YoY data (same month, last year)
-  const latestRow = data[data.length - 1]
-  const yoyRow = data.find((r) => r.year === latestRow.year - 1 && r.month === latestRow.month)
-  const yoyDerived = yoyRow ? calcDerived(yoyRow, 0) : null
-  const latestDerived = calcDerived(latestRow, 0)
-  const prevDerived = prev ? calcDerived(data[data.length - 2], 0) : null
+  // Extended profile KPIs
+  const extendedMetrics: { label: string; value: number | null; format: (v: number) => string; prev: number | null; helpKey?: KpiHelpKey; benchmarkKey?: string }[] = [
+    { label: m.dailyPatients, value: profileDerived?.dailyPatients ?? null, format: (v) => `${v}${m.unitVisitsPerDay}`, prev: prevProfileDerived?.dailyPatients ?? null, helpKey: "dailyPatients" },
+    { label: m.dailyRevenue, value: profileDerived?.dailyRevenue ?? null, format: (v) => `${v}${m.unitMan}`, prev: prevProfileDerived?.dailyRevenue ?? null, helpKey: "dailyRevenue" },
+    { label: m.chairDailyVisits, value: profileDerived?.chairDailyVisits ?? null, format: (v) => `${v}${m.unitVisitsPerChairDay}`, prev: prevProfileDerived?.chairDailyVisits ?? null, helpKey: "chairDailyVisits" },
+    { label: m.revenuePerChair, value: profileDerived?.revenuePerChair ?? null, format: (v) => `${v}${m.unitMan}`, prev: prevProfileDerived?.revenuePerChair ?? null, helpKey: "revenuePerChair" },
+    { label: m.revenuePerReceipt, value: profileDerived?.revenuePerReceipt ?? null, format: (v) => `${v}${m.unitMan}`, prev: prevProfileDerived?.revenuePerReceipt ?? null, helpKey: "revenuePerReceipt" },
+    { label: m.avgVisitsPerPatient, value: profileDerived?.avgVisitsPerPatient ?? null, format: (v) => `${v}${m.unitTimes}`, prev: prevProfileDerived?.avgVisitsPerPatient ?? null, helpKey: "avgVisitsPerPatient" },
+    { label: m.revenuePerDentist, value: profileDerived?.revenuePerDentist ?? null, format: (v) => `${v}${m.unitMan}`, prev: prevProfileDerived?.revenuePerDentist ?? null, helpKey: "revenuePerDentist" },
+    { label: m.patientsPerDentist, value: profileDerived?.patientsPerDentist ?? null, format: (v) => `${v}${m.unitPersons}`, prev: prevProfileDerived?.patientsPerDentist ?? null, helpKey: "patientsPerDentist" },
+    { label: m.patientsPerHygienist, value: profileDerived?.patientsPerHygienist ?? null, format: (v) => `${v}${m.unitPersons}`, prev: prevProfileDerived?.patientsPerHygienist ?? null, helpKey: "patientsPerHygienist" },
+    { label: m.laborCostRatio, value: profileDerived?.laborCostRatio ?? null, format: (v) => `${v}%`, prev: prevProfileDerived?.laborCostRatio ?? null, helpKey: "laborCostRatio", benchmarkKey: "laborCostRatio" },
+    { label: m.revenuePerStaff, value: profileDerived?.revenuePerStaff ?? null, format: (v) => `${v}${m.unitMan}`, prev: prevProfileDerived?.revenuePerStaff ?? null, helpKey: "revenuePerStaff" },
+  ]
 
-  // Generate insights
-  const insights = generateInsights({
-    current: latestDerived,
-    prev: prevDerived,
-    yoy: yoyDerived,
-    currentSummary: latestRow,
-    prevSummary: data.length > 1 ? data[data.length - 2] : null,
-    yoySummary: yoyRow ?? null,
-    satisfactionScore: latest.satisfactionScore,
-    prevSatisfactionScore: prev?.satisfactionScore ?? null,
-  })
+  const visibleExtendedMetrics = extendedMetrics.filter((metric) => metric.value != null)
 
-  // Build KPI health items
-  const kpiHealth = buildKpiHealthItems(latestDerived, prevDerived, yoyDerived, ct)
-
-  const yoyTotalRevenue = yoyRow?.insuranceRevenue != null && yoyRow?.selfPayRevenue != null
-    ? yoyRow.insuranceRevenue + yoyRow.selfPayRevenue : null
+  const hasNoData = !summary
 
   const COLORS = {
     blue: "hsl(221, 83%, 53%)",
     blueLight: "hsl(221, 83%, 75%)",
     gold: "hsl(38, 92%, 50%)",
+    goldDark: "hsl(38, 70%, 40%)",
     green: "hsl(142, 71%, 45%)",
     red: "hsl(0, 84%, 60%)",
     redDark: "hsl(0, 60%, 45%)",
-    purple: "hsl(262, 83%, 58%)",
-    pink: "hsl(330, 70%, 55%)",
   }
 
   return (
     <div className="space-y-5">
+      {/* 当月表示の注意バナー */}
+      {isCurrentMonth && (
+        <div className="flex items-start gap-2.5 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-900/50 dark:bg-blue-950/30">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
+          <p className="text-sm text-blue-700 dark:text-blue-300">
+            {m.currentMonthNotice}
+          </p>
+        </div>
+      )}
+
       {/* 1. 経営スコアカード */}
       <div>
         <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
           <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          {m.scorecardTitle}
+          {m.scorecardTitleWithMonth(year, month)}
         </h3>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <ScorecardStat
-            label="総売上"
-            value={latest.totalRevenue != null ? `${latest.totalRevenue}` : "-"}
-            sub="万円"
-            momDelta={formatDelta(latest.totalRevenue, prev?.totalRevenue ?? null)}
-            yoyDelta={formatDelta(latest.totalRevenue, yoyTotalRevenue)}
-          />
-          <ScorecardStat
-            label="総実人数"
-            value={latest.totalPatients != null ? `${latest.totalPatients}` : "-"}
-            sub="人"
-            momDelta={formatDelta(latest.totalPatients, prev?.totalPatients ?? null)}
-            yoyDelta={formatDelta(latest.totalPatients, yoyDerived?.totalPatients ?? null)}
-          />
-          <ScorecardStat
-            label="新患数"
-            value={latest.firstVisitCount != null ? `${latest.firstVisitCount}` : "-"}
-            sub="人"
-            momDelta={formatDelta(latest.firstVisitCount ?? null, prev?.firstVisitCount ?? null)}
-            yoyDelta={formatDelta(latest.firstVisitCount ?? null, yoyRow?.firstVisitCount ?? null)}
-          />
-          <ScorecardStat
-            label="自費率"
-            value={latest.selfPayRatioAmount != null ? `${latest.selfPayRatioAmount}` : "-"}
-            sub="%"
-            momDelta={formatDelta(latest.selfPayRatioAmount, prev?.selfPayRatioAmount ?? null, "pt")}
-            statusColor={getBenchmarkStatus("selfPayRatioAmount", latest.selfPayRatioAmount, ct) === "good" ? "bg-emerald-50/50 dark:bg-emerald-950/20" : undefined}
-          />
-          <ScorecardStat
-            label="患者単価"
-            value={latest.revenuePerVisit != null ? `${latest.revenuePerVisit}` : "-"}
-            sub="万円"
-            momDelta={formatDelta(latest.revenuePerVisit, prev?.revenuePerVisit ?? null)}
-          />
-          <ScorecardStat
-            label="キャンセル率"
-            value={latest.cancellationRate != null ? `${latest.cancellationRate}` : "-"}
-            sub="%"
-            momDelta={formatDelta(latest.cancellationRate, prev?.cancellationRate ?? null, "pt")}
-            statusColor={getBenchmarkStatus("cancellationRate", latest.cancellationRate, ct) === "danger" ? "bg-red-50/50 dark:bg-red-950/20" : undefined}
-          />
-        </div>
+        {hasNoData ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <p className="text-sm text-muted-foreground">{m.noData}</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+            <ScorecardStat
+              label="総売上"
+              value={totalRevenue != null ? `${totalRevenue}` : "-"}
+              sub="万円"
+              momDelta={formatDelta(totalRevenue, prevTotalRevenue)}
+              yoyDelta={formatDelta(totalRevenue, yoyTotalRevenue)}
+            />
+            <ScorecardStat
+              label="総実人数"
+              value={derived?.totalPatients != null ? `${derived.totalPatients}` : "-"}
+              sub="人"
+              momDelta={formatDelta(derived?.totalPatients ?? null, prevDerived?.totalPatients ?? null)}
+              yoyDelta={formatDelta(derived?.totalPatients ?? null, yoyDerived?.totalPatients ?? null)}
+            />
+            <ScorecardStat
+              label="新患数"
+              value={summary?.firstVisitCount != null ? `${summary.firstVisitCount}` : "-"}
+              sub="人"
+              momDelta={formatDelta(summary?.firstVisitCount ?? null, prevSummary?.firstVisitCount ?? null)}
+              yoyDelta={formatDelta(summary?.firstVisitCount ?? null, yoySummary?.firstVisitCount ?? null)}
+            />
+            <ScorecardStat
+              label="自費率"
+              value={derived?.selfPayRatioAmount != null ? `${derived.selfPayRatioAmount}` : "-"}
+              sub="%"
+              momDelta={formatDelta(derived?.selfPayRatioAmount ?? null, prevDerived?.selfPayRatioAmount ?? null, "pt")}
+              statusColor={getBenchmarkStatus("selfPayRatioAmount", derived?.selfPayRatioAmount ?? null, ct) === "good" ? "bg-emerald-50/50 dark:bg-emerald-950/20" : undefined}
+            />
+            <ScorecardStat
+              label="再来院率"
+              value={derived?.returnRate != null ? `${derived.returnRate}` : "-"}
+              sub="%"
+              momDelta={formatDelta(derived?.returnRate ?? null, prevDerived?.returnRate ?? null, "pt")}
+              statusColor={getBenchmarkStatus("returnRate", derived?.returnRate ?? null, ct) === "good" ? "bg-emerald-50/50 dark:bg-emerald-950/20" : undefined}
+            />
+            <ScorecardStat
+              label="キャンセル率"
+              value={derived?.cancellationRate != null ? `${derived.cancellationRate}` : "-"}
+              sub="%"
+              momDelta={formatDelta(derived?.cancellationRate ?? null, prevDerived?.cancellationRate ?? null, "pt")}
+              statusColor={getBenchmarkStatus("cancellationRate", derived?.cancellationRate ?? null, ct) === "danger" ? "bg-red-50/50 dark:bg-red-950/20" : undefined}
+            />
+          </div>
+        )}
       </div>
 
-      {/* 2. PX × 経営トレンド */}
-      {chartData.some((d) => d.satisfactionScore != null) && (
+      {/* 2. 自動算出指標 */}
+      {!hasNoData && derivedMetrics.some((dm) => dm.value != null) && (
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ backgroundColor: `${COLORS.pink}15`, color: COLORS.pink }}>
-                <Heart className="h-4 w-4" />
-              </span>
-              {m.pxHighlightTitle}
-            </CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">{m.derivedTitle}</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
-              <ComposedChart data={chartData} margin={{ top: 5, right: 10, bottom: 0, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
-                <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis yAxisId="left" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis yAxisId="right" orientation="right" fontSize={11} tickLine={false} axisLine={false} domain={[0, 5]} />
-                <Tooltip
-                  contentStyle={{ borderRadius: "8px", border: "1px solid hsl(var(--border))", fontSize: "12px" }}
-                  formatter={(value: number, name: string) => {
-                    if (name === m.satisfactionScore) return `${value}点`
-                    return `${value}人`
-                  }}
-                />
-                <Legend wrapperStyle={{ fontSize: "11px" }} />
-                <Bar yAxisId="left" dataKey="totalPatients" name={m.totalPatients} fill={COLORS.blue} radius={[3, 3, 0, 0]} opacity={0.7} />
-                <Line yAxisId="right" type="monotone" dataKey="satisfactionScore" name={m.satisfactionScore} stroke={COLORS.pink} strokeWidth={2.5} dot={{ r: 4, fill: COLORS.pink }} connectNulls />
-              </ComposedChart>
-            </ResponsiveContainer>
+            <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
+              {derivedMetrics.map((metric) => {
+                const status: BenchmarkStatus | null = metric.benchmarkKey ? getBenchmarkStatus(metric.benchmarkKey, metric.value, ct) : null
+                return (
+                  <div key={metric.label} className={`rounded-lg border p-3 ${
+                    status === "good" ? "bg-emerald-50/50 border-emerald-200/50 dark:bg-emerald-950/10 dark:border-emerald-900/30" :
+                    status === "warning" ? "bg-amber-50/50 border-amber-200/50 dark:bg-amber-950/10 dark:border-amber-900/30" :
+                    status === "danger" ? "bg-red-50/50 border-red-200/50 dark:bg-red-950/10 dark:border-red-900/30" :
+                    "bg-muted/30"
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground">
+                        {metric.label}
+                        <KpiHelpButton helpKey={metric.helpKey} />
+                      </p>
+                      {status && (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                          status === "good" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" :
+                          status === "warning" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400" :
+                          "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
+                        }`}>
+                          {status === "good" ? m.statusGood : status === "warning" ? m.statusWarning : m.statusDanger}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-lg font-bold">
+                      {metric.value != null ? metric.format(metric.value) : <span className="text-muted-foreground/50">-</span>}
+                      <DerivedDelta current={metric.value} prev={metric.prev} />
+                    </p>
+                  </div>
+                )
+              })}
+            </div>
           </CardContent>
         </Card>
       )}
 
-      {/* 3. KPI ヘルスチェック */}
-      {kpiHealth.length > 0 && kpiHealth.some((k) => k.value != null) && (
+      {/* 3. 体制・生産性指標 */}
+      {visibleExtendedMetrics.length > 0 && (
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30">
-                <Smile className="h-4 w-4" />
-              </span>
-              {m.kpiHealthTitle}
-            </CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">{m.extendedDerivedTitle}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-2">
-              {kpiHealth.filter((k) => k.value != null).map((item: KpiHealthItem) => (
-                <div key={item.key} className="flex items-center gap-3 rounded-lg border px-4 py-2.5">
-                  <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${item.status ? BENCHMARK_DOT[item.status] : "bg-muted"}`} />
-                  <span className="text-sm font-medium flex-1 min-w-0">{item.label}</span>
-                  <span className="text-sm font-bold tabular-nums">{item.value != null ? item.format(item.value) : "-"}</span>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-[100px] justify-end">
-                    {item.momDelta != null && (
-                      <span className={item.momDelta > 0 ? "text-emerald-600" : item.momDelta < 0 ? "text-red-500" : ""}>
-                        {item.momDelta > 0 ? "+" : ""}{item.momDelta}
-                      </span>
-                    )}
-                    {item.status && (
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                        item.status === "good" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" :
-                        item.status === "warning" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400" :
-                        "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
-                      }`}>
-                        {item.status === "good" ? m.statusGood : item.status === "warning" ? m.statusWarning : m.statusDanger}
-                      </span>
-                    )}
+            <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+              {visibleExtendedMetrics.map((metric) => {
+                const status: BenchmarkStatus | null = metric.benchmarkKey ? getBenchmarkStatus(metric.benchmarkKey, metric.value, ct) : null
+                return (
+                  <div key={metric.label} className={`rounded-lg border p-3 ${
+                    status === "good" ? "bg-emerald-50/50 border-emerald-200/50 dark:bg-emerald-950/10 dark:border-emerald-900/30" :
+                    status === "warning" ? "bg-amber-50/50 border-amber-200/50 dark:bg-amber-950/10 dark:border-amber-900/30" :
+                    status === "danger" ? "bg-red-50/50 border-red-200/50 dark:bg-red-950/10 dark:border-red-900/30" :
+                    "bg-muted/30"
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground">
+                        {metric.label}
+                        <KpiHelpButton helpKey={metric.helpKey} />
+                      </p>
+                      {status && (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                          status === "good" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" :
+                          status === "warning" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400" :
+                          "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
+                        }`}>
+                          {status === "good" ? m.statusGood : status === "warning" ? m.statusWarning : m.statusDanger}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-lg font-bold">
+                      {metric.value != null ? metric.format(metric.value) : <span className="text-muted-foreground/50">-</span>}
+                      <DerivedDelta current={metric.value} prev={metric.prev} />
+                    </p>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </CardContent>
         </Card>
@@ -453,161 +598,101 @@ export function MonthlyTrendSummary({ months = 12, customRange, clinicType }: Mo
         </Card>
       )}
 
-      {/* 5. トレンドチャート（タブ化） */}
-      <Card>
-        <CardContent className="pt-6">
-          <Tabs defaultValue="visits">
-            <TabsList className="w-full justify-start overflow-x-auto">
-              <TabsTrigger value="visits" className="text-xs">{m.tabVisits}</TabsTrigger>
-              <TabsTrigger value="revenue" className="text-xs">{m.tabRevenue}</TabsTrigger>
-              <TabsTrigger value="kpi" className="text-xs">{m.tabKpi}</TabsTrigger>
-              <TabsTrigger value="unitprice" className="text-xs">{m.tabUnitPrice}</TabsTrigger>
-              <TabsTrigger value="cancel" className="text-xs">{m.tabCancel}</TabsTrigger>
-            </TabsList>
-
-            {/* 来院数推移 */}
-            <TabsContent value="visits">
-              <ChartSection icon={<Users className="h-3.5 w-3.5" />} title="来院数推移" accentColor={COLORS.blue}>
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={chartData} margin={{ top: 5, right: 5, bottom: 0, left: -10 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
-                    <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} />
-                    <YAxis fontSize={11} tickLine={false} axisLine={false} />
-                    <Tooltip contentStyle={{ borderRadius: "8px", border: "1px solid hsl(var(--border))", fontSize: "12px" }} />
-                    <Legend wrapperStyle={{ fontSize: "11px" }} />
-                    <Bar dataKey="firstVisitCount" name={m.firstVisitCount} fill={COLORS.blue} stackId="visits" radius={[0, 0, 0, 0]} />
-                    <Bar dataKey="revisitCount" name={m.revisitCount} fill={COLORS.blueLight} stackId="visits" radius={[3, 3, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-                <DataTable
-                  data={chartData}
-                  rows={[
-                    { label: m.firstVisitCount, key: "firstVisitCount", color: COLORS.blue, format: (v) => `${v}人` },
-                    { label: m.revisitCount, key: "revisitCount", color: COLORS.blueLight, format: (v) => `${v}人` },
-                    { label: m.totalPatients, key: "totalPatients", format: (v) => `${v}人` },
-                  ]}
+      {/* 5. トレンドチャート（タブなし・順次表示） */}
+      {chartData.length > 0 && (
+        <>
+          {/* ① 売上推移 ＋ 自費率推移 */}
+          <ChartSection icon={<Banknote className="h-3.5 w-3.5" />} title="売上推移 ＋ 自費率推移" accentColor={COLORS.gold}>
+            <ResponsiveContainer width="100%" height={280}>
+              <ComposedChart data={chartData} margin={{ top: 5, right: 10, bottom: 0, left: -10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+                <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis yAxisId="left" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis yAxisId="right" orientation="right" fontSize={11} tickLine={false} axisLine={false} unit="%" domain={[0, 100]} />
+                <Tooltip
+                  contentStyle={{ borderRadius: "8px", border: "1px solid hsl(var(--border))", fontSize: "12px" }}
+                  formatter={(value: number, name: string) => {
+                    if (name === m.selfPayRatioAmount) return `${value}%`
+                    return `${value}万円`
+                  }}
                 />
-              </ChartSection>
-            </TabsContent>
+                <Legend wrapperStyle={{ fontSize: "11px" }} />
+                <Bar yAxisId="left" dataKey="insuranceRevenue" name={m.insuranceRevenue} fill={COLORS.blue} stackId="rev" radius={[0, 0, 0, 0]} />
+                <Bar yAxisId="left" dataKey="selfPayRevenue" name={m.selfPayRevenue} fill={COLORS.gold} stackId="rev" radius={[3, 3, 0, 0]} />
+                <Line yAxisId="right" type="monotone" dataKey="selfPayRatioAmount" name={m.selfPayRatioAmount} stroke={COLORS.goldDark} strokeWidth={2} dot={{ r: 3 }} connectNulls />
+              </ComposedChart>
+            </ResponsiveContainer>
+            <DataTable
+              data={chartData}
+              rows={[
+                { label: m.insuranceRevenue, key: "insuranceRevenue", color: COLORS.blue, format: (v) => `${v}万` },
+                { label: m.selfPayRevenue, key: "selfPayRevenue", color: COLORS.gold, format: (v) => `${v}万` },
+                { label: m.totalRevenue, key: "totalRevenue", format: (v) => `${v}万` },
+                { label: m.selfPayRatioAmount, key: "selfPayRatioAmount", color: COLORS.goldDark, format: (v) => `${v}%` },
+              ]}
+            />
+          </ChartSection>
 
-            {/* 売上推移 */}
-            <TabsContent value="revenue">
-              <ChartSection icon={<Banknote className="h-3.5 w-3.5" />} title="売上推移（万円）" accentColor={COLORS.gold}>
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={chartData} margin={{ top: 5, right: 5, bottom: 0, left: -10 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
-                    <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} />
-                    <YAxis fontSize={11} tickLine={false} axisLine={false} />
-                    <Tooltip
-                      contentStyle={{ borderRadius: "8px", border: "1px solid hsl(var(--border))", fontSize: "12px" }}
-                      formatter={(value: number) => `${value}万円`}
-                    />
-                    <Legend wrapperStyle={{ fontSize: "11px" }} />
-                    <Bar dataKey="insuranceRevenue" name={m.insuranceRevenue} fill={COLORS.blue} stackId="rev" radius={[0, 0, 0, 0]} />
-                    <Bar dataKey="selfPayRevenue" name={m.selfPayRevenue} fill={COLORS.gold} stackId="rev" radius={[3, 3, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-                <DataTable
-                  data={chartData}
-                  rows={[
-                    { label: m.insuranceRevenue, key: "insuranceRevenue", color: COLORS.blue, format: (v) => `${v}万` },
-                    { label: m.selfPayRevenue, key: "selfPayRevenue", color: COLORS.gold, format: (v) => `${v}万` },
-                    { label: m.totalRevenue, key: "totalRevenue", format: (v) => `${v}万` },
-                  ]}
+          {/* ② 来院数推移 ＋ 再来院率推移 */}
+          <ChartSection icon={<Users className="h-3.5 w-3.5" />} title="来院数推移 ＋ 再来院率推移" accentColor={COLORS.blue}>
+            <ResponsiveContainer width="100%" height={280}>
+              <ComposedChart data={chartData} margin={{ top: 5, right: 10, bottom: 0, left: -10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+                <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis yAxisId="left" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis yAxisId="right" orientation="right" fontSize={11} tickLine={false} axisLine={false} unit="%" domain={[0, 100]} />
+                <Tooltip
+                  contentStyle={{ borderRadius: "8px", border: "1px solid hsl(var(--border))", fontSize: "12px" }}
+                  formatter={(value: number, name: string) => {
+                    if (name === m.returnRate) return `${value}%`
+                    return `${value}人`
+                  }}
                 />
-              </ChartSection>
-            </TabsContent>
+                <Legend wrapperStyle={{ fontSize: "11px" }} />
+                <Bar yAxisId="left" dataKey="firstVisitCount" name={m.firstVisitCount} fill={COLORS.blue} stackId="visits" radius={[0, 0, 0, 0]} />
+                <Bar yAxisId="left" dataKey="revisitCount" name={m.revisitCount} fill={COLORS.blueLight} stackId="visits" radius={[3, 3, 0, 0]} />
+                <Line yAxisId="right" type="monotone" dataKey="returnRate" name={m.returnRate} stroke={COLORS.green} strokeWidth={2} dot={{ r: 3 }} connectNulls />
+              </ComposedChart>
+            </ResponsiveContainer>
+            <DataTable
+              data={chartData}
+              rows={[
+                { label: m.firstVisitCount, key: "firstVisitCount", color: COLORS.blue, format: (v) => `${v}人` },
+                { label: m.revisitCount, key: "revisitCount", color: COLORS.blueLight, format: (v) => `${v}人` },
+                { label: m.totalPatients, key: "totalPatients", format: (v) => `${v}人` },
+                { label: m.returnRate, key: "returnRate", color: COLORS.green, format: (v) => `${v}%` },
+              ]}
+            />
+          </ChartSection>
 
-            {/* 経営指標推移 */}
-            <TabsContent value="kpi">
-              <ChartSection icon={<BarChart3 className="h-3.5 w-3.5" />} title="経営指標推移" accentColor={COLORS.purple}>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 0, left: -10 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
-                    <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} />
-                    <YAxis fontSize={11} tickLine={false} axisLine={false} domain={[0, 100]} unit="%" />
-                    <Tooltip
-                      contentStyle={{ borderRadius: "8px", border: "1px solid hsl(var(--border))", fontSize: "12px" }}
-                      formatter={(value: number) => `${value}%`}
-                    />
-                    <Legend wrapperStyle={{ fontSize: "11px" }} />
-                    {/* ベンチマーク参考線 */}
-                    <ReferenceLine y={20} yAxisId={0} stroke={COLORS.gold} strokeDasharray="6 3" strokeOpacity={0.4} label={{ value: "自費率目安20%", position: "insideTopRight", fontSize: 9, fill: COLORS.gold }} />
-                    <ReferenceLine y={10} yAxisId={0} stroke={COLORS.red} strokeDasharray="6 3" strokeOpacity={0.4} label={{ value: "ｷｬﾝｾﾙ率上限10%", position: "insideBottomRight", fontSize: 9, fill: COLORS.red }} />
-                    <Line type="monotone" dataKey="selfPayRatioAmount" name={m.selfPayRatioAmount} stroke={COLORS.gold} strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                    <Line type="monotone" dataKey="newPatientRate" name={m.newPatientRate} stroke={COLORS.blue} strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                    <Line type="monotone" dataKey="returnRate" name={m.returnRate} stroke={COLORS.green} strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                    <Line type="monotone" dataKey="cancellationRate" name={m.cancellationRate} stroke={COLORS.red} strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                  </LineChart>
-                </ResponsiveContainer>
-                <DataTable
-                  data={chartData}
-                  rows={[
-                    { label: m.selfPayRatioAmount, key: "selfPayRatioAmount", color: COLORS.gold, format: (v) => `${v}%` },
-                    { label: m.newPatientRate, key: "newPatientRate", color: COLORS.blue, format: (v) => `${v}%` },
-                    { label: m.returnRate, key: "returnRate", color: COLORS.green, format: (v) => `${v}%` },
-                    { label: m.cancellationRate, key: "cancellationRate", color: COLORS.red, format: (v) => `${v}%` },
-                  ]}
+          {/* ③ キャンセル率推移 */}
+          <ChartSection icon={<XCircle className="h-3.5 w-3.5" />} title="キャンセル件数・キャンセル率推移" accentColor={COLORS.red}>
+            <ResponsiveContainer width="100%" height={260}>
+              <ComposedChart data={chartData} margin={{ top: 5, right: 5, bottom: 0, left: -10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+                <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis yAxisId="left" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis yAxisId="right" orientation="right" fontSize={11} tickLine={false} axisLine={false} unit="%" domain={[0, (max: number) => Math.max(Math.ceil(max / 5) * 5, 10)]} />
+                <Tooltip
+                  contentStyle={{ borderRadius: "8px", border: "1px solid hsl(var(--border))", fontSize: "12px" }}
+                  formatter={(value: number, name: string) => name === m.cancellationRate ? `${value}%` : `${value}件`}
                 />
-              </ChartSection>
-            </TabsContent>
-
-            {/* 患者単価推移 */}
-            <TabsContent value="unitprice">
-              <ChartSection icon={<Wallet className="h-3.5 w-3.5" />} title="平均患者単価推移（万円）" accentColor={COLORS.green}>
-                <ResponsiveContainer width="100%" height={260}>
-                  <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 0, left: -10 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
-                    <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} />
-                    <YAxis fontSize={11} tickLine={false} axisLine={false} />
-                    <Tooltip
-                      contentStyle={{ borderRadius: "8px", border: "1px solid hsl(var(--border))", fontSize: "12px" }}
-                      formatter={(value: number) => `${value}万円`}
-                    />
-                    <ReferenceLine y={1.0} stroke={COLORS.green} strokeDasharray="6 3" strokeOpacity={0.4} label={{ value: "目安1.0万", position: "insideTopRight", fontSize: 9, fill: COLORS.green }} />
-                    <Line type="monotone" dataKey="revenuePerVisit" name={m.revenuePerVisit} stroke={COLORS.green} strokeWidth={2.5} dot={{ r: 3, fill: COLORS.green }} connectNulls />
-                  </LineChart>
-                </ResponsiveContainer>
-                <DataTable
-                  data={chartData}
-                  rows={[
-                    { label: m.revenuePerVisit, key: "revenuePerVisit", color: COLORS.green, format: (v) => `${v.toFixed(1)}万` },
-                  ]}
-                />
-              </ChartSection>
-            </TabsContent>
-
-            {/* キャンセル推移 */}
-            <TabsContent value="cancel">
-              <ChartSection icon={<XCircle className="h-3.5 w-3.5" />} title="キャンセル件数・キャンセル率推移" accentColor={COLORS.red}>
-                <ResponsiveContainer width="100%" height={260}>
-                  <ComposedChart data={chartData} margin={{ top: 5, right: 5, bottom: 0, left: -10 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
-                    <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} />
-                    <YAxis yAxisId="left" fontSize={11} tickLine={false} axisLine={false} />
-                    <YAxis yAxisId="right" orientation="right" fontSize={11} tickLine={false} axisLine={false} unit="%" domain={[0, (max: number) => Math.max(Math.ceil(max / 5) * 5, 10)]} />
-                    <Tooltip
-                      contentStyle={{ borderRadius: "8px", border: "1px solid hsl(var(--border))", fontSize: "12px" }}
-                      formatter={(value: number, name: string) => name === m.cancellationRate ? `${value}%` : `${value}件`}
-                    />
-                    <Legend wrapperStyle={{ fontSize: "11px" }} />
-                    <ReferenceLine yAxisId="right" y={10} stroke={COLORS.redDark} strokeDasharray="6 3" strokeOpacity={0.4} label={{ value: "上限10%", position: "insideTopRight", fontSize: 9, fill: COLORS.redDark }} />
-                    <Bar yAxisId="left" dataKey="cancellationCount" name={m.cancellationCount} fill={COLORS.red} radius={[3, 3, 0, 0]} opacity={0.8} />
-                    <Line yAxisId="right" type="monotone" dataKey="cancellationRate" name={m.cancellationRate} stroke={COLORS.redDark} strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                  </ComposedChart>
-                </ResponsiveContainer>
-                <DataTable
-                  data={chartData}
-                  rows={[
-                    { label: m.cancellationCount, key: "cancellationCount", color: COLORS.red, format: (v) => `${v}件` },
-                    { label: m.cancellationRate, key: "cancellationRate", color: COLORS.redDark, format: (v) => `${v}%` },
-                  ]}
-                />
-              </ChartSection>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+                <Legend wrapperStyle={{ fontSize: "11px" }} />
+                <ReferenceLine yAxisId="right" y={10} stroke={COLORS.redDark} strokeDasharray="6 3" strokeOpacity={0.4} label={{ value: "上限10%", position: "insideTopRight", fontSize: 9, fill: COLORS.redDark }} />
+                <Bar yAxisId="left" dataKey="cancellationCount" name={m.cancellationCount} fill={COLORS.red} radius={[3, 3, 0, 0]} opacity={0.8} />
+                <Line yAxisId="right" type="monotone" dataKey="cancellationRate" name={m.cancellationRate} stroke={COLORS.redDark} strokeWidth={2} dot={{ r: 3 }} connectNulls />
+              </ComposedChart>
+            </ResponsiveContainer>
+            <DataTable
+              data={chartData}
+              rows={[
+                { label: m.cancellationCount, key: "cancellationCount", color: COLORS.red, format: (v) => `${v}件` },
+                { label: m.cancellationRate, key: "cancellationRate", color: COLORS.redDark, format: (v) => `${v}%` },
+              ]}
+            />
+          </ChartSection>
+        </>
+      )}
     </div>
   )
 }
