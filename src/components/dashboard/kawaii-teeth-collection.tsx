@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { X } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
@@ -38,6 +39,51 @@ export function KawaiiTeethCollection({ embedded = false }: { embedded?: boolean
   if (loading || collection.length === 0) return null
 
   const m = messages.kawaiiTeeth
+
+  const modal = selectedChar ? createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/40" onClick={() => setSelectedChar(null)} />
+      <div className="relative z-10 flex w-full max-w-xs flex-col rounded-2xl border bg-card shadow-2xl" style={{ maxHeight: "calc(100dvh - 32px)" }}>
+        <button
+          type="button"
+          onClick={() => setSelectedChar(null)}
+          className="absolute right-3 top-3 z-10 rounded-md p-1 text-muted-foreground hover:bg-muted"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="shrink-0 pt-6 px-6 text-center">
+          <div className="mx-auto h-24 w-24 overflow-hidden rounded-2xl border-2 border-pink-200 bg-pink-50 p-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={selectedChar.imageData}
+              alt={selectedChar.name}
+              className="h-full w-full object-contain"
+            />
+          </div>
+          <h3 className="mt-4 text-lg font-bold">{selectedChar.name}</h3>
+        </div>
+
+        <div className="min-h-0 overflow-y-auto px-6 py-2">
+          <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line break-words text-center">
+            {selectedChar.description}
+          </p>
+        </div>
+
+        <div className="shrink-0 px-6 pb-5 text-center">
+          {selectedChar.count > 1 && (
+            <p className="mt-1 text-xs text-pink-600 font-medium">
+              {m.ownedCount}: {selectedChar.count}{m.ownedCountUnit}
+            </p>
+          )}
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            {m.firstAcquired}: {new Date(selectedChar.firstAcquiredAt).toLocaleDateString("ja-JP")}
+          </p>
+        </div>
+      </div>
+    </div>,
+    document.body
+  ) : null
 
   const content = (
     <>
@@ -89,45 +135,7 @@ export function KawaiiTeethCollection({ embedded = false }: { embedded?: boolean
         </Card>
       )}
 
-      {/* Detail modal */}
-      {selectedChar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/40" onClick={() => setSelectedChar(null)} />
-          <div className="relative z-10 w-full max-w-xs max-h-[90vh] overflow-y-auto rounded-2xl border bg-card p-6 shadow-2xl text-center">
-            <button
-              type="button"
-              onClick={() => setSelectedChar(null)}
-              className="absolute right-3 top-3 rounded-md p-1 text-muted-foreground hover:bg-muted"
-            >
-              <X className="h-4 w-4" />
-            </button>
-
-            <div className="mx-auto h-24 w-24 overflow-hidden rounded-2xl border-2 border-pink-200 bg-pink-50 p-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={selectedChar.imageData}
-                alt={selectedChar.name}
-                className="h-full w-full object-contain"
-              />
-            </div>
-
-            <h3 className="mt-4 text-lg font-bold">{selectedChar.name}</h3>
-            <p className="mt-2 text-sm text-muted-foreground leading-relaxed whitespace-pre-line break-words">
-              {selectedChar.description}
-            </p>
-
-            {selectedChar.count > 1 && (
-              <p className="mt-3 text-xs text-pink-600 font-medium">
-                {m.ownedCount}: {selectedChar.count}{m.ownedCountUnit}
-              </p>
-            )}
-
-            <p className="mt-2 text-[10px] text-muted-foreground">
-              {m.firstAcquired}: {new Date(selectedChar.firstAcquiredAt).toLocaleDateString("ja-JP")}
-            </p>
-          </div>
-        </div>
-      )}
+      {modal}
     </>
   )
 }

@@ -671,8 +671,8 @@ export function StaffEngagement({
                         {isActive && (
                           <>
                             <div className="fixed inset-0 z-40" onClick={() => setActiveBadge(null)} />
-                            <div className="absolute left-1/2 -translate-x-1/2 top-full z-50 mt-1.5 w-44 rounded-lg border bg-white p-2.5 shadow-lg">
-                              <div className="absolute left-1/2 -top-1.5 -translate-x-1/2 h-3 w-3 rotate-45 border-l border-t bg-white" />
+                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full z-50 mb-1.5 w-44 rounded-lg border bg-white p-2.5 shadow-lg">
+                              <div className="absolute left-1/2 -bottom-1.5 -translate-x-1/2 h-3 w-3 rotate-45 border-r border-b bg-white" />
                               <p className="text-[10px] font-bold text-orange-700 mb-1">獲得条件</p>
                               <p className="text-[10px] text-muted-foreground leading-relaxed">
                                 アンケート回答を<span className="font-bold text-orange-600">{badge.days}日連続</span>で記録する（休診日はスキップ）
@@ -703,8 +703,8 @@ export function StaffEngagement({
                         {isActive && (
                           <>
                             <div className="fixed inset-0 z-40" onClick={() => setActiveBadge(null)} />
-                            <div className="absolute left-1/2 -translate-x-1/2 top-full z-50 mt-1.5 w-44 rounded-lg border bg-white p-2.5 shadow-lg">
-                              <div className="absolute left-1/2 -top-1.5 -translate-x-1/2 h-3 w-3 rotate-45 border-l border-t bg-white" />
+                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full z-50 mb-1.5 w-44 rounded-lg border bg-white p-2.5 shadow-lg">
+                              <div className="absolute left-1/2 -bottom-1.5 -translate-x-1/2 h-3 w-3 rotate-45 border-r border-b bg-white" />
                               <p className="text-[10px] font-bold text-purple-700 mb-1">獲得条件</p>
                               <p className="text-[10px] text-muted-foreground leading-relaxed">
                                 AI分析レポートを<span className="font-bold text-purple-600">{badge.count}回</span>実行する
