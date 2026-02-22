@@ -5,7 +5,11 @@ export const APP_DESCRIPTION = "患者体験の見える化"
 
 // ─── 料金プラン定義 ───
 
+/** LP表示用（demoは含まない） */
 export const PLAN_ORDER: PlanTier[] = ["free", "starter", "standard", "enterprise"]
+
+/** 管理画面用（全プラン） */
+export const ALL_PLAN_TIERS: PlanTier[] = ["free", "starter", "standard", "enterprise", "demo"]
 
 export interface PlanDefinition {
   tier: PlanTier
@@ -99,6 +103,21 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
       "追加院 ¥14,800/月",
       "法人横断ダッシュボード",
       "専任サポート",
+    ],
+  },
+  demo: {
+    tier: "demo",
+    name: "デモ",
+    price: 0,
+    priceLabel: "¥0",
+    priceNote: "デモ用",
+    description: "デモンストレーション用（LP非表示）",
+    monthlyResponseLimit: null,
+    staffLimit: null,
+    dataRetentionMonths: null,
+    features: [
+      "全機能利用可能",
+      "デモ専用設定",
     ],
   },
 } as const

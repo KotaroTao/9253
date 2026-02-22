@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Plus, Loader2, X } from "lucide-react"
 import { messages } from "@/lib/messages"
-import { PLANS } from "@/lib/constants"
+import { PLANS, ALL_PLAN_TIERS } from "@/lib/constants"
 import type { PlanTier } from "@/types"
 
 interface AddClinicDialogProps {
@@ -172,7 +172,7 @@ export function AddClinicDialog({ onCreated }: AddClinicDialogProps) {
               <div>
                 <label className="block text-sm font-medium mb-1.5">{m.planLabel}</label>
                 <div className="grid grid-cols-2 gap-2">
-                  {(Object.keys(PLANS) as PlanTier[]).map((tier) => {
+                  {ALL_PLAN_TIERS.map((tier) => {
                     const p = PLANS[tier]
                     return (
                       <button

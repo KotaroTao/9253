@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Loader2, X, Check } from "lucide-react"
 import { messages } from "@/lib/messages"
-import { PLANS } from "@/lib/constants"
+import { PLANS, ALL_PLAN_TIERS } from "@/lib/constants"
 import type { PlanTier } from "@/types"
 
 interface PlanSwitcherProps {
@@ -77,7 +77,7 @@ export function PlanSwitcher({ clinicId, clinicName, currentPlan, onClose, onUpd
 
         {/* Plan options */}
         <div className="px-6 py-5 space-y-2">
-          {(Object.keys(PLANS) as PlanTier[]).map((tier) => {
+          {ALL_PLAN_TIERS.map((tier) => {
             const p = PLANS[tier]
             const isCurrent = tier === currentPlan
             const isSelected = tier === selected

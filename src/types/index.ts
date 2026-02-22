@@ -1,7 +1,7 @@
 export type UserRole = "system_admin" | "clinic_admin" | "staff"
 
 /** 料金プランティア */
-export type PlanTier = "free" | "starter" | "standard" | "enterprise"
+export type PlanTier = "free" | "starter" | "standard" | "enterprise" | "demo"
 
 /** 診療科目タイプ（ベンチマーク基準切替用） */
 export type ClinicType = "general" | "orthodontic" | "pediatric" | "cosmetic" | "oral_surgery"

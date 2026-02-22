@@ -40,6 +40,12 @@ export async function PATCH(
     if (typeof body.description === "string") {
       updateData.description = body.description.trim() || null
     }
+    if (typeof body.targetQuestionId === "string" || body.targetQuestionId === null) {
+      updateData.targetQuestionId = body.targetQuestionId?.trim() || null
+    }
+    if (typeof body.targetQuestion === "string" || body.targetQuestion === null) {
+      updateData.targetQuestion = body.targetQuestion?.trim() || null
+    }
 
     let statusChanged = false
     let newStatus: string | null = null

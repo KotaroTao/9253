@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { X } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 import { messages } from "@/lib/messages"
 
 interface CollectedCharacter {
@@ -15,7 +16,7 @@ interface CollectedCharacter {
   firstAcquiredAt: string
 }
 
-export function KawaiiTeethCollection() {
+export function KawaiiTeethCollection({ embedded = false }: { embedded?: boolean }) {
   const [collection, setCollection] = useState<CollectedCharacter[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedChar, setSelectedChar] = useState<CollectedCharacter | null>(null)
@@ -84,42 +85,55 @@ export function KawaiiTeethCollection() {
     document.body
   ) : null
 
+  const content = (
+    <>
+      <div className={embedded ? "flex items-center gap-2 mb-2" : "flex items-center gap-2 mb-3"}>
+        <span className={embedded ? "text-sm" : "text-lg"}>🦷</span>
+        <p className={embedded ? "text-xs font-bold text-pink-800" : "text-sm font-bold text-pink-800"}>{m.collectionTitle}</p>
+        <span className="text-[10px] rounded-full bg-pink-100 px-2 py-0.5 font-medium text-pink-600">
+          {collection.length}{m.collectionTypesCount}
+        </span>
+      </div>
+
+      <div className="flex flex-wrap gap-1.5">
+        {collection.map((char) => (
+          <button
+            key={char.id}
+            type="button"
+            onClick={() => setSelectedChar(char)}
+            className={cn(
+              "group relative shrink-0 overflow-hidden rounded-xl border-2 border-pink-200 bg-white transition-all hover:border-pink-400 hover:shadow-md active:scale-95",
+              embedded ? "h-11 w-11" : "h-14 w-14"
+            )}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={char.imageData}
+              alt={char.name}
+              className="h-full w-full object-contain p-1"
+            />
+            {char.count > 1 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-pink-500 px-1 text-[9px] font-bold text-white">
+                {char.count}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+    </>
+  )
+
   return (
     <>
-      <Card className="border-pink-200 bg-gradient-to-r from-pink-50/50 to-white">
-        <CardContent className="py-5">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-lg">🦷</span>
-            <p className="text-sm font-bold text-pink-800">{m.collectionTitle}</p>
-            <span className="text-[10px] rounded-full bg-pink-100 px-2 py-0.5 font-medium text-pink-600">
-              {collection.length}{m.collectionTypesCount}
-            </span>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {collection.map((char) => (
-              <button
-                key={char.id}
-                type="button"
-                onClick={() => setSelectedChar(char)}
-                className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border-2 border-pink-200 bg-white transition-all hover:border-pink-400 hover:shadow-md active:scale-95"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={char.imageData}
-                  alt={char.name}
-                  className="h-full w-full object-contain p-1"
-                />
-                {char.count > 1 && (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-pink-500 px-1 text-[9px] font-bold text-white">
-                    {char.count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {embedded ? (
+        content
+      ) : (
+        <Card className="border-pink-200 bg-gradient-to-r from-pink-50/50 to-white">
+          <CardContent className="py-5">
+            {content}
+          </CardContent>
+        </Card>
+      )}
 
       {modal}
     </>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect, useCallback } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -22,6 +22,8 @@ import {
   XCircle,
   RotateCcw,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
   Lightbulb,
   Pencil,
@@ -116,10 +118,15 @@ export function ImprovementActionsView({
   const [selectedAdoptQuestionId, setSelectedAdoptQuestionId] = useState("")
 
   // Form state
-  const [selectedQuestionId, setSelectedQuestionId] = useState("")
+  const [selectedQuestionIds, setSelectedQuestionIds] = useState<Set<string>>(new Set())
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
-  const [targetQuestion, setTargetQuestion] = useState("")
+
+  // Edit mode state
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState("")
+  const [editDescription, setEditDescription] = useState("")
+  const [editQuestionIds, setEditQuestionIds] = useState<Set<string>>(new Set())
 
   // All questions flattened for lookup
   const allQuestions = useMemo(() => {
@@ -137,30 +144,44 @@ export function ImprovementActionsView({
     const questionParam = searchParams.get("question")
     if (questionParam && allQuestions.has(questionParam)) {
       setShowForm(true)
-      setSelectedQuestionId(questionParam)
-      const q = allQuestions.get(questionParam)
-      if (q) setTargetQuestion(q.text)
+      setSelectedQuestionIds(new Set([questionParam]))
       // Clean up URL
       router.replace("/dashboard/actions", { scroll: false })
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Get suggestions for selected question
-  const suggestions = useMemo((): ImprovementSuggestion[] => {
-    if (!selectedQuestionId) return []
-    const category = QUESTION_CATEGORY_MAP[selectedQuestionId]
-    if (!category) return []
-    return IMPROVEMENT_SUGGESTIONS[category] ?? []
-  }, [selectedQuestionId])
+  // Helper: parse comma-separated targetQuestionId into Set
+  function parseQuestionIds(targetQuestionId: string | null): Set<string> {
+    if (!targetQuestionId) return new Set()
+    return new Set(targetQuestionId.split(",").map((s) => s.trim()).filter(Boolean))
+  }
 
-  function handleSelectQuestion(questionId: string) {
-    setSelectedQuestionId(questionId)
-    // Set targetQuestion text from the selected question
-    const q = allQuestions.get(questionId)
-    if (q) {
-      setTargetQuestion(q.text)
+  // Get suggestions based on selected questions' categories
+  const suggestions = useMemo((): ImprovementSuggestion[] => {
+    if (selectedQuestionIds.size === 0) return []
+    const seen = new Set<string>()
+    const result: ImprovementSuggestion[] = []
+    for (const qId of Array.from(selectedQuestionIds)) {
+      const category = QUESTION_CATEGORY_MAP[qId]
+      if (!category || seen.has(category)) continue
+      seen.add(category)
+      const items = IMPROVEMENT_SUGGESTIONS[category] ?? []
+      result.push(...items)
     }
-    // Reset title/description when changing question (unless user manually typed)
+    return result
+  }, [selectedQuestionIds])
+
+  function handleToggleQuestion(questionId: string) {
+    setSelectedQuestionIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(questionId)) {
+        next.delete(questionId)
+      } else {
+        next.add(questionId)
+      }
+      return next
+    })
+    // Reset title/description when changing questions
     setTitle("")
     setDescription("")
   }
@@ -173,14 +194,21 @@ export function ImprovementActionsView({
   function resetForm() {
     setTitle("")
     setDescription("")
-    setTargetQuestion("")
-    setSelectedQuestionId("")
+    setSelectedQuestionIds(new Set())
   }
 
   async function handleCreate() {
     if (!title.trim() || loading) return
     setLoading(true)
     setErrorMsg(null)
+
+    // Build comma-separated question IDs and texts
+    const qIds = Array.from(selectedQuestionIds)
+    const targetQuestionId = qIds.length > 0 ? qIds.join(",") : undefined
+    const targetQuestionText = qIds.length > 0
+      ? qIds.map((id) => allQuestions.get(id)?.text).filter(Boolean).join("、")
+      : undefined
+
     try {
       const res = await fetch("/api/improvement-actions", {
         method: "POST",
@@ -188,8 +216,8 @@ export function ImprovementActionsView({
         body: JSON.stringify({
           title: title.trim(),
           description: description.trim() || undefined,
-          targetQuestion: targetQuestion.trim() || undefined,
-          targetQuestionId: selectedQuestionId || undefined,
+          targetQuestion: targetQuestionText,
+          targetQuestionId,
         }),
       })
       if (res.ok) {
@@ -204,6 +232,59 @@ export function ImprovementActionsView({
       }
     } catch {
       setErrorMsg(messages.improvementActions.saveFailed)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Edit existing action
+  function startEdit(action: ImprovementAction) {
+    setEditingId(action.id)
+    setEditTitle(action.title)
+    setEditDescription(action.description ?? "")
+    setEditQuestionIds(parseQuestionIds(action.targetQuestionId))
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditTitle("")
+    setEditDescription("")
+    setEditQuestionIds(new Set())
+  }
+
+  async function handleSaveEdit(id: string) {
+    if (!editTitle.trim() || loading) return
+    setLoading(true)
+    setErrorMsg(null)
+
+    const qIds = Array.from(editQuestionIds)
+    const targetQuestionId = qIds.length > 0 ? qIds.join(",") : null
+    const targetQuestion = qIds.length > 0
+      ? qIds.map((qId) => allQuestions.get(qId)?.text).filter(Boolean).join("、")
+      : null
+
+    try {
+      const res = await fetch(`/api/improvement-actions/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editTitle.trim(),
+          description: editDescription.trim() || null,
+          targetQuestionId,
+          targetQuestion,
+        }),
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        setActions(actions.map((a) => (a.id === id ? updated : a)))
+        cancelEdit()
+        router.refresh()
+      } else {
+        const err = await res.json().catch(() => null)
+        setErrorMsg(err?.error || messages.improvementActions.editFailed)
+      }
+    } catch {
+      setErrorMsg(messages.improvementActions.editFailed)
     } finally {
       setLoading(false)
     }
@@ -298,7 +379,7 @@ export function ImprovementActionsView({
     const activeQuestionIds = new Set(
       actions
         .filter((a) => a.status === "active" && a.targetQuestionId)
-        .map((a) => a.targetQuestionId!)
+        .flatMap((a) => a.targetQuestionId!.split(",").map((s) => s.trim()))
     )
     const scored: { questionId: string; text: string; templateName: string; score: number; category: string }[] = []
     for (const [qId, score] of Object.entries(questionScores)) {
@@ -315,7 +396,9 @@ export function ImprovementActionsView({
 
   function handleRecommendedClick(questionId: string) {
     setShowForm(true)
-    handleSelectQuestion(questionId)
+    setSelectedQuestionIds(new Set([questionId]))
+    setTitle("")
+    setDescription("")
   }
 
   // Adopt a platform action
@@ -597,35 +680,23 @@ export function ImprovementActionsView({
             <CardTitle className="text-base">{messages.improvementActions.addAction}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Step 1: Question selector */}
+            {/* Step 1: Question selector (checkboxes) */}
             {hasTemplates && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium">
                   {messages.improvementActions.selectQuestion}
                 </Label>
-                <select
-                  value={selectedQuestionId}
-                  onChange={(e) => handleSelectQuestion(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                >
-                  <option value="">
-                    {messages.improvementActions.selectQuestionPlaceholder}
-                  </option>
-                  {templateQuestions.map((t) => (
-                    <optgroup key={t.name} label={t.name}>
-                      {t.questions.map((q) => (
-                        <option key={q.id} value={q.id}>
-                          {q.text}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
+                <QuestionCheckboxList
+                  templateQuestions={templateQuestions}
+                  selectedIds={selectedQuestionIds}
+                  questionScores={questionScores}
+                  onToggle={handleToggleQuestion}
+                />
               </div>
             )}
 
             {/* Step 2: Suggestion cards (shown when question is selected) */}
-            {selectedQuestionId && suggestions.length > 0 && (
+            {selectedQuestionIds.size > 0 && suggestions.length > 0 && (
               <div className="space-y-2">
                 <div>
                   <p className="text-sm font-medium text-amber-700">
@@ -700,31 +771,13 @@ export function ImprovementActionsView({
               />
             </div>
 
-            {/* Target question (manual entry if no templates, or hidden since auto-set) */}
-            {!hasTemplates && (
-              <div className="space-y-1.5">
-                <Label>{messages.improvementActions.targetQuestion}</Label>
-                <Input
-                  value={targetQuestion}
-                  onChange={(e) => setTargetQuestion(e.target.value)}
-                  placeholder="例: 受付の対応は丁寧でしたか？"
-                />
-              </div>
-            )}
-
-            {/* Current score of selected question (auto-populated, last 30 days) */}
-            {selectedQuestionId && questionScores[selectedQuestionId] != null && (
-              <div className="rounded-lg bg-muted/50 px-3 py-2">
-                <p className="text-xs text-muted-foreground">
-                  {messages.improvementActions.baselineScore}
-                  <span className="ml-1 text-[10px] text-muted-foreground/70">
-                    （{messages.improvementActions.baselineScoreNote}）
-                  </span>
-                </p>
-                <p className="text-lg font-bold">
-                  {questionScores[selectedQuestionId]}
-                </p>
-              </div>
+            {/* Current scores of selected questions (auto-populated, last 30 days) */}
+            {selectedQuestionIds.size > 0 && (
+              <SelectedQuestionsScores
+                selectedIds={selectedQuestionIds}
+                questionScores={questionScores}
+                allQuestions={allQuestions}
+              />
             )}
             <div className="flex gap-2 pt-2">
               <Button onClick={handleCreate} disabled={!title.trim() || loading}>
@@ -766,9 +819,25 @@ export function ImprovementActionsView({
             {messages.improvementActions.statusActive}
           </h2>
           {activeActions.map((action) => {
-            const q = action.targetQuestionId ? allQuestions.get(action.targetQuestionId) : null
-            const questionLabel = q ? `${q.text}（${q.templateName}）` : action.targetQuestion
-            const category = action.targetQuestionId ? QUESTION_CATEGORY_MAP[action.targetQuestionId] : undefined
+            const qIds = parseQuestionIds(action.targetQuestionId)
+            const questionLabels = Array.from(qIds)
+              .map((qId) => {
+                const q = allQuestions.get(qId)
+                return q ? `${q.text}（${q.templateName}）` : null
+              })
+              .filter(Boolean)
+            const questionLabel = questionLabels.length > 0 ? questionLabels.join("、") : action.targetQuestion
+            const categories = Array.from(qIds)
+              .map((qId) => QUESTION_CATEGORY_MAP[qId])
+              .filter(Boolean)
+            const category = categories[0]
+            // Average score across selected questions
+            const qScores = Array.from(qIds)
+              .map((qId) => questionScores[qId])
+              .filter((s): s is number => s != null)
+            const avgCurrentScore = qScores.length > 0
+              ? Math.round(qScores.reduce((a, b) => a + b, 0) / qScores.length * 100) / 100
+              : undefined
             return (
               <ActionCard
                 key={action.id}
@@ -785,9 +854,29 @@ export function ImprovementActionsView({
                   }))
                 }}
                 loading={loading}
-                currentQuestionScore={action.targetQuestionId ? questionScores[action.targetQuestionId] : undefined}
+                currentQuestionScore={avgCurrentScore}
                 questionLabel={questionLabel}
                 category={category}
+                isEditing={editingId === action.id}
+                onStartEdit={() => startEdit(action)}
+                onCancelEdit={cancelEdit}
+                onSaveEdit={() => handleSaveEdit(action.id)}
+                editTitle={editTitle}
+                editDescription={editDescription}
+                editQuestionIds={editQuestionIds}
+                onEditTitleChange={setEditTitle}
+                onEditDescriptionChange={setEditDescription}
+                onEditToggleQuestion={(qId) => {
+                  setEditQuestionIds((prev) => {
+                    const next = new Set(prev)
+                    if (next.has(qId)) next.delete(qId)
+                    else next.add(qId)
+                    return next
+                  })
+                }}
+                templateQuestions={templateQuestions}
+                questionScores={questionScores}
+                allQuestions={allQuestions}
               />
             )
           })}
@@ -801,9 +890,18 @@ export function ImprovementActionsView({
             {messages.improvementActions.statusCompleted}
           </h2>
           {completedActions.map((action) => {
-            const q = action.targetQuestionId ? allQuestions.get(action.targetQuestionId) : null
-            const questionLabel = q ? `${q.text}（${q.templateName}）` : action.targetQuestion
-            const category = action.targetQuestionId ? QUESTION_CATEGORY_MAP[action.targetQuestionId] : undefined
+            const qIds = parseQuestionIds(action.targetQuestionId)
+            const questionLabels = Array.from(qIds)
+              .map((qId) => {
+                const q = allQuestions.get(qId)
+                return q ? `${q.text}（${q.templateName}）` : null
+              })
+              .filter(Boolean)
+            const questionLabel = questionLabels.length > 0 ? questionLabels.join("、") : action.targetQuestion
+            const categories = Array.from(qIds)
+              .map((qId) => QUESTION_CATEGORY_MAP[qId])
+              .filter(Boolean)
+            const category = categories[0]
             return (
               <ActionCard
                 key={action.id}
@@ -817,6 +915,26 @@ export function ImprovementActionsView({
                 loading={loading}
                 questionLabel={questionLabel}
                 category={category}
+                isEditing={editingId === action.id}
+                onStartEdit={() => startEdit(action)}
+                onCancelEdit={cancelEdit}
+                onSaveEdit={() => handleSaveEdit(action.id)}
+                editTitle={editTitle}
+                editDescription={editDescription}
+                editQuestionIds={editQuestionIds}
+                onEditTitleChange={setEditTitle}
+                onEditDescriptionChange={setEditDescription}
+                onEditToggleQuestion={(qId) => {
+                  setEditQuestionIds((prev) => {
+                    const next = new Set(prev)
+                    if (next.has(qId)) next.delete(qId)
+                    else next.add(qId)
+                    return next
+                  })
+                }}
+                templateQuestions={templateQuestions}
+                questionScores={questionScores}
+                allQuestions={allQuestions}
               />
             )
           })}
@@ -838,6 +956,19 @@ function ActionCard({
   currentQuestionScore,
   questionLabel,
   category,
+  isEditing,
+  onStartEdit,
+  onCancelEdit,
+  onSaveEdit,
+  editTitle,
+  editDescription,
+  editQuestionIds,
+  onEditTitleChange,
+  onEditDescriptionChange,
+  onEditToggleQuestion,
+  templateQuestions,
+  questionScores,
+  allQuestions,
 }: {
   action: ImprovementAction
   expanded: boolean
@@ -850,6 +981,19 @@ function ActionCard({
   currentQuestionScore?: number
   questionLabel?: string | null
   category?: string
+  isEditing?: boolean
+  onStartEdit?: () => void
+  onCancelEdit?: () => void
+  onSaveEdit?: () => void
+  editTitle?: string
+  editDescription?: string
+  editQuestionIds?: Set<string>
+  onEditTitleChange?: (v: string) => void
+  onEditDescriptionChange?: (v: string) => void
+  onEditToggleQuestion?: (qId: string) => void
+  templateQuestions?: TemplateData[]
+  questionScores?: Record<string, number>
+  allQuestions?: Map<string, { text: string; templateName: string }>
 }) {
   const isActive = action.status === "active"
   const isCompleted = action.status === "completed"
@@ -953,7 +1097,7 @@ function ActionCard({
           </div>
         </button>
 
-        {expanded && (
+        {expanded && !isEditing && (
           <div className="mt-3 space-y-3 border-t pt-3">
             {action.description && (
               <p className="text-sm text-muted-foreground">{action.description}</p>
@@ -1083,6 +1227,17 @@ function ActionCard({
                   {messages.improvementActions.reactivate}
                 </Button>
               )}
+              {onStartEdit && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={(e) => { e.stopPropagation(); onStartEdit() }}
+                  disabled={loading}
+                >
+                  <Pencil className="mr-1 h-3.5 w-3.5" />
+                  {messages.improvementActions.editAction}
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="ghost"
@@ -1096,8 +1251,159 @@ function ActionCard({
             </div>
           </div>
         )}
+
+        {/* Edit mode */}
+        {expanded && isEditing && onCancelEdit && onSaveEdit && onEditTitleChange && onEditDescriptionChange && onEditToggleQuestion && templateQuestions && questionScores && allQuestions && editQuestionIds && (
+          <div className="mt-3 space-y-4 border-t pt-3">
+            <div className="space-y-1.5">
+              <Label>{messages.improvementActions.actionTitle}</Label>
+              <Input
+                value={editTitle ?? ""}
+                onChange={(e) => onEditTitleChange(e.target.value)}
+                placeholder={messages.improvementActions.actionTitlePlaceholder}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{messages.improvementActions.description}</Label>
+              <Input
+                value={editDescription ?? ""}
+                onChange={(e) => onEditDescriptionChange(e.target.value)}
+                placeholder={messages.improvementActions.descriptionPlaceholder}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">
+                {messages.improvementActions.selectQuestion}
+              </Label>
+              <QuestionCheckboxList
+                templateQuestions={templateQuestions}
+                selectedIds={editQuestionIds}
+                questionScores={questionScores}
+                onToggle={onEditToggleQuestion}
+              />
+            </div>
+            {editQuestionIds.size > 0 && (
+              <SelectedQuestionsScores
+                selectedIds={editQuestionIds}
+                questionScores={questionScores}
+                allQuestions={allQuestions}
+              />
+            )}
+            <div className="flex gap-2 pt-2">
+              <Button onClick={onSaveEdit} disabled={!(editTitle?.trim()) || loading}>
+                {loading ? messages.common.loading : messages.common.save}
+              </Button>
+              <Button variant="ghost" onClick={onCancelEdit}>
+                {messages.common.cancel}
+              </Button>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
+  )
+}
+
+// ─── Checkbox question list ───
+
+function QuestionCheckboxList({
+  templateQuestions,
+  selectedIds,
+  questionScores,
+  onToggle,
+}: {
+  templateQuestions: TemplateData[]
+  selectedIds: Set<string>
+  questionScores: Record<string, number>
+  onToggle: (questionId: string) => void
+}) {
+  return (
+    <div className="space-y-3 rounded-lg border border-input bg-background p-3 max-h-64 overflow-y-auto">
+      {templateQuestions.map((t) => (
+        <div key={t.name}>
+          <p className="text-xs font-semibold text-muted-foreground mb-1.5">{t.name}</p>
+          <div className="space-y-1">
+            {t.questions.map((q) => {
+              const isChecked = selectedIds.has(q.id)
+              const score = questionScores[q.id]
+              return (
+                <label
+                  key={q.id}
+                  className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 cursor-pointer transition-all ${
+                    isChecked
+                      ? "bg-blue-50 border border-blue-300"
+                      : "hover:bg-muted/50 border border-transparent"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => onToggle(q.id)}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="flex-1 text-sm">{q.text}</span>
+                  {score != null && (
+                    <span className={`text-xs font-semibold tabular-nums ${score < 3.5 ? "text-amber-700" : "text-muted-foreground"}`}>
+                      {score}
+                    </span>
+                  )}
+                </label>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ─── Selected questions scores display ───
+
+function SelectedQuestionsScores({
+  selectedIds,
+  questionScores,
+  allQuestions,
+}: {
+  selectedIds: Set<string>
+  questionScores: Record<string, number>
+  allQuestions: Map<string, { text: string; templateName: string }>
+}) {
+  const qIds = Array.from(selectedIds)
+  const scored = qIds
+    .map((qId) => ({ qId, text: allQuestions.get(qId)?.text, score: questionScores[qId] }))
+    .filter((x): x is { qId: string; text: string; score: number } => x.text != null && x.score != null)
+
+  if (scored.length === 0) return null
+
+  const avg = Math.round(scored.reduce((sum, s) => sum + s.score, 0) / scored.length * 100) / 100
+
+  return (
+    <div className="rounded-lg bg-muted/50 px-3 py-2 space-y-1">
+      <p className="text-xs text-muted-foreground">
+        {messages.improvementActions.baselineScore}
+        <span className="ml-1 text-[10px] text-muted-foreground/70">
+          （{messages.improvementActions.baselineScoreNote}）
+        </span>
+      </p>
+      {scored.length === 1 ? (
+        <p className="text-lg font-bold">{scored[0].score}</p>
+      ) : (
+        <>
+          <div className="space-y-0.5">
+            {scored.map((s) => (
+              <div key={s.qId} className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground truncate mr-2">{s.text}</span>
+                <span className="font-semibold tabular-nums">{s.score}</span>
+              </div>
+            ))}
+          </div>
+          <div className="border-t pt-1 flex items-center justify-between text-xs">
+            <span className="text-muted-foreground font-medium">平均</span>
+            <span className="text-lg font-bold">{avg}</span>
+          </div>
+        </>
+      )}
+    </div>
   )
 }
 
@@ -1362,32 +1668,37 @@ function AddLogForm({ actionId, onLogAdded }: { actionId: string; onLogAdded: (a
 function RotatingTip() {
   const tips = messages.improvementActions.tips
   const [index, setIndex] = useState(() => Math.floor(Math.random() * tips.length))
-  const [visible, setVisible] = useState(true)
 
-  const advance = useCallback(() => {
-    setVisible(false)
-    const timer = setTimeout(() => {
-      setIndex((prev) => (prev + 1) % tips.length)
-      setVisible(true)
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [tips.length])
+  function goPrev() {
+    setIndex((prev) => (prev - 1 + tips.length) % tips.length)
+  }
 
-  useEffect(() => {
-    const id = setInterval(advance, 6000)
-    return () => clearInterval(id)
-  }, [advance])
+  function goNext() {
+    setIndex((prev) => (prev + 1) % tips.length)
+  }
 
   return (
-    <div className="flex gap-2.5 rounded-lg border border-blue-100 bg-blue-50/50 px-4 py-3 min-h-[56px]">
-      <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
-      <p
-        className={`text-xs leading-relaxed text-blue-800 transition-opacity duration-300 ${
-          visible ? "opacity-100" : "opacity-0"
-        }`}
+    <div className="flex items-center gap-1 rounded-lg border border-blue-100 bg-blue-50/50 px-3 py-3 min-h-[56px]">
+      <button
+        type="button"
+        onClick={goPrev}
+        className="shrink-0 rounded p-0.5 text-blue-400 hover:text-blue-600 hover:bg-blue-100 transition-colors"
+        aria-label="前のヒント"
       >
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+      <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
+      <p className="flex-1 text-xs leading-relaxed text-blue-800">
         {tips[index]}
       </p>
+      <button
+        type="button"
+        onClick={goNext}
+        className="shrink-0 rounded p-0.5 text-blue-400 hover:text-blue-600 hover:bg-blue-100 transition-colors"
+        aria-label="次のヒント"
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
     </div>
   )
 }
