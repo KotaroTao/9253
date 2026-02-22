@@ -4,7 +4,7 @@ export type UserRole = "system_admin" | "clinic_admin" | "staff"
 export type PlanTier = "free" | "starter" | "standard" | "enterprise"
 
 /** 診療科目タイプ（ベンチマーク基準切替用） */
-export type ClinicType = "general" | "orthodontic" | "pediatric" | "cosmetic" | "oral_surgery" | "periodontal"
+export type ClinicType = "general" | "orthodontic" | "pediatric" | "cosmetic" | "oral_surgery"
 
 /** Clinic.settings JSONB の型定義 */
 export interface ClinicSettings {

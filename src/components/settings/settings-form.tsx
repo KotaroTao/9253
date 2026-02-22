@@ -26,7 +26,6 @@ const CLINIC_TYPE_OPTIONS: { value: ClinicType; label: string }[] = [
   { value: "pediatric", label: messages.settings.clinicTypePediatric },
   { value: "cosmetic", label: messages.settings.clinicTypeCosmetic },
   { value: "oral_surgery", label: messages.settings.clinicTypeOralSurgery },
-  { value: "periodontal", label: messages.settings.clinicTypePeriodontal },
 ]
 
 interface SettingsFormProps {

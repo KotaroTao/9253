@@ -554,7 +554,6 @@ export const messages = {
     clinicTypePediatric: "小児歯科",
     clinicTypeCosmetic: "審美歯科",
     clinicTypeOralSurgery: "口腔外科",
-    clinicTypePeriodontal: "歯周病専門",
   },
   testSurvey: {
     title: "アンケートテスト",

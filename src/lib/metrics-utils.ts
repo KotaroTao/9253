@@ -187,7 +187,6 @@ export type ClinicType =
   | "pediatric"      // 小児歯科
   | "cosmetic"       // 審美歯科
   | "oral_surgery"   // 口腔外科
-  | "periodontal"    // 歯周病専門
 
 export const CLINIC_TYPE_LABELS: Record<ClinicType, string> = {
   general: "一般歯科",
@@ -195,7 +194,6 @@ export const CLINIC_TYPE_LABELS: Record<ClinicType, string> = {
   pediatric: "小児歯科",
   cosmetic: "審美歯科",
   oral_surgery: "口腔外科",
-  periodontal: "歯周病専門",
 }
 
 interface BenchmarkRange {
@@ -246,14 +244,6 @@ const BENCHMARK_PRESETS: Record<ClinicType, BenchmarkPreset> = {
     returnRate: { good: [50, 100], warning: [40, 50] },
     cancellationRate: { good: [0, 8], warning: [8, 12] },
     revenuePerVisit: { good: [1.5, 200], warning: [1.0, 1.5] },
-    laborCostRatio: { good: [0, 30], warning: [30, 35] },
-  },
-  periodontal: {
-    selfPayRatioAmount: { good: [15, 100], warning: [10, 15] },
-    newPatientRate: { good: [10, 25], warning: [5, 10] },
-    returnRate: { good: [80, 100], warning: [70, 80] },
-    cancellationRate: { good: [0, 8], warning: [8, 12] },
-    revenuePerVisit: { good: [0.8, 100], warning: [0.5, 0.8] },
     laborCostRatio: { good: [0, 30], warning: [30, 35] },
   },
 }

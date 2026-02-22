@@ -37,7 +37,7 @@ export async function PATCH(request: NextRequest) {
       settingsPatch.postSurveyAction = postSurveyAction as ClinicSettings["postSurveyAction"]
     }
     // clinicType
-    const VALID_CLINIC_TYPES = ["general", "orthodontic", "pediatric", "cosmetic", "oral_surgery", "periodontal"]
+    const VALID_CLINIC_TYPES = ["general", "orthodontic", "pediatric", "cosmetic", "oral_surgery"]
     if (typeof clinicType === "string" && VALID_CLINIC_TYPES.includes(clinicType)) {
       settingsPatch.clinicType = clinicType as ClinicSettings["clinicType"]
     }
