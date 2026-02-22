@@ -79,7 +79,7 @@ export function KawaiiTeethCollection() {
       {selectedChar && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/40" onClick={() => setSelectedChar(null)} />
-          <div className="relative z-10 w-full max-w-xs rounded-2xl border bg-card p-6 shadow-2xl text-center">
+          <div className="relative z-10 w-full max-w-xs max-h-[90vh] overflow-y-auto rounded-2xl border bg-card p-6 shadow-2xl text-center">
             <button
               type="button"
               onClick={() => setSelectedChar(null)}
@@ -98,7 +98,7 @@ export function KawaiiTeethCollection() {
             </div>
 
             <h3 className="mt-4 text-lg font-bold">{selectedChar.name}</h3>
-            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+            <p className="mt-2 text-sm text-muted-foreground leading-relaxed whitespace-pre-line break-words">
               {selectedChar.description}
             </p>
 

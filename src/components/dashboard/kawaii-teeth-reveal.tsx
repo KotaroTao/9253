@@ -68,7 +68,7 @@ export function KawaiiTeethReveal({ acquired, onClose }: KawaiiTeethRevealProps)
 
         {/* Reveal phase + Done */}
         {(phase === "reveal" || phase === "done") && (
-          <div className="rounded-2xl border bg-card p-6 shadow-2xl text-center animate-in zoom-in-75 duration-500">
+          <div className="max-h-[90vh] overflow-y-auto rounded-2xl border bg-card p-6 shadow-2xl text-center animate-in zoom-in-75 duration-500">
             <button
               type="button"
               onClick={onClose}
@@ -91,7 +91,7 @@ export function KawaiiTeethReveal({ acquired, onClose }: KawaiiTeethRevealProps)
             </div>
 
             <h3 className="mt-4 text-xl font-bold">{character.name}</h3>
-            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+            <p className="mt-2 text-sm text-muted-foreground leading-relaxed whitespace-pre-line break-words">
               {character.description}
             </p>
 
