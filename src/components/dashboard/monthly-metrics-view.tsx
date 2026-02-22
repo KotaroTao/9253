@@ -37,6 +37,7 @@ function monthsAgoYearMonth(n: number): string {
 
 interface MonthlyMetricsViewProps {
   enteredMonths?: string[]
+  clinicType?: string
 }
 
 // Check if recent months (last 1-2 completed months) have missing data
@@ -57,6 +58,7 @@ const ALERT_STORAGE_KEY_PREFIX = "metrics-alert-dismissed-"
 
 export function MonthlyMetricsView({
   enteredMonths = [],
+  clinicType,
 }: MonthlyMetricsViewProps) {
   const enteredSet = useMemo(() => new Set(enteredMonths), [enteredMonths])
 
@@ -257,7 +259,7 @@ export function MonthlyMetricsView({
       )}
 
       {/* グラフ（期間セレクタと連動） */}
-      <MonthlyTrendSummary months={selectedMonths} customRange={customMonthRange} />
+      <MonthlyTrendSummary months={selectedMonths} customRange={customMonthRange} clinicType={clinicType} />
     </div>
   )
 }

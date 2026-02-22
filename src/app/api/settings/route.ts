@@ -18,7 +18,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { regularClosedDays, postSurveyAction, lineUrl, clinicHomepageUrl, ...rest } = body
+    const { regularClosedDays, postSurveyAction, lineUrl, clinicHomepageUrl, clinicType, ...rest } = body
     const parsed = updateClinicSchema.safeParse(rest)
 
     if (!parsed.success) {
@@ -35,6 +35,11 @@ export async function PATCH(request: NextRequest) {
     // postSurveyAction: "none" | "line"
     if (typeof postSurveyAction === "string" && ["none", "line"].includes(postSurveyAction)) {
       settingsPatch.postSurveyAction = postSurveyAction as ClinicSettings["postSurveyAction"]
+    }
+    // clinicType
+    const VALID_CLINIC_TYPES = ["general", "orthodontic", "pediatric", "cosmetic", "oral_surgery", "periodontal"]
+    if (typeof clinicType === "string" && VALID_CLINIC_TYPES.includes(clinicType)) {
+      settingsPatch.clinicType = clinicType as ClinicSettings["clinicType"]
     }
     // URL fields: validate https:// or clear
     for (const [key, value] of Object.entries({ lineUrl, clinicHomepageUrl })) {

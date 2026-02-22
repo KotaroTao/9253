@@ -48,6 +48,7 @@ interface MetricsInputViewProps {
   initialPrevProfile: ClinicProfile | null
   initialAutoWorkingDays: number
   initialProfileDefaults: ProfileDefaults
+  clinicType?: string
 }
 
 export function MetricsInputView({
@@ -61,6 +62,7 @@ export function MetricsInputView({
   initialPrevProfile,
   initialAutoWorkingDays,
   initialProfileDefaults,
+  clinicType,
 }: MetricsInputViewProps) {
   const [year, setYear] = useState(initialYear)
   const [month, setMonth] = useState(initialMonth)
@@ -305,6 +307,7 @@ export function MetricsInputView({
           prevProfile={prevProfile}
           autoWorkingDays={autoWorkingDays}
           profileDefaults={profileDefaults}
+          clinicType={clinicType as import("@/lib/metrics-utils").ClinicType | undefined}
         />
       )}
     </div>

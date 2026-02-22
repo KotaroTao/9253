@@ -180,25 +180,92 @@ export function calcWorkingDays(
 
 export type BenchmarkStatus = "good" | "warning" | "danger"
 
+/** 診療科目タイプ */
+export type ClinicType =
+  | "general"        // 一般歯科
+  | "orthodontic"    // 矯正歯科
+  | "pediatric"      // 小児歯科
+  | "cosmetic"       // 審美歯科
+  | "oral_surgery"   // 口腔外科
+  | "periodontal"    // 歯周病専門
+
+export const CLINIC_TYPE_LABELS: Record<ClinicType, string> = {
+  general: "一般歯科",
+  orthodontic: "矯正歯科",
+  pediatric: "小児歯科",
+  cosmetic: "審美歯科",
+  oral_surgery: "口腔外科",
+  periodontal: "歯周病専門",
+}
+
 interface BenchmarkRange {
   good: [number, number]  // [min, max] — この範囲内なら良好
   warning: [number, number] // この範囲なら注意
   // それ以外は要改善
-  lowerIsBetter?: boolean // true = 値が小さいほど良い（キャンセル率、人件費率等）
 }
 
-const BENCHMARKS: Record<string, BenchmarkRange> = {
-  selfPayRatioAmount: { good: [20, 100], warning: [15, 20] },
-  newPatientRate: { good: [15, 30], warning: [10, 15] },
-  returnRate: { good: [75, 100], warning: [65, 75] },
-  cancellationRate: { good: [0, 8], warning: [8, 12], lowerIsBetter: true },
-  revenuePerVisit: { good: [1.0, 100], warning: [0.7, 1.0] },
-  laborCostRatio: { good: [0, 30], warning: [30, 35], lowerIsBetter: true },
+type BenchmarkPreset = Record<string, BenchmarkRange>
+
+/** 診療科目別ベンチマーク定義 */
+const BENCHMARK_PRESETS: Record<ClinicType, BenchmarkPreset> = {
+  general: {
+    selfPayRatioAmount: { good: [20, 100], warning: [15, 20] },
+    newPatientRate: { good: [15, 30], warning: [10, 15] },
+    returnRate: { good: [75, 100], warning: [65, 75] },
+    cancellationRate: { good: [0, 8], warning: [8, 12] },
+    revenuePerVisit: { good: [1.0, 100], warning: [0.7, 1.0] },
+    laborCostRatio: { good: [0, 30], warning: [30, 35] },
+  },
+  orthodontic: {
+    selfPayRatioAmount: { good: [70, 100], warning: [50, 70] },
+    newPatientRate: { good: [5, 20], warning: [3, 5] },
+    returnRate: { good: [80, 100], warning: [70, 80] },
+    cancellationRate: { good: [0, 5], warning: [5, 10] },
+    revenuePerVisit: { good: [3.0, 200], warning: [2.0, 3.0] },
+    laborCostRatio: { good: [0, 25], warning: [25, 30] },
+  },
+  pediatric: {
+    selfPayRatioAmount: { good: [5, 100], warning: [3, 5] },
+    newPatientRate: { good: [20, 40], warning: [15, 20] },
+    returnRate: { good: [70, 100], warning: [60, 70] },
+    cancellationRate: { good: [0, 10], warning: [10, 15] },
+    revenuePerVisit: { good: [0.5, 100], warning: [0.3, 0.5] },
+    laborCostRatio: { good: [0, 35], warning: [35, 40] },
+  },
+  cosmetic: {
+    selfPayRatioAmount: { good: [60, 100], warning: [40, 60] },
+    newPatientRate: { good: [20, 45], warning: [10, 20] },
+    returnRate: { good: [50, 100], warning: [35, 50] },
+    cancellationRate: { good: [0, 8], warning: [8, 12] },
+    revenuePerVisit: { good: [2.0, 200], warning: [1.5, 2.0] },
+    laborCostRatio: { good: [0, 25], warning: [25, 30] },
+  },
+  oral_surgery: {
+    selfPayRatioAmount: { good: [10, 100], warning: [5, 10] },
+    newPatientRate: { good: [25, 50], warning: [15, 25] },
+    returnRate: { good: [50, 100], warning: [40, 50] },
+    cancellationRate: { good: [0, 8], warning: [8, 12] },
+    revenuePerVisit: { good: [1.5, 200], warning: [1.0, 1.5] },
+    laborCostRatio: { good: [0, 30], warning: [30, 35] },
+  },
+  periodontal: {
+    selfPayRatioAmount: { good: [15, 100], warning: [10, 15] },
+    newPatientRate: { good: [10, 25], warning: [5, 10] },
+    returnRate: { good: [80, 100], warning: [70, 80] },
+    cancellationRate: { good: [0, 8], warning: [8, 12] },
+    revenuePerVisit: { good: [0.8, 100], warning: [0.5, 0.8] },
+    laborCostRatio: { good: [0, 30], warning: [30, 35] },
+  },
 }
 
-export function getBenchmarkStatus(key: string, value: number | null): BenchmarkStatus | null {
+function getBenchmarksForClinic(clinicType?: ClinicType): BenchmarkPreset {
+  return BENCHMARK_PRESETS[clinicType ?? "general"]
+}
+
+export function getBenchmarkStatus(key: string, value: number | null, clinicType?: ClinicType): BenchmarkStatus | null {
   if (value == null) return null
-  const b = BENCHMARKS[key]
+  const benchmarks = getBenchmarksForClinic(clinicType)
+  const b = benchmarks[key]
   if (!b) return null
   if (value >= b.good[0] && value <= b.good[1]) return "good"
   if (value >= b.warning[0] && value <= b.warning[1]) return "warning"
@@ -336,6 +403,7 @@ export function buildKpiHealthItems(
   current: ReturnType<typeof calcDerived>,
   prev: ReturnType<typeof calcDerived>,
   yoy: ReturnType<typeof calcDerived>,
+  clinicType?: ClinicType,
 ): KpiHealthItem[] {
   if (!current) return []
 
@@ -349,7 +417,7 @@ export function buildKpiHealthItems(
 
   return items.map((item) => ({
     ...item,
-    status: getBenchmarkStatus(item.key, item.value),
+    status: getBenchmarkStatus(item.key, item.value, clinicType),
     momDelta: item.value != null && prev?.[item.key as keyof typeof prev] != null
       ? Math.round((item.value - (prev[item.key as keyof typeof prev] as number)) * 10) / 10
       : null,

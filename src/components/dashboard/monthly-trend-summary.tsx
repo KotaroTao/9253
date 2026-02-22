@@ -24,7 +24,7 @@ import {
   Heart, Smile,
 } from "lucide-react"
 import { calcDerived, getBenchmarkStatus, generateInsights, buildKpiHealthItems, BENCHMARK_DOT } from "@/lib/metrics-utils"
-import type { MonthlySummary, MetricsInsight, KpiHealthItem } from "@/lib/metrics-utils"
+import type { MonthlySummary, MetricsInsight, KpiHealthItem, ClinicType } from "@/lib/metrics-utils"
 
 interface TrendRow extends MonthlySummary {
   year: number
@@ -49,6 +49,7 @@ interface MonthRange {
 interface MonthlyTrendSummaryProps {
   months?: number
   customRange?: MonthRange | null
+  clinicType?: string
 }
 
 // Collapsible data table below charts
@@ -179,7 +180,8 @@ function formatDelta(current: number | null, prev: number | null, unit: string =
   return `${diff > 0 ? "+" : ""}${diff}${unit}`
 }
 
-export function MonthlyTrendSummary({ months = 12, customRange }: MonthlyTrendSummaryProps) {
+export function MonthlyTrendSummary({ months = 12, customRange, clinicType }: MonthlyTrendSummaryProps) {
+  const ct = (clinicType ?? "general") as ClinicType
   const [data, setData] = useState<TrendRow[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -277,7 +279,7 @@ export function MonthlyTrendSummary({ months = 12, customRange }: MonthlyTrendSu
   })
 
   // Build KPI health items
-  const kpiHealth = buildKpiHealthItems(latestDerived, prevDerived, yoyDerived)
+  const kpiHealth = buildKpiHealthItems(latestDerived, prevDerived, yoyDerived, ct)
 
   const yoyTotalRevenue = yoyRow?.insuranceRevenue != null && yoyRow?.selfPayRevenue != null
     ? yoyRow.insuranceRevenue + yoyRow.selfPayRevenue : null
@@ -328,7 +330,7 @@ export function MonthlyTrendSummary({ months = 12, customRange }: MonthlyTrendSu
             value={latest.selfPayRatioAmount != null ? `${latest.selfPayRatioAmount}` : "-"}
             sub="%"
             momDelta={formatDelta(latest.selfPayRatioAmount, prev?.selfPayRatioAmount ?? null, "pt")}
-            statusColor={getBenchmarkStatus("selfPayRatioAmount", latest.selfPayRatioAmount) === "good" ? "bg-emerald-50/50 dark:bg-emerald-950/20" : undefined}
+            statusColor={getBenchmarkStatus("selfPayRatioAmount", latest.selfPayRatioAmount, ct) === "good" ? "bg-emerald-50/50 dark:bg-emerald-950/20" : undefined}
           />
           <ScorecardStat
             label="患者単価"
@@ -341,7 +343,7 @@ export function MonthlyTrendSummary({ months = 12, customRange }: MonthlyTrendSu
             value={latest.cancellationRate != null ? `${latest.cancellationRate}` : "-"}
             sub="%"
             momDelta={formatDelta(latest.cancellationRate, prev?.cancellationRate ?? null, "pt")}
-            statusColor={getBenchmarkStatus("cancellationRate", latest.cancellationRate) === "danger" ? "bg-red-50/50 dark:bg-red-950/20" : undefined}
+            statusColor={getBenchmarkStatus("cancellationRate", latest.cancellationRate, ct) === "danger" ? "bg-red-50/50 dark:bg-red-950/20" : undefined}
           />
         </div>
       </div>
