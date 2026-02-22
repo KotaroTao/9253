@@ -1,23 +1,6 @@
 import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 
-export async function getStaffByToken(qrToken: string) {
-  return prisma.staff.findFirst({
-    where: { qrToken, isActive: true },
-    include: {
-      clinic: {
-        include: {
-          surveyTemplates: {
-            where: { isActive: true },
-            take: 1,
-            orderBy: { createdAt: "desc" },
-          },
-        },
-      },
-    },
-  })
-}
-
 export async function getClinicBySlug(slug: string) {
   return prisma.clinic.findUnique({
     where: { slug },
