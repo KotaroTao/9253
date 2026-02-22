@@ -60,6 +60,8 @@ interface ImprovementAction {
   targetQuestionId: string | null
   baselineScore: number | null
   resultScore: number | null
+  completionReason: string | null
+  completionNote: string | null
   status: string
   platformActionId?: string | null
   startedAt: string | Date
@@ -294,11 +296,11 @@ export function ImprovementActionsView({
     }
   }
 
-  async function handleStatusChange(id: string, status: string) {
+  async function handleStatusChange(id: string, status: string, extra?: { completionReason?: string; completionNote?: string }) {
     setLoading(true)
     setErrorMsg(null)
     try {
-      const body: Record<string, unknown> = { status }
+      const body: Record<string, unknown> = { status, ...extra }
       const res = await fetch(`/api/improvement-actions/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -980,7 +982,7 @@ function ActionCard({
   action: ImprovementAction
   expanded: boolean
   onToggle: () => void
-  onStatusChange: (id: string, status: string) => void
+  onStatusChange: (id: string, status: string, extra?: { completionReason?: string; completionNote?: string }) => void
   onDelete: (id: string) => void
   onLogUpdated: (actionId: string, updatedLog: ActionLog) => void
   onLogAdded: (actionId: string, newLog: ActionLog) => void
@@ -1005,6 +1007,11 @@ function ActionCard({
 }) {
   const isActive = action.status === "active"
   const isCompleted = action.status === "completed"
+
+  // Completion dialog state
+  const [showCompletionDialog, setShowCompletionDialog] = useState(false)
+  const [completionReason, setCompletionReason] = useState<string>("")
+  const [completionNote, setCompletionNote] = useState("")
 
   // Elapsed days since start
   const elapsedDays = useMemo(() => {
@@ -1194,17 +1201,35 @@ function ActionCard({
               </div>
             )}
 
+            {/* Completion reason (shown for completed actions) */}
+            {!isActive && action.completionReason && (
+              <div className="rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground space-y-0.5">
+                <p>
+                  <span className="font-medium">{messages.improvementActions.completionReasonLabel}: </span>
+                  {action.completionReason === "established" && `✅ ${messages.improvementActions.completionReasonEstablished}`}
+                  {action.completionReason === "uncertain" && `🔄 ${messages.improvementActions.completionReasonUncertain}`}
+                  {action.completionReason === "suspended" && `⏸️ ${messages.improvementActions.completionReasonSuspended}`}
+                </p>
+                {action.completionNote && (
+                  <p>
+                    <span className="font-medium">{messages.improvementActions.completionNoteLabel}: </span>
+                    {action.completionNote}
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Add progress note */}
             {isActive && (
               <AddLogForm actionId={action.id} onLogAdded={onLogAdded} />
             )}
 
             {/* Actions */}
-            {isActive && (
+            {isActive && !showCompletionDialog && (
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"
-                  onClick={() => onStatusChange(action.id, "completed")}
+                  onClick={() => setShowCompletionDialog(true)}
                   disabled={loading}
                   className="bg-green-600 hover:bg-green-700"
                 >
@@ -1220,6 +1245,85 @@ function ActionCard({
                   <XCircle className="mr-1 h-3.5 w-3.5" />
                   {messages.improvementActions.cancel}
                 </Button>
+              </div>
+            )}
+
+            {/* Completion confirmation dialog */}
+            {isActive && showCompletionDialog && (
+              <div className="rounded-lg border border-green-200 bg-green-50/50 p-4 space-y-3">
+                <div>
+                  <p className="text-sm font-medium">{messages.improvementActions.completionDialogTitle}</p>
+                  <p className="text-xs text-muted-foreground">{messages.improvementActions.completionDialogDesc}</p>
+                </div>
+                <div className="space-y-2">
+                  {([
+                    { value: "established", label: messages.improvementActions.completionReasonEstablished, desc: messages.improvementActions.completionReasonEstablishedDesc, icon: "✅" },
+                    { value: "uncertain", label: messages.improvementActions.completionReasonUncertain, desc: messages.improvementActions.completionReasonUncertainDesc, icon: "🔄" },
+                    { value: "suspended", label: messages.improvementActions.completionReasonSuspended, desc: messages.improvementActions.completionReasonSuspendedDesc, icon: "⏸️" },
+                  ] as const).map((option) => (
+                    <label
+                      key={option.value}
+                      className={`flex items-start gap-2.5 rounded-lg border p-3 cursor-pointer transition-all ${
+                        completionReason === option.value
+                          ? "border-green-400 bg-white ring-1 ring-green-400"
+                          : "border-gray-200 bg-white hover:border-green-200"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name={`completion-${action.id}`}
+                        value={option.value}
+                        checked={completionReason === option.value}
+                        onChange={() => setCompletionReason(option.value)}
+                        className="mt-0.5 h-4 w-4 border-gray-300 text-green-600 focus:ring-green-500"
+                      />
+                      <div>
+                        <p className="text-sm font-medium">
+                          <span className="mr-1">{option.icon}</span>
+                          {option.label}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{option.desc}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+                <div className="space-y-1.5">
+                  <Input
+                    value={completionNote}
+                    onChange={(e) => setCompletionNote(e.target.value)}
+                    placeholder={messages.improvementActions.completionNotePlaceholder}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      onStatusChange(action.id, "completed", {
+                        completionReason,
+                        completionNote: completionNote.trim() || undefined,
+                      })
+                      setShowCompletionDialog(false)
+                      setCompletionReason("")
+                      setCompletionNote("")
+                    }}
+                    disabled={!completionReason || loading}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+                    {messages.improvementActions.complete}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setShowCompletionDialog(false)
+                      setCompletionReason("")
+                      setCompletionNote("")
+                    }}
+                  >
+                    {messages.common.cancel}
+                  </Button>
+                </div>
               </div>
             )}
 
