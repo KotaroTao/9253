@@ -84,7 +84,7 @@ export function KawaiiTeethManager() {
       setError(m.invalidImage)
       return
     }
-    if (file.size > 400_000) {
+    if (file.size > 2_000_000) {
       setError(m.imageTooLarge)
       return
     }
