@@ -130,6 +130,25 @@ export function StaffEngagement({
       {/* Confetti when AI analysis unlocked */}
       {advisoryUnlocked && <Confetti />}
 
+      {/* AI分析実行可能アラート */}
+      {advisoryUnlocked && isAdmin && (
+        <Link
+          href="/dashboard/advisory"
+          className="flex items-center gap-3 rounded-xl border-2 border-purple-300 bg-gradient-to-r from-purple-50 to-purple-100/50 p-4 transition-all hover:border-purple-400 hover:shadow-md active:scale-[0.98]"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-500 text-white shadow-sm">
+            <Brain className="h-5 w-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-purple-900">AI分析を実行できます</p>
+            <p className="mt-0.5 text-xs text-purple-600/70">
+              アンケートが{threshold}件たまりました。タップして分析を実行しましょう
+            </p>
+          </div>
+          <ArrowRight className="h-4 w-4 shrink-0 text-purple-400" />
+        </Link>
+      )}
+
       {/* ⓪ Survey CTA button */}
       <a
         href={kioskUrl}
