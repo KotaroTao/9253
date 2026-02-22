@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Fragment } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
@@ -29,10 +29,12 @@ import {
   Stethoscope,
   HeartPulse,
   ShieldCheck,
+  FileText,
+  Hash,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { KawaiiTeethReveal } from "@/components/dashboard/kawaii-teeth-reveal"
-import type { AdvisoryReportData, AdvisoryProgress } from "@/types"
+import type { AdvisoryReportData, AdvisoryProgress, AdvisorySection } from "@/types"
 
 const SECTION_CONFIG = {
   summary: {
@@ -127,25 +129,25 @@ const SECTION_CONFIG = {
   },
 } as const
 
-const COLOR_MAP: Record<string, { border: string; bg: string; icon: string; text: string }> = {
-  blue: { border: "border-blue-200", bg: "bg-blue-50", icon: "text-blue-600", text: "text-blue-800" },
-  green: { border: "border-green-200", bg: "bg-green-50", icon: "text-green-600", text: "text-green-800" },
-  amber: { border: "border-amber-200", bg: "bg-amber-50", icon: "text-amber-600", text: "text-amber-800" },
-  purple: { border: "border-purple-200", bg: "bg-purple-50", icon: "text-purple-600", text: "text-purple-800" },
-  rose: { border: "border-rose-200", bg: "bg-rose-50", icon: "text-rose-600", text: "text-rose-800" },
-  indigo: { border: "border-indigo-200", bg: "bg-indigo-50", icon: "text-indigo-600", text: "text-indigo-800" },
-  teal: { border: "border-teal-200", bg: "bg-teal-50", icon: "text-teal-600", text: "text-teal-800" },
-  orange: { border: "border-orange-200", bg: "bg-orange-50", icon: "text-orange-600", text: "text-orange-800" },
-  emerald: { border: "border-emerald-200", bg: "bg-emerald-50", icon: "text-emerald-600", text: "text-emerald-800" },
-  slate: { border: "border-slate-200", bg: "bg-slate-50", icon: "text-slate-600", text: "text-slate-800" },
-  cyan: { border: "border-cyan-200", bg: "bg-cyan-50", icon: "text-cyan-600", text: "text-cyan-800" },
-  sky: { border: "border-sky-200", bg: "bg-sky-50", icon: "text-sky-600", text: "text-sky-800" },
-  violet: { border: "border-violet-200", bg: "bg-violet-50", icon: "text-violet-600", text: "text-violet-800" },
-  pink: { border: "border-pink-200", bg: "bg-pink-50", icon: "text-pink-600", text: "text-pink-800" },
-  lime: { border: "border-lime-200", bg: "bg-lime-50", icon: "text-lime-600", text: "text-lime-800" },
-  fuchsia: { border: "border-fuchsia-200", bg: "bg-fuchsia-50", icon: "text-fuchsia-600", text: "text-fuchsia-800" },
-  red: { border: "border-red-200", bg: "bg-red-50", icon: "text-red-600", text: "text-red-800" },
-  stone: { border: "border-stone-200", bg: "bg-stone-50", icon: "text-stone-600", text: "text-stone-800" },
+const COLOR_MAP: Record<string, { border: string; bg: string; icon: string; text: string; muted: string }> = {
+  blue: { border: "border-blue-200", bg: "bg-blue-50", icon: "text-blue-600", text: "text-blue-800", muted: "text-blue-600/70" },
+  green: { border: "border-green-200", bg: "bg-green-50", icon: "text-green-600", text: "text-green-800", muted: "text-green-600/70" },
+  amber: { border: "border-amber-200", bg: "bg-amber-50", icon: "text-amber-600", text: "text-amber-800", muted: "text-amber-600/70" },
+  purple: { border: "border-purple-200", bg: "bg-purple-50", icon: "text-purple-600", text: "text-purple-800", muted: "text-purple-600/70" },
+  rose: { border: "border-rose-200", bg: "bg-rose-50", icon: "text-rose-600", text: "text-rose-800", muted: "text-rose-600/70" },
+  indigo: { border: "border-indigo-200", bg: "bg-indigo-50", icon: "text-indigo-600", text: "text-indigo-800", muted: "text-indigo-600/70" },
+  teal: { border: "border-teal-200", bg: "bg-teal-50", icon: "text-teal-600", text: "text-teal-800", muted: "text-teal-600/70" },
+  orange: { border: "border-orange-200", bg: "bg-orange-50", icon: "text-orange-600", text: "text-orange-800", muted: "text-orange-600/70" },
+  emerald: { border: "border-emerald-200", bg: "bg-emerald-50", icon: "text-emerald-600", text: "text-emerald-800", muted: "text-emerald-600/70" },
+  slate: { border: "border-slate-200", bg: "bg-slate-50", icon: "text-slate-600", text: "text-slate-800", muted: "text-slate-600/70" },
+  cyan: { border: "border-cyan-200", bg: "bg-cyan-50", icon: "text-cyan-600", text: "text-cyan-800", muted: "text-cyan-600/70" },
+  sky: { border: "border-sky-200", bg: "bg-sky-50", icon: "text-sky-600", text: "text-sky-800", muted: "text-sky-600/70" },
+  violet: { border: "border-violet-200", bg: "bg-violet-50", icon: "text-violet-600", text: "text-violet-800", muted: "text-violet-600/70" },
+  pink: { border: "border-pink-200", bg: "bg-pink-50", icon: "text-pink-600", text: "text-pink-800", muted: "text-pink-600/70" },
+  lime: { border: "border-lime-200", bg: "bg-lime-50", icon: "text-lime-600", text: "text-lime-800", muted: "text-lime-600/70" },
+  fuchsia: { border: "border-fuchsia-200", bg: "bg-fuchsia-50", icon: "text-fuchsia-600", text: "text-fuchsia-800", muted: "text-fuchsia-600/70" },
+  red: { border: "border-red-200", bg: "bg-red-50", icon: "text-red-600", text: "text-red-800", muted: "text-red-600/70" },
+  stone: { border: "border-stone-200", bg: "bg-stone-50", icon: "text-stone-600", text: "text-stone-800", muted: "text-stone-600/70" },
 }
 
 const TRIGGER_LABELS: Record<string, string> = {
@@ -153,6 +155,170 @@ const TRIGGER_LABELS: Record<string, string> = {
   scheduled: messages.advisory.triggerScheduled,
   manual: messages.advisory.triggerManual,
 }
+
+// ─── リッチコンテンツレンダラー ───
+
+function RichContent({ content, textClass, mutedClass }: { content: string; textClass: string; mutedClass: string }) {
+  const lines = content.split("\n")
+
+  return (
+    <div className={cn("text-sm space-y-1", textClass)}>
+      {lines.map((line, i) => {
+        const trimmed = line.trim()
+        if (trimmed === "") return <div key={i} className="h-1" />
+
+        // 「⚠」「⚠️」警告行
+        if (trimmed.startsWith("⚠") || trimmed.startsWith("⚠️")) {
+          return (
+            <div key={i} className="mt-2 flex gap-2 rounded-md bg-amber-100/60 px-3 py-2 text-amber-800">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span className="text-xs leading-relaxed">{trimmed.replace(/^⚠️?\s*/, "")}</span>
+            </div>
+          )
+        }
+
+        // 「→」推奨行
+        if (trimmed.startsWith("→")) {
+          return (
+            <p key={i} className={cn("text-xs pl-5 leading-relaxed", mutedClass)}>
+              {trimmed}
+            </p>
+          )
+        }
+
+        // 「▼」「▲」見出し行
+        if (trimmed.startsWith("▼") || trimmed.startsWith("▲")) {
+          return (
+            <p key={i} className="mt-2 text-xs font-bold">
+              {trimmed}
+            </p>
+          )
+        }
+
+        // 「【】」パターン見出し
+        if (trimmed.startsWith("【")) {
+          return (
+            <p key={i} className="mt-2 text-xs font-bold">
+              {trimmed}
+            </p>
+          )
+        }
+
+        // 箇条書き「- 」
+        if (trimmed.startsWith("- ")) {
+          const text = trimmed.slice(2)
+
+          // スコア値のハイライト（例: 4.25点、+0.15）
+          const parts = text.split(/([\d.]+点|[+\-][\d.]+(?:ポイント)?|↑[^\s]+|↓[^\s]+|→[^\s]+|✅[^\s]+|📈[^\s]+|➡️[^\s]+|⚠️[^\s]+)/)
+
+          return (
+            <div key={i} className="flex gap-2 pl-1">
+              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-40" />
+              <span className="text-xs leading-relaxed">
+                {parts.map((part, j) => {
+                  // ステータスバッジ
+                  if (/^[✅📈➡️⚠️]/.test(part)) {
+                    return <span key={j} className="font-medium">{part}</span>
+                  }
+                  // 正の変化
+                  if (/^\+[\d.]+/.test(part) || part.startsWith("↑")) {
+                    return <span key={j} className="font-medium text-green-700">{part}</span>
+                  }
+                  // 負の変化
+                  if (/^-[\d.]+/.test(part) || part.startsWith("↓")) {
+                    return <span key={j} className="font-medium text-red-700">{part}</span>
+                  }
+                  // 維持
+                  if (part.startsWith("→")) {
+                    return <span key={j} className="text-muted-foreground">{part}</span>
+                  }
+                  // スコア値
+                  if (/[\d.]+点/.test(part)) {
+                    return <span key={j} className="font-medium tabular-nums">{part}</span>
+                  }
+                  return <Fragment key={j}>{part}</Fragment>
+                })}
+              </span>
+            </div>
+          )
+        }
+
+        // インデント行（「  」で始まる）
+        if (line.startsWith("  ")) {
+          return (
+            <p key={i} className="text-xs pl-5 leading-relaxed">
+              {trimmed}
+            </p>
+          )
+        }
+
+        // 通常のテキスト行
+        return (
+          <p key={i} className="text-xs leading-relaxed">
+            {trimmed}
+          </p>
+        )
+      })}
+    </div>
+  )
+}
+
+// ─── セクションカード（折りたたみ対応） ───
+
+function SectionCard({
+  section,
+  index,
+  isOpen,
+  onToggle,
+}: {
+  section: AdvisorySection
+  index: number
+  isOpen: boolean
+  onToggle: () => void
+}) {
+  const config =
+    SECTION_CONFIG[section.type as keyof typeof SECTION_CONFIG] ??
+    SECTION_CONFIG.summary
+  const colors = COLOR_MAP[config.color]
+  const Icon = config.icon
+
+  // summary と action はデフォルト展開、折りたたみボタンなし
+  const alwaysOpen = section.type === "summary" || section.type === "action"
+
+  return (
+    <div className={cn("rounded-lg border", colors.border, colors.bg)}>
+      <button
+        type="button"
+        onClick={alwaysOpen ? undefined : onToggle}
+        className={cn(
+          "flex w-full items-center gap-2 p-4",
+          !alwaysOpen && "cursor-pointer hover:opacity-80",
+          (isOpen || alwaysOpen) ? "pb-2" : ""
+        )}
+        disabled={alwaysOpen}
+      >
+        <Icon className={cn("h-4 w-4 shrink-0", colors.icon)} />
+        <span className={cn("text-sm font-medium flex-1 text-left", colors.text)}>
+          {section.title}
+        </span>
+        {!alwaysOpen && (
+          isOpen ? (
+            <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
+          ) : (
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          )
+        )}
+      </button>
+      {(isOpen || alwaysOpen) && (
+        <div className="px-4 pb-4">
+          <RichContent content={section.content} textClass={colors.text} mutedClass={colors.muted} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── メインコンポーネント ───
 
 interface AdvisoryReportViewProps {
   progress: AdvisoryProgress
@@ -171,7 +337,22 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
   const [expandedReport, setExpandedReport] = useState<string | null>(
     reports.length > 0 ? reports[0].id : null
   )
+  // 個別セクションの展開状態（レポートID:インデックス）
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set())
   const [acquiredChar, setAcquiredChar] = useState<AcquiredCharacter | null>(null)
+
+  function toggleSection(reportId: string, index: number) {
+    const key = `${reportId}:${index}`
+    setCollapsedSections((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) {
+        next.delete(key)
+      } else {
+        next.add(key)
+      }
+      return next
+    })
+  }
 
   async function handleGenerate() {
     if (!confirm(messages.advisory.generateConfirm)) return
@@ -201,6 +382,10 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
       setIsGenerating(false)
     }
   }
+
+  const sectionCount = reports.length > 0
+    ? reports[0].sections.filter((s) => s.type !== "summary" && s.type !== "action").length
+    : 0
 
   return (
     <div className="space-y-6">
@@ -240,29 +425,52 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
       </div>
 
       {/* Progress card */}
-      <Card>
+      <Card className="border-purple-100">
         <CardContent className="py-5">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-muted-foreground">
-              {messages.advisory.progressLabel}
-            </p>
-            <span className="text-sm font-bold">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Brain className="h-4 w-4 text-purple-500" />
+              <p className="text-sm font-medium">
+                {messages.advisory.progressLabel}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              {reports.length > 0 && (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <FileText className="h-3 w-3" />
+                  {reports.length}回実施
+                </span>
+              )}
+              {progress.daysSinceLastReport !== null && (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Clock className="h-3 w-3" />
+                  {progress.daysSinceLastReport === 0
+                    ? "本日"
+                    : `${progress.daysSinceLastReport}日前`}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-3 overflow-hidden rounded-full bg-purple-100">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-all duration-500",
+                  progress.percentage >= 100
+                    ? "bg-purple-500"
+                    : progress.percentage > 50
+                      ? "bg-purple-400"
+                      : "bg-purple-300"
+                )}
+                style={{ width: `${progress.percentage}%` }}
+              />
+            </div>
+            <span className="text-sm font-bold text-purple-700 tabular-nums whitespace-nowrap">
               {progress.current} / {progress.threshold}
             </span>
           </div>
-          <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className={cn(
-                "h-full rounded-full transition-all duration-500",
-                progress.percentage >= 100
-                  ? "bg-purple-500"
-                  : progress.percentage > 50
-                    ? "bg-purple-400"
-                    : "bg-purple-300"
-              )}
-              style={{ width: `${progress.percentage}%` }}
-            />
-          </div>
+
           <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
             {progress.percentage >= 100 ? (
               <span className="font-medium text-purple-600">
@@ -276,27 +484,47 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
                 )}
               </span>
             )}
-            {progress.lastReport && (
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {messages.advisory.lastReport}: {new Date(progress.lastReport.generatedAt).toLocaleDateString("ja-JP")}
-              </span>
-            )}
+            <span className="flex items-center gap-1 tabular-nums">
+              <Hash className="h-3 w-3" />
+              合計 {progress.totalResponses.toLocaleString()}件
+            </span>
           </div>
         </CardContent>
       </Card>
 
       {/* Reports list */}
       {reports.length === 0 ? (
-        <Card className="border-dashed">
+        <Card className="border-dashed border-purple-200">
           <CardContent className="py-12 text-center">
-            <Brain className="mx-auto h-12 w-12 text-muted-foreground/30" />
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-50">
+              <Brain className="h-8 w-8 text-purple-300" />
+            </div>
             <p className="mt-4 text-sm font-medium text-muted-foreground">
               {messages.advisory.noReport}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               {messages.advisory.noReportDesc.replace("{threshold}", String(progress.threshold))}
             </p>
+
+            <div className="mt-6 mx-auto max-w-xs space-y-2">
+              <p className="text-[10px] font-medium text-purple-600 uppercase tracking-wider">分析に含まれる項目</p>
+              <div className="flex flex-wrap justify-center gap-1.5">
+                {(Object.keys(SECTION_CONFIG) as Array<keyof typeof SECTION_CONFIG>)
+                  .filter((k) => k !== "summary" && k !== "action")
+                  .map((key) => {
+                    const cfg = SECTION_CONFIG[key]
+                    return (
+                      <span
+                        key={key}
+                        className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-0.5 text-[10px] text-purple-600"
+                      >
+                        <cfg.icon className="h-3 w-3" />
+                        {cfg.label}
+                      </span>
+                    )
+                  })}
+              </div>
+            </div>
           </CardContent>
         </Card>
       ) : (
@@ -306,6 +534,10 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
           </h2>
           {reports.map((report) => {
             const isExpanded = expandedReport === report.id
+            const analysisCount = report.sections.filter(
+              (s) => s.type !== "summary" && s.type !== "action"
+            ).length
+
             return (
               <Card key={report.id}>
                 <CardHeader
@@ -328,6 +560,9 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
                       <span className="text-xs text-muted-foreground">
                         {messages.advisory.responseCount.replace("{count}", String(report.responseCount))}
                       </span>
+                      <span className="text-xs text-muted-foreground">
+                        {analysisCount}項目
+                      </span>
                       {isExpanded ? (
                         <ChevronUp className="h-4 w-4 text-muted-foreground" />
                       ) : (
@@ -335,45 +570,32 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
                       )}
                     </div>
                   </div>
-                  {/* Summary always visible */}
+
+                  {/* Summary & Priority always visible */}
                   <p className="mt-2 text-sm text-muted-foreground">{report.summary}</p>
                   {report.priority && (
-                    <p className="mt-1 text-xs">
-                      <span className="font-medium text-amber-600">
+                    <div className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-amber-50 border border-amber-200 px-2.5 py-1">
+                      <AlertTriangle className="h-3 w-3 text-amber-600" />
+                      <span className="text-xs font-medium text-amber-700">
                         {messages.advisory.priority}:
-                      </span>{" "}
-                      <span className="text-muted-foreground">{report.priority}</span>
-                    </p>
+                      </span>
+                      <span className="text-xs text-amber-800">{report.priority}</span>
+                    </div>
                   )}
                 </CardHeader>
 
                 {isExpanded && (
                   <CardContent className="pt-0">
-                    <div className="space-y-3">
-                      {report.sections.map((section, i) => {
-                        const config =
-                          SECTION_CONFIG[section.type as keyof typeof SECTION_CONFIG] ??
-                          SECTION_CONFIG.summary
-                        const colors = COLOR_MAP[config.color]
-                        const Icon = config.icon
-
-                        return (
-                          <div
-                            key={i}
-                            className={`rounded-lg border ${colors.border} ${colors.bg} p-4`}
-                          >
-                            <div className="flex items-center gap-2 mb-2">
-                              <Icon className={`h-4 w-4 ${colors.icon}`} />
-                              <span className={`text-sm font-medium ${colors.text}`}>
-                                {section.title}
-                              </span>
-                            </div>
-                            <div className={`text-sm ${colors.text} whitespace-pre-line`}>
-                              {section.content}
-                            </div>
-                          </div>
-                        )
-                      })}
+                    <div className="space-y-2">
+                      {report.sections.map((section, i) => (
+                        <SectionCard
+                          key={i}
+                          section={section}
+                          index={i}
+                          isOpen={!collapsedSections.has(`${report.id}:${i}`)}
+                          onToggle={() => toggleSection(report.id, i)}
+                        />
+                      ))}
                     </div>
                   </CardContent>
                 )}
