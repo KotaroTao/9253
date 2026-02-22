@@ -413,13 +413,16 @@ export function StaffEngagement({
                 </div>
               </div>
             )}
+
+            {/* Kawaii Teeth コレクション（ランク枠内） */}
+            <div className="mt-4 border-t pt-3">
+              <KawaiiTeethCollection embedded />
+            </div>
           </CardContent>
         </Card>
         </div>
       )}
 
-      {/* ③ Kawaii Teeth コレクション */}
-      <KawaiiTeethCollection />
 
       {/* ④ 患者さまの声（カルーセル） */}
       {patientComments.length > 0 && (() => {
