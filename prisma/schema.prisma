@@ -140,6 +140,26 @@ model PlatformSetting {
   @@map("platform_settings")
 }
 
+model PlatformImprovementAction {
+  id              String   @id @default(uuid()) @db.Uuid
+  title           String
+  description     String?
+  detailedContent String?  @map("detailed_content")
+  targetQuestionIds Json?  @map("target_question_ids") // ["fv2","tr5"]
+  category        String?
+  isPickup        Boolean  @default(false) @map("is_pickup")
+  isActive        Boolean  @default(true) @map("is_active")
+  serviceUrl      String?  @map("service_url")
+  serviceProvider String?  @map("service_provider")
+  displayOrder    Int      @default(0) @map("display_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  clinicActions ImprovementAction[]
+
+  @@map("platform_improvement_actions")
+}
+
 model ImprovementAction {
   id            String    @id @default(uuid()) @db.Uuid
   clinicId      String    @map("clinic_id") @db.Uuid
@@ -151,12 +171,14 @@ model ImprovementAction {
   targetScore      Float?   @map("target_score")
   resultScore      Float?   @map("result_score")
   status        String    @default("active") // active, completed, cancelled
+  platformActionId String? @map("platform_action_id") @db.Uuid
   startedAt     DateTime  @default(now()) @map("started_at")
   completedAt   DateTime? @map("completed_at")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
   clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  platformAction PlatformImprovementAction? @relation(fields: [platformActionId], references: [id], onDelete: SetNull)
   logs   ImprovementActionLog[]
 
   @@index([clinicId])

@@ -52,7 +52,7 @@ export default async function ActionsPage() {
     }
   }
 
-  const [actions, templates] = await Promise.all([
+  const [actions, templates, platformActions] = await Promise.all([
     prisma.improvementAction.findMany({
       where: { clinicId },
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
@@ -64,6 +64,10 @@ export default async function ActionsPage() {
       where: { clinicId, isActive: true },
       select: { name: true, questions: true },
       orderBy: { name: "asc" },
+    }),
+    prisma.platformImprovementAction.findMany({
+      where: { isActive: true },
+      orderBy: [{ isPickup: "desc" }, { displayOrder: "asc" }, { createdAt: "desc" }],
     }),
   ])
 
@@ -89,12 +93,22 @@ export default async function ActionsPage() {
   // Fetch current scores for all questions
   const questionScores = await getQuestionCurrentScores(clinicId, Array.from(allQuestionIds))
 
+  // Adopted platform action IDs (active ones only)
+  const adoptedPlatformActionIds = actions
+    .filter((a) => a.platformActionId && a.status === "active")
+    .map((a) => a.platformActionId!)
+
   return (
     <div className="space-y-6">
       <ImprovementActionsView
         initialActions={actions}
         templateQuestions={templateQuestions}
         questionScores={questionScores}
+        platformActions={platformActions.map((pa) => ({
+          ...pa,
+          targetQuestionIds: pa.targetQuestionIds as string[] | null,
+        }))}
+        adoptedPlatformActionIds={adoptedPlatformActionIds}
       />
     </div>
   )
