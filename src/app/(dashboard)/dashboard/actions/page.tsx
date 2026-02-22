@@ -87,7 +87,13 @@ export default async function ActionsPage() {
     }
   }
   for (const a of actions) {
-    if (a.targetQuestionId) allQuestionIds.add(a.targetQuestionId)
+    if (a.targetQuestionId) {
+      // Support comma-separated multiple question IDs
+      for (const qId of a.targetQuestionId.split(",")) {
+        const trimmed = qId.trim()
+        if (trimmed) allQuestionIds.add(trimmed)
+      }
+    }
   }
 
   // Fetch current scores for all questions
