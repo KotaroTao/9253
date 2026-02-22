@@ -17,7 +17,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
 import {
-  Users, Banknote, XCircle,
+  Users, Banknote, XCircle, Heart,
   TrendingUp, TrendingDown, Minus,
   BarChart3, AlertCircle, HelpCircle, X,
 } from "lucide-react"
@@ -366,6 +366,8 @@ export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSum
       selfPayRatioAmount: d?.selfPayRatioAmount ?? null,
       returnRate: d?.returnRate ?? null,
       cancellationRate: d?.cancellationRate ?? null,
+      satisfactionScore: row.satisfactionScore ?? null,
+      surveyCount: row.surveyCount ?? 0,
     }
   })
 
@@ -394,8 +396,6 @@ export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSum
     { label: m.revenuePerStaff, value: profileDerived?.revenuePerStaff ?? null, format: (v) => `${v}${m.unitMan}`, prev: prevProfileDerived?.revenuePerStaff ?? null, helpKey: "revenuePerStaff" },
   ]
 
-  const visibleExtendedMetrics = extendedMetrics.filter((metric) => metric.value != null)
-
   const hasNoData = !summary
 
   const COLORS = {
@@ -406,6 +406,8 @@ export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSum
     green: "hsl(142, 71%, 45%)",
     red: "hsl(0, 84%, 60%)",
     redDark: "hsl(0, 60%, 45%)",
+    teal: "hsl(174, 72%, 40%)",
+    tealLight: "hsl(174, 55%, 65%)",
   }
 
   return (
@@ -433,7 +435,7 @@ export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSum
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <ScorecardStat
               label="総売上"
               value={totalRevenue != null ? `${totalRevenue}` : "-"}
@@ -475,6 +477,17 @@ export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSum
               sub="%"
               momDelta={formatDelta(derived?.cancellationRate ?? null, prevDerived?.cancellationRate ?? null, "pt")}
               statusColor={getBenchmarkStatus("cancellationRate", derived?.cancellationRate ?? null, ct) === "danger" ? "bg-red-50/50 dark:bg-red-950/20" : undefined}
+            />
+            <ScorecardStat
+              label={m.satisfactionScoreLabel}
+              value={monthData?.satisfactionScore != null ? monthData.satisfactionScore.toFixed(1) : "-"}
+              sub="/5.0"
+              momDelta={formatDelta(monthData?.satisfactionScore ?? null, monthData?.prevSatisfactionScore ?? null)}
+            />
+            <ScorecardStat
+              label={m.surveyCountLabel}
+              value={surveyCount > 0 ? `${surveyCount}` : "-"}
+              sub="件"
             />
           </div>
         )}
@@ -525,14 +538,14 @@ export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSum
       )}
 
       {/* 3. 体制・生産性指標 */}
-      {visibleExtendedMetrics.length > 0 && (
+      {!hasNoData && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">{m.extendedDerivedTitle}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-              {visibleExtendedMetrics.map((metric) => {
+              {extendedMetrics.map((metric) => {
                 const status: BenchmarkStatus | null = metric.benchmarkKey ? getBenchmarkStatus(metric.benchmarkKey, metric.value, ct) : null
                 return (
                   <div key={metric.label} className={`rounded-lg border p-3 ${
@@ -601,7 +614,36 @@ export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSum
       {/* 5. トレンドチャート（タブなし・順次表示） */}
       {chartData.length > 0 && (
         <>
-          {/* ① 売上推移 ＋ 自費率推移 */}
+          {/* ① 満足度スコア・回答数推移 */}
+          <ChartSection icon={<Heart className="h-3.5 w-3.5" />} title={m.satisfactionTrendTitle} accentColor={COLORS.teal}>
+            <ResponsiveContainer width="100%" height={260}>
+              <ComposedChart data={chartData} margin={{ top: 5, right: 10, bottom: 0, left: -10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+                <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis yAxisId="left" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis yAxisId="right" orientation="right" fontSize={11} tickLine={false} axisLine={false} domain={[1, 5]} />
+                <Tooltip
+                  contentStyle={{ borderRadius: "8px", border: "1px solid hsl(var(--border))", fontSize: "12px" }}
+                  formatter={(value: number, name: string) => {
+                    if (name === m.satisfactionScoreLabel) return value?.toFixed(1) ?? "-"
+                    return `${value}件`
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: "11px" }} />
+                <Bar yAxisId="left" dataKey="surveyCount" name={m.surveyCountLabel} fill={COLORS.tealLight} radius={[3, 3, 0, 0]} opacity={0.7} />
+                <Line yAxisId="right" type="monotone" dataKey="satisfactionScore" name={m.satisfactionScoreLabel} stroke={COLORS.teal} strokeWidth={2.5} dot={{ r: 3.5 }} connectNulls />
+              </ComposedChart>
+            </ResponsiveContainer>
+            <DataTable
+              data={chartData}
+              rows={[
+                { label: m.surveyCountLabel, key: "surveyCount", color: COLORS.tealLight, format: (v) => `${v}件` },
+                { label: m.satisfactionScoreLabel, key: "satisfactionScore", color: COLORS.teal, format: (v) => v.toFixed(1) },
+              ]}
+            />
+          </ChartSection>
+
+          {/* ② 売上推移 ＋ 自費率推移 */}
           <ChartSection icon={<Banknote className="h-3.5 w-3.5" />} title="売上推移 ＋ 自費率推移" accentColor={COLORS.gold}>
             <ResponsiveContainer width="100%" height={280}>
               <ComposedChart data={chartData} margin={{ top: 5, right: 10, bottom: 0, left: -10 }}>
@@ -633,7 +675,7 @@ export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSum
             />
           </ChartSection>
 
-          {/* ② 来院数推移 ＋ 再来院率推移 */}
+          {/* ③ 来院数推移 ＋ 再来院率推移 */}
           <ChartSection icon={<Users className="h-3.5 w-3.5" />} title="来院数推移 ＋ 再来院率推移" accentColor={COLORS.blue}>
             <ResponsiveContainer width="100%" height={280}>
               <ComposedChart data={chartData} margin={{ top: 5, right: 10, bottom: 0, left: -10 }}>
@@ -665,7 +707,7 @@ export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSum
             />
           </ChartSection>
 
-          {/* ③ キャンセル率推移 */}
+          {/* ④ キャンセル率推移 */}
           <ChartSection icon={<XCircle className="h-3.5 w-3.5" />} title="キャンセル件数・キャンセル率推移" accentColor={COLORS.red}>
             <ResponsiveContainer width="100%" height={260}>
               <ComposedChart data={chartData} margin={{ top: 5, right: 5, bottom: 0, left: -10 }}>

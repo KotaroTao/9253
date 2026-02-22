@@ -384,6 +384,10 @@ export const messages = {
     unitVisitsPerDay: "人/日",
     unitVisitsPerChairDay: "人/チェア/日",
     unitTimes: "回",
+    // Satisfaction
+    satisfactionScoreLabel: "満足度スコア",
+    surveyCountLabel: "回答数",
+    satisfactionTrendTitle: "満足度スコア・回答数推移",
     // Status
     saving: "保存中...",
     autoSaved: "自動保存しました",
