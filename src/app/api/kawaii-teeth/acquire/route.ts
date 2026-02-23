@@ -13,8 +13,9 @@ export async function POST() {
     return errorResponse(messages.errors.clinicNotAssociated, 400)
   }
 
-  // 全キャラからランダムに1つ選択
+  // 有効なキャラからランダムに1つ選択
   const allCharacters = await prisma.kawaiiTeeth.findMany({
+    where: { isActive: true },
     select: { id: true, name: true, description: true, imageData: true },
   })
 

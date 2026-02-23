@@ -9,6 +9,7 @@ interface KawaiiCharacter {
   name: string
   description: string
   imageData: string
+  isActive: boolean
   createdAt: string
   _count: { collections: number }
 }
@@ -21,6 +22,7 @@ export function KawaiiTeethManager() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [togglingId, setTogglingId] = useState<string | null>(null)
 
   // Form state
   const [name, setName] = useState("")
@@ -146,6 +148,24 @@ export function KawaiiTeethManager() {
     }
   }
 
+  async function handleToggle(char: KawaiiCharacter) {
+    const newActive = !char.isActive
+    if (!newActive && !confirm(m.toggleConfirmDeactivate)) return
+    setTogglingId(char.id)
+    try {
+      const res = await fetch(`/api/admin/kawaii-teeth/${char.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: newActive }),
+      })
+      if (res.ok) {
+        loadCharacters()
+      }
+    } finally {
+      setTogglingId(null)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -190,11 +210,11 @@ export function KawaiiTeethManager() {
           {characters.map((char) => (
             <div
               key={char.id}
-              className="group relative rounded-xl border bg-card p-4 transition-shadow hover:shadow-md"
+              className={`group relative rounded-xl border bg-card p-4 transition-shadow hover:shadow-md ${!char.isActive ? "opacity-50" : ""}`}
             >
               {/* Image */}
               <div className="flex items-center gap-4">
-                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border bg-muted">
+                <div className={`h-16 w-16 shrink-0 overflow-hidden rounded-lg border bg-muted ${!char.isActive ? "grayscale" : ""}`}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={char.imageData}
@@ -207,33 +227,54 @@ export function KawaiiTeethManager() {
                   <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
                     {char.description}
                   </p>
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    {m.acquisitionCount}: {char._count.collections}
-                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-[10px] text-muted-foreground">
+                      {m.acquisitionCount}: {char._count.collections}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+              {/* Toggle + Actions */}
+              <div className="mt-3 flex items-center justify-between border-t pt-3">
                 <button
                   type="button"
-                  onClick={() => openEditDialog(char)}
-                  className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  onClick={() => handleToggle(char)}
+                  disabled={togglingId === char.id}
+                  className="flex items-center gap-2"
                 >
-                  <Pencil className="h-3.5 w-3.5" />
+                  <div
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors ${char.isActive ? "bg-green-500" : "bg-gray-300"} ${togglingId === char.id ? "opacity-50" : ""}`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform mt-0.5 ${char.isActive ? "translate-x-4.5 ml-0.5" : "translate-x-0.5"}`}
+                    />
+                  </div>
+                  <span className={`text-xs font-medium ${char.isActive ? "text-green-600" : "text-muted-foreground"}`}>
+                    {char.isActive ? m.statusActive : m.statusInactive}
+                  </span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(char.id)}
-                  disabled={deletingId === char.id}
-                  className="rounded-md p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
-                >
-                  {deletingId === char.id ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-3.5 w-3.5" />
-                  )}
-                </button>
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => openEditDialog(char)}
+                    className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(char.id)}
+                    disabled={deletingId === char.id}
+                    className="rounded-md p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                  >
+                    {deletingId === char.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           ))}

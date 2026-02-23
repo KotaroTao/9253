@@ -15,6 +15,7 @@ export async function GET() {
       name: true,
       description: true,
       imageData: true,
+      isActive: true,
       createdAt: true,
       _count: { select: { collections: true } },
     },

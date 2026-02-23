@@ -965,6 +965,10 @@ export const messages = {
     saveFailed: "保存に失敗しました",
     deleteConfirm: "このキャラクターを削除しますか？獲得済みのコレクションからも削除されます。",
     acquisitionCount: "獲得された数",
+    statusActive: "ON",
+    statusInactive: "OFF",
+    toggleConfirmDeactivate: "このキャラクターをOFFにしますか？AI分析時に選択されなくなり、獲得一覧にも表示されなくなります。",
+    toggleFailed: "ステータスの変更に失敗しました",
     // ダッシュボード
     collectionTitle: "獲得した Kawaii Teeth",
     collectionTypesCount: "種類",

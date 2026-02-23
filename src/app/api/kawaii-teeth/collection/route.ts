@@ -25,10 +25,10 @@ export async function GET() {
     return successResponse([])
   }
 
-  // キャラ情報を取得
+  // キャラ情報を取得（有効なもののみ）
   const characterIds = collections.map((c) => c.kawaiiTeethId)
   const characters = await prisma.kawaiiTeeth.findMany({
-    where: { id: { in: characterIds } },
+    where: { id: { in: characterIds }, isActive: true },
     select: { id: true, name: true, description: true, imageData: true },
   })
 

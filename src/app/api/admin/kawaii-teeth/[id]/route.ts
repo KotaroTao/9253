@@ -15,7 +15,7 @@ export async function PATCH(
 
   const { id } = await params
 
-  let body: { name?: string; description?: string; imageData?: string }
+  let body: { name?: string; description?: string; imageData?: string; isActive?: boolean }
   try {
     body = await request.json()
   } catch {
@@ -27,9 +27,10 @@ export async function PATCH(
     return errorResponse("キャラクターが見つかりません", 404)
   }
 
-  const data: { name?: string; description?: string; imageData?: string } = {}
+  const data: { name?: string; description?: string; imageData?: string; isActive?: boolean } = {}
   if (body.name?.trim()) data.name = body.name.trim()
   if (body.description?.trim()) data.description = body.description.trim()
+  if (typeof body.isActive === "boolean") data.isActive = body.isActive
   if (body.imageData) {
     if (!body.imageData.startsWith("data:image/")) {
       return errorResponse("画像形式が不正です", 400)
