@@ -696,6 +696,14 @@ export const messages = {
     planSwitchSubmit: "変更を保存",
     planSwitchSuccess: "プランを変更しました",
     currentPlan: "現在のプラン",
+    // 特別プラン
+    specialPlanUrlTitle: "特別プラン登録URL",
+    specialPlanUrlDesc: "URLを知っている人だけがアクセスできる特別プラン申し込みページ",
+    specialPlanCopied: "コピーしました",
+    specialPlanCopyUrl: "URLをコピー",
+    // スタッフ向けガイド
+    guideUrlTitle: "スタッフ向け使い方ガイド",
+    guideUrlDesc: "医院スタッフ向けの操作マニュアル（認証不要で閲覧可能）",
   },
   operatorMode: {
     banner: "運営モード",

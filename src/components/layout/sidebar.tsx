@@ -43,6 +43,10 @@ interface NavItem {
 
 function planLevel(plan: PlanTier): number {
   const order: PlanTier[] = ["free", "starter", "standard", "enterprise"]
+  // special / demo は standard と同等の機能レベル
+  if (plan === "special" || plan === "demo") {
+    return order.indexOf("standard")
+  }
   return order.indexOf(plan)
 }
 
