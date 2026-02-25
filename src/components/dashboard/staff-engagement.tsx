@@ -168,7 +168,7 @@ export function StaffEngagement({
         </div>
         <div className="mt-2 -mx-1">
           <Image
-            src="/mieru_tejun.jpg"
+            src="/mieru_tejun2.jpg"
             alt="アンケート実施手順：1.受付→2.質問設定→3.患者に渡す→4.回答→5.自動集計"
             width={680}
             height={400}
