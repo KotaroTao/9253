@@ -87,7 +87,7 @@ export default async function DashboardLayout({
     >
       {!emailVerified && !showOnboarding && <EmailVerificationBanner />}
       {showOnboarding ? (
-        <OnboardingWizard clinicId={clinicId!} clinicSlug={clinicSlug!} />
+        <OnboardingWizard />
       ) : (
         children
       )}
