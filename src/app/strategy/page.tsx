@@ -428,7 +428,7 @@ export default function StrategyPage() {
       <section className="border-t py-14 lg:py-20">
         <div className="container max-w-4xl">
           <SectionTitle number="07" title="価格体系" />
-          <p className="mt-2 text-sm text-muted-foreground">年間契約: 2ヶ月無料（17%割引）/ 無料トライアル: 30日間・カード不要</p>
+          <p className="mt-2 text-sm text-muted-foreground">年間契約: 2ヶ月無料（17%割引）/ 無料トライアル: 14日間・カード不要</p>
           <div className="mt-8 grid gap-6 sm:grid-cols-3">
             {plans.map((plan, i) => (
               <div

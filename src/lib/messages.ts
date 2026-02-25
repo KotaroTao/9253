@@ -71,7 +71,7 @@ export const messages = {
     slugAlreadyUsed: "このクリニックURLは既に使用されています。別の名前をお試しください",
     haveAccount: "すでにアカウントをお持ちですか？",
     noAccount: "アカウントをお持ちでない方",
-    trialBadge: "30日間スタンダード無料体験付き",
+    trialBadge: "14日間スタンダード無料体験付き",
     // 特別プラン
     specialPlanBadge: "特別プラン — スタンダード全機能無料",
     specialPlanSub: "スタンダードプランの全機能を無料でご利用いただけます。",
