@@ -950,11 +950,6 @@ export default function HomePage() {
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
-                <Button asChild size="lg" variant="outline" className="h-14 px-10 text-base border-white/30 text-white hover:bg-white/10 hover:text-white">
-                  <Link href="/dashboard">
-                    {messages.landing.ctaDemoButton}
-                  </Link>
-                </Button>
               </div>
               <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-sm text-white/60">
                 <span className="flex items-center gap-1.5">
