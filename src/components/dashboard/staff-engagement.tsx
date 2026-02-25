@@ -10,6 +10,7 @@ import {
   Target, TrendingUp, TrendingDown, Brain, MessageCircle, Clock, HelpCircle,
   ChevronLeft, ChevronRight, AlertTriangle,
 } from "lucide-react"
+import Image from "next/image"
 import Link from "next/link"
 import { Confetti } from "@/components/survey/confetti"
 import { cn } from "@/lib/utils"
@@ -149,21 +150,32 @@ export function StaffEngagement({
         </Link>
       )}
 
-      {/* ⓪ Survey CTA button */}
-      <a
-        href={kioskUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="group flex items-center gap-4 rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-5 transition-all hover:border-blue-400 hover:shadow-md active:scale-[0.98]"
-      >
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-500 text-white shadow-sm">
-          <Smartphone className="h-7 w-7" />
+      {/* ⓪ Survey CTA button + flow image */}
+      <div className="flex flex-col lg:flex-row lg:items-stretch gap-3">
+        <a
+          href={kioskUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group flex items-center gap-4 rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-5 transition-all hover:border-blue-400 hover:shadow-md active:scale-[0.98] lg:flex-1"
+        >
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-500 text-white shadow-sm">
+            <Smartphone className="h-7 w-7" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-blue-900">{messages.dashboard.startKiosk}</p>
+            <p className="mt-0.5 text-xs text-blue-600/70">{messages.dashboard.startKioskDesc}</p>
+          </div>
+        </a>
+        <div className="rounded-2xl border-2 border-blue-100 bg-white overflow-hidden lg:w-[340px] shrink-0">
+          <Image
+            src="/mieru_tejun.jpg"
+            alt="アンケート実施手順：1.受付→2.質問設定→3.患者に渡す→4.回答→5.自動集計"
+            width={680}
+            height={400}
+            className="h-full w-full object-contain p-2"
+          />
         </div>
-        <div>
-          <p className="text-sm font-bold text-blue-900">{messages.dashboard.startKiosk}</p>
-          <p className="mt-0.5 text-xs text-blue-600/70">{messages.dashboard.startKioskDesc}</p>
-        </div>
-      </a>
+      </div>
 
       {/* Onboarding for first-time users */}
       {totalCount === 0 && todayCount === 0 && (
