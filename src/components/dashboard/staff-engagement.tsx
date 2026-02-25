@@ -155,25 +155,31 @@ export function StaffEngagement({
         href={kioskUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="group block rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-5 transition-all hover:border-blue-400 hover:shadow-md active:scale-[0.98]"
+        className="group block rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white px-4 pt-4 pb-3 transition-all hover:border-blue-400 hover:shadow-md active:scale-[0.98]"
       >
-        <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-500 text-white shadow-sm">
-            <Smartphone className="h-7 w-7" />
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-500 text-white shadow-sm">
+            <Smartphone className="h-5 w-5" />
           </div>
-          <div>
-            <p className="text-sm font-bold text-blue-900">{messages.dashboard.startKiosk}</p>
-            <p className="mt-0.5 text-xs text-blue-600/70">{messages.dashboard.startKioskDesc}</p>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-blue-900 leading-snug">{messages.dashboard.startKiosk}</p>
+            <p className="mt-0.5 text-[11px] text-blue-600/70">{messages.dashboard.startKioskDesc}</p>
           </div>
         </div>
-        <div className="mt-4">
+        <div className="mt-2 -mx-1">
           <Image
             src="/mieru_tejun.jpg"
             alt="アンケート実施手順：1.受付→2.質問設定→3.患者に渡す→4.回答→5.自動集計"
             width={680}
             height={400}
-            className="w-full rounded-xl object-contain"
+            className="w-full rounded-lg object-contain"
           />
+        </div>
+        <div className="mt-2 rounded-lg bg-blue-50/80 px-3 py-2">
+          <p className="text-[11px] font-medium text-blue-800 mb-1">💬 声かけ例</p>
+          <p className="text-[11px] leading-relaxed text-blue-700/80">
+            「会計までの間に、30秒ほどのアンケートにご協力いただけますか？」
+          </p>
         </div>
       </a>
 
