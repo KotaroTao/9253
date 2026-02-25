@@ -19,6 +19,7 @@ import {
   Lock,
   Sparkles,
   Crown,
+  HelpCircle,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
@@ -240,6 +241,16 @@ export function Sidebar({ role, isOperatorMode = false, clinicSlug, planInfo }: 
       )}
 
       <div className="space-y-1 border-t p-2">
+        <a
+          href="/guide"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <HelpCircle className="h-4 w-4" />
+          {messages.nav.guide}
+          <ExternalLink className="ml-auto h-3 w-3 opacity-50" />
+        </a>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
           className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
