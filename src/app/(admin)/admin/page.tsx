@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
 import { Lightbulb, HardDrive, SmilePlus, Megaphone, ArrowRight, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, AlertTriangle, Activity } from "lucide-react"
+import { SpecialPlanUrl, GuideUrl } from "@/components/admin/special-plan-url"
 import { ClinicSearch } from "@/components/admin/clinic-search"
 import { ClinicRow } from "@/components/admin/clinic-row"
 import { PxValueDashboard } from "@/components/admin/px-value-dashboard"
@@ -187,6 +188,9 @@ export default async function AdminPage({
 
       {/* Management links */}
       <div className="space-y-3">
+        <SpecialPlanUrl />
+        <GuideUrl />
+
         <Link
           href="/admin/tips"
           className="flex items-center justify-between rounded-lg border border-amber-200 bg-gradient-to-r from-amber-50/80 to-white p-4 transition-colors hover:border-amber-300 hover:shadow-sm"
