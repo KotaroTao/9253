@@ -31,6 +31,8 @@ export interface ClinicSettings {
   trialStartedAt?: string // トライアル開始日 ISO8601
   trialEndsAt?: string // トライアル終了日 ISO8601
   trialUsed?: boolean // トライアル使用済みフラグ（再トライアル防止）
+  // 経営レポートPINロック
+  metricsPin?: string // 4桁PINハッシュ（bcrypt）。未設定時はロックなし
   // オンボーディング
   onboardingCompleted?: boolean // 初回セットアップウィザード完了フラグ
 }

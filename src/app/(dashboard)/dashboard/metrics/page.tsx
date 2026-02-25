@@ -3,6 +3,7 @@ import { auth } from "@/auth"
 import { getOperatorClinicId } from "@/lib/admin-mode"
 import { prisma } from "@/lib/prisma"
 import { MonthlyMetricsView } from "@/components/dashboard/monthly-metrics-view"
+import { MetricsPinLock } from "@/components/dashboard/metrics-pin-lock"
 import { UpgradePrompt } from "@/components/dashboard/upgrade-prompt"
 import { ROLES } from "@/lib/constants"
 import { getClinicPlanInfo, hasFeature } from "@/lib/plan"
@@ -21,6 +22,7 @@ export default async function MetricsPage() {
   }
 
   const operatorClinicId = session.user.role === ROLES.SYSTEM_ADMIN ? getOperatorClinicId() : null
+  const isOperatorMode = !!operatorClinicId
   const clinicId = operatorClinicId ?? session.user.clinicId
   if (!clinicId) {
     redirect("/login")
@@ -67,11 +69,20 @@ export default async function MetricsPage() {
   ])
 
   const enteredMonths = enteredRows.map((r) => `${r.year}-${r.month}`)
-  const clinicType = ((clinic?.settings ?? {}) as ClinicSettings).clinicType ?? "general"
+  const settings = (clinic?.settings ?? {}) as ClinicSettings
+  const clinicType = settings.clinicType ?? "general"
+  const hasMetricsPin = !!settings.metricsPin
 
-  return (
+  const content = (
     <div className="space-y-6">
       <MonthlyMetricsView enteredMonths={enteredMonths} clinicType={clinicType} />
     </div>
   )
+
+  // PINロック: PIN設定済み かつ 運営モードでない場合
+  if (hasMetricsPin && !isOperatorMode) {
+    return <MetricsPinLock>{content}</MetricsPinLock>
+  }
+
+  return content
 }

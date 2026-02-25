@@ -3,6 +3,7 @@ import { auth } from "@/auth"
 import { getOperatorClinicId } from "@/lib/admin-mode"
 import { getClinicById } from "@/lib/queries/clinics"
 import { SettingsForm } from "@/components/settings/settings-form"
+import { MetricsPinSettings } from "@/components/settings/metrics-pin-settings"
 import { ROLES } from "@/lib/constants"
 import type { ClinicSettings } from "@/types"
 
@@ -41,6 +42,7 @@ export default async function SettingsPage() {
         clinicHomepageUrl={settings.clinicHomepageUrl}
         clinicType={settings.clinicType}
       />
+      <MetricsPinSettings hasPin={!!settings.metricsPin} />
     </div>
   )
 }
