@@ -7,6 +7,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { TurnstileWidget } from "@/components/auth/turnstile-widget"
 import { messages } from "@/lib/messages"
 
 export function RegisterForm() {
@@ -17,6 +18,7 @@ export function RegisterForm() {
   const [password, setPassword] = useState("")
   const [passwordConfirm, setPasswordConfirm] = useState("")
   const [termsAgreed, setTermsAgreed] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
@@ -46,6 +48,7 @@ export function RegisterForm() {
           password,
           passwordConfirm,
           termsAgreed,
+          turnstileToken,
         }),
       })
 
@@ -157,6 +160,7 @@ export function RegisterForm() {
           {messages.auth.termsAgree}
         </Label>
       </div>
+      <TurnstileWidget onVerify={setTurnstileToken} />
       {error && (
         <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
           {error}

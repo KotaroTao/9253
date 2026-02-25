@@ -3,6 +3,8 @@ import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { prisma } from "@/lib/prisma"
 import { checkRateLimit } from "@/lib/rate-limit"
 import { getClientIp } from "@/lib/ip"
+import { verifyTurnstileToken } from "@/lib/turnstile"
+import { sendMail, generateVerificationToken, buildVerificationEmail } from "@/lib/email"
 import { messages } from "@/lib/messages"
 import bcrypt from "bcryptjs"
 
@@ -26,8 +28,6 @@ const TREATMENT_QUESTIONS = [
   { id: "tr5", text: "スタッフの対応は丁寧でしたか？", type: "rating", required: true },
   { id: "tr6", text: "当院をご家族・知人にも紹介したいと思いますか？", type: "rating", required: true },
 ]
-
-const SLUG_RE = /^[a-z0-9][a-z0-9-]*[a-z0-9]$/
 
 /** クリニック名からURL用スラッグを生成 */
 function generateSlug(name: string): string {
@@ -74,6 +74,7 @@ export async function POST(request: NextRequest) {
     password?: string
     passwordConfirm?: string
     termsAgreed?: boolean
+    turnstileToken?: string
   }
   try {
     body = await request.json()
@@ -81,7 +82,13 @@ export async function POST(request: NextRequest) {
     return errorResponse(messages.errors.invalidInput, 400)
   }
 
-  const { clinicName, adminName, email, password, passwordConfirm, termsAgreed } = body
+  const { clinicName, adminName, email, password, passwordConfirm, termsAgreed, turnstileToken } = body
+
+  // Turnstile 検証
+  const turnstileValid = await verifyTurnstileToken(turnstileToken)
+  if (!turnstileValid) {
+    return errorResponse("bot検証に失敗しました。ページを再読み込みしてお試しください", 400)
+  }
 
   // バリデーション
   if (!clinicName || !clinicName.trim()) {
@@ -120,7 +127,10 @@ export async function POST(request: NextRequest) {
   const trialEnds = new Date(now)
   trialEnds.setDate(trialEnds.getDate() + 30)
 
-  // トランザクションで Clinic + User + SurveyTemplate を一括作成
+  // メール認証トークン生成
+  const verificationToken = generateVerificationToken()
+
+  // トランザクションで Clinic + User + SurveyTemplate + AdminNotification を一括作成
   const result = await prisma.$transaction(async (tx) => {
     const clinic = await tx.clinic.create({
       data: {
@@ -132,6 +142,7 @@ export async function POST(request: NextRequest) {
           trialStartedAt: now.toISOString(),
           trialEndsAt: trialEnds.toISOString(),
           trialUsed: true,
+          onboardingCompleted: false,
         },
       },
     })
@@ -144,6 +155,7 @@ export async function POST(request: NextRequest) {
         name: adminName.trim(),
         role: "clinic_admin",
         clinicId: clinic.id,
+        verificationToken,
       },
     })
 
@@ -155,7 +167,32 @@ export async function POST(request: NextRequest) {
       ],
     })
 
+    // system_admin 通知作成
+    await tx.adminNotification.create({
+      data: {
+        type: "new_registration",
+        title: messages.notifications.newRegistration,
+        message: messages.notifications.newRegistrationDesc
+          .replace("{clinicName}", clinicName.trim())
+          .replace("{email}", email.trim().toLowerCase()),
+        data: {
+          clinicId: clinic.id,
+          clinicName: clinicName.trim(),
+          slug,
+          email: email.trim().toLowerCase(),
+        },
+      },
+    })
+
     return { clinic, user }
+  })
+
+  // メール認証メール送信（トランザクション外で非同期実行）
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://mieru-clinic.com"
+  const verifyUrl = `${appUrl}/verify-email?token=${verificationToken}`
+  const { subject, html } = buildVerificationEmail(verifyUrl, clinicName.trim())
+  sendMail({ to: email.trim().toLowerCase(), subject, html }).catch((err) => {
+    console.error("[register] Failed to send verification email:", err)
   })
 
   return successResponse({

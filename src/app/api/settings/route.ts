@@ -18,7 +18,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { regularClosedDays, postSurveyAction, lineUrl, clinicHomepageUrl, clinicType, ...rest } = body
+    const { regularClosedDays, postSurveyAction, lineUrl, clinicHomepageUrl, clinicType, onboardingCompleted, ...rest } = body
     const parsed = updateClinicSchema.safeParse(rest)
 
     if (!parsed.success) {
@@ -51,6 +51,10 @@ export async function PATCH(request: NextRequest) {
           settingsPatch[key as keyof ClinicSettings] = trimmed as never
         }
       }
+    }
+    // onboardingCompleted
+    if (onboardingCompleted === true) {
+      (settingsPatch as Record<string, unknown>).onboardingCompleted = true
     }
     if (Object.keys(settingsPatch).length > 0) {
       const merged = await updateClinicSettings(clinicId, settingsPatch)

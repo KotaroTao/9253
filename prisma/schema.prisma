@@ -49,16 +49,18 @@ model Staff {
 }
 
 model User {
-  id        String   @id @default(uuid()) @db.Uuid
-  email     String   @unique
-  password  String
-  name      String
-  role      String
-  clinicId  String?  @map("clinic_id") @db.Uuid
-  staffId   String?  @unique @map("staff_id") @db.Uuid
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id                String    @id @default(uuid()) @db.Uuid
+  email             String    @unique
+  password          String
+  name              String
+  role              String
+  clinicId          String?   @map("clinic_id") @db.Uuid
+  staffId           String?   @unique @map("staff_id") @db.Uuid
+  isActive          Boolean   @default(true) @map("is_active")
+  emailVerified     DateTime? @map("email_verified")
+  verificationToken String?   @unique @map("verification_token")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
 
   clinic Clinic? @relation(fields: [clinicId], references: [id], onDelete: SetNull)
   staff  Staff?  @relation(fields: [staffId], references: [id], onDelete: SetNull)
@@ -281,4 +283,17 @@ model MonthlyClinicMetrics {
   @@unique([clinicId, year, month])
   @@index([clinicId])
   @@map("monthly_clinic_metrics")
+}
+
+model AdminNotification {
+  id        String   @id @default(uuid()) @db.Uuid
+  type      String   // new_registration, etc.
+  title     String
+  message   String
+  data      Json     @default("{}")
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([isRead, createdAt])
+  @@map("admin_notifications")
 }
