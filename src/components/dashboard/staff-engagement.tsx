@@ -217,95 +217,27 @@ export function StaffEngagement({
         </Card>
       )}
 
-      {/* ①② AI分析クエスト + パーソナルステータス（PC横並び） */}
+      {/* ①② 過去1週間 + パーソナルステータス（PC横並び） */}
       {totalCount > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className={cn(
-          "border-purple-200",
-          advisoryUnlocked
-            ? "bg-gradient-to-r from-purple-100/80 to-purple-50/50"
-            : "bg-gradient-to-r from-purple-50/50 to-white"
-        )}>
+        <Card className="border-purple-200 bg-gradient-to-r from-purple-50/50 to-white">
           <CardContent className="py-5">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Brain className="h-4 w-4 text-purple-600" />
-                <p className="text-sm font-bold text-purple-900">
-                  {messages.advisory.progressLabel}
-                </p>
-              </div>
-              {streak > 0 && (
-                <div className="flex items-center gap-1 text-orange-500">
-                  <Flame className="h-4 w-4" />
-                  <span className="text-sm font-bold">
-                    {messages.dashboard.streakPrefix}{streak}{messages.dashboard.streakDays}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Progress bar */}
-            <div className="mt-3 flex items-center gap-3">
-              <div className="flex-1 h-3 overflow-hidden rounded-full bg-purple-100">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-all duration-500",
-                    advisoryUnlocked ? "bg-purple-500" : "bg-purple-400"
-                  )}
-                  style={{ width: `${percentage}%` }}
-                />
-              </div>
-              <span className="text-sm font-bold text-purple-700 tabular-nums whitespace-nowrap">
-                {current}/{threshold}
-              </span>
-            </div>
-
-            {/* Status message */}
-            <div className="mt-2 flex items-center justify-between">
-              {advisoryUnlocked ? (
-                <p className="text-xs font-medium text-purple-600">
-                  {messages.advisory.progressReady}
-                </p>
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  {messages.dashboard.encourageAlmostUnlock.replace("{remaining}", String(advisoryRemaining))}
-                </p>
-              )}
-              {advisoryProgress.lastReport && (
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Clock className="h-3 w-3" />
-                  {new Date(advisoryProgress.lastReport.generatedAt).toLocaleDateString("ja-JP", {
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </span>
-              )}
-            </div>
-
-            {/* Admin link to full report */}
-            {isAdmin && (advisoryUnlocked || advisoryProgress.lastReport) && (
-              <Link
-                href="/dashboard/advisory"
-                className={cn(
-                  "mt-3 flex items-center justify-center gap-1 rounded-lg border py-2 text-xs font-medium transition-colors",
-                  advisoryUnlocked
-                    ? "border-purple-400 bg-purple-500 text-white hover:bg-purple-600"
-                    : "border-purple-200 text-purple-600 hover:bg-purple-50"
-                )}
-              >
-                {advisoryUnlocked ? messages.advisory.generateButton : messages.advisory.viewReport}
-              </Link>
-            )}
-
-            {/* Week chart separator */}
-            <div className="mt-5 border-t border-purple-100 pt-4">
-              <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
                 <p className="text-xs font-medium text-muted-foreground">過去1週間</p>
-                <p className="text-xs text-muted-foreground">
-                  合計 <span className="font-bold text-foreground">{weekTotal}</span>{messages.common.countSuffix}
-                </p>
+                {streak > 0 && (
+                  <div className="flex items-center gap-1 text-orange-500">
+                    <Flame className="h-4 w-4" />
+                    <span className="text-sm font-bold">
+                      {messages.dashboard.streakPrefix}{streak}{messages.dashboard.streakDays}
+                    </span>
+                  </div>
+                )}
               </div>
+              <p className="text-xs text-muted-foreground">
+                合計 <span className="font-bold text-foreground">{weekTotal}</span>{messages.common.countSuffix}
+              </p>
+            </div>
 
               {/* Bar chart for each day */}
               {(() => {
@@ -391,7 +323,6 @@ export function StaffEngagement({
                   </div>
                 )
               })()}
-            </div>
           </CardContent>
         </Card>
 
@@ -638,6 +569,75 @@ export function StaffEngagement({
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
+      )}
+
+      {/* AI分析クエスト */}
+      {totalCount > 0 && (
+        <Card className={cn(
+          "border-purple-200",
+          advisoryUnlocked
+            ? "bg-gradient-to-r from-purple-100/80 to-purple-50/50"
+            : "bg-gradient-to-r from-purple-50/50 to-white"
+        )}>
+          <CardContent className="py-5">
+            <div className="flex items-center gap-2">
+              <Brain className="h-4 w-4 text-purple-600" />
+              <p className="text-sm font-bold text-purple-900">
+                {messages.advisory.progressLabel}
+              </p>
+            </div>
+
+            <div className="mt-3 flex items-center gap-3">
+              <div className="flex-1 h-3 overflow-hidden rounded-full bg-purple-100">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all duration-500",
+                    advisoryUnlocked ? "bg-purple-500" : "bg-purple-400"
+                  )}
+                  style={{ width: `${percentage}%` }}
+                />
+              </div>
+              <span className="text-sm font-bold text-purple-700 tabular-nums whitespace-nowrap">
+                {current}/{threshold}
+              </span>
+            </div>
+
+            <div className="mt-2 flex items-center justify-between">
+              {advisoryUnlocked ? (
+                <p className="text-xs font-medium text-purple-600">
+                  {messages.advisory.progressReady}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  {messages.dashboard.encourageAlmostUnlock.replace("{remaining}", String(advisoryRemaining))}
+                </p>
+              )}
+              {advisoryProgress.lastReport && (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Clock className="h-3 w-3" />
+                  {new Date(advisoryProgress.lastReport.generatedAt).toLocaleDateString("ja-JP", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </span>
+              )}
+            </div>
+
+            {isAdmin && (advisoryUnlocked || advisoryProgress.lastReport) && (
+              <Link
+                href="/dashboard/advisory"
+                className={cn(
+                  "mt-3 flex items-center justify-center gap-1 rounded-lg border py-2 text-xs font-medium transition-colors",
+                  advisoryUnlocked
+                    ? "border-purple-400 bg-purple-500 text-white hover:bg-purple-600"
+                    : "border-purple-200 text-purple-600 hover:bg-purple-50"
+                )}
+              >
+                {advisoryUnlocked ? messages.advisory.generateButton : messages.advisory.viewReport}
+              </Link>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* ⑥ マイルストーン + バッジ */}
