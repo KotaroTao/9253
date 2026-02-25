@@ -25,7 +25,7 @@ export async function sendMail({ to, subject, html }: SendMailOptions): Promise<
       // SMTP_HOST を API endpoint として使用（例: https://api.resend.com/emails）
       const apiKey = process.env.SMTP_PASS || ""
       const fromAddress = process.env.SMTP_FROM || "noreply@mieru-clinic.com"
-      await fetch(smtpHost, {
+      const res = await fetch(smtpHost, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -33,6 +33,11 @@ export async function sendMail({ to, subject, html }: SendMailOptions): Promise<
         },
         body: JSON.stringify({ from: fromAddress, to, subject, html }),
       })
+      if (!res.ok) {
+        const body = await res.text().catch(() => "")
+        console.error(`[sendMail] API responded ${res.status}: ${body}`)
+        return false
+      }
       return true
     } catch (err) {
       console.error("[sendMail] SMTP error:", err)
@@ -49,9 +54,19 @@ export async function sendMail({ to, subject, html }: SendMailOptions): Promise<
   return true
 }
 
-/** 安全なランダムトークンを生成 */
+/** 安全なランダムトークンを生成（タイムスタンプ付きで有効期限判定に使用） */
 export function generateVerificationToken(): string {
-  return crypto.randomBytes(32).toString("hex")
+  const timestamp = Date.now().toString(36)
+  const random = crypto.randomBytes(32).toString("hex")
+  return `${timestamp}.${random}`
+}
+
+/** トークンから発行時刻を取得（ミリ秒）。パース不能時は null */
+export function getTokenTimestamp(token: string): number | null {
+  const dotIndex = token.indexOf(".")
+  if (dotIndex === -1) return null
+  const timestamp = parseInt(token.substring(0, dotIndex), 36)
+  return Number.isFinite(timestamp) ? timestamp : null
 }
 
 /** メール認証用のHTMLメール本文を生成 */
