@@ -72,6 +72,10 @@ export const messages = {
     haveAccount: "すでにアカウントをお持ちですか？",
     noAccount: "アカウントをお持ちでない方",
     trialBadge: "30日間スタンダード無料体験付き",
+    // 特別プラン
+    specialPlanBadge: "特別プラン — スタンダード全機能無料",
+    specialPlanSub: "スタンダードプランの全機能を無料でご利用いただけます。",
+    specialPlanRegisterButton: "特別プランで登録する",
     // メール認証
     verifyEmailTitle: "メールアドレスの確認",
     verifyEmailSent: "確認メールを送信しました",

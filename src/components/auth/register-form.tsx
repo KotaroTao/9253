@@ -10,7 +10,11 @@ import { Label } from "@/components/ui/label"
 import { TurnstileWidget } from "@/components/auth/turnstile-widget"
 import { messages } from "@/lib/messages"
 
-export function RegisterForm() {
+interface RegisterFormProps {
+  plan?: string
+}
+
+export function RegisterForm({ plan }: RegisterFormProps) {
   const router = useRouter()
   const [clinicName, setClinicName] = useState("")
   const [adminName, setAdminName] = useState("")
@@ -49,6 +53,7 @@ export function RegisterForm() {
           passwordConfirm,
           termsAgreed,
           turnstileToken,
+          ...(plan ? { plan } : {}),
         }),
       })
 
@@ -167,7 +172,11 @@ export function RegisterForm() {
         </div>
       )}
       <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? messages.common.loading : messages.auth.registerButton}
+        {isLoading
+          ? messages.common.loading
+          : plan === "special"
+            ? messages.auth.specialPlanRegisterButton
+            : messages.auth.registerButton}
       </Button>
       <p className="text-center text-sm text-muted-foreground">
         {messages.auth.haveAccount}{" "}

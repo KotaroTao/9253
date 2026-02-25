@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
     passwordConfirm?: string
     termsAgreed?: boolean
     turnstileToken?: string
+    plan?: string
   }
   try {
     body = await request.json()
@@ -82,7 +83,8 @@ export async function POST(request: NextRequest) {
     return errorResponse(messages.errors.invalidInput, 400)
   }
 
-  const { clinicName, adminName, email, password, passwordConfirm, termsAgreed, turnstileToken } = body
+  const { clinicName, adminName, email, password, passwordConfirm, termsAgreed, turnstileToken, plan } = body
+  const isSpecialPlan = plan === "special"
 
   // Turnstile 検証
   const turnstileValid = await verifyTurnstileToken(turnstileToken)
@@ -122,10 +124,22 @@ export async function POST(request: NextRequest) {
   const baseSlug = generateSlug(clinicName)
   const slug = await ensureUniqueSlug(baseSlug)
 
-  // 30日間トライアル設定
   const now = new Date()
-  const trialEnds = new Date(now)
-  trialEnds.setDate(trialEnds.getDate() + 30)
+
+  // プラン設定: 特別プランは standard 相当を無料で直接付与、通常は30日トライアル
+  const clinicSettings = isSpecialPlan
+    ? {
+        plan: "special" as const,
+        onboardingCompleted: false,
+      }
+    : {
+        plan: "free" as const,
+        trialPlan: "standard" as const,
+        trialStartedAt: now.toISOString(),
+        trialEndsAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        trialUsed: true,
+        onboardingCompleted: false,
+      }
 
   // メール認証トークン生成
   const verificationToken = generateVerificationToken()
@@ -136,14 +150,7 @@ export async function POST(request: NextRequest) {
       data: {
         name: clinicName.trim(),
         slug,
-        settings: {
-          plan: "free",
-          trialPlan: "standard",
-          trialStartedAt: now.toISOString(),
-          trialEndsAt: trialEnds.toISOString(),
-          trialUsed: true,
-          onboardingCompleted: false,
-        },
+        settings: clinicSettings,
       },
     })
 
@@ -180,6 +187,7 @@ export async function POST(request: NextRequest) {
           clinicName: clinicName.trim(),
           slug,
           email: email.trim().toLowerCase(),
+          plan: isSpecialPlan ? "special" : "free",
         },
       },
     })

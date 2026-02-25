@@ -9,7 +9,7 @@ export const APP_DESCRIPTION = "患者体験の見える化"
 export const PLAN_ORDER: PlanTier[] = ["free", "starter", "standard", "enterprise"]
 
 /** 管理画面用（全プラン） */
-export const ALL_PLAN_TIERS: PlanTier[] = ["free", "starter", "standard", "enterprise", "demo"]
+export const ALL_PLAN_TIERS: PlanTier[] = ["free", "starter", "standard", "enterprise", "demo", "special"]
 
 export interface PlanDefinition {
   tier: PlanTier
@@ -118,6 +118,28 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     features: [
       "全機能利用可能",
       "デモ専用設定",
+    ],
+  },
+  special: {
+    tier: "special",
+    name: "特別プラン",
+    price: 0,
+    priceLabel: "¥0",
+    priceNote: "無料",
+    description: "スタンダード全機能を無料でご利用いただけます",
+    monthlyResponseLimit: null,
+    staffLimit: 10,
+    dataRetentionMonths: null,
+    features: [
+      "アンケート無制限",
+      "スタッフ10名まで",
+      "満足度レポート全機能",
+      "AI分析レポート",
+      "経営レポート・KPI自動算出",
+      "改善アクション管理",
+      "患者属性フィルタ（5軸）",
+      "LINE・HP誘導",
+      "データ保持無制限",
     ],
   },
 } as const

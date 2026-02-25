@@ -5,6 +5,10 @@ import { prisma } from "@/lib/prisma"
 
 /** プランの数値レベルを返す（比較用） */
 export function planLevel(plan: PlanTier): number {
+  // special / demo は standard と同等の機能レベル
+  if (plan === "special" || plan === "demo") {
+    return PLAN_ORDER.indexOf("standard")
+  }
   return PLAN_ORDER.indexOf(plan)
 }
 
