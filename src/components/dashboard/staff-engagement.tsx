@@ -131,6 +131,24 @@ export function StaffEngagement({
       {/* Confetti when AI analysis unlocked */}
       {advisoryUnlocked && <Confetti />}
 
+      {/* AI分析未実行アラート（一度も分析していない & まだ閾値未達） */}
+      {advisoryReportCount === 0 && !advisoryUnlocked && (
+        <div className="flex items-center gap-3 rounded-xl border-2 border-purple-200 bg-gradient-to-r from-purple-50/60 to-white p-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-100 text-purple-500">
+            <Brain className="h-5 w-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-purple-900">{messages.advisory.noReport}</p>
+            <p className="mt-0.5 text-xs text-purple-600/70">
+              {messages.advisory.noReportDesc.replace("{threshold}", String(threshold))}
+            </p>
+          </div>
+          <span className="shrink-0 text-sm font-bold text-purple-500 tabular-nums">
+            {advisoryProgress.totalResponses}/{threshold}
+          </span>
+        </div>
+      )}
+
       {/* AI分析実行可能アラート */}
       {advisoryUnlocked && isAdmin && (
         <Link

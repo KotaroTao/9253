@@ -17,7 +17,6 @@ import {
   CheckCircle2,
   AlertCircle,
   HelpCircle,
-  QrCode,
   Lock,
   Wrench,
 } from "lucide-react"
@@ -77,7 +76,6 @@ function TipBox({ children }: { children: React.ReactNode }) {
 const tocItems = [
   { id: "overview", label: "サービス概要" },
   { id: "survey", label: "アンケートの実施" },
-  { id: "patient-url", label: "患者URL・QRコード" },
   { id: "dashboard-staff", label: "スタッフダッシュボード" },
   { id: "dashboard-admin", label: "管理者ダッシュボード" },
   { id: "analytics", label: "満足度レポート" },
@@ -194,46 +192,9 @@ export default function GuidePage() {
               </div>
             </section>
 
-            {/* 3. 患者URL・QRコード */}
+            {/* 3. スタッフダッシュボード */}
             <section>
-              <SectionTitle id="patient-url" number={3} title="患者URL・QRコード" icon={QrCode} />
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  医院端末以外に、患者さまのスマートフォンからもアンケートに回答いただけます。
-                  QRコードやURLを待合室に掲示したり、診察券に印刷することで回答率を高められます。
-                </p>
-
-                <h3 className="text-base font-semibold mb-3">アンケートURL</h3>
-                <div className="rounded-lg border bg-muted/50 p-4 font-mono text-sm">
-                  https://mieru-clinic.com/s/<span className="text-primary font-bold">あなたのクリニックスラッグ</span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  スラッグはクリニック登録時に設定された英数字のURLキーです。管理者にご確認ください。
-                </p>
-
-                <h3 className="text-base font-semibold mt-6 mb-3">QRコードの作り方</h3>
-                <div className="space-y-3">
-                  <StepCard step={1} title="アンケートURLを確認">
-                    上記のURLがあなたの医院専用のアンケートリンクです。
-                  </StepCard>
-                  <StepCard step={2} title="QRコードを生成">
-                    無料のQRコード生成サイト（例: QRのススメ）にURLを入力して画像を作成します。
-                  </StepCard>
-                  <StepCard step={3} title="院内に掲示">
-                    待合室のポスター、受付カウンター、診察券などにQRコードを印刷して掲示します。
-                  </StepCard>
-                </div>
-
-                <TipBox>
-                  患者さまのスマートフォンからの回答では、患者属性（年代・性別等）は記録されません。
-                  属性別の分析が必要な場合は、医院端末モードでの運用がおすすめです。
-                </TipBox>
-              </div>
-            </section>
-
-            {/* 4. スタッフダッシュボード */}
-            <section>
-              <SectionTitle id="dashboard-staff" number={4} title="スタッフダッシュボード" icon={Trophy} />
+              <SectionTitle id="dashboard-staff" number={3} title="スタッフダッシュボード" icon={Trophy} />
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   ダッシュボードのホーム画面では、今日の実績やモチベーションを高めるゲーミフィケーション要素が表示されます。
@@ -293,7 +254,7 @@ export default function GuidePage() {
 
             {/* 4. 管理者ダッシュボード */}
             <section>
-              <SectionTitle id="dashboard-admin" number={5} title="管理者ダッシュボード" icon={BarChart3} />
+              <SectionTitle id="dashboard-admin" number={4} title="管理者ダッシュボード" icon={BarChart3} />
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   管理者（clinic_admin）がアクセスできる追加機能です。サイドバーから各ページに移動できます。
@@ -339,7 +300,7 @@ export default function GuidePage() {
 
             {/* 5. 満足度レポート */}
             <section>
-              <SectionTitle id="analytics" number={6} title="満足度レポート" icon={BarChart3} />
+              <SectionTitle id="analytics" number={5} title="満足度レポート" icon={BarChart3} />
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   患者満足度を多角的に分析できるレポート画面です。
@@ -371,7 +332,7 @@ export default function GuidePage() {
 
             {/* 6. 改善アクション */}
             <section>
-              <SectionTitle id="actions" number={7} title="改善アクション" icon={Target} />
+              <SectionTitle id="actions" number={6} title="改善アクション" icon={Target} />
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   分析結果をもとに、具体的な改善施策を登録・管理できます。
@@ -399,7 +360,7 @@ export default function GuidePage() {
 
             {/* 7. AI分析レポート */}
             <section>
-              <SectionTitle id="advisory" number={8} title="AI分析レポート" icon={Brain} />
+              <SectionTitle id="advisory" number={7} title="AI分析レポート" icon={Brain} />
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   一定数の回答が蓄積されると、AIが自動的にデータを分析し、強み・改善点・推奨アクションを提案します。
@@ -431,7 +392,7 @@ export default function GuidePage() {
 
             {/* 8. 経営レポート */}
             <section>
-              <SectionTitle id="metrics" number={9} title="経営レポート" icon={FileBarChart} />
+              <SectionTitle id="metrics" number={8} title="経営レポート" icon={FileBarChart} />
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   月次の来院数・売上・自費率を入力することで、患者満足度と経営指標の相関を分析できます。
@@ -481,7 +442,7 @@ export default function GuidePage() {
 
             {/* 10. スタッフ管理 */}
             <section>
-              <SectionTitle id="staff" number={10} title="スタッフ管理" icon={Users} />
+              <SectionTitle id="staff" number={9} title="スタッフ管理" icon={Users} />
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   スタッフの登録・編集・有効/無効の切替ができます。
@@ -505,7 +466,7 @@ export default function GuidePage() {
 
             {/* 10. 設定 */}
             <section>
-              <SectionTitle id="settings" number={11} title="設定" icon={Settings} />
+              <SectionTitle id="settings" number={10} title="設定" icon={Settings} />
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   クリニックの基本設定を管理できます。
@@ -532,7 +493,7 @@ export default function GuidePage() {
 
             {/* 11. FAQ */}
             <section>
-              <SectionTitle id="faq" number={12} title="よくある質問" icon={HelpCircle} />
+              <SectionTitle id="faq" number={11} title="よくある質問" icon={HelpCircle} />
               <div className="space-y-4">
                 {[
                   {
@@ -553,7 +514,7 @@ export default function GuidePage() {
                   },
                   {
                     q: "テストでアンケートを試したい場合は？",
-                    a: "管理者メニューの「テスト」ページから、医院端末・患者端末の両モードでテスト回答できます。テスト回答はDB保存されず集計に含まれません。",
+                    a: "管理者メニューの「テスト」ページから、医院端末モードでテスト回答できます。テスト回答はDB保存されず集計に含まれません。",
                   },
                   {
                     q: "データはどのくらい保持されますか？",
@@ -585,7 +546,7 @@ export default function GuidePage() {
 
             {/* 13. 困ったときは */}
             <section>
-              <SectionTitle id="troubleshooting" number={13} title="困ったときは" icon={Wrench} />
+              <SectionTitle id="troubleshooting" number={12} title="困ったときは" icon={Wrench} />
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   よくあるトラブルと対処法をまとめています。
@@ -597,7 +558,7 @@ export default function GuidePage() {
                     solutions: [
                       "インターネット接続を確認してください",
                       "ブラウザのキャッシュをクリアしてページを再読み込みしてください",
-                      "アンケートURLが正しいか確認してください（/s/クリニックスラッグ）",
+                      "アンケートURLが正しいか確認してください（/kiosk/クリニックスラッグ）",
                     ],
                   },
                   {

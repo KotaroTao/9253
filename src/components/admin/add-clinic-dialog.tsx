@@ -128,7 +128,7 @@ export function AddClinicDialog({ onCreated }: AddClinicDialogProps) {
               <div>
                 <label className="block text-sm font-medium mb-1.5">{m.clinicSlug}</label>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-sm text-muted-foreground">/s/</span>
+                  <span className="text-sm text-muted-foreground">/kiosk/</span>
                   <input
                     type="text"
                     value={slug}

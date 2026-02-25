@@ -296,7 +296,7 @@ export function SurveyForm({ data, onComplete, kioskMode = false, patientAttribu
             </p>
             <p className="text-sm text-blue-800">{randomTip}</p>
           </div>
-          {/* LINE誘導バナー — 患者端末ではタップで直接開く */}
+          {/* LINE誘導バナー */}
           {postSurveyLinks?.lineUrl && (
             <a
               href={postSurveyLinks.lineUrl}
