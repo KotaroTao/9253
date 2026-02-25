@@ -291,8 +291,8 @@ export function OnboardingWizard() {
               </div>
             ) : (
               <>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">{messages.onboarding.step3PinLabel}</label>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium shrink-0">{messages.onboarding.step3PinLabel}</label>
                   <input
                     type="password"
                     inputMode="numeric"
@@ -304,8 +304,8 @@ export function OnboardingWizard() {
                     autoFocus
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">{messages.onboarding.step3ConfirmLabel}</label>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium shrink-0">{messages.onboarding.step3ConfirmLabel}</label>
                   <input
                     type="password"
                     inputMode="numeric"

@@ -190,9 +190,9 @@ export const messages = {
     milestoneRemaining: "あと",
     adminViewLabel: "管理者ビュー",
     onboardingTitle: "はじめに — ご利用開始の3ステップ",
-    onboardingStep1: "下の「アンケート（医院端末）」をタップして、アンケート画面を起動します",
-    onboardingStep2: "会計待ちの患者さまにタブレットをお渡しください",
-    onboardingStep3: "回答が蓄積されると、このページに満足度データが表示されます",
+    onboardingStep1: "上の「医院のタブレットで30秒アンケート」をタップして、アンケート画面を起動します",
+    onboardingStep2: "患者属性を選択し、会計待ちの患者さまにタブレットをお渡しください",
+    onboardingStep3: "アンケートが30件集まるとAI分析が利用可能になります",
     // Rank system
     rankLabel: "ランク",
     rankProgress: "次のランクまで",
