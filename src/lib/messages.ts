@@ -155,7 +155,7 @@ export const messages = {
     quickActions: "今すぐ使う",
     startSurvey: "アンケート案内",
     startSurveyDesc: "患者さまの声を集める",
-    startKiosk: "受付のタブレットで案内→医院のタブレットで30秒アンケート",
+    startKiosk: "医院のタブレットで30秒アンケート",
     startKioskDesc: "タップしてアンケート画面を開く",
     satisfaction: "患者満足度",
     thisMonth: "今月の回答",
