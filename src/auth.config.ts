@@ -31,7 +31,7 @@ export const authConfig = {
       const pathname = nextUrl.pathname
 
       // Public routes - no auth required
-      const publicRoutes = ["/login", "/kiosk/", "/t/"]
+      const publicRoutes = ["/login", "/register", "/kiosk/", "/t/"]
       const isPublicRoute = publicRoutes.some((route) =>
         pathname.startsWith(route)
       )

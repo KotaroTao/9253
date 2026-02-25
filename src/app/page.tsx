@@ -387,7 +387,7 @@ export default function HomePage() {
                 </p>
                 <div className="animate-fade-in-up-delay-3 mt-8 flex flex-col gap-3 sm:flex-row sm:gap-4">
                   <Button asChild size="lg" className="h-13 px-8 text-base shadow-lg shadow-primary/25">
-                    <Link href="/login">
+                    <Link href="/register">
                       {messages.landing.heroCta}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
@@ -862,9 +862,9 @@ export default function HomePage() {
                   enterprise: messages.landing.pricingEnterpriseCta,
                 }
                 const ctaHrefs: Record<string, string> = {
-                  free: "/login",
-                  starter: "#cta",
-                  standard: "#cta",
+                  free: "/register",
+                  starter: "/register",
+                  standard: "/register",
                   enterprise: "#cta",
                 }
                 return (
@@ -945,7 +945,7 @@ export default function HomePage() {
               </p>
               <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
                 <Button asChild size="lg" variant="secondary" className="h-14 px-10 text-base shadow-lg">
-                  <Link href="/login">
+                  <Link href="/register">
                     {messages.landing.ctaButton}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
