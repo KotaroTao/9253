@@ -17,6 +17,9 @@ import {
   CheckCircle2,
   AlertCircle,
   HelpCircle,
+  QrCode,
+  Lock,
+  Wrench,
 } from "lucide-react"
 
 export const metadata: Metadata = {
@@ -74,6 +77,7 @@ function TipBox({ children }: { children: React.ReactNode }) {
 const tocItems = [
   { id: "overview", label: "サービス概要" },
   { id: "survey", label: "アンケートの実施" },
+  { id: "patient-url", label: "患者URL・QRコード" },
   { id: "dashboard-staff", label: "スタッフダッシュボード" },
   { id: "dashboard-admin", label: "管理者ダッシュボード" },
   { id: "analytics", label: "満足度レポート" },
@@ -83,6 +87,7 @@ const tocItems = [
   { id: "staff", label: "スタッフ管理" },
   { id: "settings", label: "設定" },
   { id: "faq", label: "よくある質問" },
+  { id: "troubleshooting", label: "困ったときは" },
 ]
 
 export default function GuidePage() {
@@ -189,9 +194,46 @@ export default function GuidePage() {
               </div>
             </section>
 
-            {/* 3. スタッフダッシュボード */}
+            {/* 3. 患者URL・QRコード */}
             <section>
-              <SectionTitle id="dashboard-staff" number={3} title="スタッフダッシュボード" icon={Trophy} />
+              <SectionTitle id="patient-url" number={3} title="患者URL・QRコード" icon={QrCode} />
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  医院端末以外に、患者さまのスマートフォンからもアンケートに回答いただけます。
+                  QRコードやURLを待合室に掲示したり、診察券に印刷することで回答率を高められます。
+                </p>
+
+                <h3 className="text-base font-semibold mb-3">アンケートURL</h3>
+                <div className="rounded-lg border bg-muted/50 p-4 font-mono text-sm">
+                  https://mieru-clinic.com/s/<span className="text-primary font-bold">あなたのクリニックスラッグ</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  スラッグはクリニック登録時に設定された英数字のURLキーです。管理者にご確認ください。
+                </p>
+
+                <h3 className="text-base font-semibold mt-6 mb-3">QRコードの作り方</h3>
+                <div className="space-y-3">
+                  <StepCard step={1} title="アンケートURLを確認">
+                    上記のURLがあなたの医院専用のアンケートリンクです。
+                  </StepCard>
+                  <StepCard step={2} title="QRコードを生成">
+                    無料のQRコード生成サイト（例: QRのススメ）にURLを入力して画像を作成します。
+                  </StepCard>
+                  <StepCard step={3} title="院内に掲示">
+                    待合室のポスター、受付カウンター、診察券などにQRコードを印刷して掲示します。
+                  </StepCard>
+                </div>
+
+                <TipBox>
+                  患者さまのスマートフォンからの回答では、患者属性（年代・性別等）は記録されません。
+                  属性別の分析が必要な場合は、医院端末モードでの運用がおすすめです。
+                </TipBox>
+              </div>
+            </section>
+
+            {/* 4. スタッフダッシュボード */}
+            <section>
+              <SectionTitle id="dashboard-staff" number={4} title="スタッフダッシュボード" icon={Trophy} />
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   ダッシュボードのホーム画面では、今日の実績やモチベーションを高めるゲーミフィケーション要素が表示されます。
@@ -251,7 +293,7 @@ export default function GuidePage() {
 
             {/* 4. 管理者ダッシュボード */}
             <section>
-              <SectionTitle id="dashboard-admin" number={4} title="管理者ダッシュボード" icon={BarChart3} />
+              <SectionTitle id="dashboard-admin" number={5} title="管理者ダッシュボード" icon={BarChart3} />
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   管理者（clinic_admin）がアクセスできる追加機能です。サイドバーから各ページに移動できます。
@@ -297,7 +339,7 @@ export default function GuidePage() {
 
             {/* 5. 満足度レポート */}
             <section>
-              <SectionTitle id="analytics" number={5} title="満足度レポート" icon={BarChart3} />
+              <SectionTitle id="analytics" number={6} title="満足度レポート" icon={BarChart3} />
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   患者満足度を多角的に分析できるレポート画面です。
@@ -329,7 +371,7 @@ export default function GuidePage() {
 
             {/* 6. 改善アクション */}
             <section>
-              <SectionTitle id="actions" number={6} title="改善アクション" icon={Target} />
+              <SectionTitle id="actions" number={7} title="改善アクション" icon={Target} />
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   分析結果をもとに、具体的な改善施策を登録・管理できます。
@@ -357,7 +399,7 @@ export default function GuidePage() {
 
             {/* 7. AI分析レポート */}
             <section>
-              <SectionTitle id="advisory" number={7} title="AI分析レポート" icon={Brain} />
+              <SectionTitle id="advisory" number={8} title="AI分析レポート" icon={Brain} />
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   一定数の回答が蓄積されると、AIが自動的にデータを分析し、強み・改善点・推奨アクションを提案します。
@@ -389,7 +431,7 @@ export default function GuidePage() {
 
             {/* 8. 経営レポート */}
             <section>
-              <SectionTitle id="metrics" number={8} title="経営レポート" icon={FileBarChart} />
+              <SectionTitle id="metrics" number={9} title="経営レポート" icon={FileBarChart} />
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   月次の来院数・売上・自費率を入力することで、患者満足度と経営指標の相関を分析できます。
@@ -412,12 +454,34 @@ export default function GuidePage() {
                   入力データから「患者単価」「満足度→来院数相関」などのKPIが自動算出されます。
                   レポートタブでは期間別のトレンドグラフも確認できます。
                 </p>
+
+                <h3 className="text-base font-semibold mt-6 mb-3 flex items-center gap-2">
+                  <Lock className="h-4 w-4 text-violet-500" />
+                  PINロック機能
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  経営レポートは機密性の高いデータを含むため、4桁のPINで保護できます。
+                  1つのアカウントを医院全体で共有している場合でも、院長のみが経営データを閲覧可能になります。
+                </p>
+                <div className="space-y-3">
+                  <StepCard step={1} title="PINを設定する">
+                    設定ページの「経営レポートのPINロック」から4桁の数字を設定します。
+                    初回は誰でも設定でき、変更・解除には現在のPINが必要です。
+                  </StepCard>
+                  <StepCard step={2} title="経営レポートにアクセス">
+                    PIN設定後、経営レポートを開くとPIN入力画面が表示されます。
+                    正しいPINを入力するとそのタブ内では再入力不要です。
+                  </StepCard>
+                </div>
+                <TipBox>
+                  PINを忘れた場合は、MIERU Clinic運営にお問い合わせください。管理者がリセットできます。
+                </TipBox>
               </div>
             </section>
 
-            {/* 9. スタッフ管理 */}
+            {/* 10. スタッフ管理 */}
             <section>
-              <SectionTitle id="staff" number={9} title="スタッフ管理" icon={Users} />
+              <SectionTitle id="staff" number={10} title="スタッフ管理" icon={Users} />
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   スタッフの登録・編集・有効/無効の切替ができます。
@@ -441,7 +505,7 @@ export default function GuidePage() {
 
             {/* 10. 設定 */}
             <section>
-              <SectionTitle id="settings" number={10} title="設定" icon={Settings} />
+              <SectionTitle id="settings" number={11} title="設定" icon={Settings} />
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   クリニックの基本設定を管理できます。
@@ -449,9 +513,10 @@ export default function GuidePage() {
                 <div className="space-y-2">
                   {[
                     { title: "クリニック名", desc: "ダッシュボードやアンケートに表示される名前" },
+                    { title: "診療科目", desc: "一般・矯正・小児・審美・口腔外科から選択。ベンチマーク基準に使用" },
                     { title: "営業日数/週・定休日", desc: "ストリーク計算や日次目標の算出に使用" },
-                    { title: "臨時休診日", desc: "カレンダーから個別に休診日を追加" },
                     { title: "アンケート完了後", desc: "「アンケートのみ終了」または「LINE誘導」の2択。医院HPリンクも独立設定可能" },
+                    { title: "経営レポートPINロック", desc: "4桁PINで経営レポートを保護。1アカウント共有でも院長のみ閲覧可能" },
                   ].map((item, i) => (
                     <div key={i} className="flex items-start gap-3 rounded-md border bg-card p-3">
                       <Settings className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
@@ -467,7 +532,7 @@ export default function GuidePage() {
 
             {/* 11. FAQ */}
             <section>
-              <SectionTitle id="faq" number={11} title="よくある質問" icon={HelpCircle} />
+              <SectionTitle id="faq" number={12} title="よくある質問" icon={HelpCircle} />
               <div className="space-y-4">
                 {[
                   {
@@ -494,6 +559,18 @@ export default function GuidePage() {
                     q: "データはどのくらい保持されますか？",
                     a: "プランにより異なります。フリープラン3ヶ月、スターター12ヶ月、スタンダード以上は無制限です。",
                   },
+                  {
+                    q: "経営レポートのPINを忘れた場合は？",
+                    a: "MIERU Clinic運営（管理者）にお問い合わせください。システム管理者がPINをリセットできます。リセット後、設定ページから新しいPINを設定してください。",
+                  },
+                  {
+                    q: "複数のスタッフで1つのアカウントを共有していますが問題ありませんか？",
+                    a: "問題ありません。MIERU Clinicは1クリニック＝1アカウントの運用を想定しています。経営データなど院長のみが見たい情報は、経営レポートのPINロック機能で保護できます。",
+                  },
+                  {
+                    q: "スマートフォンからもダッシュボードは見られますか？",
+                    a: "はい。ダッシュボードはレスポンシブ対応しており、スマートフォンやタブレットからもご利用いただけます。",
+                  },
                 ].map((item, i) => (
                   <div key={i} className="rounded-lg border bg-card p-4">
                     <h4 className="flex items-start gap-2 text-sm font-semibold">
@@ -501,6 +578,71 @@ export default function GuidePage() {
                       {item.q}
                     </h4>
                     <p className="mt-2 pl-6 text-sm text-muted-foreground leading-relaxed">{item.a}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* 13. 困ったときは */}
+            <section>
+              <SectionTitle id="troubleshooting" number={13} title="困ったときは" icon={Wrench} />
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  よくあるトラブルと対処法をまとめています。
+                </p>
+
+                {[
+                  {
+                    problem: "アンケート画面が表示されない",
+                    solutions: [
+                      "インターネット接続を確認してください",
+                      "ブラウザのキャッシュをクリアしてページを再読み込みしてください",
+                      "アンケートURLが正しいか確認してください（/s/クリニックスラッグ）",
+                    ],
+                  },
+                  {
+                    problem: "ダッシュボードにログインできない",
+                    solutions: [
+                      "メールアドレスとパスワードが正しいか確認してください",
+                      "Caps Lockがオフになっているか確認してください",
+                      "それでもログインできない場合は管理者にパスワードリセットを依頼してください",
+                    ],
+                  },
+                  {
+                    problem: "日次目標が「10件」のまま変わらない",
+                    solutions: [
+                      "経営レポートのデータ入力ページで前月の来院数を入力してください",
+                      "来院数（初診数＋再診数）が入力されると、翌日から自動算出された目標に切り替わります",
+                    ],
+                  },
+                  {
+                    problem: "経営レポートが開けない（PINを求められる）",
+                    solutions: [
+                      "院長（管理者）が設定した4桁のPINを入力してください",
+                      "PINを忘れた場合はMIERU Clinic運営にお問い合わせください",
+                    ],
+                  },
+                  {
+                    problem: "アンケート回答数がカウントされない",
+                    solutions: [
+                      "テストモード（?test=1）で回答していないか確認してください。テスト回答は集計に含まれません",
+                      "アンケートの最後まで回答が完了しているか確認してください",
+                    ],
+                  },
+                ].map((item, i) => (
+                  <div key={i} className="rounded-lg border bg-card p-4">
+                    <h4 className="flex items-start gap-2 text-sm font-semibold">
+                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
+                      {item.problem}
+                    </h4>
+                    <ul className="mt-2 space-y-1 pl-6">
+                      {item.solutions.map((sol, j) => (
+                        <li key={j} className="flex items-start gap-2 text-sm text-muted-foreground">
+                          <ArrowRight className="mt-0.5 h-3 w-3 shrink-0 text-primary" />
+                          <span>{sol}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 ))}
               </div>

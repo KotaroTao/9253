@@ -671,6 +671,7 @@ export const messages = {
     sectionActions: "改善アクション",
     sectionAdmin: "管理",
     advisory: "AI分析",
+    guide: "使い方ガイド",
   },
   admin: {
     title: "MIERU システム管理",
