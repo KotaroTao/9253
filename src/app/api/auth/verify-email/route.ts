@@ -1,7 +1,10 @@
 import { NextRequest } from "next/server"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { prisma } from "@/lib/prisma"
+import { getTokenTimestamp } from "@/lib/email"
 import { messages } from "@/lib/messages"
+
+const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000
 
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get("token")
@@ -18,9 +21,10 @@ export async function GET(request: NextRequest) {
     return errorResponse(messages.auth.verifyEmailInvalid, 400)
   }
 
-  // トークン発行から24時間以内かチェック
-  const tokenAge = Date.now() - new Date(user.updatedAt).getTime()
-  const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000
+  // トークンに埋め込まれたタイムスタンプで24時間以内かチェック
+  // タイムスタンプがない旧形式トークンは updatedAt にフォールバック
+  const issuedAt = getTokenTimestamp(token) ?? new Date(user.updatedAt).getTime()
+  const tokenAge = Date.now() - issuedAt
   if (tokenAge > TWENTY_FOUR_HOURS) {
     return errorResponse(messages.auth.verifyEmailExpired, 400)
   }
