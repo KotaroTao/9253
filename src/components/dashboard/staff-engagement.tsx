@@ -176,9 +176,17 @@ export function StaffEngagement({
           />
         </div>
         <div className="mt-2 rounded-lg bg-blue-50/80 px-3 py-2">
-          <p className="text-[11px] font-medium text-blue-800 mb-1">💬 声かけ例</p>
+          <p className="text-[11px] font-medium text-blue-800 mb-1">📋 かんたん手順</p>
+          <ol className="text-[11px] leading-relaxed text-blue-700/80 space-y-0.5 list-none pl-0">
+            <li>① タップしてアンケート画面を開く</li>
+            <li>② 担当スタッフ、患者属性（初診/再診など）を選択</li>
+            <li>③ 患者様にタブレットを渡す</li>
+            <li>④ 30秒〜1分で簡単アンケート</li>
+            <li>⑤ アンケート結果を自動分析</li>
+          </ol>
+          <p className="text-[11px] font-medium text-blue-800 mt-2 mb-1">💬 声かけ例</p>
           <p className="text-[11px] leading-relaxed text-blue-700/80">
-            「会計までの間に、30秒ほどのアンケートにご協力いただけますか？」
+            「お待ち間に、30秒ほどのアンケートにご協力お願いします」
           </p>
         </div>
       </a>
