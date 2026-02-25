@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+import Link from "next/link"
 import { auth } from "@/auth"
 import { LoginForm } from "@/components/auth/login-form"
 import {
@@ -33,6 +34,12 @@ export default async function LoginPage() {
             {messages.auth.login}
           </h2>
           <LoginForm />
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            {messages.auth.noAccount}{" "}
+            <Link href="/register" className="text-primary underline-offset-4 hover:underline">
+              {messages.auth.register}
+            </Link>
+          </p>
         </CardContent>
       </Card>
     </div>
