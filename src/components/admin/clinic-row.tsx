@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { LogIn, Loader2, Settings2, Sparkles } from "lucide-react"
+import { LogIn, Loader2, Settings2, Sparkles, ShieldOff } from "lucide-react"
 import { PlanSwitcher } from "@/components/admin/plan-switcher"
 import { DemoSettingsDialog } from "@/components/admin/demo-settings-dialog"
 import { PLANS } from "@/lib/constants"
@@ -21,14 +21,17 @@ interface ClinicRowProps {
   clinicId: string
   clinicName: string
   plan?: PlanTier
+  hasMetricsPin?: boolean
   children: React.ReactNode
 }
 
-export function ClinicRow({ clinicId, clinicName, plan, children }: ClinicRowProps) {
+export function ClinicRow({ clinicId, clinicName, plan, hasMetricsPin: initialHasPin, children }: ClinicRowProps) {
   const [loading, setLoading] = useState(false)
   const [planDialogOpen, setPlanDialogOpen] = useState(false)
   const [demoDialogOpen, setDemoDialogOpen] = useState(false)
   const [currentPlan, setCurrentPlan] = useState<PlanTier>(plan ?? "free")
+  const [hasPin, setHasPin] = useState(!!initialHasPin)
+  const [resettingPin, setResettingPin] = useState(false)
 
   async function handleClick() {
     setLoading(true)
@@ -54,6 +57,20 @@ export function ClinicRow({ clinicId, clinicName, plan, children }: ClinicRowPro
   function handleDemoClick(e: React.MouseEvent) {
     e.stopPropagation()
     setDemoDialogOpen(true)
+  }
+
+  async function handleResetPin(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!confirm(messages.metricsPin.resetPinConfirm)) return
+    setResettingPin(true)
+    try {
+      const res = await fetch(`/api/admin/clinics/${clinicId}/metrics-pin`, { method: "DELETE" })
+      if (res.ok) {
+        setHasPin(false)
+      }
+    } finally {
+      setResettingPin(false)
+    }
   }
 
   const planDef = PLANS[currentPlan]
@@ -92,6 +109,17 @@ export function ClinicRow({ clinicId, clinicName, plan, children }: ClinicRowPro
               >
                 <Sparkles className="h-2.5 w-2.5" />
                 {messages.demoSettings.openSettings}
+              </button>
+            )}
+            {hasPin && (
+              <button
+                type="button"
+                onClick={handleResetPin}
+                disabled={resettingPin}
+                className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-0.5 text-[10px] font-medium text-orange-600 transition-colors hover:bg-orange-100 disabled:opacity-50"
+              >
+                <ShieldOff className="h-2.5 w-2.5" />
+                {messages.metricsPin.resetPin}
               </button>
             )}
           </div>

@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
 
   const now = new Date()
 
-  // プラン設定: 特別プランは standard 相当を無料で直接付与、通常は30日トライアル
+  // プラン設定: 特別プランは standard 相当を無料で直接付与、通常は14日トライアル
   const clinicSettings = isSpecialPlan
     ? {
         plan: "special" as const,
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
         plan: "free" as const,
         trialPlan: "standard" as const,
         trialStartedAt: now.toISOString(),
-        trialEndsAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        trialEndsAt: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString(),
         trialUsed: true,
         onboardingCompleted: false,
       }
