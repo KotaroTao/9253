@@ -147,8 +147,8 @@ export function MetricsPinSettings({ hasPin: initialHasPin }: MetricsPinSettings
           <div className="space-y-3">
             {/* 現在のPIN（変更・解除時） */}
             {(mode === "change" || mode === "remove") && (
-              <div className="space-y-1">
-                <label className="text-sm font-medium">{m.currentPinLabel}</label>
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium shrink-0">{m.currentPinLabel}</label>
                 <input
                   type="password"
                   inputMode="numeric"
@@ -165,8 +165,8 @@ export function MetricsPinSettings({ hasPin: initialHasPin }: MetricsPinSettings
             {/* 新しいPIN（設定・変更時） */}
             {(mode === "set" || mode === "change") && (
               <>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">{m.newPinLabel}</label>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium shrink-0">{m.newPinLabel}</label>
                   <input
                     type="password"
                     inputMode="numeric"
@@ -178,8 +178,8 @@ export function MetricsPinSettings({ hasPin: initialHasPin }: MetricsPinSettings
                     autoFocus={mode === "set"}
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium">{m.confirmPinLabel}</label>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium shrink-0">{m.confirmPinLabel}</label>
                   <input
                     type="password"
                     inputMode="numeric"
