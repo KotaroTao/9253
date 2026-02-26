@@ -29,6 +29,7 @@ export const messages = {
     settingsUpdateFailed: "設定の更新に失敗しました",
     staffNotFound: "スタッフが見つかりません",
     staffUpdateFailed: "スタッフの更新に失敗しました",
+    staffDeleteFailed: "スタッフの削除に失敗しました",
     invalidTemplate: "無効なテンプレートです",
     clinicNotFound: "クリニックが見つかりません",
     notFound: "データが見つかりません",
@@ -566,6 +567,9 @@ export const messages = {
     nameRequired: "名前を入力してください",
     deactivate: "無効化",
     activate: "有効化",
+    delete: "削除",
+    deleteConfirm: "「{name}」を削除しますか？\n\n※ このスタッフに紐づいたアンケート回答データは保持されます。",
+    deleteFailed: "スタッフの削除に失敗しました",
   },
   kiosk: {
     nextPatient: "次の患者さまへ",

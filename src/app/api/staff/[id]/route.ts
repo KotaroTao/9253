@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { updateStaffSchema } from "@/lib/validations/staff"
-import { requireAuth, isAuthError } from "@/lib/auth-helpers"
+import { requireAuth, requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
 
@@ -45,5 +45,48 @@ export async function PATCH(
     return successResponse(staff)
   } catch {
     return errorResponse(messages.errors.staffUpdateFailed, 500)
+  }
+}
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const authResult = await requireRole("clinic_admin", "system_admin")
+  if (isAuthError(authResult)) return authResult
+
+  try {
+    const existing = await prisma.staff.findUnique({
+      where: { id: params.id },
+      select: { clinicId: true },
+    })
+
+    if (!existing) {
+      return errorResponse(messages.errors.staffNotFound, 404)
+    }
+
+    if (
+      authResult.user.role === "clinic_admin" &&
+      authResult.user.clinicId !== existing.clinicId
+    ) {
+      return errorResponse(messages.errors.accessDenied, 403)
+    }
+
+    // アンケート回答データを保護: staffId を null に設定してから削除
+    await prisma.$transaction([
+      prisma.surveyResponse.updateMany({
+        where: { staffId: params.id },
+        data: { staffId: null },
+      }),
+      prisma.user.updateMany({
+        where: { staffId: params.id },
+        data: { staffId: null },
+      }),
+      prisma.staff.delete({ where: { id: params.id } }),
+    ])
+
+    return successResponse({ deleted: true })
+  } catch {
+    return errorResponse(messages.errors.staffDeleteFailed, 500)
   }
 }
