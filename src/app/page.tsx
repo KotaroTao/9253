@@ -40,14 +40,14 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "MIERU Clinic | 歯科医師が開発した患者満足度向上プラットフォーム",
+  title: "MIERU Clinic | 歯科医師が、医療従事者の誇りを守るために作ったPX向上プラットフォーム",
   description:
     "30秒タブレットアンケートで患者の本音を数値化。AI分析・経営レポート・ゲーミフィケーションで患者体験改善のPDCAを自動化。歯科医院専用・基本無料で始められます。",
   keywords: "歯科,患者満足度,アンケート,医院経営,患者体験,MIERU Clinic,歯科経営",
   openGraph: {
     title: "MIERU Clinic | 患者体験の見える化",
     description:
-      "歯科医師が開発した歯科医院専用の患者満足度向上プラットフォーム",
+      "歯科医師が、医療従事者の誇りを守るために作ったPX（患者満足度）向上プラットフォーム",
   },
 }
 
