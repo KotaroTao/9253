@@ -42,6 +42,8 @@ export function StaffList({ staffList, clinicId }: StaffListProps) {
         return
       }
       router.refresh()
+    } catch {
+      alert(messages.staff.deleteFailed)
     } finally {
       setDeletingId(null)
     }

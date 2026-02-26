@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { updateStaffSchema } from "@/lib/validations/staff"
-import { requireAuth, isAuthError } from "@/lib/auth-helpers"
+import { requireAuth, requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
 
@@ -52,13 +52,8 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const authResult = await requireAuth()
+  const authResult = await requireRole("clinic_admin", "system_admin")
   if (isAuthError(authResult)) return authResult
-
-  // clinic_admin または system_admin のみ削除可能
-  if (authResult.user.role === "staff") {
-    return errorResponse(messages.errors.accessDenied, 403)
-  }
 
   try {
     const existing = await prisma.staff.findUnique({
