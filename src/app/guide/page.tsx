@@ -123,7 +123,7 @@ export default function GuidePage() {
             <div className="rounded-2xl border bg-card p-6 sm:p-8">
               <h1 className="text-2xl font-bold sm:text-3xl">{APP_NAME} 使い方ガイド</h1>
               <p className="mt-3 text-muted-foreground leading-relaxed">
-                このガイドでは、MIERU Clinic の基本的な使い方を医院スタッフ向けにわかりやすく説明します。
+                このガイドでは、MIERU PX の基本的な使い方を医院スタッフ向けにわかりやすく説明します。
                 日々のアンケート運用からダッシュボードの見方、改善アクションの使い方まで、
                 順を追ってご案内します。
               </p>
@@ -134,7 +134,7 @@ export default function GuidePage() {
               <SectionTitle id="overview" number={1} title="サービス概要" icon={BarChart3} />
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  MIERU Clinic は、歯科医院専用の患者満足度向上プラットフォームです。
+                  MIERU PX は、歯科医院専用の患者満足度向上プラットフォームです。
                   患者さまにタブレットでアンケートに回答いただき、その結果をリアルタイムで分析・可視化します。
                 </p>
                 <div className="grid gap-3 sm:grid-cols-3">
@@ -435,7 +435,7 @@ export default function GuidePage() {
                   </StepCard>
                 </div>
                 <TipBox>
-                  PINを忘れた場合は、MIERU Clinic運営にお問い合わせください。管理者がリセットできます。
+                  PINを忘れた場合は、MIERU PX運営にお問い合わせください。管理者がリセットできます。
                 </TipBox>
               </div>
             </section>
@@ -498,7 +498,7 @@ export default function GuidePage() {
                 {[
                   {
                     q: "患者さまの個人情報は収集されますか？",
-                    a: "いいえ。MIERU Clinic は個人を特定する情報を一切収集しません。IPアドレスもハッシュ化して保存しており、個人の特定はできない設計です。",
+                    a: "いいえ。MIERU PX は個人を特定する情報を一切収集しません。IPアドレスもハッシュ化して保存しており、個人の特定はできない設計です。",
                   },
                   {
                     q: "アンケートは何件まで実施できますか？",
@@ -522,11 +522,11 @@ export default function GuidePage() {
                   },
                   {
                     q: "経営レポートのPINを忘れた場合は？",
-                    a: "MIERU Clinic運営（管理者）にお問い合わせください。システム管理者がPINをリセットできます。リセット後、設定ページから新しいPINを設定してください。",
+                    a: "MIERU PX運営（管理者）にお問い合わせください。システム管理者がPINをリセットできます。リセット後、設定ページから新しいPINを設定してください。",
                   },
                   {
                     q: "複数のスタッフで1つのアカウントを共有していますが問題ありませんか？",
-                    a: "問題ありません。MIERU Clinicは1クリニック＝1アカウントの運用を想定しています。経営データなど院長のみが見たい情報は、経営レポートのPINロック機能で保護できます。",
+                    a: "問題ありません。MIERU PXは1クリニック＝1アカウントの運用を想定しています。経営データなど院長のみが見たい情報は、経営レポートのPINロック機能で保護できます。",
                   },
                   {
                     q: "スマートフォンからもダッシュボードは見られますか？",
@@ -580,7 +580,7 @@ export default function GuidePage() {
                     problem: "経営レポートが開けない（PINを求められる）",
                     solutions: [
                       "院長（管理者）が設定した4桁のPINを入力してください",
-                      "PINを忘れた場合はMIERU Clinic運営にお問い合わせください",
+                      "PINを忘れた場合はMIERU PX運営にお問い合わせください",
                     ],
                   },
                   {

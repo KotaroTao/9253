@@ -1,6 +1,6 @@
 import type { PlanTier } from "@/types"
 
-export const APP_NAME = "MIERU Clinic"
+export const APP_NAME = "MIERU PX"
 export const APP_DESCRIPTION = "患者体験の見える化"
 
 // ─── 料金プラン定義 ───

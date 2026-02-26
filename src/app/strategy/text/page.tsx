@@ -7,7 +7,7 @@ import { Copy, Check } from "lucide-react"
 /* Full text content for copy                                         */
 /* ------------------------------------------------------------------ */
 
-const FULL_TEXT = `MIERU Clinic（ミエル クリニック）
+const FULL_TEXT = `MIERU PX（ミエル ピーエックス）
 歯科医院専用 患者体験改善プラットフォーム
 株式会社ファンクション・ティ
 https://mieru-clinic.com
@@ -18,7 +18,7 @@ https://mieru-clinic.com
 
 ■ MIERUとは
 
-MIERU Clinic は、歯科医院の「患者体験」を可視化し、データに基づく改善サイクルで経営成果につなげるプラットフォームです。
+MIERU PX は、歯科医院の「患者体験」を可視化し、データに基づく改善サイクルで経営成果につなげるプラットフォームです。
 
 口コミツールではありません。「口コミを増やす」ではなく「患者が戻ってくる医院になる」ことを目指します。
 
@@ -85,7 +85,7 @@ MIERU Clinic は、歯科医院の「患者体験」を可視化し、データ�
 | 口コミPLUS      | 口コミ獲得  | ×              | ×        | ×          | ¥1万/月   |
 | Hero Innovation | 口コミ獲得  | ×              | ×        | ×          | 非公開     |
 | Gyro-n キキコミ  | 口コミ獲得  | ○              | ×        | ×          | 非公開     |
-| MIERU Clinic   | 患者体験改善 | ○              | ○        | ○          | ¥1-4万/月 |
+| MIERU PX   | 患者体験改善 | ○              | ○        | ○          | ¥1-4万/月 |
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 3. 市場ポジショニング
@@ -94,7 +94,7 @@ MIERU Clinic は、歯科医院の「患者体験」を可視化し、データ�
 ■ カテゴリ: 患者体験改善プラットフォーム
 
 - 口コミツール（月1-3万円）→ 飽和市場、ゲーティング問題
-- MIERU Clinic（月1-4万円）→ 競合ゼロの新カテゴリ
+- MIERU PX（月1-4万円）→ 競合ゼロの新カテゴリ
 - 経営コンサル（月5-30万円）→ 高コスト
 
 「口コミツールの2倍、経営コンサルの1/10」の価格帯。
@@ -232,7 +232,7 @@ Phase 4（月13-18）: エビデンス確立
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-MIERU Clinic — 口コミツールではない。患者体験改善プラットフォーム。
+MIERU PX — 口コミツールではない。患者体験改善プラットフォーム。
 https://mieru-clinic.com
 株式会社ファンクション・ティ`
 
@@ -268,7 +268,7 @@ export default function StrategyTextPage() {
       {/* Header */}
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
         <div className="container flex h-14 items-center justify-between">
-          <span className="text-lg font-bold text-gradient">MIERU Clinic</span>
+          <span className="text-lg font-bold text-gradient">MIERU PX</span>
           <button
             onClick={handleCopy}
             className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${

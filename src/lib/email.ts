@@ -87,12 +87,12 @@ function emailLayout(body: string): string {
 <head><meta charset="utf-8"></head>
 <body style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #334155;">
   <div style="text-align: center; margin-bottom: 30px;">
-    <h1 style="color: #0f172a; font-size: 24px;">MIERU Clinic</h1>
+    <h1 style="color: #0f172a; font-size: 24px;">MIERU PX</h1>
   </div>
   ${body}
   <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
   <p style="color: #94a3b8; font-size: 12px; text-align: center;">
-    <a href="${appUrl}" style="color: #94a3b8;">MIERU Clinic</a> — 患者体験の見える化
+    <a href="${appUrl}" style="color: #94a3b8;">MIERU PX</a> — 患者体験の見える化
   </p>
 </body>
 </html>`.trim()
@@ -105,10 +105,10 @@ export function buildVerificationEmail(verifyUrl: string, clinicName: string): {
 } {
   const safeName = escapeHtml(clinicName)
   return {
-    subject: "【MIERU Clinic】メールアドレスの確認",
+    subject: "【MIERU PX】メールアドレスの確認",
     html: emailLayout(`
   <p>${safeName} 様</p>
-  <p>MIERU Clinic にご登録いただきありがとうございます。</p>
+  <p>MIERU PX にご登録いただきありがとうございます。</p>
   <p>以下のボタンをクリックして、メールアドレスの確認を完了してください。</p>
   <div style="text-align: center; margin: 30px 0;">
     <a href="${verifyUrl}" style="display: inline-block; background-color: #0f172a; color: #ffffff; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-weight: bold;">
@@ -130,10 +130,10 @@ export function buildWelcomeEmail(clinicName: string, loginUrl: string): {
 } {
   const safeName = escapeHtml(clinicName)
   return {
-    subject: "【MIERU Clinic】ご利用開始ガイド",
+    subject: "【MIERU PX】ご利用開始ガイド",
     html: emailLayout(`
   <p>${safeName} 様</p>
-  <p>メールアドレスの確認が完了しました。MIERU Clinic をご利用いただけます。</p>
+  <p>メールアドレスの確認が完了しました。MIERU PX をご利用いただけます。</p>
   <h2 style="font-size: 16px; color: #0f172a; margin-top: 24px;">最初にやること 3ステップ</h2>
   <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
     <tr>
@@ -186,7 +186,7 @@ export function buildReminderEmail(clinicName: string, loginUrl: string, daysSin
 
   const safeName = escapeHtml(clinicName)
   return {
-    subject: "【MIERU Clinic】アンケートを始めてみませんか？",
+    subject: "【MIERU PX】アンケートを始めてみませんか？",
     html: emailLayout(`
   <p>${safeName} 様</p>
   <p>${message}</p>
@@ -260,8 +260,8 @@ export function buildWeeklySummaryEmail(
   const safeName = escapeHtml(clinicName)
   return {
     subject: hasData
-      ? `【MIERU Clinic】今週の実績: ${weeklyResponses}件の回答`
-      : "【MIERU Clinic】今週のアンケートを始めましょう",
+      ? `【MIERU PX】今週の実績: ${weeklyResponses}件の回答`
+      : "【MIERU PX】今週のアンケートを始めましょう",
     html: emailLayout(`
   <p>${safeName} 様</p>
   <h2 style="font-size: 16px; color: #0f172a;">週次レポート</h2>

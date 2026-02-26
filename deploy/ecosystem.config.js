@@ -1,4 +1,4 @@
-// PM2 設定ファイル - MIERU Clinic
+// PM2 設定ファイル - MIERU PX
 // 使用方法: pm2 start ecosystem.config.js
 
 module.exports = {

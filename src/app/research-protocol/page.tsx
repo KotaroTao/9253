@@ -149,7 +149,7 @@ export default function ResearchProtocolPage() {
                   <div className="rounded-xl border border-primary/20 bg-primary/[0.03] p-4">
                     <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-primary">主目的</p>
                     <p>
-                      デジタル患者体験フィードバックシステム「MIERU Clinic」の6ヶ月間の使用が、歯科医院における患者満足度スコアの改善に寄与するか否かを、待機リスト対照ランダム化比較試験（RCT）により検証する。
+                      デジタル患者体験フィードバックシステム「MIERU PX」の6ヶ月間の使用が、歯科医院における患者満足度スコアの改善に寄与するか否かを、待機リスト対照ランダム化比較試験（RCT）により検証する。
                     </p>
                   </div>
                   <div>
@@ -318,7 +318,7 @@ export default function ResearchProtocolPage() {
 
             {/* ===== Chapter 7: 介入内容 ===== */}
             <Chapter id="ch7" number="07" title="介入内容" icon={Tablet}>
-              <SubSection title="7-1. 介入群（MIERU Clinic導入群、15院）">
+              <SubSection title="7-1. 介入群（MIERU PX導入群、15院）">
                 <div className="space-y-4">
                   <p className="text-sm font-medium text-foreground">システム機能:</p>
                   <Table
@@ -518,7 +518,7 @@ export default function ResearchProtocolPage() {
                 <div className="space-y-3">
                   <InfoBox title="開示事項">
                     <p className="text-sm text-muted-foreground">
-                      筆頭著者（またはその関係者）は、本研究で使用するMIERU Clinicの開発・提供元である株式会社ファンクション・ティの代表取締役（または関係者）である。
+                      筆頭著者（またはその関係者）は、本研究で使用するMIERU PXの開発・提供元である株式会社ファンクション・ティの代表取締役（または関係者）である。
                     </p>
                   </InfoBox>
                   <p className="text-sm font-medium">COI管理方針:</p>

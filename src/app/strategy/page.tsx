@@ -25,8 +25,8 @@ import Link from "next/link"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "販促戦略 | MIERU Clinic",
-  description: "MIERU Clinic Go-to-Market 戦略概要 — 社内・パートナー向け",
+  title: "販促戦略 | MIERU PX",
+  description: "MIERU PX Go-to-Market 戦略概要 — 社内・パートナー向け",
   robots: { index: false, follow: false },
 }
 
@@ -39,7 +39,7 @@ const positioning = {
   tagline: "口コミツールではない、新しいカテゴリの定義者",
   comparison: [
     { label: "口コミツール", price: "月1-3万円", position: "飽和市場" },
-    { label: "MIERU Clinic", price: "月1-4万円", position: "競合ゼロの新カテゴリ" },
+    { label: "MIERU PX", price: "月1-4万円", position: "競合ゼロの新カテゴリ" },
     { label: "経営コンサル", price: "月5-30万円", position: "高コスト" },
   ],
 }
@@ -232,7 +232,7 @@ const competitors = [
   { name: "口コミPLUS", type: "口コミ獲得", compliance: false, analysis: false, staffTracking: false, price: "¥1万/月" },
   { name: "Hero Innovation", type: "口コミ獲得", compliance: false, analysis: false, staffTracking: false, price: "非公開" },
   { name: "Gyro-n キキコミ", type: "口コミ獲得", compliance: true, analysis: false, staffTracking: false, price: "非公開" },
-  { name: "MIERU Clinic", type: "患者体験改善", compliance: true, analysis: true, staffTracking: true, price: "¥1-4万/月" },
+  { name: "MIERU PX", type: "患者体験改善", compliance: true, analysis: true, staffTracking: true, price: "¥1-4万/月" },
 ]
 
 /* ------------------------------------------------------------------ */
@@ -259,7 +259,7 @@ export default function StrategyPage() {
             Go-to-Market Strategy
           </p>
           <h1 className="text-3xl font-bold leading-tight tracking-tight sm:text-4xl lg:text-5xl">
-            <span className="text-gradient">MIERU Clinic</span>
+            <span className="text-gradient">MIERU PX</span>
             <br />
             販促戦略概要
           </h1>
@@ -359,7 +359,7 @@ export default function StrategyPage() {
                 {competitors.map((c, i) => (
                   <tr
                     key={i}
-                    className={`border-b ${c.name === "MIERU Clinic" ? "bg-primary/5 font-medium" : ""}`}
+                    className={`border-b ${c.name === "MIERU PX" ? "bg-primary/5 font-medium" : ""}`}
                   >
                     <td className="py-3 pr-4">{c.name}</td>
                     <td className="py-3 pr-4 text-muted-foreground">{c.type}</td>

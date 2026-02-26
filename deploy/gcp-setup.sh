@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================
-# MIERU Clinic - GCP環境構築スクリプト
+# MIERU PX - GCP環境構築スクリプト
 # Cloud SQL (PostgreSQL) + Cloud Run + Artifact Registry
 # =============================================================
 #
@@ -45,7 +45,7 @@ CLOUD_RUN_SA_NAME="cloud-run-mieru"
 CLOUD_RUN_SA_EMAIL="${CLOUD_RUN_SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 
 echo "=========================================="
-echo " MIERU Clinic GCP環境構築"
+echo " MIERU PX GCP環境構築"
 echo "=========================================="
 echo "プロジェクト: ${PROJECT_ID}"
 echo "リージョン:   ${REGION}"
@@ -102,7 +102,7 @@ echo "[3/9] Artifact Registryリポジトリ作成..."
 gcloud artifacts repositories create "${REPO_NAME}" \
   --repository-format=docker \
   --location="${REGION}" \
-  --description="MIERU Clinic Docker images" \
+  --description="MIERU PX Docker images" \
   || echo "  (既に存在します)"
 
 echo "  ✓ リポジトリ: ${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO_NAME}"
@@ -160,7 +160,7 @@ echo ""
 echo "[6/9] Cloud Run用サービスアカウント作成..."
 
 gcloud iam service-accounts create "${CLOUD_RUN_SA_NAME}" \
-  --display-name="Cloud Run MIERU Clinic" \
+  --display-name="Cloud Run MIERU PX" \
   || echo "  (既に存在します)"
 
 # Cloud SQL Clientロールを付与

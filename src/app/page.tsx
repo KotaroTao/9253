@@ -40,12 +40,12 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "MIERU Clinic | 歯科医師が、医療従事者の誇りを守るために作ったPX向上プラットフォーム",
+  title: "MIERU PX | 歯科医師が、医療従事者の誇りを守るために作ったPX向上プラットフォーム",
   description:
     "30秒タブレットアンケートで患者の本音を数値化。AI分析・経営レポート・ゲーミフィケーションで患者体験改善のPDCAを自動化。歯科医院専用・基本無料で始められます。",
-  keywords: "歯科,患者満足度,アンケート,医院経営,患者体験,MIERU Clinic,歯科経営",
+  keywords: "歯科,患者満足度,アンケート,医院経営,患者体験,MIERU PX,歯科経営",
   openGraph: {
-    title: "MIERU Clinic | 患者体験の見える化",
+    title: "MIERU PX | 患者体験の見える化",
     description:
       "歯科医師が、医療従事者の誇りを守るために作ったPX（患者満足度）向上プラットフォーム",
   },
@@ -659,7 +659,7 @@ export default function HomePage() {
                   <thead>
                     <tr className="border-b">
                       <th className="py-3 pr-4 text-left font-medium text-muted-foreground">機能・観点</th>
-                      <th className="py-3 px-4 text-center font-bold text-primary bg-primary/5 rounded-t-lg min-w-[140px]">MIERU Clinic</th>
+                      <th className="py-3 px-4 text-center font-bold text-primary bg-primary/5 rounded-t-lg min-w-[140px]">MIERU PX</th>
                       <th className="py-3 px-4 text-center font-medium text-muted-foreground min-w-[140px]">AI口コミ生成ツール</th>
                       <th className="py-3 pl-4 text-center font-medium text-muted-foreground min-w-[140px]">Googleフォーム/紙</th>
                     </tr>
