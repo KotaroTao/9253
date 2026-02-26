@@ -59,39 +59,30 @@ const trustItems = [
   { icon: Heart, label: messages.landing.trust5 },
 ]
 
-const painPoints = [
+const painSolutions = [
   {
-    title: messages.landing.pain1Title,
-    desc: messages.landing.pain1Desc,
-    scenario: messages.landing.pain1Scenario,
+    painTitle: messages.landing.pain1Title,
+    painDesc: messages.landing.pain1Desc,
+    painScenario: messages.landing.pain1Scenario,
+    solutionIcon: Eye,
+    solutionTitle: messages.landing.solutionValue1Title,
+    solutionDesc: messages.landing.solutionValue1Desc,
   },
   {
-    title: messages.landing.pain2Title,
-    desc: messages.landing.pain2Desc,
-    scenario: messages.landing.pain2Scenario,
+    painTitle: messages.landing.pain2Title,
+    painDesc: messages.landing.pain2Desc,
+    painScenario: messages.landing.pain2Scenario,
+    solutionIcon: Repeat2,
+    solutionTitle: messages.landing.solutionValue2Title,
+    solutionDesc: messages.landing.solutionValue2Desc,
   },
   {
-    title: messages.landing.pain3Title,
-    desc: messages.landing.pain3Desc,
-    scenario: messages.landing.pain3Scenario,
-  },
-]
-
-const solutionValues = [
-  {
-    icon: Eye,
-    title: messages.landing.solutionValue1Title,
-    desc: messages.landing.solutionValue1Desc,
-  },
-  {
-    icon: Repeat2,
-    title: messages.landing.solutionValue2Title,
-    desc: messages.landing.solutionValue2Desc,
-  },
-  {
-    icon: TrendingUp,
-    title: messages.landing.solutionValue3Title,
-    desc: messages.landing.solutionValue3Desc,
+    painTitle: messages.landing.pain3Title,
+    painDesc: messages.landing.pain3Desc,
+    painScenario: messages.landing.pain3Scenario,
+    solutionIcon: TrendingUp,
+    solutionTitle: messages.landing.solutionValue3Title,
+    solutionDesc: messages.landing.solutionValue3Desc,
   },
 ]
 
@@ -493,7 +484,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ===== Pain Points ===== */}
+        {/* ===== Pain → Solution (統合) ===== */}
         <section id="pain" className="py-20 lg:py-28">
           <div className="container max-w-4xl">
             <div className="mb-14 text-center animate-on-scroll">
@@ -501,22 +492,37 @@ export default function HomePage() {
                 {messages.landing.painTitle}
               </h2>
             </div>
-            <div className="grid gap-5 sm:grid-cols-3 animate-on-scroll">
-              {painPoints.map((pain, i) => (
+            <div className="space-y-5 animate-on-scroll">
+              {painSolutions.map((item, i) => (
                 <div
                   key={i}
-                  className="rounded-xl border border-orange-200/60 bg-orange-50/50 p-6"
+                  className="grid gap-0 overflow-hidden rounded-xl border sm:grid-cols-2"
                 >
-                  <div className="mb-3 flex items-center gap-2">
-                    <CircleAlert className="h-5 w-5 shrink-0 text-orange-500" />
-                    <h3 className="font-semibold text-foreground">{pain.title}</h3>
+                  {/* Pain (left) */}
+                  <div className="border-b bg-orange-50/50 p-6 sm:border-b-0 sm:border-r">
+                    <div className="mb-2 flex items-center gap-2">
+                      <CircleAlert className="h-5 w-5 shrink-0 text-orange-500" />
+                      <h3 className="font-semibold text-foreground">{item.painTitle}</h3>
+                    </div>
+                    <p className="text-sm leading-relaxed text-foreground/70">
+                      {item.painDesc}
+                    </p>
+                    <p className="mt-2 text-xs italic text-orange-600/80">
+                      {item.painScenario}
+                    </p>
                   </div>
-                  <p className="text-sm leading-relaxed text-foreground/70">
-                    {pain.desc}
-                  </p>
-                  <p className="mt-3 text-xs italic text-orange-600/80">
-                    {pain.scenario}
-                  </p>
+                  {/* Solution (right) */}
+                  <div className="bg-primary/[0.03] p-6">
+                    <div className="mb-2 flex items-center gap-2">
+                      <div className="inline-flex rounded-lg bg-primary/10 p-1.5">
+                        <item.solutionIcon className="h-4 w-4 text-primary" />
+                      </div>
+                      <h3 className="font-semibold text-primary">{item.solutionTitle}</h3>
+                    </div>
+                    <p className="text-sm leading-relaxed text-muted-foreground">
+                      {item.solutionDesc}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -532,54 +538,53 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ===== こんな医院におすすめ ===== */}
-        <section className="border-t bg-primary/[0.03] py-20 lg:py-28">
-          <div className="container max-w-3xl">
-            <div className="mb-12 text-center animate-on-scroll">
-              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                {messages.landing.recommendTitle}
-              </h2>
-              <p className="mx-auto mt-4 text-sm text-muted-foreground sm:text-base">
-                {messages.landing.recommendSub}
-              </p>
-            </div>
-            <div className="space-y-4 animate-on-scroll">
-              {messages.landing.recommendItems.map((item, i) => (
-                <div
-                  key={i}
-                  className="flex items-start gap-4 rounded-xl border bg-card p-5 transition-shadow hover:shadow-sm"
-                >
-                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                  <p className="text-sm font-medium leading-relaxed sm:text-base">{item}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ===== Solution Overview ===== */}
-        <section className="border-t bg-muted/30 py-20 lg:py-28">
-          <div className="container max-w-4xl">
-            <div className="mb-12 text-center animate-on-scroll">
-              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                {messages.landing.solutionTitle}
-              </h2>
-              <p className="mx-auto mt-5 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-                {messages.landing.solutionDesc}
-              </p>
-            </div>
-            <div className="grid gap-6 sm:grid-cols-3 animate-on-scroll">
-              {solutionValues.map((val, i) => (
-                <div key={i} className="rounded-2xl border bg-card p-7">
-                  <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-3">
-                    <val.icon className="h-6 w-6 text-primary" />
+        {/* ===== Founder Story ===== */}
+        <section className="founder-gradient py-20 lg:py-28">
+          <div className="container">
+            <div className="mx-auto max-w-4xl animate-on-scroll">
+              <div className="grid items-center gap-10 lg:grid-cols-[1fr,auto]">
+                {/* Left: Text */}
+                <div>
+                  <span className="mb-4 inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-medium text-primary">
+                    {messages.landing.founderBadge}
+                  </span>
+                  <h2 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">
+                    {messages.landing.founderTitle}
+                  </h2>
+                  <div className="mt-6 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
+                    <p>{messages.landing.founderBody1}</p>
+                    <p className="font-medium text-foreground/80">
+                      {messages.landing.founderBody2}
+                    </p>
+                    <p>{messages.landing.founderBody3}</p>
                   </div>
-                  <h3 className="mb-2 text-lg font-semibold">{val.title}</h3>
-                  <p className="text-sm leading-relaxed text-muted-foreground">
-                    {val.desc}
+                  <div className="mt-8 border-t pt-6">
+                    <p className="text-base font-semibold">{messages.landing.founderName}</p>
+                    <p className="text-sm text-muted-foreground">{messages.landing.founderRole}</p>
+                  </div>
+                </div>
+                {/* Right: Photo */}
+                <div className="mx-auto lg:mx-0">
+                  <div className="relative aspect-[4/5] w-64 overflow-hidden rounded-2xl bg-muted shadow-lg">
+                    {/* Fallback placeholder (shown when image not available) */}
+                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10">
+                      <span className="text-6xl text-primary/20">👨‍⚕️</span>
+                    </div>
+                    {/* Actual photo overlays placeholder */}
+                    <Image
+                      src="/founder-photo.jpg"
+                      alt={messages.landing.founderCaption}
+                      fill
+                      className="relative z-10 object-cover"
+                      sizes="256px"
+                      priority={false}
+                    />
+                  </div>
+                  <p className="mt-3 text-center text-xs text-muted-foreground">
+                    {messages.landing.founderCaption}
                   </p>
                 </div>
-              ))}
+              </div>
             </div>
           </div>
         </section>
@@ -760,57 +765,6 @@ export default function HomePage() {
                 </p>
                 <p className="mt-2 text-base font-semibold">{messages.landing.result4Label}</p>
                 <p className="mt-2 text-sm text-muted-foreground">{messages.landing.result4Desc}</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ===== Founder Story ===== */}
-        <section className="founder-gradient py-20 lg:py-28">
-          <div className="container">
-            <div className="mx-auto max-w-4xl animate-on-scroll">
-              <div className="grid items-center gap-10 lg:grid-cols-[1fr,auto]">
-                {/* Left: Text */}
-                <div>
-                  <span className="mb-4 inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-medium text-primary">
-                    {messages.landing.founderBadge}
-                  </span>
-                  <h2 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">
-                    {messages.landing.founderTitle}
-                  </h2>
-                  <div className="mt-6 space-y-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
-                    <p>{messages.landing.founderBody1}</p>
-                    <p className="font-medium text-foreground/80">
-                      {messages.landing.founderBody2}
-                    </p>
-                    <p>{messages.landing.founderBody3}</p>
-                  </div>
-                  <div className="mt-8 border-t pt-6">
-                    <p className="text-base font-semibold">{messages.landing.founderName}</p>
-                    <p className="text-sm text-muted-foreground">{messages.landing.founderRole}</p>
-                  </div>
-                </div>
-                {/* Right: Photo */}
-                <div className="mx-auto lg:mx-0">
-                  <div className="relative aspect-[4/5] w-64 overflow-hidden rounded-2xl bg-muted shadow-lg">
-                    {/* Fallback placeholder (shown when image not available) */}
-                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10">
-                      <span className="text-6xl text-primary/20">👨‍⚕️</span>
-                    </div>
-                    {/* Actual photo overlays placeholder */}
-                    <Image
-                      src="/founder-photo.jpg"
-                      alt={messages.landing.founderCaption}
-                      fill
-                      className="relative z-10 object-cover"
-                      sizes="256px"
-                      priority={false}
-                    />
-                  </div>
-                  <p className="mt-3 text-center text-xs text-muted-foreground">
-                    {messages.landing.founderCaption}
-                  </p>
-                </div>
               </div>
             </div>
           </div>

@@ -810,7 +810,7 @@ export const messages = {
     trust5: "基本無料で始められる",
 
     // Pain points
-    painTitle: "こんな課題、感じていませんか？",
+    painTitle: "こんな課題、MIERUが解決します",
     pain1Title: "患者の本音が見えない",
     pain1Desc:
       "口コミは極端な意見に偏り、スタッフからの報告にはバイアスがかかる。改善すべき点が見えないまま、患者が静かに離れていく。",
