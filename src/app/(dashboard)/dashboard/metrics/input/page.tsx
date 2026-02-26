@@ -4,6 +4,7 @@ import { getOperatorClinicId } from "@/lib/admin-mode"
 import { prisma } from "@/lib/prisma"
 import { MetricsInputView } from "@/components/dashboard/metrics-input-view"
 import { MetricsPinLock } from "@/components/dashboard/metrics-pin-lock"
+import { MetricsTabNav } from "@/components/dashboard/metrics-tab-nav"
 import { UpgradePrompt } from "@/components/dashboard/upgrade-prompt"
 import { getMonthStatus, calcWorkingDays } from "@/lib/metrics-utils"
 import type { MonthStatus, ClinicProfile } from "@/lib/metrics-utils"
@@ -153,6 +154,7 @@ export default async function MetricsInputPage() {
 
   const content = (
     <div className="space-y-6">
+      <MetricsTabNav active="input" />
       <MetricsInputView
         initialSummary={summary ?? null}
         initialYear={year}

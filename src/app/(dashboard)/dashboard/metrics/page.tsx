@@ -4,6 +4,7 @@ import { getOperatorClinicId } from "@/lib/admin-mode"
 import { prisma } from "@/lib/prisma"
 import { MonthlyMetricsView } from "@/components/dashboard/monthly-metrics-view"
 import { MetricsPinLock } from "@/components/dashboard/metrics-pin-lock"
+import { MetricsTabNav } from "@/components/dashboard/metrics-tab-nav"
 import { UpgradePrompt } from "@/components/dashboard/upgrade-prompt"
 import { ROLES } from "@/lib/constants"
 import { getClinicPlanInfo, hasFeature } from "@/lib/plan"
@@ -75,6 +76,7 @@ export default async function MetricsPage() {
 
   const content = (
     <div className="space-y-6">
+      <MetricsTabNav active="summary" />
       <MonthlyMetricsView enteredMonths={enteredMonths} clinicType={clinicType} />
     </div>
   )

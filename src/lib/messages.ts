@@ -642,6 +642,8 @@ export const messages = {
     clinicName: "クリニック名",
     surveySettings: "アンケート設定",
     customQuestionsNote: "カスタム質問は今後のアップデートで対応予定です",
+    testSurveyDesc: "アンケートの動作をテストできます（回答は集計されません）",
+    testSurveyLink: "テストを開く",
     regularClosedDaysLabel: "定休日",
     regularClosedDaysDesc: "毎週決まって休診する曜日を選択してください",
     // アンケート完了後の誘導設定
