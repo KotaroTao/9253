@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { messages } from "@/lib/messages"
-import { CheckCircle2, ChevronRight, ChevronLeft, Stethoscope, Users, Lock, Check, Loader2 } from "lucide-react"
+import { CheckCircle2, ChevronRight, ChevronLeft, Stethoscope, Users, Lock, Check, Loader2, Sparkles, ClipboardCheck } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { ClinicType } from "@/types"
 
@@ -31,6 +31,7 @@ export function OnboardingWizard() {
   const router = useRouter()
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
+  const [showFirstAction, setShowFirstAction] = useState(false)
 
   // Step 1: clinic info
   const [clinicType, setClinicType] = useState<ClinicType>("general")
@@ -133,7 +134,7 @@ export function OnboardingWizard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ onboardingCompleted: true }),
       })
-      router.refresh()
+      setShowFirstAction(true)
     } finally {
       setSaving(false)
     }
@@ -146,6 +147,39 @@ export function OnboardingWizard() {
     if (step < steps.length - 1) {
       setStep(step + 1)
     }
+  }
+
+  if (showFirstAction) {
+    return (
+      <Card className="border-emerald-200 shadow-lg">
+        <CardHeader className="text-center pb-2">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 mb-3">
+            <Sparkles className="h-6 w-6 text-emerald-600" />
+          </div>
+          <CardTitle className="text-xl">{messages.onboarding.firstActionTitle}</CardTitle>
+          <p className="text-sm text-muted-foreground mt-1">{messages.onboarding.firstActionDesc}</p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Button
+            className="w-full"
+            onClick={() => {
+              router.push("/dashboard/test")
+              router.refresh()
+            }}
+          >
+            <ClipboardCheck className="h-4 w-4 mr-2" />
+            {messages.onboarding.firstActionTestButton}
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full"
+            onClick={() => router.refresh()}
+          >
+            {messages.onboarding.firstActionSkip}
+          </Button>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (

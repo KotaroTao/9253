@@ -35,6 +35,9 @@ export interface ClinicSettings {
   metricsPin?: string // 4桁PINハッシュ（bcrypt）。未設定時はロックなし
   // オンボーディング
   onboardingCompleted?: boolean // 初回セットアップウィザード完了フラグ
+  // メール通知
+  lastReminderDay?: number // 最終リマインダー送信日（登録からの日数）
+  weeklyEmailDisabled?: boolean // 週次サマリーメール停止フラグ
 }
 
 /** プラン情報（クライアント向け） */
