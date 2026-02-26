@@ -899,7 +899,7 @@ export const messages = {
     result2Value: "約30秒",
     result2Label: "平均回答時間",
     result2Desc: "患者の負担を最小限に",
-    result3Value: "8+",
+    result3Value: "18+",
     result3Label: "自動算出KPI数",
     result3Desc: "月1回の入力で、満足度と経営指標の相関を把握",
     result4Value: "0円",

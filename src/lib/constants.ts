@@ -33,11 +33,11 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
     priceLabel: "¥0",
     priceNote: "永久無料",
     description: "まずは試してみたい医院向け",
-    monthlyResponseLimit: 50,
+    monthlyResponseLimit: 100,
     staffLimit: 1,
     dataRetentionMonths: 3,
     features: [
-      "アンケート月50件まで",
+      "アンケート月100件まで",
       "スタッフ1名",
       "基本ダッシュボード",
       "ゲーミフィケーション",
