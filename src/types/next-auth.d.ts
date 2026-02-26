@@ -7,6 +7,7 @@ declare module "next-auth" {
       role: string
       clinicId: string | null
       staffId: string | null
+      isEmailVerified: boolean
     } & DefaultSession["user"]
   }
 
@@ -14,6 +15,7 @@ declare module "next-auth" {
     role: string
     clinicId: string | null
     staffId: string | null
+    isEmailVerified: boolean
   }
 }
 
@@ -22,5 +24,6 @@ declare module "next-auth/jwt" {
     role: string
     clinicId: string | null
     staffId: string | null
+    isEmailVerified: boolean
   }
 }

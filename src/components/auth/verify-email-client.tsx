@@ -54,7 +54,7 @@ export function VerifyEmailClient() {
         <h2 className="text-lg font-semibold">{messages.auth.verifyEmailSuccess}</h2>
         <p className="text-sm text-muted-foreground">{messages.auth.verifyEmailSuccessDesc}</p>
         <Button asChild className="mt-4">
-          <Link href="/dashboard">{messages.auth.goToDashboard}</Link>
+          <Link href="/login">{messages.auth.login}</Link>
         </Button>
       </div>
     )
@@ -67,7 +67,7 @@ export function VerifyEmailClient() {
         <h2 className="text-lg font-semibold">{messages.auth.verifyEmailExpired}</h2>
         <p className="text-sm text-muted-foreground">{messages.auth.verifyEmailExpiredDesc}</p>
         <Button asChild variant="outline" className="mt-4">
-          <Link href="/dashboard">{messages.auth.goToDashboard}</Link>
+          <Link href="/login">{messages.auth.login}</Link>
         </Button>
       </div>
     )
@@ -78,7 +78,7 @@ export function VerifyEmailClient() {
       <XCircle className="h-12 w-12 text-red-500" />
       <h2 className="text-lg font-semibold">{messages.auth.verifyEmailInvalid}</h2>
       <Button asChild variant="outline" className="mt-4">
-        <Link href="/dashboard">{messages.auth.goToDashboard}</Link>
+        <Link href="/login">{messages.auth.login}</Link>
       </Button>
     </div>
   )
