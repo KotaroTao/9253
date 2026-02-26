@@ -62,8 +62,7 @@ export async function POST(request: NextRequest) {
     if (!REMINDER_DAYS.includes(daysSinceCreation)) continue
 
     // 最終送信日を settings に記録して重複送信を防止
-    const lastReminderDay = (settings as Record<string, unknown>).lastReminderDay as number | undefined
-    if (lastReminderDay === daysSinceCreation) continue
+    if (settings.lastReminderDay === daysSinceCreation) continue
 
     const loginUrl = `${appUrl}/login`
     const { subject, html } = buildReminderEmail(clinic.name, loginUrl, daysSinceCreation)

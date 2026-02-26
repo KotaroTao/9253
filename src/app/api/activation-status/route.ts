@@ -1,6 +1,7 @@
 import { successResponse } from "@/lib/api-helpers"
 import { prisma } from "@/lib/prisma"
 import { requireAuth, isAuthError } from "@/lib/auth-helpers"
+import { ADVISORY } from "@/lib/constants"
 import type { ClinicSettings } from "@/types"
 
 export async function GET() {
@@ -22,7 +23,9 @@ export async function GET() {
   ])
 
   const settings = (clinic?.settings ?? {}) as ClinicSettings
-  const threshold = settings.advisoryThreshold ?? 30
+  const isFirstAnalysis = advisoryCount === 0
+  const threshold = settings.advisoryThreshold
+    ?? (isFirstAnalysis ? ADVISORY.FIRST_THRESHOLD : ADVISORY.DEFAULT_THRESHOLD)
 
   return successResponse({
     staffRegistered: staffCount > 0,

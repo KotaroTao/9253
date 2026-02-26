@@ -2,9 +2,11 @@ import { NextRequest } from "next/server"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { prisma } from "@/lib/prisma"
 import { sendMail, buildWeeklySummaryEmail } from "@/lib/email"
+import { jstToday, getDayJST } from "@/lib/date-jst"
 import type { ClinicSettings } from "@/types"
 
 const CRON_SECRET = process.env.CRON_SECRET
+const DAY_MS = 24 * 60 * 60 * 1000
 
 /**
  * 週次サマリーメール送信 (POST)
@@ -21,17 +23,13 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const now = new Date()
-  // 前週: 月曜 00:00 〜 日曜 23:59
-  const thisMonday = new Date(now)
-  thisMonday.setHours(0, 0, 0, 0)
-  thisMonday.setDate(thisMonday.getDate() - ((thisMonday.getDay() + 6) % 7))
-
-  const lastMonday = new Date(thisMonday)
-  lastMonday.setDate(lastMonday.getDate() - 7)
-
-  const twoWeeksAgo = new Date(lastMonday)
-  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 7)
+  // JST基準で今週月曜 00:00 を算出（Cloud Run UTCでも正しく動作）
+  const today = jstToday()
+  const dow = getDayJST(today) // 0=日, 1=月, ..., 6=土
+  const isoDow = dow === 0 ? 7 : dow // ISO: 1=月〜7=日
+  const thisMonday = new Date(today.getTime() - (isoDow - 1) * DAY_MS)
+  const lastMonday = new Date(thisMonday.getTime() - 7 * DAY_MS)
+  const twoWeeksAgo = new Date(lastMonday.getTime() - 7 * DAY_MS)
 
   // アクティブなクリニック一覧
   const clinics = await prisma.clinic.findMany({
@@ -54,7 +52,7 @@ export async function POST(request: NextRequest) {
     const settings = (clinic.settings ?? {}) as ClinicSettings
     if (settings.plan === "demo") continue
     // メール配信停止設定
-    if ((settings as Record<string, unknown>).weeklyEmailDisabled === true) continue
+    if (settings.weeklyEmailDisabled) continue
 
     const admin = clinic.users[0]
     if (!admin?.email) continue
@@ -87,9 +85,12 @@ export async function POST(request: NextRequest) {
       }),
     ])
 
-    // ストリーク: 前週で回答があった日数（簡易版）
+    // 前週の回答があった日数（簡易版、JST基準）
     const activeDays = new Set(
-      streakData.map((r) => r.respondedAt.toISOString().split("T")[0])
+      streakData.map((r) => {
+        const jst = new Date(r.respondedAt.getTime() + 9 * 60 * 60 * 1000)
+        return `${jst.getUTCFullYear()}-${String(jst.getUTCMonth() + 1).padStart(2, "0")}-${String(jst.getUTCDate()).padStart(2, "0")}`
+      })
     ).size
 
     const loginUrl = `${appUrl}/login`

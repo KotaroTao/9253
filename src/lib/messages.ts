@@ -130,6 +130,18 @@ export const messages = {
     firstActionTestButton: "テストアンケートを試す",
     firstActionSkip: "あとで試す",
   },
+  activationChecklist: {
+    title: "利用開始チェックリスト",
+    dismiss: "非表示",
+    staffRegistered: "スタッフを登録する",
+    staffRegisteredDesc: "スタッフ管理ページから追加",
+    firstSurveyDone: "初回アンケートを実施する",
+    firstSurveyDoneDesc: "医院端末で患者アンケートを開始",
+    advisoryUnlocked: "AI分析を確認する（{current}/{threshold}件）",
+    advisoryUnlockedDesc: "{threshold}件達成で自動解放",
+    actionCreated: "改善アクションを1つ設定する",
+    actionCreatedDesc: "低スコアの質問から改善施策を登録",
+  },
   notifications: {
     title: "通知",
     markAllRead: "すべて既読にする",

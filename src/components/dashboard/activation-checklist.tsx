@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { CheckCircle2, Circle, ArrowRight, Rocket } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { messages } from "@/lib/messages"
 
 interface ActivationStatus {
   staffRegistered: boolean
@@ -15,76 +16,73 @@ interface ActivationStatus {
   totalResponses: number
 }
 
-interface ChecklistItem {
-  key: string
-  label: string
-  done: boolean
-  href: string
-  description: string
-}
+const DISMISS_KEY = "mieru-activation-checklist-dismissed"
 
 export function ActivationChecklist({ isAdmin }: { isAdmin: boolean }) {
   const [status, setStatus] = useState<ActivationStatus | null>(null)
-  const [dismissed, setDismissed] = useState(false)
+  const [dismissed, setDismissed] = useState(true) // SSR safe: 初期非表示
 
   useEffect(() => {
+    setDismissed(localStorage.getItem(DISMISS_KEY) === "1")
     fetch("/api/activation-status")
       .then((r) => r.json())
       .then((data) => {
-        if (data.data) setStatus(data.data)
+        if (data.data && !data.data.error) setStatus(data.data)
       })
       .catch(() => {})
   }, [])
 
+  const dismiss = useCallback(() => {
+    setDismissed(true)
+    localStorage.setItem(DISMISS_KEY, "1")
+  }, [])
+
   if (!status || dismissed) return null
 
-  const items: ChecklistItem[] = [
+  const m = messages.activationChecklist
+
+  const items = [
     {
       key: "staff",
-      label: "スタッフを登録する",
+      label: m.staffRegistered,
       done: status.staffRegistered,
       href: "/dashboard/staff",
-      description: "スタッフ管理ページから追加",
-    },
-    {
-      key: "test",
-      label: "テストアンケートを試す",
-      done: status.firstSurveyDone, // first survey implicitly means they've tested
-      href: "/dashboard/test",
-      description: "テストモードで画面を確認",
+      description: m.staffRegisteredDesc,
     },
     {
       key: "survey",
-      label: "初回アンケートを実施する",
+      label: m.firstSurveyDone,
       done: status.firstSurveyDone,
-      href: "/dashboard",
-      description: "医院端末で患者アンケートを開始",
+      href: "/dashboard/test",
+      description: m.firstSurveyDoneDesc,
     },
     {
       key: "advisory",
-      label: `AI分析を確認する（${status.totalResponses}/${status.advisoryThreshold}件）`,
+      label: m.advisoryUnlocked
+        .replace("{current}", String(status.totalResponses))
+        .replace("{threshold}", String(status.advisoryThreshold)),
       done: status.advisoryUnlocked,
       href: "/dashboard/advisory",
-      description: `${status.advisoryThreshold}件達成で自動解放`,
+      description: m.advisoryUnlockedDesc
+        .replace("{threshold}", String(status.advisoryThreshold)),
     },
     ...(isAdmin
       ? [
           {
             key: "action",
-            label: "改善アクションを1つ設定する",
+            label: m.actionCreated,
             done: status.actionCreated,
             href: "/dashboard/actions",
-            description: "低スコアの質問から改善施策を登録",
+            description: m.actionCreatedDesc,
           },
         ]
       : []),
   ]
 
   const completedCount = items.filter((i) => i.done).length
-  const allDone = completedCount === items.length
 
-  // All items complete -> don't show
-  if (allDone) return null
+  // 全完了時は表示しない
+  if (completedCount === items.length) return null
 
   const progressPercent = Math.round((completedCount / items.length) * 100)
 
@@ -94,17 +92,17 @@ export function ActivationChecklist({ isAdmin }: { isAdmin: boolean }) {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Rocket className="h-4 w-4 text-blue-600" />
-            <p className="text-sm font-bold text-blue-900">利用開始チェックリスト</p>
+            <p className="text-sm font-bold text-blue-900">{m.title}</p>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-blue-600 font-medium">
               {completedCount}/{items.length}
             </span>
             <button
-              onClick={() => setDismissed(true)}
+              onClick={dismiss}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
-              非表示
+              {m.dismiss}
             </button>
           </div>
         </div>
