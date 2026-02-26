@@ -754,7 +754,7 @@ export default function HomePage() {
               </div>
               <div className="hover-lift rounded-2xl border bg-card p-8 text-center">
                 <p className="text-gradient text-4xl font-bold tracking-tight">
-                  <CountUp end={8} suffix="+" />
+                  <CountUp end={18} suffix="+" />
                 </p>
                 <p className="mt-2 text-base font-semibold">{messages.landing.result3Label}</p>
                 <p className="mt-2 text-sm text-muted-foreground">{messages.landing.result3Desc}</p>
