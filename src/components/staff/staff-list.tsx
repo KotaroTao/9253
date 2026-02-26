@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
 import { STAFF_ROLE_LABELS } from "@/lib/constants"
 import { StaffFormDialog } from "@/components/staff/staff-form-dialog"
-import { Plus, Pencil } from "lucide-react"
+import { Plus, Pencil, Trash2 } from "lucide-react"
 import type { StaffWithStats } from "@/types"
 
 interface StaffListProps {
@@ -19,6 +19,7 @@ export function StaffList({ staffList, clinicId }: StaffListProps) {
   const router = useRouter()
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingStaff, setEditingStaff] = useState<StaffWithStats | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   async function handleToggleActive(staffId: string, isActive: boolean) {
     await fetch(`/api/staff/${staffId}`, {
@@ -27,6 +28,23 @@ export function StaffList({ staffList, clinicId }: StaffListProps) {
       body: JSON.stringify({ isActive: !isActive }),
     })
     router.refresh()
+  }
+
+  async function handleDelete(staff: StaffWithStats) {
+    const msg = messages.staff.deleteConfirm.replace("{name}", staff.name)
+    if (!confirm(msg)) return
+
+    setDeletingId(staff.id)
+    try {
+      const res = await fetch(`/api/staff/${staff.id}`, { method: "DELETE" })
+      if (!res.ok) {
+        alert(messages.staff.deleteFailed)
+        return
+      }
+      router.refresh()
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   return (
@@ -81,6 +99,16 @@ export function StaffList({ staffList, clinicId }: StaffListProps) {
                   onClick={() => handleToggleActive(staff.id, staff.isActive)}
                 >
                   {staff.isActive ? messages.staff.deactivate : messages.staff.activate}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => handleDelete(staff)}
+                  disabled={deletingId === staff.id}
+                >
+                  <Trash2 className="mr-1 h-3.5 w-3.5" />
+                  {messages.staff.delete}
                 </Button>
               </div>
             </CardContent>

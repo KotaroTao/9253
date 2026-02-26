@@ -47,3 +47,51 @@ export async function PATCH(
     return errorResponse(messages.errors.staffUpdateFailed, 500)
   }
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const authResult = await requireAuth()
+  if (isAuthError(authResult)) return authResult
+
+  // clinic_admin または system_admin のみ削除可能
+  if (authResult.user.role === "staff") {
+    return errorResponse(messages.errors.accessDenied, 403)
+  }
+
+  try {
+    const existing = await prisma.staff.findUnique({
+      where: { id: params.id },
+      select: { clinicId: true },
+    })
+
+    if (!existing) {
+      return errorResponse(messages.errors.staffNotFound, 404)
+    }
+
+    if (
+      authResult.user.role === "clinic_admin" &&
+      authResult.user.clinicId !== existing.clinicId
+    ) {
+      return errorResponse(messages.errors.accessDenied, 403)
+    }
+
+    // アンケート回答データを保護: staffId を null に設定してから削除
+    await prisma.$transaction([
+      prisma.surveyResponse.updateMany({
+        where: { staffId: params.id },
+        data: { staffId: null },
+      }),
+      prisma.user.updateMany({
+        where: { staffId: params.id },
+        data: { staffId: null },
+      }),
+      prisma.staff.delete({ where: { id: params.id } }),
+    ])
+
+    return successResponse({ deleted: true })
+  } catch {
+    return errorResponse(messages.errors.staffDeleteFailed, 500)
+  }
+}
