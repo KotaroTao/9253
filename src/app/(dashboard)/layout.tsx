@@ -3,7 +3,6 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { getOperatorClinicId } from "@/lib/admin-mode"
 import { DashboardShell } from "@/components/layout/dashboard-shell"
-import { EmailVerificationBanner } from "@/components/auth/email-verification-banner"
 import { OnboardingWizard } from "@/components/dashboard/onboarding-wizard"
 import { ROLES } from "@/lib/constants"
 import { buildPlanInfo } from "@/lib/plan"
@@ -52,16 +51,6 @@ export default async function DashboardLayout({
     onboardingCompleted = settings.onboardingCompleted ?? true
   }
 
-  // メール認証状態を取得（clinic_admin のみ。運営モードでは表示しない）
-  let emailVerified = true
-  if (role === "clinic_admin" && !isOperatorMode) {
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { emailVerified: true },
-    })
-    emailVerified = !!user?.emailVerified
-  }
-
   // クリニック一覧（運営モードのクリニック切り替え用）
   let allClinics: Array<{ id: string; name: string }> = []
   if (isOperatorMode) {
@@ -85,7 +74,6 @@ export default async function DashboardLayout({
       allClinics={allClinics}
       planInfo={planInfo}
     >
-      {!emailVerified && !showOnboarding && <EmailVerificationBanner />}
       {showOnboarding ? (
         <OnboardingWizard />
       ) : (

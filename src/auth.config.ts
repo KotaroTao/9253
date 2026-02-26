@@ -14,6 +14,7 @@ export const authConfig = {
         token.role = user.role
         token.clinicId = user.clinicId
         token.staffId = user.staffId
+        token.isEmailVerified = user.isEmailVerified
       }
       return token
     },
@@ -23,6 +24,7 @@ export const authConfig = {
         session.user.role = token.role as string
         session.user.clinicId = token.clinicId as string | null
         session.user.staffId = token.staffId as string | null
+        session.user.isEmailVerified = token.isEmailVerified as boolean
       }
       return session
     },
@@ -57,6 +59,15 @@ export const authConfig = {
 
       // Role-based access control
       const role = auth?.user?.role
+
+      // メール認証必須: 未認証の clinic_admin は /verify-email/pending にリダイレクト
+      if (
+        role === "clinic_admin" &&
+        !auth?.user?.isEmailVerified &&
+        (pathname.startsWith("/dashboard") || pathname.startsWith("/admin"))
+      ) {
+        return Response.redirect(new URL("/verify-email/pending", nextUrl))
+      }
 
       // /admin/* requires system_admin
       if (pathname.startsWith("/admin") && role !== "system_admin") {

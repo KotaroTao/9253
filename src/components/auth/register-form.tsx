@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -63,21 +62,8 @@ export function RegisterForm({ plan }: RegisterFormProps) {
         return
       }
 
-      // 登録成功 → 自動ログイン
-      const signInResult = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      })
-
-      if (signInResult?.error) {
-        // ログイン失敗時はログインページへ誘導
-        router.push("/login")
-        return
-      }
-
-      router.push("/dashboard")
-      router.refresh()
+      // 登録成功 → メール認証案内ページへ
+      router.push("/verify-email/sent")
     } catch {
       setError(messages.auth.registerError)
     } finally {
