@@ -124,6 +124,11 @@ export const messages = {
     complete: "セットアップ完了",
     completeDesc: "準備が整いました！ダッシュボードからアンケートを開始できます。",
     startUsing: "ダッシュボードを開く",
+    // ファーストアクション誘導（セットアップ完了後）
+    firstActionTitle: "セットアップ完了！",
+    firstActionDesc: "準備が整いました。まずはテストモードでアンケート画面を確認してみましょう。",
+    firstActionTestButton: "テストアンケートを試す",
+    firstActionSkip: "あとで試す",
   },
   notifications: {
     title: "通知",
@@ -197,7 +202,7 @@ export const messages = {
     onboardingTitle: "はじめに — ご利用開始の3ステップ",
     onboardingStep1: "上の「医院のタブレットで30秒アンケート」をタップして、アンケート画面を起動します",
     onboardingStep2: "患者属性を選択し、会計待ちの患者さまにタブレットをお渡しください",
-    onboardingStep3: "アンケートが30件集まるとAI分析が利用可能になります",
+    onboardingStep3: "アンケートが15件集まると初回AI分析が利用可能になります",
     // Rank system
     rankLabel: "ランク",
     rankProgress: "次のランクまで",

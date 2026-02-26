@@ -587,8 +587,9 @@ export const IMPROVEMENT_SUGGESTIONS: Record<string, ImprovementSuggestion[]> = 
 
 // AI Advisory settings
 export const ADVISORY = {
-  DEFAULT_THRESHOLD: 30,           // 新規回答数でアンロック
-  MIN_RESPONSES_FOR_FIRST: 30,     // 初回分析に必要な最低回答数
+  DEFAULT_THRESHOLD: 30,           // 新規回答数でアンロック（2回目以降）
+  FIRST_THRESHOLD: 15,             // 初回分析に必要な最低回答数（成功体験の早期化）
+  MIN_RESPONSES_FOR_FIRST: 15,     // 初回分析に必要な最低回答数
   HIGH_SCORE_THRESHOLD: 4.0,       // 高評価と判定する閾値
   LOW_SCORE_THRESHOLD: 3.8,        // 低評価と判定する閾値
   MIN_SAMPLES_FOR_INSIGHT: 5,      // インサイト生成に必要な最低サンプル数

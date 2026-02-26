@@ -129,7 +129,9 @@ export async function getAdvisoryProgress(clinicId: string): Promise<AdvisoryPro
   ])
 
   const settings = (clinic?.settings ?? {}) as ClinicSettings
-  const threshold = settings.advisoryThreshold ?? ADVISORY.DEFAULT_THRESHOLD
+  // 初回分析は低い閾値で成功体験を早期化、2回目以降はデフォルト閾値
+  const isFirstAnalysis = !lastReport
+  const threshold = settings.advisoryThreshold ?? (isFirstAnalysis ? ADVISORY.FIRST_THRESHOLD : ADVISORY.DEFAULT_THRESHOLD)
   const current = settings.responsesSinceLastAdvisory ?? 0
 
   let daysSinceLastReport: number | null = null
@@ -143,7 +145,7 @@ export async function getAdvisoryProgress(clinicId: string): Promise<AdvisoryPro
   const canGenerate =
     totalResponses >= ADVISORY.MIN_RESPONSES_FOR_FIRST &&
     (current >= threshold ||
-      (!lastReport && totalResponses >= ADVISORY.MIN_RESPONSES_FOR_FIRST))
+      (isFirstAnalysis && totalResponses >= ADVISORY.MIN_RESPONSES_FOR_FIRST))
 
   const lastReportData: AdvisoryReportData | null = lastReport
     ? {

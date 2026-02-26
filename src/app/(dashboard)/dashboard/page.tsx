@@ -6,6 +6,7 @@ import { getStaffEngagementData } from "@/lib/queries/engagement"
 import { getQuestionCurrentScores } from "@/lib/queries/stats"
 import { getAdvisoryProgress } from "@/lib/queries/advisory"
 import { StaffEngagement } from "@/components/dashboard/staff-engagement"
+import { ActivationChecklist } from "@/components/dashboard/activation-checklist"
 import { messages } from "@/lib/messages"
 import { ROLES } from "@/lib/constants"
 
@@ -68,6 +69,7 @@ export default async function DashboardPage() {
       <p className="text-sm text-muted-foreground">
         {messages.dashboard.staffDashboardMessage}
       </p>
+      <ActivationChecklist isAdmin={isAdmin} />
       <StaffEngagement
         data={engagement}
         kioskUrl={kioskUrl}
