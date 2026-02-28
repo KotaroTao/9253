@@ -37,6 +37,11 @@ import {
   Bot,
   Star,
   Heart,
+  BookOpen,
+  Smile,
+  TrendingDown,
+  Gamepad2,
+  Stethoscope,
 } from "lucide-react"
 
 export const metadata: Metadata = {
@@ -767,6 +772,112 @@ export default function HomePage() {
                 <p className="mt-2 text-sm text-muted-foreground">{messages.landing.result4Desc}</p>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* ===== Evidence ===== */}
+        <section id="evidence" className="border-t py-20 lg:py-28">
+          <div className="container">
+            <div className="mx-auto mb-14 max-w-2xl text-center animate-on-scroll">
+              <div className="mb-4 inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-medium text-primary">
+                <BookOpen className="mr-1.5 h-3.5 w-3.5" />
+                査読付き学術研究に基づく
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                {messages.landing.evidenceTitle}
+              </h2>
+              <p className="mt-4 text-muted-foreground">
+                {messages.landing.evidenceSub}
+              </p>
+            </div>
+            <div className="mx-auto grid max-w-5xl gap-5 sm:grid-cols-2 lg:grid-cols-3 animate-on-scroll">
+              {([
+                {
+                  icon: TrendingUp,
+                  iconBg: "bg-emerald-100",
+                  iconColor: "text-emerald-600",
+                  value: messages.landing.evidence1Value,
+                  valueColor: "text-emerald-600",
+                  label: messages.landing.evidence1Label,
+                  desc: messages.landing.evidence1Desc,
+                  source: messages.landing.evidence1Source,
+                },
+                {
+                  icon: Tablet,
+                  iconBg: "bg-blue-100",
+                  iconColor: "text-blue-600",
+                  value: messages.landing.evidence2Value,
+                  valueColor: "text-blue-600",
+                  label: messages.landing.evidence2Label,
+                  desc: messages.landing.evidence2Desc,
+                  source: messages.landing.evidence2Source,
+                },
+                {
+                  icon: Smile,
+                  iconBg: "bg-violet-100",
+                  iconColor: "text-violet-600",
+                  value: messages.landing.evidence3Value,
+                  valueColor: "text-violet-600",
+                  label: messages.landing.evidence3Label,
+                  desc: messages.landing.evidence3Desc,
+                  source: messages.landing.evidence3Source,
+                },
+                {
+                  icon: TrendingDown,
+                  iconBg: "bg-rose-100",
+                  iconColor: "text-rose-600",
+                  value: messages.landing.evidence4Value,
+                  valueColor: "text-rose-600",
+                  label: messages.landing.evidence4Label,
+                  desc: messages.landing.evidence4Desc,
+                  source: messages.landing.evidence4Source,
+                },
+                {
+                  icon: Gamepad2,
+                  iconBg: "bg-amber-100",
+                  iconColor: "text-amber-600",
+                  value: messages.landing.evidence5Value,
+                  valueColor: "text-amber-600",
+                  label: messages.landing.evidence5Label,
+                  desc: messages.landing.evidence5Desc,
+                  source: messages.landing.evidence5Source,
+                },
+                {
+                  icon: Stethoscope,
+                  iconBg: "bg-teal-100",
+                  iconColor: "text-teal-600",
+                  value: messages.landing.evidence6Value,
+                  valueColor: "text-teal-600",
+                  label: messages.landing.evidence6Label,
+                  desc: messages.landing.evidence6Desc,
+                  source: messages.landing.evidence6Source,
+                },
+              ] as const).map((item, i) => (
+                <div
+                  key={i}
+                  className="hover-lift rounded-2xl border bg-card p-6"
+                >
+                  <div className="mb-4 flex items-center gap-3">
+                    <div className={`inline-flex rounded-xl p-2.5 ${item.iconBg}`}>
+                      <item.icon className={`h-5 w-5 ${item.iconColor}`} />
+                    </div>
+                    <span className={`text-3xl font-bold tracking-tight ${item.valueColor}`}>
+                      {item.value}
+                    </span>
+                  </div>
+                  <p className="mb-2 text-sm font-semibold">{item.label}</p>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    {item.desc}
+                  </p>
+                  <p className="mt-3 text-[11px] text-muted-foreground/60">
+                    {item.source}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <p className="mx-auto mt-8 max-w-3xl text-center text-xs text-muted-foreground/50 animate-on-scroll">
+              {messages.landing.evidenceNote}
+            </p>
           </div>
         </section>
 
