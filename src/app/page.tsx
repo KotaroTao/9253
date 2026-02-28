@@ -948,6 +948,9 @@ export default function HomePage() {
                 <a href="#features" className="transition-colors hover:text-foreground">
                   {messages.landing.footerService}
                 </a>
+                <Link href="/getting-started" className="transition-colors hover:text-foreground">
+                  {messages.landing.footerGettingStarted}
+                </Link>
                 <a href="#cta" className="transition-colors hover:text-foreground">
                   {messages.landing.footerContact}
                 </a>

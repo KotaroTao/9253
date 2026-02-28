@@ -14,6 +14,7 @@ const navLinks = [
   { href: "#pricing", label: messages.landing.pricingNav },
   { href: "#results", label: messages.landing.resultsNav },
   { href: "#faq", label: messages.landing.faq },
+  { href: "/getting-started", label: messages.landing.footerGettingStarted },
 ]
 
 export function LandingHeader() {
@@ -28,15 +29,25 @@ export function LandingHeader() {
 
         {/* Desktop nav */}
         <nav className="hidden items-center gap-8 md:flex">
-          {navLinks.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {link.label}
-            </a>
-          ))}
+          {navLinks.map((link) =>
+            link.href.startsWith("/") ? (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {link.label}
+              </Link>
+            ) : (
+              <a
+                key={link.href}
+                href={link.href}
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {link.label}
+              </a>
+            )
+          )}
           <Link href="/login">
             <Button variant="outline" size="sm">
               {messages.landing.login}
@@ -68,16 +79,27 @@ export function LandingHeader() {
       {mobileOpen && (
         <div className="border-t bg-background md:hidden">
           <nav className="container flex flex-col gap-1 py-4">
-            {navLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                onClick={() => setMobileOpen(false)}
-                className="rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
-                {link.label}
-              </a>
-            ))}
+            {navLinks.map((link) =>
+              link.href.startsWith("/") ? (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  {link.label}
+                </Link>
+              ) : (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  {link.label}
+                </a>
+              )
+            )}
             <div className="mt-2 px-3">
               <a href="#cta" onClick={() => setMobileOpen(false)}>
                 <Button className="w-full" size="sm">
