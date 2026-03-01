@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { usePrefersReducedMotion } from "@/lib/use-reduced-motion"
 
 interface ConfettiPiece {
   id: number
@@ -22,9 +23,11 @@ const COLORS = [
 ]
 
 export function Confetti() {
+  const prefersReducedMotion = usePrefersReducedMotion()
   const [pieces, setPieces] = useState<ConfettiPiece[]>([])
 
   useEffect(() => {
+    if (prefersReducedMotion) return
     const items: ConfettiPiece[] = Array.from({ length: 40 }, (_, i) => ({
       id: i,
       left: Math.random() * 100,
@@ -35,7 +38,7 @@ export function Confetti() {
       rotation: Math.random() * 360,
     }))
     setPieces(items)
-  }, [])
+  }, [prefersReducedMotion])
 
   if (pieces.length === 0) return null
 

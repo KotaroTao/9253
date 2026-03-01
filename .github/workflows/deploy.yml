@@ -8,6 +8,17 @@
 #    - DATABASE_URL:         Cloud SQL接続用URL（Unix Socket形式）
 #    - AUTH_SECRET:          Auth.js用シークレットキー
 #    - CLOUD_SQL_CONNECTION: Cloud SQL接続名（project:region:instance）
+#
+# 【Secret Manager 移行手順】（任意）
+#    USE_SECRET_MANAGER=true を環境変数に追加すると、DATABASE_URL/AUTH_SECRET を
+#    Secret Manager から取得する。以下を事前に実行:
+#    1. gcloud secrets create DATABASE_URL --replication-policy=automatic
+#    2. echo -n "<値>" | gcloud secrets versions add DATABASE_URL --data-file=-
+#    3. gcloud secrets create AUTH_SECRET --replication-policy=automatic
+#    4. echo -n "<値>" | gcloud secrets versions add AUTH_SECRET --data-file=-
+#    5. サービスアカウントに secretmanager.versions.access 権限を付与
+#    6. deploy.yml の --set-env-vars から DATABASE_URL/AUTH_SECRET を削除し
+#       USE_SECRET_MANAGER=true と GCP_PROJECT_ID を追加
 # =============================================================
 
 name: Deploy to Cloud Run

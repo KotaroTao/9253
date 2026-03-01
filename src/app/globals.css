@@ -142,3 +142,47 @@
 .founder-gradient {
   background: linear-gradient(160deg, hsl(221 83% 97%) 0%, hsl(221 83% 53% / 0.06) 50%, hsl(221 83% 97%) 100%);
 }
+
+/* ========================================
+   prefers-reduced-motion アクセシビリティ対応
+   ======================================== */
+@media (prefers-reduced-motion: reduce) {
+  /* グローバル: すべてのアニメーション・トランジションを無効化 */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* fade-in-up 系: 即座に表示 */
+  .animate-fade-in-up,
+  .animate-fade-in-up-delay-1,
+  .animate-fade-in-up-delay-2,
+  .animate-fade-in-up-delay-3,
+  .hero-card-1,
+  .hero-card-2,
+  .hero-card-3 {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+
+  /* scroll-triggered: 即座に表示 */
+  .animate-on-scroll {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  /* hover-lift / card-hover: hover効果を無効化 */
+  .card-hover,
+  .card-hover:hover,
+  .hover-lift,
+  .hover-lift:hover {
+    transform: none !important;
+    transition: none !important;
+  }
+}
