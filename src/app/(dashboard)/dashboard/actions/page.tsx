@@ -7,8 +7,10 @@ import { UpgradePrompt } from "@/components/dashboard/upgrade-prompt"
 import { ROLES } from "@/lib/constants"
 import { getQuestionCurrentScores } from "@/lib/queries/stats"
 import { getPlatformActionOutcomes } from "@/lib/queries/platform-action-stats"
+import { getSeasonalIndices } from "@/lib/queries/seasonal-index"
 import { getClinicPlanInfo, hasFeature } from "@/lib/plan"
 import { messages } from "@/lib/messages"
+import type { ClinicSettings } from "@/types"
 
 interface TemplateQuestion {
   id: string
@@ -125,6 +127,14 @@ export default async function ActionsPage() {
     platformActions.map((pa) => pa.id)
   )
 
+  // 季節指数を取得
+  const clinic = await prisma.clinic.findUnique({
+    where: { id: clinicId },
+    select: { settings: true },
+  })
+  const clinicType = ((clinic?.settings as ClinicSettings | null)?.clinicType) ?? "general"
+  const seasonalIndices = await getSeasonalIndices(clinicId, clinicType)
+
   return (
     <div className="space-y-6">
       <ImprovementActionsView
@@ -138,6 +148,7 @@ export default async function ActionsPage() {
         adoptedPlatformActionIds={adoptedPlatformActionIds}
         isSystemAdmin={session.user.role === ROLES.SYSTEM_ADMIN}
         monthlyMetrics={monthlyMetrics}
+        seasonalIndices={seasonalIndices}
         platformActionOutcomes={platformActionOutcomes}
       />
     </div>

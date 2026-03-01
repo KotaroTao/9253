@@ -5,6 +5,7 @@ import { messages } from "@/lib/messages"
 import { prisma } from "@/lib/prisma"
 import { getMonthlySurveyCount } from "@/lib/queries/stats"
 import { calcWorkingDays } from "@/lib/metrics-utils"
+import { getSeasonalIndices } from "@/lib/queries/seasonal-index"
 import type { ClinicSettings } from "@/types"
 import { jstStartOfMonth, jstEndOfMonth } from "@/lib/date-jst"
 
@@ -138,10 +139,12 @@ export async function GET(request: NextRequest) {
     hygienistCount: prevSummary?.hygienistCount ?? null,
   }
 
-  // 満足度スコア（当月・前月）
-  const [satisfactionScore, prevSatisfactionScore] = await Promise.all([
+  // 満足度スコア（当月・前月）+ 季節指数
+  const clinicType = (settings.clinicType ?? "general") as "general" | "orthodontic" | "pediatric" | "cosmetic" | "oral_surgery"
+  const [satisfactionScore, prevSatisfactionScore, seasonalIndices] = await Promise.all([
     getMonthSatisfactionScore(clinicId, year, month),
     getMonthSatisfactionScore(clinicId, prevYear, prevMonth),
+    getSeasonalIndices(clinicId, clinicType),
   ])
 
   return successResponse({
@@ -153,7 +156,8 @@ export async function GET(request: NextRequest) {
     profileDefaults,
     satisfactionScore,
     prevSatisfactionScore,
-    clinicType: settings.clinicType ?? "general",
+    clinicType: clinicType,
+    seasonalIndices,
   })
 }
 

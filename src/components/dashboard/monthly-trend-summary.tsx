@@ -20,7 +20,7 @@ import {
   TrendingUp, TrendingDown, Minus,
   AlertCircle, HelpCircle, X, ChevronDown,
   Gauge, Briefcase, Lightbulb,
-  BarChart3,
+  BarChart3, CalendarClock,
 } from "lucide-react"
 import { calcDerived, calcProfileDerived, getBenchmarkStatus, generateInsights } from "@/lib/metrics-utils"
 import type { MonthlySummary, ClinicProfile, MetricsInsight, BenchmarkStatus, ClinicType } from "@/lib/metrics-utils"
@@ -34,6 +34,14 @@ interface TrendRow extends MonthlySummary {
 
 type FullMetrics = MonthlySummary & ClinicProfile & Record<string, unknown>
 
+interface SeasonalIndicesData {
+  level: "self" | "specialty" | "platform" | "none"
+  revenue: { byMonth: Record<number, number> }
+  patientCount: { byMonth: Record<number, number> }
+  clinicCount: number
+  label: string | null
+}
+
 interface SingleMonthData {
   summary: FullMetrics | null
   prevSummary: FullMetrics | null
@@ -41,6 +49,7 @@ interface SingleMonthData {
   surveyCount: number
   satisfactionScore: number | null
   prevSatisfactionScore: number | null
+  seasonalIndices?: SeasonalIndicesData
 }
 
 function formatMonth(year: number, month: number) {
@@ -110,12 +119,13 @@ function DataTable({ rows, data }: {
 }
 
 // KPI card for section headers
-function KpiCard({ label, value, sub, momDelta, yoyDelta, statusColor, helpKey }: {
+function KpiCard({ label, value, sub, momDelta, yoyDelta, seasonalDelta, statusColor, helpKey }: {
   label: string
   value: string
   sub?: string
   momDelta?: string | null
   yoyDelta?: string | null
+  seasonalDelta?: string | null
   statusColor?: string
   helpKey?: KpiHelpKey
 }) {
@@ -129,7 +139,7 @@ function KpiCard({ label, value, sub, momDelta, yoyDelta, statusColor, helpKey }
         {value}
         {sub && <span className="ml-1 text-sm font-normal text-muted-foreground">{sub}</span>}
       </p>
-      <div className="mt-1.5 flex items-center gap-3 text-xs">
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
         {momDelta != null && (
           <span className={`flex items-center gap-0.5 ${momDelta.startsWith("+") ? "text-emerald-600" : momDelta.startsWith("-") ? "text-red-500" : "text-muted-foreground"}`}>
             {momDelta.startsWith("+") ? <TrendingUp className="h-3 w-3" /> : momDelta.startsWith("-") ? <TrendingDown className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
@@ -139,6 +149,12 @@ function KpiCard({ label, value, sub, momDelta, yoyDelta, statusColor, helpKey }
         {yoyDelta != null && (
           <span className={`flex items-center gap-0.5 ${yoyDelta.startsWith("+") ? "text-emerald-600" : yoyDelta.startsWith("-") ? "text-red-500" : "text-muted-foreground"}`}>
             前年{yoyDelta}
+          </span>
+        )}
+        {seasonalDelta != null && (
+          <span className={`flex items-center gap-0.5 ${seasonalDelta.startsWith("+") ? "text-blue-600" : seasonalDelta.startsWith("-") ? "text-orange-500" : "text-muted-foreground"}`}>
+            <CalendarClock className="h-3 w-3" />
+            季節調整{seasonalDelta}
           </span>
         )}
       </div>
@@ -427,6 +443,37 @@ export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSum
   const yoyTotalRevenue = yoySummary?.insuranceRevenue != null && yoySummary?.selfPayRevenue != null
     ? yoySummary.insuranceRevenue + yoySummary.selfPayRevenue : (yoySummary?.totalRevenue ?? null)
 
+  // Seasonal indices
+  const si = monthData?.seasonalIndices ?? null
+  const hasSeasonal = si && si.level !== "none"
+  const revIdx = hasSeasonal ? (si.revenue.byMonth[month] ?? 1.0) : 1.0
+  const patIdx = hasSeasonal ? (si.patientCount.byMonth[month] ?? 1.0) : 1.0
+
+  // Seasonal-adjusted MoM deltas
+  const prevMonth2 = month === 1 ? 12 : month - 1
+  const prevRevIdx = hasSeasonal ? (si.revenue.byMonth[prevMonth2] ?? 1.0) : 1.0
+  const prevPatIdx = hasSeasonal ? (si.patientCount.byMonth[prevMonth2] ?? 1.0) : 1.0
+
+  function formatSeasonalDelta(current: number | null, prev: number | null, curIdx: number, prevIdx: number): string | null {
+    if (!hasSeasonal || current == null || prev == null || curIdx <= 0 || prevIdx <= 0) return null
+    const normCurrent = current / curIdx
+    const normPrev = prev / prevIdx
+    const diff = Math.round((normCurrent - normPrev) * 10) / 10
+    if (diff === 0) return "±0"
+    return `${diff > 0 ? "+" : ""}${diff}`
+  }
+
+  const seasonalRevDelta = formatSeasonalDelta(totalRevenue, prevTotalRevenue, revIdx, prevRevIdx)
+  const seasonalPatDelta = hasSeasonal && derived?.totalPatients != null && prevDerived?.totalPatients != null && patIdx > 0 && prevPatIdx > 0
+    ? (() => {
+        const norm = derived.totalPatients / patIdx
+        const normPrev = prevDerived.totalPatients / prevPatIdx
+        const diff = Math.round((norm - normPrev) * 10) / 10
+        if (diff === 0) return "±0"
+        return `${diff > 0 ? "+" : ""}${diff}`
+      })()
+    : null
+
   // Generate insights
   const insights = generateInsights({
     current: derived,
@@ -438,6 +485,22 @@ export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSum
     satisfactionScore: monthData?.satisfactionScore ?? null,
     prevSatisfactionScore: monthData?.prevSatisfactionScore ?? null,
   })
+
+  // Seasonal insights
+  const seasonalInsights: Array<{ type: "high" | "low" | "normal"; message: string }> = []
+  if (hasSeasonal) {
+    const sm = messages.monthlyMetrics.seasonal
+    if (revIdx >= 1.05) {
+      seasonalInsights.push({ type: "high", message: sm.insightAboveSeasonal("売上", Math.round((revIdx - 1) * 1000) / 10) })
+    } else if (revIdx <= 0.95) {
+      seasonalInsights.push({ type: "low", message: sm.insightBelowSeasonal("売上", Math.round((1 - revIdx) * 1000) / 10) })
+    }
+    if (patIdx >= 1.05) {
+      seasonalInsights.push({ type: "high", message: sm.insightAboveSeasonal("患者数", Math.round((patIdx - 1) * 1000) / 10) })
+    } else if (patIdx <= 0.95) {
+      seasonalInsights.push({ type: "low", message: sm.insightBelowSeasonal("患者数", Math.round((1 - patIdx) * 1000) / 10) })
+    }
+  }
 
   // Transform trend data for charts
   const chartData = trendData.map((row) => {
@@ -499,6 +562,31 @@ export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSum
         </div>
       )}
 
+      {/* 季節傾向バナー */}
+      {hasSeasonal && (revIdx >= 1.05 || revIdx <= 0.95 || patIdx >= 1.05 || patIdx <= 0.95) && (
+        <div className="flex items-start gap-2.5 rounded-lg border border-purple-200 bg-purple-50/50 px-4 py-3 dark:border-purple-900/50 dark:bg-purple-950/20">
+          <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-purple-500" />
+          <div className="text-sm text-purple-700 dark:text-purple-300">
+            <p className="font-medium">{month}月の季節傾向</p>
+            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
+              <span>
+                売上指数: <span className="font-semibold">{revIdx.toFixed(2)}</span>
+                {revIdx >= 1.05 && <span className="ml-1 text-emerald-600">({m.seasonal.highSeason})</span>}
+                {revIdx <= 0.95 && <span className="ml-1 text-amber-600">({m.seasonal.lowSeason})</span>}
+              </span>
+              <span>
+                患者数指数: <span className="font-semibold">{patIdx.toFixed(2)}</span>
+                {patIdx >= 1.05 && <span className="ml-1 text-emerald-600">({m.seasonal.highSeason})</span>}
+                {patIdx <= 0.95 && <span className="ml-1 text-amber-600">({m.seasonal.lowSeason})</span>}
+              </span>
+            </div>
+            <p className="mt-1 text-[10px] text-purple-500">
+              {si.label} {m.seasonal.noteForMetrics}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* ① 売上・収益 */}
       <Section icon={<Banknote className="h-4 w-4" />} title="売上・収益" accentColor={COLORS.gold}>
         {/* Main KPI cards */}
@@ -509,6 +597,7 @@ export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSum
             sub="万円"
             momDelta={formatDelta(totalRevenue, prevTotalRevenue)}
             yoyDelta={formatDelta(totalRevenue, yoyTotalRevenue)}
+            seasonalDelta={seasonalRevDelta}
           />
           <KpiCard
             label={m.selfPayRatioAmount}
@@ -584,6 +673,7 @@ export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSum
             sub="人"
             momDelta={formatDelta(derived?.totalPatients ?? null, prevDerived?.totalPatients ?? null)}
             yoyDelta={formatDelta(derived?.totalPatients ?? null, yoyDerived?.totalPatients ?? null)}
+            seasonalDelta={seasonalPatDelta}
           />
           <KpiCard
             label="新患数"
@@ -721,7 +811,7 @@ export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSum
       </CollapsibleSection>
 
       {/* ⑤ 月次インサイト */}
-      {insights.length > 0 && (
+      {(insights.length > 0 || seasonalInsights.length > 0) && (
         <Section icon={<Lightbulb className="h-4 w-4" />} title={m.insightTitle} accentColor={COLORS.teal}>
           <div className="space-y-2">
             {insights.map((insight: MetricsInsight, i: number) => (
@@ -739,6 +829,17 @@ export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSum
                    <BarChart3 className="h-4 w-4 text-blue-600" />}
                 </span>
                 <p className="leading-relaxed">{insight.message}</p>
+              </div>
+            ))}
+            {seasonalInsights.map((si2, i) => (
+              <div
+                key={`seasonal-${i}`}
+                className="flex items-start gap-2.5 rounded-lg border border-purple-200 bg-purple-50/50 px-4 py-3 text-sm dark:border-purple-900/50 dark:bg-purple-950/20"
+              >
+                <span className="mt-0.5">
+                  <CalendarClock className="h-4 w-4 text-purple-600" />
+                </span>
+                <p className="leading-relaxed text-purple-700 dark:text-purple-300">{si2.message}</p>
               </div>
             ))}
           </div>

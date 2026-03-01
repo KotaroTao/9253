@@ -39,13 +39,13 @@ async function main() {
   const clinic = await prisma.clinic.upsert({
     where: { slug: "demo-dental" },
     update: {
-      settings: { adminPassword: defaultAdminPasswordHash },
+      settings: { adminPassword: defaultAdminPasswordHash, clinicType: "general" },
       unitCount: 5,
     },
     create: {
       name: "MIERU デモ歯科クリニック",
       slug: "demo-dental",
-      settings: { adminPassword: defaultAdminPasswordHash },
+      settings: { adminPassword: defaultAdminPasswordHash, clinicType: "general" },
       unitCount: 5,
     },
   })
@@ -805,8 +805,8 @@ async function main() {
     const vcSlug = `virtual-clinic-${vc + 1}`
     const vcClinic = await prisma.clinic.upsert({
       where: { slug: vcSlug },
-      update: { name: virtualClinicNames[vc] },
-      create: { name: virtualClinicNames[vc], slug: vcSlug },
+      update: { name: virtualClinicNames[vc], settings: { clinicType: "general" } },
+      create: { name: virtualClinicNames[vc], slug: vcSlug, settings: { clinicType: "general" } },
     })
 
     // 仮想クリニックの月次経営データ（8ヶ月分）
