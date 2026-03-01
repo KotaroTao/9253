@@ -9,7 +9,7 @@ import { evaluateSpecialPlanProgress } from "@/lib/plan"
 import { StaffEngagement } from "@/components/dashboard/staff-engagement"
 import { ActivationChecklist } from "@/components/dashboard/activation-checklist"
 import { SpecialPlanCard } from "@/components/dashboard/special-plan-card"
-import { messages } from "@/lib/messages"
+import { pickDashboardMessage } from "@/lib/dynamic-messages"
 import { ROLES } from "@/lib/constants"
 import type { ClinicSettings } from "@/types"
 
@@ -74,10 +74,18 @@ export default async function DashboardPage() {
     ? await getQuestionCurrentScores(clinicId, questionIds)
     : {}
 
+  const dynamicMessage = pickDashboardMessage({
+    todayCount: engagement.todayCount,
+    dailyGoal: engagement.dailyGoal,
+    streak: engagement.streak,
+    todayAvgScore: engagement.todayAvgScore,
+    totalCount: engagement.totalCount,
+  })
+
   return (
     <div className="space-y-6">
       <p className="text-sm text-muted-foreground">
-        {messages.dashboard.staffDashboardMessage}
+        {dynamicMessage}
       </p>
       {specialPlanProgress && <SpecialPlanCard progress={specialPlanProgress} />}
       <ActivationChecklist isAdmin={isAdmin} />
