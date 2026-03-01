@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma"
+import { generateLLMAdvisory, llmOutputToSections } from "@/lib/llm-advisory"
+import type { LLMAdvisoryInput } from "@/lib/llm-advisory"
 import {
   ADVISORY,
   QUESTION_CATEGORY_MAP,
@@ -1997,6 +1999,118 @@ function buildRecommendations(
 
 // ─── メインジェネレーター ───
 
+// ─── LLM 分析統合 ───
+
+async function runLLMAnalysis(
+  data: AnalysisData,
+  ruleBasedSections: AdvisorySection[]
+): Promise<AdvisorySection[]> {
+  try {
+    // 質問別スコアの構造化
+    const questionBreakdown = data.questionBreakdown.map((t) => ({
+      templateName: t.templateName,
+      questions: t.questions.map((q) => {
+        const prevQ = data.prevQuestionBreakdown
+          .find((pt) => pt.templateName === t.templateName)
+          ?.questions.find((pq) => pq.questionId === q.questionId)
+        return {
+          text: q.text,
+          avgScore: q.avgScore,
+          prevAvgScore: prevQ?.avgScore ?? null,
+          count: q.count,
+        }
+      }),
+    }))
+
+    // ヒートマップの低スコアスロット
+    const lowScoreSlots = data.heatmap
+      .filter((h) => h.avgScore > 0 && h.avgScore < 3.8 && h.count >= 3)
+      .sort((a, b) => a.avgScore - b.avgScore)
+      .slice(0, 10)
+      .map((h) => ({
+        dayOfWeek: DAY_LABELS[h.dayOfWeek] ?? `${h.dayOfWeek}`,
+        hour: getTimeSlotLabel(h.hour),
+        avgScore: h.avgScore,
+      }))
+
+    // 改善アクション
+    const activeActions = data.activeActions.map((a) => ({
+      title: a.title,
+      targetQuestion: a.targetQuestion,
+      baselineScore: a.baselineScore,
+      currentScore: a.targetQuestionId ? (data.actionCurrentScores[a.targetQuestionId] ?? null) : null,
+      elapsedDays: Math.floor(
+        (Date.now() - new Date(a.startedAt).getTime()) / (1000 * 60 * 60 * 24)
+      ),
+    }))
+
+    // 月次経営データ概要
+    let monthlyMetricsSummary: string | null = null
+    if (data.monthlyMetrics.length >= 2) {
+      const recent = data.monthlyMetrics.slice(-3)
+      monthlyMetricsSummary = recent.map((m) => {
+        const total = (m.firstVisitCount ?? 0) + (m.revisitCount ?? 0)
+        const rev = ((m.insuranceRevenue ?? 0) + (m.selfPayRevenue ?? 0))
+        return `${m.year}/${m.month}: 来院${total}人, 売上${Math.round(rev / 10000)}万円, キャンセル${m.cancellationCount ?? 0}件`
+      }).join("\n")
+    }
+
+    // セグメント差
+    const overallAvg = data.stats.averageScore
+    const segmentGaps = data.segmentStats
+      .filter((s) => s.count >= 5 && Math.abs(s.avgScore - overallAvg) >= 0.15)
+      .map((s) => {
+        const parts: string[] = []
+        if (s.visitType) parts.push(VISIT_TYPES.find(v => v.value === s.visitType)?.label ?? s.visitType)
+        if (s.insuranceType) parts.push(INSURANCE_TYPES.find(v => v.value === s.insuranceType)?.label ?? s.insuranceType)
+        if (s.ageGroup) parts.push(AGE_GROUPS.find(v => v.value === s.ageGroup)?.label ?? s.ageGroup)
+        if (s.gender) parts.push(GENDERS.find(v => v.value === s.gender)?.label ?? s.gender)
+        return {
+          segment: parts.join("・") || "不明",
+          avgScore: s.avgScore,
+          gap: Math.round((s.avgScore - overallAvg) * 100) / 100,
+        }
+      })
+      .sort((a, b) => a.gap - b.gap)
+      .slice(0, 8)
+
+    // コメント
+    const negativeComments = data.recentComments
+      .filter((c) => c.freeText && c.overallScore !== null && c.overallScore < 3)
+      .slice(0, 10)
+      .map((c) => c.freeText!)
+    const positiveComments = data.recentComments
+      .filter((c) => c.freeText && c.overallScore !== null && c.overallScore >= 4.5)
+      .slice(0, 5)
+      .map((c) => c.freeText!)
+
+    const input: LLMAdvisoryInput = {
+      averageScore: data.stats.averageScore,
+      prevAverageScore: data.stats.prevAverageScore,
+      totalResponses: data.stats.totalResponses,
+      ruleBasedSections: ruleBasedSections.map((s) => ({
+        title: s.title,
+        content: s.content,
+        type: s.type,
+      })),
+      questionBreakdown,
+      lowScoreSlots,
+      activeActions,
+      monthlyMetricsSummary,
+      segmentGaps,
+      negativeComments,
+      positiveComments,
+    }
+
+    const llmOutput = await generateLLMAdvisory(input)
+    if (!llmOutput) return []
+    return llmOutputToSections(llmOutput)
+  } catch (e) {
+    console.error("[Advisory] LLM analysis skipped:", e)
+    return []
+  }
+}
+
 export async function generateAdvisoryReport(
   clinicId: string,
   triggerType: "threshold" | "scheduled" | "manual"
@@ -2026,6 +2140,13 @@ export async function generateAdvisoryReport(
 
   // 推奨アクション（全分析結果を統合）
   analysisResults.push(buildRecommendations(data, analysisResults))
+
+  // ─── LLM 分析（APIキーがあれば実行） ───
+  const llmSections = await runLLMAnalysis(data, analysisResults)
+  if (llmSections.length > 0) {
+    // LLMセクションをルールベース分析の先頭に挿入
+    analysisResults.unshift(...llmSections)
+  }
 
   // 最優先改善領域の特定
   let priority: string | null = null

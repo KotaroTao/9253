@@ -31,6 +31,9 @@ import {
   ShieldCheck,
   FileText,
   Hash,
+  Zap,
+  SearchCheck,
+  ListOrdered,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { KawaiiTeethReveal } from "@/components/dashboard/kawaii-teeth-reveal"
@@ -126,6 +129,21 @@ const SECTION_CONFIG = {
     icon: ShieldCheck,
     label: messages.advisory.sectionResponseQuality,
     color: "stone",
+  },
+  executive_summary: {
+    icon: Zap,
+    label: messages.advisory.sectionExecutiveSummary,
+    color: "amber",
+  },
+  root_cause: {
+    icon: SearchCheck,
+    label: messages.advisory.sectionRootCause,
+    color: "rose",
+  },
+  strategic_actions: {
+    icon: ListOrdered,
+    label: messages.advisory.sectionStrategicActions,
+    color: "indigo",
   },
 } as const
 
@@ -283,7 +301,7 @@ function SectionCard({
   const Icon = config.icon
 
   // summary と action はデフォルト展開、折りたたみボタンなし
-  const alwaysOpen = section.type === "summary" || section.type === "action"
+  const alwaysOpen = section.type === "summary" || section.type === "action" || section.type === "executive_summary" || section.type === "strategic_actions"
 
   return (
     <div className={cn("rounded-lg border", colors.border, colors.bg)}>
