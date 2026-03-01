@@ -1163,6 +1163,7 @@ export const messages = {
         ? `あと${remaining}院が実施完了すると、効果の平均値が表示されます`
         : `現在${current}院が実施完了。あと${remaining}院で効果データを公開します`,
     outcomeAdoptCount: (count: number) => `${count}院が導入中`,
+    suggestionOutcomeCollecting: "実績データ収集中",
     // 管理画面
     manage: "改善アクション管理",
     create: "新規作成",

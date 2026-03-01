@@ -171,7 +171,18 @@ export function ImprovementActionsView({
     return new Set(targetQuestionId.split(",").map((s) => s.trim()).filter(Boolean))
   }
 
+  // Build title→outcome map for suggestion cards
+  const suggestionOutcomeMap = useMemo(() => {
+    const map = new Map<string, PlatformActionOutcome>()
+    for (const pa of platformActions) {
+      const outcome = platformActionOutcomes[pa.id]
+      if (outcome) map.set(pa.title, outcome)
+    }
+    return map
+  }, [platformActions, platformActionOutcomes])
+
   // Get suggestions based on selected questions' categories
+  // Sort: suggestions with outcome data first
   const suggestions = useMemo((): ImprovementSuggestion[] => {
     if (selectedQuestionIds.size === 0) return []
     const seen = new Set<string>()
@@ -183,8 +194,16 @@ export function ImprovementActionsView({
       const items = IMPROVEMENT_SUGGESTIONS[category] ?? []
       result.push(...items)
     }
-    return result
-  }, [selectedQuestionIds])
+    // Sort: suggestions with sufficient outcome data first, then by adoptCount
+    return result.sort((a, b) => {
+      const oa = suggestionOutcomeMap.get(a.title)
+      const ob = suggestionOutcomeMap.get(b.title)
+      const scoreA = oa ? (oa.confidence !== "insufficient" ? 2 : 1) : 0
+      const scoreB = ob ? (ob.confidence !== "insufficient" ? 2 : 1) : 0
+      if (scoreA !== scoreB) return scoreB - scoreA
+      return (ob?.adoptCount ?? 0) - (oa?.adoptCount ?? 0)
+    })
+  }, [selectedQuestionIds, suggestionOutcomeMap])
 
   function handleToggleQuestion(questionId: string) {
     setSelectedQuestionIds((prev) => {
@@ -845,6 +864,7 @@ export function ImprovementActionsView({
                 <div className="grid gap-2">
                   {suggestions.map((s, i) => {
                     const isSelected = title === s.title && description === s.description
+                    const outcome = suggestionOutcomeMap.get(s.title)
                     return (
                       <button
                         key={i}
@@ -860,6 +880,52 @@ export function ImprovementActionsView({
                         <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
                           {s.description}
                         </p>
+                        {/* Inline outcome from other clinics */}
+                        {outcome && outcome.confidence !== "insufficient" && (
+                          <div className="mt-2 flex items-center gap-3 rounded-md bg-purple-50/70 px-2.5 py-1.5">
+                            <span className="flex items-center gap-1 text-[11px] font-medium text-purple-700">
+                              <Users className="h-3 w-3" />
+                              {outcome.qualifiedCount}{messages.platformActions.outcomeClinics}
+                            </span>
+                            {outcome.avgScoreImprovement != null && (
+                              <span className={`text-[11px] font-bold ${outcome.avgScoreImprovement > 0 ? "text-green-600" : outcome.avgScoreImprovement < 0 ? "text-red-500" : "text-slate-400"}`}>
+                                {messages.platformActions.outcomeScore} {outcome.avgScoreImprovement > 0 ? "+" : ""}{outcome.avgScoreImprovement}
+                              </span>
+                            )}
+                            {outcome.avgDurationDays != null && (
+                              <span className="text-[11px] text-purple-600">
+                                {messages.platformActions.outcomeDuration}{" "}
+                                <span className="font-bold text-slate-600">
+                                  {outcome.avgDurationDays < 60
+                                    ? `${outcome.avgDurationDays}${messages.platformActions.outcomeDaysUnit}`
+                                    : `${(outcome.avgDurationDays / 30).toFixed(1)}${messages.platformActions.outcomeMonthsUnit}`
+                                  }
+                                </span>
+                              </span>
+                            )}
+                            {outcome.confidence === "high" ? (
+                              <span className="rounded-full bg-green-100 px-1.5 py-0.5 text-[9px] font-medium text-green-700">
+                                {messages.platformActions.confidenceHigh}
+                              </span>
+                            ) : (
+                              <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-medium text-amber-700">
+                                {messages.platformActions.confidenceModerate}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {outcome && outcome.confidence === "insufficient" && outcome.adoptCount > 0 && (
+                          <p className="mt-1.5 flex items-center gap-1 text-[11px] text-purple-500">
+                            <Users className="h-3 w-3" />
+                            {messages.platformActions.outcomeAdoptCount(outcome.adoptCount)}
+                          </p>
+                        )}
+                        {!outcome && (
+                          <p className="mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground/60">
+                            <BarChart3 className="h-3 w-3" />
+                            {messages.platformActions.suggestionOutcomeCollecting}
+                          </p>
+                        )}
                       </button>
                     )
                   })}
