@@ -570,6 +570,9 @@ export const messages = {
     delete: "削除",
     deleteConfirm: "「{name}」を削除しますか？\n\n※ このスタッフに紐づいたアンケート回答データは保持されます。",
     deleteFailed: "スタッフの削除に失敗しました",
+    noStaffAlert: "まずはスタッフを登録しましょう",
+    noStaffAlertDesc: "スタッフを登録すると、アンケート時に担当者を選択できるようになります",
+    goToStaffManagement: "スタッフ管理へ",
   },
   kiosk: {
     nextPatient: "次の患者さまへ",
