@@ -934,8 +934,8 @@ async function main() {
 
     await prisma.monthlyClinicMetrics.upsert({
       where: { clinicId_year_month: { clinicId: clinic.id, year, month } },
-      update: { firstVisitCount, revisitCount, totalRevenue, insuranceRevenue, selfPayRevenue, cancellationCount, chairCount, dentistCount, hygienistCount, totalVisitCount, workingDays, laborCost },
-      create: { clinicId: clinic.id, year, month, firstVisitCount, revisitCount, totalRevenue, insuranceRevenue, selfPayRevenue, cancellationCount, chairCount, dentistCount, hygienistCount, totalVisitCount, workingDays, laborCost },
+      update: { firstVisitCount, revisitCount, totalPatientCount: totalPatients, totalRevenue, insuranceRevenue, selfPayRevenue, cancellationCount, chairCount, dentistCount, hygienistCount, totalVisitCount, workingDays, laborCost },
+      create: { clinicId: clinic.id, year, month, firstVisitCount, revisitCount, totalPatientCount: totalPatients, totalRevenue, insuranceRevenue, selfPayRevenue, cancellationCount, chairCount, dentistCount, hygienistCount, totalVisitCount, workingDays, laborCost },
     })
     console.log(`  ${year}-${String(month).padStart(2, "0")}: 実人数${totalPatients}人（初診${firstVisitCount}/再診${revisitCount}）売上${totalRevenue}万円 自費率${Math.round(selfPayRatio * 100)}% キャンセル${cancellationCount}件(${Math.round(cancelRate * 100)}%) チェア${chairCount} Dr${dentistCount} DH${hygienistCount} 延べ${totalVisitCount} 診療${workingDays}日 人件費${laborCost}万`)
   }

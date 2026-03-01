@@ -48,6 +48,7 @@ import {
   Check,
   Sparkles,
   Users,
+  Lock,
 } from "lucide-react"
 
 interface ActionLog {
@@ -1511,13 +1512,22 @@ function ActionCard({
 
             {/* Business metrics comparison — オーナーのみ表示 */}
             {isOwner && metricsComparison && (
-              <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-3 space-y-2">
-                <p className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
+              <div className={`rounded-lg p-3 space-y-2 ${isDemo ? "bg-slate-50/40 border border-dashed border-slate-200" : "border border-slate-200 bg-slate-50/50"}`}>
+                <p className="text-[11px] font-semibold text-slate-600 flex items-center gap-1 flex-wrap">
                   <BarChart3 className="h-3 w-3" />
                   {messages.improvementActions.metricsTitle}
                   <span className="font-normal text-slate-400 ml-1">
                     {metricsComparison.startLabel} → {metricsComparison.latestLabel}
                   </span>
+                  <span className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-medium text-amber-700">
+                    <Lock className="h-2 w-2" />
+                    {messages.improvementActions.metricsOwnerOnly}
+                  </span>
+                  {isDemo && (
+                    <span className="ml-1 rounded-full bg-orange-100 px-1.5 py-0.5 text-[9px] font-medium text-orange-600">
+                      {messages.platformActions.outcomeSampleBadge}
+                    </span>
+                  )}
                 </p>
                 <div className={`grid gap-2 ${metricsComparison.items.length === 3 ? "grid-cols-3" : metricsComparison.items.length === 2 ? "grid-cols-2" : "grid-cols-1"}`}>
                   {metricsComparison.items.map((item) => (
@@ -1557,7 +1567,9 @@ function ActionCard({
                   ))}
                 </div>
                 <div className="flex items-center justify-between">
-                  <p className="text-[9px] text-slate-400">{messages.improvementActions.metricsNote}</p>
+                  <p className="text-[9px] text-slate-400">
+                    {isDemo ? messages.improvementActions.metricsSampleNote : messages.improvementActions.metricsNote}
+                  </p>
                   {metricsComparison.seasonalLevel !== "none" && metricsComparison.seasonalLabel && (
                     <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-50 px-1.5 py-0.5 text-[8px] text-blue-600">
                       <CalendarClock className="h-2 w-2" />
@@ -1572,6 +1584,14 @@ function ActionCard({
                 <p className="text-[11px] text-muted-foreground">
                   <BarChart3 className="inline h-3 w-3 mr-1" />
                   {messages.improvementActions.metricsEmpty}
+                </p>
+              </div>
+            )}
+            {!isOwner && expanded && (
+              <div className="rounded-lg border border-dashed border-amber-200 bg-amber-50/30 p-3 text-center">
+                <p className="text-[11px] text-amber-600 flex items-center justify-center gap-1">
+                  <Lock className="h-3 w-3" />
+                  {messages.improvementActions.metricsOwnerOnlyHint}
                 </p>
               </div>
             )}
