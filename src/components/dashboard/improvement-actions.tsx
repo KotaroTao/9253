@@ -1206,8 +1206,8 @@ function ActionCard({
         : 0
       items.push({
         label: messages.improvementActions.metricsRevenue,
-        startValue: `${Math.round(startMetric.totalRevenue / 10000)}`,
-        latestValue: `${Math.round(latestMetric.totalRevenue / 10000)}`,
+        startValue: `${Math.round(startMetric.totalRevenue)}`,
+        latestValue: `${Math.round(latestMetric.totalRevenue)}`,
         changeText: `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`,
         changeType: pct > 0 ? "positive" : pct < 0 ? "negative" : "neutral",
       })
