@@ -205,17 +205,9 @@ export function ImprovementActionsView({
     })
   }, [selectedQuestionIds, suggestionOutcomeMap])
 
-  function handleToggleQuestion(questionId: string) {
-    setSelectedQuestionIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(questionId)) {
-        next.delete(questionId)
-      } else {
-        next.add(questionId)
-      }
-      return next
-    })
-    // Reset title/description when changing questions
+  function handleSelectQuestion(questionId: string) {
+    setSelectedQuestionIds(questionId ? new Set([questionId]) : new Set())
+    // Reset title/description when changing question
     setTitle("")
     setDescription("")
   }
@@ -834,17 +826,17 @@ export function ImprovementActionsView({
             <CardTitle className="text-base">{messages.improvementActions.addAction}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Step 1: Question selector (checkboxes) — system_admin only */}
+            {/* Step 1: Question selector (dropdown) — system_admin only */}
             {isSystemAdmin && hasTemplates && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium">
                   {messages.improvementActions.selectQuestion}
                 </Label>
-                <QuestionCheckboxList
+                <QuestionSelect
                   templateQuestions={templateQuestions}
-                  selectedIds={selectedQuestionIds}
+                  selectedId={Array.from(selectedQuestionIds)[0] ?? ""}
                   questionScores={questionScores}
-                  onToggle={handleToggleQuestion}
+                  onSelect={handleSelectQuestion}
                 />
               </div>
             )}
@@ -1067,13 +1059,8 @@ export function ImprovementActionsView({
                 editQuestionIds={editQuestionIds}
                 onEditTitleChange={setEditTitle}
                 onEditDescriptionChange={setEditDescription}
-                onEditToggleQuestion={(qId) => {
-                  setEditQuestionIds((prev) => {
-                    const next = new Set(prev)
-                    if (next.has(qId)) next.delete(qId)
-                    else next.add(qId)
-                    return next
-                  })
+                onEditSelectQuestion={(qId) => {
+                  setEditQuestionIds(qId ? new Set([qId]) : new Set())
                 }}
                 templateQuestions={templateQuestions}
                 questionScores={questionScores}
@@ -1128,13 +1115,8 @@ export function ImprovementActionsView({
                 editQuestionIds={editQuestionIds}
                 onEditTitleChange={setEditTitle}
                 onEditDescriptionChange={setEditDescription}
-                onEditToggleQuestion={(qId) => {
-                  setEditQuestionIds((prev) => {
-                    const next = new Set(prev)
-                    if (next.has(qId)) next.delete(qId)
-                    else next.add(qId)
-                    return next
-                  })
+                onEditSelectQuestion={(qId) => {
+                  setEditQuestionIds(qId ? new Set([qId]) : new Set())
                 }}
                 templateQuestions={templateQuestions}
                 questionScores={questionScores}
@@ -1172,7 +1154,7 @@ function ActionCard({
   editQuestionIds,
   onEditTitleChange,
   onEditDescriptionChange,
-  onEditToggleQuestion,
+  onEditSelectQuestion,
   templateQuestions,
   questionScores,
   allQuestions,
@@ -1200,7 +1182,7 @@ function ActionCard({
   editQuestionIds?: Set<string>
   onEditTitleChange?: (v: string) => void
   onEditDescriptionChange?: (v: string) => void
-  onEditToggleQuestion?: (qId: string) => void
+  onEditSelectQuestion?: (qId: string) => void
   templateQuestions?: TemplateData[]
   questionScores?: Record<string, number>
   allQuestions?: Map<string, { text: string; templateName: string }>
@@ -1761,17 +1743,17 @@ function ActionCard({
                 placeholder={messages.improvementActions.descriptionPlaceholder}
               />
             </div>
-            {isSystemAdmin && onEditToggleQuestion && templateQuestions && questionScores && allQuestions && editQuestionIds && (
+            {isSystemAdmin && onEditSelectQuestion && templateQuestions && questionScores && allQuestions && editQuestionIds && (
               <>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">
                     {messages.improvementActions.selectQuestion}
                   </Label>
-                  <QuestionCheckboxList
+                  <QuestionSelect
                     templateQuestions={templateQuestions}
-                    selectedIds={editQuestionIds}
+                    selectedId={Array.from(editQuestionIds)[0] ?? ""}
                     questionScores={questionScores}
-                    onToggle={onEditToggleQuestion}
+                    onSelect={onEditSelectQuestion}
                   />
                 </div>
                 {editQuestionIds.size > 0 && (
@@ -1798,56 +1780,39 @@ function ActionCard({
   )
 }
 
-// ─── Checkbox question list ───
+// ─── Question dropdown select ───
 
-function QuestionCheckboxList({
+function QuestionSelect({
   templateQuestions,
-  selectedIds,
+  selectedId,
   questionScores,
-  onToggle,
+  onSelect,
 }: {
   templateQuestions: TemplateData[]
-  selectedIds: Set<string>
+  selectedId: string
   questionScores: Record<string, number>
-  onToggle: (questionId: string) => void
+  onSelect: (questionId: string) => void
 }) {
   return (
-    <div className="space-y-3 rounded-lg border border-input bg-background p-3 max-h-64 overflow-y-auto">
+    <select
+      value={selectedId}
+      onChange={(e) => onSelect(e.target.value)}
+      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+    >
+      <option value="">{messages.improvementActions.selectQuestionPlaceholder}</option>
       {templateQuestions.map((t) => (
-        <div key={t.name}>
-          <p className="text-xs font-semibold text-muted-foreground mb-1.5">{t.name}</p>
-          <div className="space-y-1">
-            {t.questions.map((q) => {
-              const isChecked = selectedIds.has(q.id)
-              const score = questionScores[q.id]
-              return (
-                <label
-                  key={q.id}
-                  className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 cursor-pointer transition-all ${
-                    isChecked
-                      ? "bg-blue-50 border border-blue-300"
-                      : "hover:bg-muted/50 border border-transparent"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => onToggle(q.id)}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="flex-1 text-sm">{q.text}</span>
-                  {score != null && (
-                    <span className={`text-xs font-semibold tabular-nums ${score < 3.5 ? "text-amber-700" : "text-muted-foreground"}`}>
-                      {score}
-                    </span>
-                  )}
-                </label>
-              )
-            })}
-          </div>
-        </div>
+        <optgroup key={t.name} label={t.name}>
+          {t.questions.map((q) => {
+            const score = questionScores[q.id]
+            return (
+              <option key={q.id} value={q.id}>
+                {q.text}{score != null ? ` (${score})` : ""}
+              </option>
+            )
+          })}
+        </optgroup>
       ))}
-    </div>
+    </select>
   )
 }
 
