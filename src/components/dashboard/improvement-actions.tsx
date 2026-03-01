@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label"
 import { messages } from "@/lib/messages"
 import type { SeasonalIndices } from "@/lib/queries/seasonal-index"
 import { MIN_CLINICS_FOR_DISPLAY } from "@/lib/queries/platform-action-stats"
+import type { PlatformActionOutcome } from "@/lib/queries/platform-action-stats"
+import type { TemplateQuestion, TemplateData } from "@/types"
 import {
   QUESTION_CATEGORY_MAP,
   IMPROVEMENT_SUGGESTIONS,
@@ -84,17 +86,6 @@ interface PlatformActionData {
   serviceProvider: string | null
 }
 
-interface TemplateQuestion {
-  id: string
-  text: string
-  type: string
-}
-
-interface TemplateData {
-  name: string
-  questions: TemplateQuestion[]
-}
-
 interface MonthlyMetric {
   year: number
   month: number
@@ -102,20 +93,6 @@ interface MonthlyMetric {
   totalRevenue: number | null
   cancellationCount: number | null
   totalVisitCount: number | null
-}
-
-interface PlatformActionOutcome {
-  platformActionId: string
-  qualifiedCount: number
-  adoptCount: number
-  avgScoreImprovement: number | null
-  avgRevenueChangePct: number | null
-  avgPatientCountChange: number | null
-  avgCancelRateChangePt: number | null
-  metricsClinicCount: number
-  avgDurationDays: number | null
-  establishedRate: number | null
-  confidence: "high" | "moderate" | "insufficient"
 }
 
 interface Props {

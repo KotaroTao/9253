@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk"
+import { z } from "zod"
 import type { AdvisorySection } from "@/types"
 
 // ─── LLM Advisory Engine ───
@@ -9,6 +10,10 @@ const MODEL = "claude-sonnet-4-6"
 const MAX_TOKENS = 4000
 const TIMEOUT_MS = 60_000 // 60秒
 const MAX_INPUT_CHARS = 30_000 // 入力テキストの上限（約7,500トークン相当）
+const RATE_LIMIT_MS = 60 * 60 * 1000 // 同一クリニック1時間に1回まで
+
+/** Per-clinic rate limit tracker (in-memory, resets on server restart) */
+const lastCallByClinic = new Map<string, number>()
 
 export interface LLMAdvisoryInput {
   /** 基本スコア */
@@ -93,6 +98,23 @@ JSON形式で以下の3セクションを返してください。マークダウ
   測定方法: 1ヶ月後に○○のスコアを確認
 - 改善アクション管理で追跡可能な粒度で書く`
 
+/** Zod schema for LLM advisory output */
+const llmAdvisoryOutputSchema = z.object({
+  executiveSummary: z.coerce.string().default(""),
+  rootCauseAnalysis: z.coerce.string().default(""),
+  strategicActions: z.coerce.string().default(""),
+})
+
+/**
+ * ユーザー由来のフリーテキストをサニタイズする。
+ * プロンプトインジェクション防止のため、制御文字・指示的パターンを除去し長さを制限する。
+ */
+function sanitizeComment(text: string, maxLen = 200): string {
+  return text
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "") // 制御文字を除去
+    .slice(0, maxLen)
+}
+
 /**
  * JSON文字列を堅牢に抽出する。
  * LLMの出力にコードブロックや前後の説明テキストが含まれる場合に対応。
@@ -133,10 +155,19 @@ function truncateRuleSummary(sections: Array<{ title: string; content: string }>
  * ANTHROPIC_API_KEY が未設定の場合は error を返す。
  */
 export async function generateLLMAdvisory(
-  input: LLMAdvisoryInput
+  input: LLMAdvisoryInput,
+  clinicId?: string,
 ): Promise<LLMAdvisoryResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return { output: null, error: null } // キー未設定はエラーではない
+
+  // Per-clinic rate limit check
+  if (clinicId) {
+    const lastCall = lastCallByClinic.get(clinicId)
+    if (lastCall && Date.now() - lastCall < RATE_LIMIT_MS) {
+      return { output: null, error: "レート制限: 次の分析は1時間後に実行できます" }
+    }
+  }
 
   const client = new Anthropic({ apiKey, timeout: TIMEOUT_MS })
 
@@ -176,12 +207,12 @@ export async function generateLLMAdvisory(
     ? input.segmentGaps.map((s) => `${s.segment}: ${s.avgScore.toFixed(2)}点 (全体比${s.gap >= 0 ? "+" : ""}${s.gap.toFixed(2)})`).join("\n")
     : "顕著なセグメント差なし"
 
-  // コメント
+  // コメント（プロンプトインジェクション防止のためサニタイズ）
   const negComments = input.negativeComments.length > 0
-    ? input.negativeComments.map((c) => `- 「${c}」`).join("\n")
+    ? input.negativeComments.map((c) => `- 「${sanitizeComment(c)}」`).join("\n")
     : "なし"
   const posComments = input.positiveComments.length > 0
-    ? input.positiveComments.map((c) => `- 「${c}」`).join("\n")
+    ? input.positiveComments.map((c) => `- 「${sanitizeComment(c)}」`).join("\n")
     : "なし"
 
   const userMessage = `以下のデータに基づいて、歯科医院の経営改善分析を行ってください。
@@ -227,18 +258,12 @@ ${posComments}`
       .map((b) => b.text)
       .join("")
 
-    // JSON パース（コードブロックや前後テキストに対応）
+    // JSON パース + Zod バリデーション（コードブロックや前後テキストに対応）
     const jsonStr = extractJson(text)
-    const parsed = JSON.parse(jsonStr) as LLMAdvisoryOutput
+    const parsed = llmAdvisoryOutputSchema.parse(JSON.parse(jsonStr))
 
-    return {
-      output: {
-        executiveSummary: parsed.executiveSummary || "",
-        rootCauseAnalysis: parsed.rootCauseAnalysis || "",
-        strategicActions: parsed.strategicActions || "",
-      },
-      error: null,
-    }
+    if (clinicId) lastCallByClinic.set(clinicId, Date.now())
+    return { output: parsed, error: null }
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)
     console.error("[LLM Advisory] Failed:", message)

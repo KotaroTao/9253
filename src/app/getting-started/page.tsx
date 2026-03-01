@@ -23,6 +23,7 @@ import {
 export const metadata: Metadata = {
   title: messages.gettingStarted.metaTitle,
   description: messages.gettingStarted.metaDescription,
+  robots: { index: false },
 }
 
 /* ------------------------------------------------------------------ */

@@ -10,18 +10,7 @@ import { getPlatformActionOutcomes } from "@/lib/queries/platform-action-stats"
 import { getSeasonalIndices } from "@/lib/queries/seasonal-index"
 import { getClinicPlanInfo, hasFeature } from "@/lib/plan"
 import { messages } from "@/lib/messages"
-import type { ClinicSettings } from "@/types"
-
-interface TemplateQuestion {
-  id: string
-  text: string
-  type: string
-}
-
-interface TemplateData {
-  name: string
-  questions: TemplateQuestion[]
-}
+import type { ClinicSettings, TemplateQuestion, TemplateData } from "@/types"
 
 export default async function ActionsPage() {
   const session = await auth()
