@@ -590,6 +590,74 @@ async function main() {
   })
   await prisma.improvementAction.deleteMany({ where: { clinicId: clinic.id } })
 
+  // =========================================================================
+  // プラットフォーム改善アクション（全クリニック共有の施策テンプレート）
+  // =========================================================================
+  await prisma.platformImprovementAction.deleteMany({})
+
+  const platformActionDefs = [
+    {
+      title: "待ち時間の見える化と声がけ",
+      description: "待ち時間が発生した際に「あと○分」と具体的な目安を伝える運用を開始。受付にタイマー表示を設置し、15分以上の待ちが発生した場合は必ず一声かける体制に。",
+      category: "待ち時間",
+      targetQuestionIds: ["fv3", "tr4"],
+      isPickup: true,
+      displayOrder: 1,
+    },
+    {
+      title: "受付マニュアルの作成と研修",
+      description: "受付時の笑顔・挨拶・名前呼びを統一するマニュアルを作成。全スタッフで月2回のロールプレイング研修を実施。",
+      category: "接遇",
+      targetQuestionIds: ["fv2", "fv1", "fv7", "tr3"],
+      isPickup: true,
+      displayOrder: 2,
+    },
+    {
+      title: "痛みへの配慮を言語化して伝える",
+      description: "治療前に「少しチクッとします」等の予告を徹底。手を挙げたら止めるルールを全チェアに掲示し、患者の安心感を向上。",
+      category: "不安軽減",
+      targetQuestionIds: ["tr2", "fv4"],
+      isPickup: true,
+      displayOrder: 3,
+    },
+    {
+      title: "フォローアップ体制の強化",
+      description: "抜歯等の処置後に翌日の電話フォローを開始。次回予約時に治療内容の説明を添えて、キャンセル率の低下と紹介意向の向上を目指す。",
+      category: "フォローアップ",
+      targetQuestionIds: ["tr6", "fv8"],
+      isPickup: false,
+      displayOrder: 4,
+    },
+    {
+      title: "視覚資料を活用した治療説明",
+      description: "口腔内カメラの写真やイラスト付き資料を使って、治療内容・費用を視覚的に説明する運用を導入。",
+      category: "治療説明",
+      targetQuestionIds: ["fv5", "fv6", "tr1"],
+      isPickup: false,
+      displayOrder: 5,
+    },
+  ]
+
+  const platformActions: Array<{ id: string; title: string }> = []
+  console.log(`\nプラットフォーム改善アクション:`)
+  for (const pa of platformActionDefs) {
+    const created = await prisma.platformImprovementAction.create({
+      data: {
+        title: pa.title,
+        description: pa.description,
+        category: pa.category,
+        targetQuestionIds: pa.targetQuestionIds,
+        isPickup: pa.isPickup,
+        displayOrder: pa.displayOrder,
+      },
+    })
+    platformActions.push({ id: created.id, title: created.title })
+    console.log(`  ${pa.title}（pickup: ${pa.isPickup}）`)
+  }
+
+  // PlatformAction名→IDマップ
+  const paIdByTitle = new Map(platformActions.map((pa) => [pa.title, pa.id]))
+
   const improvementActions = [
     {
       title: "待ち時間の見える化と声がけ",
@@ -599,6 +667,8 @@ async function main() {
       startMonthIdx: 0,
       endMonthIdx: 3,
       questions: ["fv3", "tr4"],
+      platformActionTitle: "待ち時間の見える化と声がけ",
+      completionReason: "established",
     },
     {
       title: "受付マニュアルの作成と研修",
@@ -608,6 +678,8 @@ async function main() {
       startMonthIdx: 1,
       endMonthIdx: 5,
       questions: ["fv2", "fv1", "fv7", "tr3"],
+      platformActionTitle: "受付マニュアルの作成と研修",
+      completionReason: "established",
     },
     {
       title: "受付環境の改善（動線・表示見直し）",
@@ -617,6 +689,8 @@ async function main() {
       startMonthIdx: 2,
       endMonthIdx: 5,
       questions: ["fv1", "fv2"],
+      platformActionTitle: null,
+      completionReason: "established",
     },
     {
       title: "視覚資料を活用した治療説明",
@@ -626,6 +700,8 @@ async function main() {
       startMonthIdx: 4,
       endMonthIdx: 7,
       questions: ["fv5", "fv6", "tr1"],
+      platformActionTitle: "視覚資料を活用した治療説明",
+      completionReason: "established",
     },
     {
       title: "接遇マナー研修の定期実施",
@@ -635,6 +711,8 @@ async function main() {
       startMonthIdx: 5,
       endMonthIdx: 8,
       questions: ["tr5", "fv7", "tr3", "fv8", "tr6"],
+      platformActionTitle: null,
+      completionReason: "established",
     },
     {
       title: "予約枠にバッファを確保",
@@ -644,6 +722,8 @@ async function main() {
       startMonthIdx: 7,
       endMonthIdx: 10,
       questions: ["fv3", "tr4"],
+      platformActionTitle: null,
+      completionReason: "established",
     },
     {
       title: "痛みへの配慮を言語化して伝える",
@@ -653,6 +733,8 @@ async function main() {
       startMonthIdx: 9,
       endMonthIdx: null,
       questions: ["tr2", "fv4"],
+      platformActionTitle: "痛みへの配慮を言語化して伝える",
+      completionReason: null,
     },
     {
       title: "フォローアップ体制の強化",
@@ -662,6 +744,8 @@ async function main() {
       startMonthIdx: 10,
       endMonthIdx: null,
       questions: ["tr6", "fv8"],
+      platformActionTitle: "フォローアップ体制の強化",
+      completionReason: null,
     },
   ]
 
@@ -694,9 +778,85 @@ async function main() {
         status: action.status,
         startedAt,
         completedAt,
+        completionReason: action.completionReason,
+        platformActionId: action.platformActionTitle ? paIdByTitle.get(action.platformActionTitle) ?? null : null,
       },
     })
     console.log(`  ${action.title}（${action.status}）${baselineScore.toFixed(2)} → ${resultScore !== null ? resultScore.toFixed(2) : "実施中"}`)
+  }
+
+  // =========================================================================
+  // 他院の改善アクション実績（プラットフォーム横断データ用）
+  // =========================================================================
+  // getPlatformActionOutcomes が confidence="high" を返すために、
+  // 5院以上の完了実績（30日以上、suspended以外）が必要。
+  // 仮想クリニックを5院作り、各プラットフォームアクションに対して完了済みアクションを作成。
+
+  console.log(`\n他院データ（仮想クリニック5院分）:`)
+  const virtualClinicNames = [
+    "さくら歯科クリニック",
+    "ひまわり歯科",
+    "あおぞら歯科医院",
+    "こまち歯科クリニック",
+    "はなみずき歯科",
+  ]
+
+  for (let vc = 0; vc < virtualClinicNames.length; vc++) {
+    const vcSlug = `virtual-clinic-${vc + 1}`
+    const vcClinic = await prisma.clinic.upsert({
+      where: { slug: vcSlug },
+      update: { name: virtualClinicNames[vc] },
+      create: { name: virtualClinicNames[vc], slug: vcSlug },
+    })
+
+    // 仮想クリニックの月次経営データ（8ヶ月分）
+    for (let m = 1; m <= 8; m++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - m, 1)
+      const year = d.getFullYear()
+      const month = d.getMonth() + 1
+      const baseRevenue = 280 + vc * 30 + Math.round(m * 8 + (rng() - 0.5) * 20)
+      const totalPatients = 240 + vc * 15 + Math.round(m * 5 + (rng() - 0.5) * 10)
+      const cancellationCount = Math.max(0, Math.round(totalPatients * (0.08 - m * 0.003 + (rng() - 0.5) * 0.01)))
+      const totalVisitCount = Math.round(totalPatients * (2.3 + rng() * 0.4))
+
+      await prisma.monthlyClinicMetrics.upsert({
+        where: { clinicId_year_month: { clinicId: vcClinic.id, year, month } },
+        update: { totalRevenue: baseRevenue, totalPatientCount: totalPatients, cancellationCount, totalVisitCount },
+        create: { clinicId: vcClinic.id, year, month, totalRevenue: baseRevenue, totalPatientCount: totalPatients, cancellationCount, totalVisitCount },
+      })
+    }
+
+    // 各プラットフォームアクションに対して完了済みの改善アクションを作成
+    for (const pa of platformActions) {
+      // 各仮想クリニックで微妙に異なるスコア改善幅
+      const baseline = 3.2 + rng() * 0.6 // 3.2〜3.8
+      const improvement = 0.2 + rng() * 0.5 // 0.2〜0.7
+      const result = Math.round((baseline + improvement) * 100) / 100
+      const durationDays = 35 + Math.floor(rng() * 60) // 35〜95日
+      const startedAt = new Date(now.getTime() - (durationDays + 30 + Math.floor(rng() * 60)) * 24 * 60 * 60 * 1000)
+      const completedAt = new Date(startedAt.getTime() + durationDays * 24 * 60 * 60 * 1000)
+      const reason = rng() > 0.25 ? "established" : "uncertain"
+
+      // 既存のアクションを削除してから作成
+      await prisma.improvementAction.deleteMany({
+        where: { clinicId: vcClinic.id, platformActionId: pa.id },
+      })
+
+      await prisma.improvementAction.create({
+        data: {
+          clinicId: vcClinic.id,
+          title: pa.title,
+          status: "completed",
+          baselineScore: Math.round(baseline * 100) / 100,
+          resultScore: result,
+          startedAt,
+          completedAt,
+          completionReason: reason,
+          platformActionId: pa.id,
+        },
+      })
+    }
+    console.log(`  ${virtualClinicNames[vc]}: 5アクション完了`)
   }
 
   // =========================================================================
