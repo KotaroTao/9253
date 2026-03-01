@@ -920,6 +920,12 @@ export function ImprovementActionsView({
                             {messages.platformActions.outcomeAdoptCount(outcome.adoptCount)}
                           </p>
                         )}
+                        {!outcome && (
+                          <p className="mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground/60">
+                            <BarChart3 className="h-3 w-3" />
+                            {messages.platformActions.suggestionOutcomeCollecting}
+                          </p>
+                        )}
                       </button>
                     )
                   })}
