@@ -4,30 +4,38 @@ import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
 import { getCurrentSatisfactionScore, getQuestionCurrentScore } from "@/lib/queries/stats"
+import { parseOffsetParams, calcOffsetMeta } from "@/lib/pagination"
 
 /**
  * GET /api/improvement-actions
- * List improvement actions for the clinic (with logs)
+ * List improvement actions for the clinic (with logs).
+ * Supports optional offset pagination (?page=&limit=). Default: all (up to 200).
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   const authResult = await requireRole("clinic_admin", "system_admin")
   if (isAuthError(authResult)) return authResult
 
   const clinicId = authResult.user.clinicId
   if (!clinicId) return errorResponse(messages.errors.clinicNotAssociated, 400)
 
-  const actions = await prisma.improvementAction.findMany({
-    where: { clinicId },
-    orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-    take: 100,
-    include: {
-      logs: {
-        orderBy: { createdAt: "asc" },
-      },
-    },
-  })
+  const { page, limit } = parseOffsetParams(request.nextUrl.searchParams, { limit: 200, maxLimit: 200 })
 
-  return successResponse(actions)
+  const [actions, total] = await Promise.all([
+    prisma.improvementAction.findMany({
+      where: { clinicId },
+      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+      skip: (page - 1) * limit,
+      take: limit,
+      include: {
+        logs: {
+          orderBy: { createdAt: "asc" },
+        },
+      },
+    }),
+    prisma.improvementAction.count({ where: { clinicId } }),
+  ])
+
+  return successResponse({ items: actions, ...calcOffsetMeta(total, { page, limit }) })
 }
 
 /**

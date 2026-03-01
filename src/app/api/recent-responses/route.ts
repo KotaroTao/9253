@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth, isAuthError } from "@/lib/auth-helpers"
-
-const PAGE_SIZE = 10
+import { errorResponse, successResponse } from "@/lib/api-helpers"
+import { messages } from "@/lib/messages"
+import { parseLoadMoreParams, sliceWithHasMore } from "@/lib/pagination"
 
 export async function GET(request: NextRequest) {
   const result = await requireAuth()
@@ -10,17 +11,16 @@ export async function GET(request: NextRequest) {
 
   const { clinicId } = result.user
   if (!clinicId) {
-    return NextResponse.json({ error: "クリニックが見つかりません" }, { status: 400 })
+    return errorResponse(messages.errors.clinicNotFound, 400)
   }
 
-  const { searchParams } = request.nextUrl
-  const offset = Math.max(0, Number(searchParams.get("offset") ?? "0"))
+  const { offset, pageSize } = parseLoadMoreParams(request.nextUrl.searchParams)
 
   const responses = await prisma.surveyResponse.findMany({
     where: { clinicId },
     orderBy: { respondedAt: "desc" },
     skip: offset,
-    take: PAGE_SIZE + 1,
+    take: pageSize + 1,
     select: {
       id: true,
       overallScore: true,
@@ -31,8 +31,7 @@ export async function GET(request: NextRequest) {
     },
   })
 
-  const hasMore = responses.length > PAGE_SIZE
-  const items = hasMore ? responses.slice(0, PAGE_SIZE) : responses
+  const { items, hasMore } = sliceWithHasMore(responses, pageSize)
 
-  return NextResponse.json({ items, hasMore })
+  return successResponse({ items, hasMore })
 }

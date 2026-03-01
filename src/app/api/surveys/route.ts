@@ -4,6 +4,7 @@ import { errorResponse, successResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
 import { ROLES } from "@/lib/constants"
 import { getSurveyResponses } from "@/lib/queries/surveys"
+import { parseOffsetParams } from "@/lib/pagination"
 
 export async function GET(request: NextRequest) {
   const result = await requireAuth()
@@ -20,9 +21,7 @@ export async function GET(request: NextRequest) {
     return errorResponse(messages.errors.clinicNotFound, 400)
   }
 
-  const params = request.nextUrl.searchParams
-  const page = Math.max(1, Number(params.get("page")) || 1)
-  const limit = Math.min(50, Math.max(1, Number(params.get("limit")) || 20))
+  const { page, limit } = parseOffsetParams(request.nextUrl.searchParams, { maxLimit: 50 })
 
   const data = await getSurveyResponses(clinicId, { page, limit })
 
