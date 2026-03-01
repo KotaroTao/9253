@@ -412,6 +412,14 @@ export const messages = {
     addLogPlaceholder: "進捗メモを入力",
     addLogSaved: "メモを保存しました",
     addLogFailed: "メモの保存に失敗しました",
+    // Business metrics comparison
+    metricsTitle: "同期間の経営指標の変化",
+    metricsRevenue: "総売上",
+    metricsRevenueUnit: "万円",
+    metricsPatients: "総実人数",
+    metricsCancelRate: "キャンセル率",
+    metricsNote: "※ 経営レポート入力データに基づく参考値です",
+    metricsEmpty: "経営レポートを入力すると、施策期間中の経営指標の変化がここに表示されます",
     tips: [
       "多くの改善アクションを一度にやるのではなく、「満足度が低い」カテゴリから1～2項目だけ選び、朝礼などで「今月はこれを全員でやろう！」と決めて実行するのがおすすめです。",
       "改善アクションは「開始時スコア → 現在スコア」で効果を数値化できるので、スコアが動いたらミーティングなどでチームに共有して、成功体験をみんなで積み上げていきましょう。",

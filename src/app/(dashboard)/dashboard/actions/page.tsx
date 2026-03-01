@@ -52,7 +52,7 @@ export default async function ActionsPage() {
     }
   }
 
-  const [actions, templates, platformActions] = await Promise.all([
+  const [actions, templates, platformActions, monthlyMetrics] = await Promise.all([
     prisma.improvementAction.findMany({
       where: { clinicId },
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
@@ -68,6 +68,18 @@ export default async function ActionsPage() {
     prisma.platformImprovementAction.findMany({
       where: { isActive: true },
       orderBy: [{ isPickup: "desc" }, { displayOrder: "asc" }, { createdAt: "desc" }],
+    }),
+    prisma.monthlyClinicMetrics.findMany({
+      where: { clinicId },
+      select: {
+        year: true,
+        month: true,
+        totalPatientCount: true,
+        totalRevenue: true,
+        cancellationCount: true,
+        totalVisitCount: true,
+      },
+      orderBy: [{ year: "asc" }, { month: "asc" }],
     }),
   ])
 
@@ -119,6 +131,7 @@ export default async function ActionsPage() {
         }))}
         adoptedPlatformActionIds={adoptedPlatformActionIds}
         isSystemAdmin={session.user.role === ROLES.SYSTEM_ADMIN}
+        monthlyMetrics={monthlyMetrics}
       />
     </div>
   )

@@ -92,6 +92,15 @@ interface TemplateData {
   questions: TemplateQuestion[]
 }
 
+interface MonthlyMetric {
+  year: number
+  month: number
+  totalPatientCount: number | null
+  totalRevenue: number | null
+  cancellationCount: number | null
+  totalVisitCount: number | null
+}
+
 interface Props {
   initialActions: ImprovementAction[]
   templateQuestions?: TemplateData[]
@@ -99,6 +108,7 @@ interface Props {
   platformActions?: PlatformActionData[]
   adoptedPlatformActionIds?: string[]
   isSystemAdmin?: boolean
+  monthlyMetrics?: MonthlyMetric[]
 }
 
 export function ImprovementActionsView({
@@ -108,6 +118,7 @@ export function ImprovementActionsView({
   platformActions = [],
   adoptedPlatformActionIds: initialAdopted = [],
   isSystemAdmin = false,
+  monthlyMetrics = [],
 }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -884,6 +895,7 @@ export function ImprovementActionsView({
                 questionScores={questionScores}
                 allQuestions={allQuestions}
                 isSystemAdmin={isSystemAdmin}
+                monthlyMetrics={monthlyMetrics}
               />
             )
           })}
@@ -943,6 +955,7 @@ export function ImprovementActionsView({
                 questionScores={questionScores}
                 allQuestions={allQuestions}
                 isSystemAdmin={isSystemAdmin}
+                monthlyMetrics={monthlyMetrics}
               />
             )
           })}
@@ -978,6 +991,7 @@ function ActionCard({
   questionScores,
   allQuestions,
   isSystemAdmin,
+  monthlyMetrics,
 }: {
   action: ImprovementAction
   expanded: boolean
@@ -1004,6 +1018,7 @@ function ActionCard({
   questionScores?: Record<string, number>
   allQuestions?: Map<string, { text: string; templateName: string }>
   isSystemAdmin?: boolean
+  monthlyMetrics?: MonthlyMetric[]
 }) {
   const isActive = action.status === "active"
   const isCompleted = action.status === "completed"
@@ -1019,6 +1034,85 @@ function ActionCard({
     const end = action.completedAt ? new Date(action.completedAt) : new Date()
     return Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
   }, [action.startedAt, action.completedAt])
+
+  // Business metrics comparison: start month vs latest month
+  const metricsComparison = useMemo(() => {
+    if (!monthlyMetrics || monthlyMetrics.length < 2) return null
+    const startDate = new Date(action.startedAt)
+    const startYear = startDate.getFullYear()
+    const startMonth = startDate.getMonth() + 1 // 1-based
+
+    // Find the metric for the start month (or closest earlier)
+    const startMetric = monthlyMetrics
+      .filter((m) => m.year < startYear || (m.year === startYear && m.month <= startMonth))
+      .at(-1)
+
+    // Latest metric (must be different from start)
+    const latestMetric = monthlyMetrics.at(-1)
+
+    if (!startMetric || !latestMetric) return null
+    if (startMetric.year === latestMetric.year && startMetric.month === latestMetric.month) return null
+
+    const items: Array<{
+      label: string
+      startValue: string
+      latestValue: string
+      changeText: string
+      changeType: "positive" | "negative" | "neutral"
+    }> = []
+
+    // Total revenue
+    if (startMetric.totalRevenue != null && latestMetric.totalRevenue != null) {
+      const pct = startMetric.totalRevenue > 0
+        ? ((latestMetric.totalRevenue - startMetric.totalRevenue) / startMetric.totalRevenue) * 100
+        : 0
+      items.push({
+        label: messages.improvementActions.metricsRevenue,
+        startValue: `${Math.round(startMetric.totalRevenue / 10000)}`,
+        latestValue: `${Math.round(latestMetric.totalRevenue / 10000)}`,
+        changeText: `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`,
+        changeType: pct > 0 ? "positive" : pct < 0 ? "negative" : "neutral",
+      })
+    }
+
+    // Total patient count
+    if (startMetric.totalPatientCount != null && latestMetric.totalPatientCount != null) {
+      const diff = latestMetric.totalPatientCount - startMetric.totalPatientCount
+      items.push({
+        label: messages.improvementActions.metricsPatients,
+        startValue: `${startMetric.totalPatientCount}`,
+        latestValue: `${latestMetric.totalPatientCount}`,
+        changeText: `${diff >= 0 ? "+" : ""}${diff}`,
+        changeType: diff > 0 ? "positive" : diff < 0 ? "negative" : "neutral",
+      })
+    }
+
+    // Cancellation rate
+    const startCancelRate = startMetric.cancellationCount != null && startMetric.totalVisitCount
+      ? (startMetric.cancellationCount / startMetric.totalVisitCount) * 100
+      : null
+    const latestCancelRate = latestMetric.cancellationCount != null && latestMetric.totalVisitCount
+      ? (latestMetric.cancellationCount / latestMetric.totalVisitCount) * 100
+      : null
+    if (startCancelRate != null && latestCancelRate != null) {
+      const diff = latestCancelRate - startCancelRate
+      items.push({
+        label: messages.improvementActions.metricsCancelRate,
+        startValue: `${startCancelRate.toFixed(1)}%`,
+        latestValue: `${latestCancelRate.toFixed(1)}%`,
+        changeText: `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}pt`,
+        changeType: diff < 0 ? "positive" : diff > 0 ? "negative" : "neutral", // lower is better
+      })
+    }
+
+    if (items.length === 0) return null
+
+    return {
+      items,
+      startLabel: `${startMetric.year}/${startMetric.month}`,
+      latestLabel: `${latestMetric.year}/${latestMetric.month}`,
+    }
+  }, [monthlyMetrics, action.startedAt])
 
   // For active: compare baseline vs current question score
   // For completed: compare baseline vs resultScore (auto-captured at completion)
@@ -1198,6 +1292,48 @@ function ActionCard({
                     </p>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Business metrics comparison */}
+            {metricsComparison && (
+              <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-3 space-y-2">
+                <p className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
+                  <BarChart3 className="h-3 w-3" />
+                  {messages.improvementActions.metricsTitle}
+                  <span className="font-normal text-slate-400 ml-1">
+                    {metricsComparison.startLabel} → {metricsComparison.latestLabel}
+                  </span>
+                </p>
+                <div className={`grid gap-2 ${metricsComparison.items.length === 3 ? "grid-cols-3" : metricsComparison.items.length === 2 ? "grid-cols-2" : "grid-cols-1"}`}>
+                  {metricsComparison.items.map((item) => (
+                    <div key={item.label} className="rounded-md bg-white p-2 text-center">
+                      <p className="text-[9px] text-slate-500">{item.label}</p>
+                      <p className="text-xs text-slate-600 mt-0.5">
+                        {item.startValue} → <span className="font-semibold">{item.latestValue}</span>
+                        {item.label === messages.improvementActions.metricsRevenue && (
+                          <span className="text-[9px] text-slate-400 ml-0.5">{messages.improvementActions.metricsRevenueUnit}</span>
+                        )}
+                      </p>
+                      <p className={`text-[11px] font-bold mt-0.5 ${
+                        item.changeType === "positive" ? "text-green-600" :
+                        item.changeType === "negative" ? "text-red-500" :
+                        "text-slate-400"
+                      }`}>
+                        {item.changeText}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[9px] text-slate-400">{messages.improvementActions.metricsNote}</p>
+              </div>
+            )}
+            {!metricsComparison && expanded && monthlyMetrics && monthlyMetrics.length < 2 && (
+              <div className="rounded-lg border border-dashed border-slate-200 p-3 text-center">
+                <p className="text-[11px] text-muted-foreground">
+                  <BarChart3 className="inline h-3 w-3 mr-1" />
+                  {messages.improvementActions.metricsEmpty}
+                </p>
               </div>
             )}
 
