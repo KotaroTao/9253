@@ -255,14 +255,47 @@ export function StaffEngagement({
         </Card>
       )}
 
-      {/* ①② 過去1週間 + パーソナルステータス（PC横並び） */}
+      {/* 統合ステータスカード（ランク・目標・チャート・コレクション） */}
       {totalCount > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="border-purple-200 bg-gradient-to-r from-purple-50/50 to-white">
-          <CardContent className="py-5">
-            <div className="flex items-center justify-between mb-3">
+          <CardContent className="py-5 space-y-4">
+            {/* ステータスバー: ランク / ストリーク / 日次目標 / 満足度 */}
+            <div className="flex items-center justify-between">
+              {/* Rank + Streak */}
               <div className="flex items-center gap-3">
-                <p className="text-xs font-medium text-muted-foreground">過去1週間</p>
+                <div className="relative flex items-center gap-1.5">
+                  <span className="text-lg">{rank.emoji}</span>
+                  <span className="text-sm font-bold">{rank.name}</span>
+                  <button
+                    onClick={() => setShowRankInfo((v) => !v)}
+                    className="text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                    aria-label="ランクシステムについて"
+                  >
+                    <HelpCircle className="h-3.5 w-3.5" />
+                  </button>
+                  {showRankInfo && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setShowRankInfo(false)} />
+                      <div className="absolute left-0 top-full z-50 mt-2 w-56 rounded-xl border bg-white p-3 shadow-lg">
+                        <p className="text-xs font-bold text-foreground mb-2">ランクシステム</p>
+                        <div className="space-y-1">
+                          {RANKS.map((r) => (
+                            <div
+                              key={r.name}
+                              className={cn(
+                                "flex items-center justify-between rounded-md px-2 py-1 text-xs",
+                                r.name === rank.name ? "bg-blue-50 font-bold text-blue-700" : "text-muted-foreground"
+                              )}
+                            >
+                              <span>{r.emoji} {r.name}</span>
+                              <span className="tabular-nums">{r.minCount.toLocaleString()}件〜</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
                 {streak > 0 && (
                   <div className="flex items-center gap-1 text-orange-500">
                     <Flame className="h-4 w-4" />
@@ -272,32 +305,82 @@ export function StaffEngagement({
                   </div>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground">
-                合計 <span className="font-bold text-foreground">{weekTotal}</span>{messages.common.countSuffix}
-              </p>
+
+              <div className="flex items-center gap-4">
+                {/* Today count with goal */}
+                <div className="text-center">
+                  <p className={cn(
+                    "text-xs font-medium",
+                    todayCount >= dailyGoal && dailyGoal > 0 ? "text-green-600" : "text-muted-foreground"
+                  )}>
+                    {todayCount >= dailyGoal && dailyGoal > 0 ? messages.dashboard.dailyGoalAchieved : messages.dashboard.dailyGoalLabel}
+                  </p>
+                  <p className="text-lg font-bold">
+                    <span className={cn(todayCount >= dailyGoal && dailyGoal > 0 && "text-green-600")}>{todayCount}</span>
+                    <span className="text-xs text-muted-foreground">/{dailyGoal}{messages.common.countSuffix}</span>
+                  </p>
+                  <div className="mt-1 h-1 w-16 mx-auto overflow-hidden rounded-full bg-muted">
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-all",
+                        todayCount >= dailyGoal && dailyGoal > 0 ? "bg-green-500" : "bg-purple-400"
+                      )}
+                      style={{ width: `${Math.min(100, dailyGoal > 0 ? Math.round((todayCount / dailyGoal) * 100) : 0)}%` }}
+                    />
+                  </div>
+                </div>
+                {/* Happiness meter */}
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">満足度</p>
+                  <p className="text-lg">{happiness.emoji} <span className="text-sm font-medium">{todayAvgScore?.toFixed(1) ?? "-"}</span></p>
+                </div>
+              </div>
             </div>
 
-              {/* Bar chart for each day */}
-              {(() => {
-                const maxCount = Math.max(...weekDays.map((d) => d.count), dailyGoal, 1)
-                const goalLineBottom = (dailyGoal / maxCount) * 80
-                return (
-                  <div className="relative">
-                    {/* Goal dashed line */}
-                    {dailyGoal > 0 && (
-                      <>
-                        <div
-                          className="absolute left-0 right-0 border-t border-dashed border-green-400/60 pointer-events-none z-10"
-                          style={{ bottom: `${goalLineBottom + 28 + 10 + 4}px` }}
-                        />
-                        <span
-                          className="absolute right-0 text-[9px] text-green-500/70 font-medium pointer-events-none z-10"
-                          style={{ bottom: `${goalLineBottom + 28 + 10 + 6}px` }}
-                        >
-                          {messages.dashboard.dailyGoalLine}{dailyGoal}
-                        </span>
-                      </>
-                    )}
+            {/* Rank progress */}
+            {nextRank && (
+              <div>
+                <div className="flex justify-between text-[10px] text-muted-foreground">
+                  <span>{messages.dashboard.rankProgress}: {nextRank.name} {nextRank.emoji}</span>
+                  <span>{messages.dashboard.milestoneRemaining}{(nextRank.minCount - totalCount).toLocaleString()}{messages.common.countSuffix}</span>
+                </div>
+                <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-blue-400 transition-all"
+                    style={{ width: `${rankProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Goal encouragement */}
+            {dailyGoal > 0 && todayCount < dailyGoal && todayCount > 0 && dailyGoal - todayCount <= 3 && (
+              <p className="text-xs text-center text-green-600 font-medium">
+                {messages.dashboard.dailyGoalAlmost.replace("{remaining}", String(dailyGoal - todayCount))}
+              </p>
+            )}
+
+            {/* 曜日別バーチャート */}
+            {(() => {
+              const maxCount = Math.max(...weekDays.map((d) => d.count), dailyGoal, 1)
+              const goalLineBottom = (dailyGoal / maxCount) * 80
+              return (
+                <div className="relative">
+                  {/* Goal dashed line */}
+                  {dailyGoal > 0 && (
+                    <>
+                      <div
+                        className="absolute left-0 right-0 border-t border-dashed border-green-400/60 pointer-events-none z-10"
+                        style={{ bottom: `${goalLineBottom + 28 + 10 + 4}px` }}
+                      />
+                      <span
+                        className="absolute right-0 text-[9px] text-green-500/70 font-medium pointer-events-none z-10"
+                        style={{ bottom: `${goalLineBottom + 28 + 10 + 6}px` }}
+                      >
+                        {messages.dashboard.dailyGoalLine}{dailyGoal}
+                      </span>
+                    </>
+                  )}
                   <div className="flex items-end gap-1.5">
                     {weekDays.map((day) => {
                       const barHeight = maxCount > 0 ? Math.max((day.count / maxCount) * 80, day.count > 0 ? 8 : 0) : 0
@@ -376,108 +459,16 @@ export function StaffEngagement({
                       )
                     })}
                   </div>
-                  </div>
-                )
-              })()}
-          </CardContent>
-        </Card>
-
-        {/* ② パーソナルステータスバー */}
-        <Card className="flex flex-col">
-          <CardContent className="py-4 flex-1">
-            <div className="flex items-center justify-between">
-              {/* Rank */}
-              <div className="relative flex items-center gap-1.5">
-                <span className="text-lg">{rank.emoji}</span>
-                <span className="text-sm font-bold">{rank.name}</span>
-                <button
-                  onClick={() => setShowRankInfo((v) => !v)}
-                  className="text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-                  aria-label="ランクシステムについて"
-                >
-                  <HelpCircle className="h-3.5 w-3.5" />
-                </button>
-                {showRankInfo && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowRankInfo(false)} />
-                    <div className="absolute left-0 top-full z-50 mt-2 w-56 rounded-xl border bg-white p-3 shadow-lg">
-                      <p className="text-xs font-bold text-foreground mb-2">ランクシステム</p>
-                      <div className="space-y-1">
-                        {RANKS.map((r) => (
-                          <div
-                            key={r.name}
-                            className={cn(
-                              "flex items-center justify-between rounded-md px-2 py-1 text-xs",
-                              r.name === rank.name ? "bg-blue-50 font-bold text-blue-700" : "text-muted-foreground"
-                            )}
-                          >
-                            <span>{r.emoji} {r.name}</span>
-                            <span className="tabular-nums">{r.minCount.toLocaleString()}件〜</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-              {/* Today count with goal */}
-              <div className="text-center">
-                <p className={cn(
-                  "text-xs font-medium",
-                  todayCount >= dailyGoal && dailyGoal > 0 ? "text-green-600" : "text-muted-foreground"
-                )}>
-                  {todayCount >= dailyGoal && dailyGoal > 0 ? messages.dashboard.dailyGoalAchieved : messages.dashboard.dailyGoalLabel}
-                </p>
-                <p className="text-lg font-bold">
-                  <span className={cn(todayCount >= dailyGoal && dailyGoal > 0 && "text-green-600")}>{todayCount}</span>
-                  <span className="text-xs text-muted-foreground">/{dailyGoal}{messages.common.countSuffix}</span>
-                </p>
-                <div className="mt-1 h-1 w-16 mx-auto overflow-hidden rounded-full bg-muted">
-                  <div
-                    className={cn(
-                      "h-full rounded-full transition-all",
-                      todayCount >= dailyGoal && dailyGoal > 0 ? "bg-green-500" : "bg-purple-400"
-                    )}
-                    style={{ width: `${Math.min(100, dailyGoal > 0 ? Math.round((todayCount / dailyGoal) * 100) : 0)}%` }}
-                  />
                 </div>
-              </div>
-              {/* Happiness meter */}
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">満足度</p>
-                <p className="text-lg">{happiness.emoji} <span className="text-sm font-medium">{todayAvgScore?.toFixed(1) ?? "-"}</span></p>
-              </div>
-            </div>
-            {/* Rank progress */}
-            {nextRank && (
-              <div className="mt-2">
-                <div className="flex justify-between text-[10px] text-muted-foreground">
-                  <span>{messages.dashboard.rankProgress}: {nextRank.name} {nextRank.emoji}</span>
-                  <span>{messages.dashboard.milestoneRemaining}{(nextRank.minCount - totalCount).toLocaleString()}{messages.common.countSuffix}</span>
-                </div>
-                <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-blue-400 transition-all"
-                    style={{ width: `${rankProgress}%` }}
-                  />
-                </div>
-              </div>
-            )}
+              )
+            })()}
 
-            {/* Goal encouragement */}
-            {dailyGoal > 0 && todayCount < dailyGoal && todayCount > 0 && dailyGoal - todayCount <= 3 && (
-              <p className="mt-2 text-xs text-center text-green-600 font-medium">
-                {messages.dashboard.dailyGoalAlmost.replace("{remaining}", String(dailyGoal - todayCount))}
-              </p>
-            )}
-
-            {/* Kawaii Teeth コレクション（ランク枠内） */}
-            <div className="mt-4 border-t pt-3">
+            {/* Kawaii Teeth コレクション */}
+            <div className="border-t pt-3">
               <KawaiiTeethCollection embedded />
             </div>
           </CardContent>
         </Card>
-        </div>
       )}
 
 
