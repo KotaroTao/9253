@@ -79,6 +79,9 @@ export interface AdvisorySection {
     | "purpose_deep_dive"
     | "retention_signals"
     | "response_quality"
+    | "executive_summary"
+    | "root_cause"
+    | "strategic_actions"
 }
 
 /** AI Advisory レポートデータ */
