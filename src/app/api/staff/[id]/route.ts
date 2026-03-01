@@ -44,7 +44,7 @@ export async function PATCH(
     if (email && password) {
       // 既にログインが設定されている場合は拒否
       if (existing.user) {
-        return errorResponse("このスタッフには既にログインが設定されています", 400)
+        return errorResponse(messages.staff.loginAlreadySet, 400)
       }
 
       // トランザクションでStaff更新 + User作成

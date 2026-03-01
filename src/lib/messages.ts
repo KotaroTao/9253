@@ -616,6 +616,7 @@ export const messages = {
     loginEnabled: "ログインあり",
     loginDisabled: "ログインなし",
     emailDuplicate: "このメールアドレスは既に使用されています",
+    loginAlreadySet: "このスタッフには既にログインが設定されています",
   },
   kiosk: {
     nextPatient: "次の患者さまへ",
