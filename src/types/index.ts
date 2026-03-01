@@ -38,6 +38,11 @@ export interface ClinicSettings {
   // メール通知
   lastReminderDay?: number // 最終リマインダー送信日（登録からの日数）
   weeklyEmailDisabled?: boolean // 週次サマリーメール停止フラグ
+  // 日次目標トラッキング
+  goalLevel?: number // 0=0.3倍, 1=0.4倍, 2=0.5倍
+  goalAchieveStreak?: number // 連続達成日数
+  goalMissStreak?: number // 連続未達日数
+  goalLastCheckedDate?: string // YYYY-MM-DD（最終評価日）
 }
 
 /** プラン情報（クライアント向け） */

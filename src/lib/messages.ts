@@ -249,6 +249,11 @@ export const messages = {
     streakBrokenDate: "{date}（{dayOfWeek}）",
     markAsClosed: "休診日だった",
     streakRecovered: "ストリークを復活しました",
+    // Daily goal
+    dailyGoalLabel: "目標",
+    dailyGoalAchieved: "目標達成！",
+    dailyGoalAlmost: "あと{remaining}件で達成！",
+    dailyGoalLine: "目標",
     // Insights
     insightTitle: "改善アクション",
     insightScoreUp: "先月より{delta}ポイント上昇",

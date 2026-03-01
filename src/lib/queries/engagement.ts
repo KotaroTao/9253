@@ -1,10 +1,12 @@
 import { prisma } from "@/lib/prisma"
-import { MILESTONES, getRank, getNextRank } from "@/lib/constants"
+import { MILESTONES, DEFAULTS, getRank, getNextRank } from "@/lib/constants"
 import type { Rank } from "@/lib/constants"
 import type { ClinicSettings } from "@/types"
+import { updateClinicSettings } from "@/lib/queries/clinics"
 import {
   jstToday,
   jstDaysAgo,
+  jstNowParts,
   formatDateKeyJST,
   getDayOfWeekJaJST,
   getDayJST,
@@ -50,6 +52,9 @@ export interface EngagementData {
   todayAvgScore: number | null
   // Streak break recovery
   streakBreak: StreakBreakInfo | null
+  // Daily goal
+  dailyGoal: number
+  dailyGoalSource: "metrics" | "responses" | "fallback"
 }
 
 export async function getStaffEngagementData(
@@ -72,7 +77,7 @@ export async function getStaffEngagementData(
     week_avg: number | null
   }
 
-  const [aggRows, streakResponses, positiveComments, lowScoreComments, clinic] =
+  const [aggRows, streakResponses, positiveComments, lowScoreComments, clinic, prevMetrics] =
     await Promise.all([
       prisma.$queryRaw<AggRow[]>`
         SELECT
@@ -122,6 +127,17 @@ export async function getStaffEngagementData(
         where: { id: clinicId },
         select: { settings: true },
       }),
+
+      // Previous month metrics for daily goal calculation
+      (() => {
+        const { year, month } = jstNowParts()
+        const prevYear = month === 1 ? year - 1 : year
+        const prevMonth = month === 1 ? 12 : month - 1
+        return prisma.monthlyClinicMetrics.findUnique({
+          where: { clinicId_year_month: { clinicId, year: prevYear, month: prevMonth } },
+          select: { firstVisitCount: true, revisitCount: true, workingDays: true },
+        })
+      })(),
     ])
 
   const agg = aggRows[0]
@@ -208,6 +224,87 @@ export async function getStaffEngagementData(
     }
   }
 
+  // ─── Daily Goal Calculation ───
+  let goalLevel = settings.goalLevel ?? 0
+  let dailyGoal: number
+  let dailyGoalSource: "metrics" | "responses" | "fallback"
+
+  // Priority 1: Previous month's metrics
+  const prevFirst = prevMetrics?.firstVisitCount ?? 0
+  const prevRevisit = prevMetrics?.revisitCount ?? 0
+  const prevWorkDays = prevMetrics?.workingDays ?? 0
+  if (prevFirst + prevRevisit > 0 && prevWorkDays > 0) {
+    const multiplier = DEFAULTS.GOAL_MULTIPLIERS[goalLevel] ?? 0.3
+    dailyGoal = Math.max(1, Math.ceil(((prevFirst + prevRevisit) / prevWorkDays) * multiplier))
+    dailyGoalSource = "metrics"
+  } else {
+    // Priority 2: Last 30 business days average response count
+    let bizDays = 0
+    let totalResponses = 0
+    for (let i = 1; i <= 30; i++) {
+      const d = new Date(todayStart.getTime() - i * DAY_MS)
+      const key = formatDateKeyJST(d)
+      if (isClosedDate(key, d)) continue
+      bizDays++
+      totalResponses += dateCountMap.get(key) ?? 0
+    }
+    if (bizDays > 0 && totalResponses > 0) {
+      dailyGoal = Math.max(1, Math.ceil(totalResponses / bizDays))
+      dailyGoalSource = "responses"
+    } else {
+      // Priority 3: Fallback
+      dailyGoal = DEFAULTS.DAILY_GOAL_FALLBACK
+      dailyGoalSource = "fallback"
+    }
+  }
+
+  // ─── Goal Streak Evaluation (lazy, on dashboard load) ───
+  if (settings.goalLastCheckedDate !== todayKey) {
+    let achieveStreak = settings.goalAchieveStreak ?? 0
+    let missStreak = settings.goalMissStreak ?? 0
+
+    // Walk backward from yesterday through unchecked business days
+    for (let i = 1; i <= 30; i++) {
+      const d = new Date(todayStart.getTime() - i * DAY_MS)
+      const key = formatDateKeyJST(d)
+      // Stop at the last checked date
+      if (key === settings.goalLastCheckedDate) break
+      // Skip closed days
+      if (isClosedDate(key, d)) continue
+      const dayCount = dateCountMap.get(key) ?? 0
+      if (dayCount >= dailyGoal) {
+        achieveStreak++
+        missStreak = 0
+      } else {
+        missStreak++
+        achieveStreak = 0
+      }
+      // Level adjustment
+      if (achieveStreak >= DEFAULTS.GOAL_STREAK_THRESHOLD) {
+        goalLevel = Math.min(2, goalLevel + 1)
+        achieveStreak = 0
+      }
+      if (missStreak >= DEFAULTS.GOAL_STREAK_THRESHOLD) {
+        goalLevel = Math.max(0, goalLevel - 1)
+        missStreak = 0
+      }
+    }
+
+    // Persist updated goal state
+    await updateClinicSettings(clinicId, {
+      goalLevel,
+      goalAchieveStreak: achieveStreak,
+      goalMissStreak: missStreak,
+      goalLastCheckedDate: todayKey,
+    })
+
+    // Recalculate dailyGoal if level changed and source is metrics
+    if (goalLevel !== (settings.goalLevel ?? 0) && dailyGoalSource === "metrics" && prevWorkDays > 0) {
+      const multiplier = DEFAULTS.GOAL_MULTIPLIERS[goalLevel] ?? 0.3
+      dailyGoal = Math.max(1, Math.ceil(((prevFirst + prevRevisit) / prevWorkDays) * multiplier))
+    }
+  }
+
   // Milestones
   const currentMilestone =
     MILESTONES.filter((m) => totalCount >= m).pop() ?? null
@@ -257,5 +354,7 @@ export async function getStaffEngagementData(
     weekDays,
     todayAvgScore: todayAvgScore ?? null,
     streakBreak,
+    dailyGoal,
+    dailyGoalSource,
   }
 }

@@ -189,6 +189,9 @@ export const DEFAULTS = {
   MAX_FREE_TEXT_LENGTH: 500,
   MIN_STAR_RATING: 1,
   MAX_STAR_RATING: 5,
+  DAILY_GOAL_FALLBACK: 10,
+  GOAL_MULTIPLIERS: [0.3, 0.4, 0.5] as const,
+  GOAL_STREAK_THRESHOLD: 7,
 } as const
 
 // ─── PX-Value Segment Labels ───

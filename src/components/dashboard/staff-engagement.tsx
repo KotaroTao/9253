@@ -71,6 +71,7 @@ export function StaffEngagement({
     rank,
     nextRank,
     rankProgress,
+    dailyGoal,
   } = data
 
   const router = useRouter()
@@ -130,8 +131,8 @@ export function StaffEngagement({
 
   return (
     <div className="space-y-4">
-      {/* Confetti when AI analysis unlocked */}
-      {advisoryUnlocked && <Confetti />}
+      {/* Confetti when AI analysis unlocked or daily goal achieved */}
+      {(advisoryUnlocked || (todayCount >= dailyGoal && dailyGoal > 0)) && <Confetti />}
 
       {/* スタッフ未登録アラート（管理者のみ） */}
       {isAdmin && staffCount === 0 && (
@@ -278,8 +279,25 @@ export function StaffEngagement({
 
               {/* Bar chart for each day */}
               {(() => {
-                const maxCount = Math.max(...weekDays.map((d) => d.count), 1)
+                const maxCount = Math.max(...weekDays.map((d) => d.count), dailyGoal, 1)
+                const goalLineBottom = (dailyGoal / maxCount) * 80
                 return (
+                  <div className="relative">
+                    {/* Goal dashed line */}
+                    {dailyGoal > 0 && (
+                      <>
+                        <div
+                          className="absolute left-0 right-0 border-t border-dashed border-green-400/60 pointer-events-none z-10"
+                          style={{ bottom: `${goalLineBottom + 28 + 10 + 4}px` }}
+                        />
+                        <span
+                          className="absolute right-0 text-[9px] text-green-500/70 font-medium pointer-events-none z-10"
+                          style={{ bottom: `${goalLineBottom + 28 + 10 + 6}px` }}
+                        >
+                          {messages.dashboard.dailyGoalLine}{dailyGoal}
+                        </span>
+                      </>
+                    )}
                   <div className="flex items-end gap-1.5">
                     {weekDays.map((day) => {
                       const barHeight = maxCount > 0 ? Math.max((day.count / maxCount) * 80, day.count > 0 ? 8 : 0) : 0
@@ -358,6 +376,7 @@ export function StaffEngagement({
                       )
                     })}
                   </div>
+                  </div>
                 )
               })()}
           </CardContent>
@@ -401,10 +420,27 @@ export function StaffEngagement({
                   </>
                 )}
               </div>
-              {/* Today count */}
+              {/* Today count with goal */}
               <div className="text-center">
-                <p className="text-xs text-muted-foreground">今日</p>
-                <p className="text-lg font-bold">{todayCount}<span className="text-xs text-muted-foreground">{messages.common.countSuffix}</span></p>
+                <p className={cn(
+                  "text-xs font-medium",
+                  todayCount >= dailyGoal && dailyGoal > 0 ? "text-green-600" : "text-muted-foreground"
+                )}>
+                  {todayCount >= dailyGoal && dailyGoal > 0 ? messages.dashboard.dailyGoalAchieved : messages.dashboard.dailyGoalLabel}
+                </p>
+                <p className="text-lg font-bold">
+                  <span className={cn(todayCount >= dailyGoal && dailyGoal > 0 && "text-green-600")}>{todayCount}</span>
+                  <span className="text-xs text-muted-foreground">/{dailyGoal}{messages.common.countSuffix}</span>
+                </p>
+                <div className="mt-1 h-1 w-16 mx-auto overflow-hidden rounded-full bg-muted">
+                  <div
+                    className={cn(
+                      "h-full rounded-full transition-all",
+                      todayCount >= dailyGoal && dailyGoal > 0 ? "bg-green-500" : "bg-purple-400"
+                    )}
+                    style={{ width: `${Math.min(100, dailyGoal > 0 ? Math.round((todayCount / dailyGoal) * 100) : 0)}%` }}
+                  />
+                </div>
               </div>
               {/* Happiness meter */}
               <div className="text-center">
@@ -426,6 +462,13 @@ export function StaffEngagement({
                   />
                 </div>
               </div>
+            )}
+
+            {/* Goal encouragement */}
+            {dailyGoal > 0 && todayCount < dailyGoal && todayCount > 0 && dailyGoal - todayCount <= 3 && (
+              <p className="mt-2 text-xs text-center text-green-600 font-medium">
+                {messages.dashboard.dailyGoalAlmost.replace("{remaining}", String(dailyGoal - todayCount))}
+              </p>
             )}
 
             {/* Kawaii Teeth コレクション（ランク枠内） */}
