@@ -192,6 +192,9 @@ export const DEFAULTS = {
   DAILY_GOAL_FALLBACK: 10,
   GOAL_MULTIPLIERS: [0.3, 0.4, 0.5] as const,
   GOAL_STREAK_THRESHOLD: 7,
+  // 特別プラン無料継続条件
+  SPECIAL_PLAN_MIN_RESPONSES: 30,
+  SPECIAL_PLAN_MIN_ACTIONS: 1,
 } as const
 
 // ─── PX-Value Segment Labels ───

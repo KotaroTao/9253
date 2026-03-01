@@ -2,7 +2,6 @@ import { prisma } from "@/lib/prisma"
 import { MILESTONES, DEFAULTS, getRank, getNextRank } from "@/lib/constants"
 import type { Rank } from "@/lib/constants"
 import type { ClinicSettings } from "@/types"
-import { updateClinicSettings } from "@/lib/queries/clinics"
 import {
   jstToday,
   jstDaysAgo,
@@ -259,6 +258,9 @@ export async function getStaffEngagementData(
   }
 
   // ─── Goal Streak Evaluation (lazy, on dashboard load) ───
+  // Only first request of the day per clinic triggers this (idempotent).
+  // Uses atomic JSONB update to avoid read-modify-write races, and
+  // fire-and-forget to avoid blocking the dashboard render.
   if (settings.goalLastCheckedDate !== todayKey) {
     let achieveStreak = settings.goalAchieveStreak ?? 0
     let missStreak = settings.goalMissStreak ?? 0
@@ -290,12 +292,21 @@ export async function getStaffEngagementData(
       }
     }
 
-    // Persist updated goal state
-    await updateClinicSettings(clinicId, {
-      goalLevel,
-      goalAchieveStreak: achieveStreak,
-      goalMissStreak: missStreak,
-      goalLastCheckedDate: todayKey,
+    // Atomic JSONB merge — no read-modify-write race.
+    // Fire-and-forget (not awaited) so dashboard render isn't blocked.
+    // Concurrent requests produce identical values so duplicates are harmless.
+    prisma.$executeRaw`
+      UPDATE clinics
+      SET settings = COALESCE(settings, '{}'::jsonb)
+        || jsonb_build_object(
+          'goalLevel', ${goalLevel}::int,
+          'goalAchieveStreak', ${achieveStreak}::int,
+          'goalMissStreak', ${missStreak}::int,
+          'goalLastCheckedDate', ${todayKey}::text
+        )
+      WHERE id = ${clinicId}::uuid
+    `.catch((err) => {
+      console.error("[dailyGoal] Failed to persist goal streak:", err)
     })
 
     // Recalculate dailyGoal if level changed and source is metrics

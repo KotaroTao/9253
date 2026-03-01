@@ -1214,6 +1214,15 @@ export const messages = {
     featureMetrics: "経営レポート・KPI",
     featureSurveys: "アンケート一覧",
     contactForUpgrade: "アップグレードのお問い合わせ",
+    // 特別プラン無料継続条件
+    specialPlanConditions: "特別プラン継続条件",
+    specialPlanGrace: "セットアップ期間中（初月は評価なし）",
+    specialPlanActive: "条件クリア中",
+    specialPlanWarning: "先月の条件が未達成です（今月も未達成の場合、フリープランに移行します）",
+    specialPlanSuspended: "条件未達成のためフリープランに移行しました",
+    specialPlanResponses: "アンケート",
+    specialPlanActions: "改善アクション",
+    specialPlanCountFormat: "{current}/{required}",
   },
   kawaiiTeeth: {
     // 管理画面
