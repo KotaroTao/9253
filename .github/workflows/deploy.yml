@@ -80,10 +80,22 @@ jobs:
             --set-env-vars "NEXT_PUBLIC_APP_URL=https://mieru-clinic.com" \
             --set-env-vars "RUN_MIGRATIONS=true"
 
-      # --- 7. デプロイ結果表示 ---
-      - name: デプロイURL表示
+      # --- 7. ヘルスチェック ---
+      - name: デプロイ後ヘルスチェック
         run: |
           URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
             --region ${{ env.GCP_REGION }} \
             --format 'value(status.url)')
           echo "::notice::デプロイ完了: $URL"
+          echo "ヘルスチェック実行中..."
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL/api/health" --max-time 10) || true
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ ヘルスチェック成功 (attempt $i)"
+              exit 0
+            fi
+            echo "⏳ ヘルスチェック待機中... (attempt $i, status=$STATUS)"
+            sleep 10
+          done
+          echo "::error::❌ ヘルスチェック失敗 — デプロイを確認してください"
+          exit 1

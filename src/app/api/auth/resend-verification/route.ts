@@ -15,7 +15,7 @@ export async function POST(_request: NextRequest) {
 
   // レート制限（再送は1時間に3回まで）
   const ip = getClientIp()
-  const { allowed } = checkRateLimit(`resend-verify:${ip}`)
+  const { allowed } = checkRateLimit(`resend-verify:${ip}`, "resendVerification")
   if (!allowed) {
     return errorResponse("再送回数の上限に達しました。しばらく時間をおいてお試しください", 429)
   }

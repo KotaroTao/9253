@@ -60,9 +60,9 @@ async function ensureUniqueSlug(baseSlug: string): Promise<string> {
 }
 
 export async function POST(request: NextRequest) {
-  // レート制限（IPベース、登録は1日5回まで）
+  // レート制限（IPベース、1時間に5回まで）
   const ip = getClientIp()
-  const { allowed } = checkRateLimit(`register:${ip}`)
+  const { allowed } = checkRateLimit(`register:${ip}`, "register")
   if (!allowed) {
     return errorResponse("登録回数の上限に達しました。しばらく時間をおいてお試しください", 429)
   }

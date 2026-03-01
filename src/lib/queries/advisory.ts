@@ -296,6 +296,7 @@ async function collectAnalysisData(clinicId: string): Promise<AnalysisData> {
         AND sr.staff_id IS NOT NULL
       GROUP BY sr.staff_id, s.name, s.role
       ORDER BY avg_score DESC
+      LIMIT 50
     `,
     // 患者セグメント別集計（直近30日）
     prisma.$queryRaw<SegmentStatDbRow[]>`
@@ -312,6 +313,8 @@ async function collectAnalysisData(clinicId: string): Promise<AnalysisData> {
         AND overall_score IS NOT NULL
         AND patient_attributes IS NOT NULL
       GROUP BY visit_type, insurance_type, age_group, gender
+      ORDER BY count DESC
+      LIMIT 100
     `,
     // 回答品質データ（直近30日）
     prisma.$queryRaw<ResponseQualityDbRow[]>`
