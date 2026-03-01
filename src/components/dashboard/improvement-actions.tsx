@@ -103,6 +103,14 @@ interface MonthlyMetric {
   totalVisitCount: number | null
 }
 
+interface SeasonalIndicesData {
+  level: "self" | "specialty" | "platform" | "none"
+  revenue: { byMonth: Record<number, number> }
+  patientCount: { byMonth: Record<number, number> }
+  clinicCount: number
+  label: string | null
+}
+
 interface PlatformActionOutcome {
   platformActionId: string
   qualifiedCount: number
@@ -125,6 +133,7 @@ interface Props {
   adoptedPlatformActionIds?: string[]
   isSystemAdmin?: boolean
   monthlyMetrics?: MonthlyMetric[]
+  seasonalIndices?: SeasonalIndicesData
   platformActionOutcomes?: Record<string, PlatformActionOutcome>
 }
 
@@ -136,6 +145,7 @@ export function ImprovementActionsView({
   adoptedPlatformActionIds: initialAdopted = [],
   isSystemAdmin = false,
   monthlyMetrics = [],
+  seasonalIndices,
   platformActionOutcomes = {},
 }: Props) {
   const router = useRouter()
@@ -1034,6 +1044,7 @@ export function ImprovementActionsView({
                 allQuestions={allQuestions}
                 isSystemAdmin={isSystemAdmin}
                 monthlyMetrics={monthlyMetrics}
+                seasonalIndices={seasonalIndices}
               />
             )
           })}
@@ -1094,6 +1105,7 @@ export function ImprovementActionsView({
                 allQuestions={allQuestions}
                 isSystemAdmin={isSystemAdmin}
                 monthlyMetrics={monthlyMetrics}
+                seasonalIndices={seasonalIndices}
               />
             )
           })}
@@ -1130,6 +1142,7 @@ function ActionCard({
   allQuestions,
   isSystemAdmin,
   monthlyMetrics,
+  seasonalIndices,
 }: {
   action: ImprovementAction
   expanded: boolean
@@ -1157,6 +1170,7 @@ function ActionCard({
   allQuestions?: Map<string, { text: string; templateName: string }>
   isSystemAdmin?: boolean
   monthlyMetrics?: MonthlyMetric[]
+  seasonalIndices?: SeasonalIndicesData
 }) {
   const isActive = action.status === "active"
   const isCompleted = action.status === "completed"
@@ -1191,12 +1205,21 @@ function ActionCard({
     if (!startMetric || !latestMetric) return null
     if (startMetric.year === latestMetric.year && startMetric.month === latestMetric.month) return null
 
+    // 季節指数
+    const hasSeasonalData = seasonalIndices && seasonalIndices.level !== "none"
+    const revIdxStart = seasonalIndices?.revenue.byMonth[startMetric.month] ?? 1.0
+    const revIdxLatest = seasonalIndices?.revenue.byMonth[latestMetric.month] ?? 1.0
+    const patIdxStart = seasonalIndices?.patientCount.byMonth[startMetric.month] ?? 1.0
+    const patIdxLatest = seasonalIndices?.patientCount.byMonth[latestMetric.month] ?? 1.0
+
     const items: Array<{
       label: string
       startValue: string
       latestValue: string
       changeText: string
       changeType: "positive" | "negative" | "neutral"
+      seasonalChangeText?: string | null
+      seasonalChangeType?: "positive" | "negative" | "neutral"
     }> = []
 
     // Total revenue
@@ -1204,24 +1227,42 @@ function ActionCard({
       const pct = startMetric.totalRevenue > 0
         ? ((latestMetric.totalRevenue - startMetric.totalRevenue) / startMetric.totalRevenue) * 100
         : 0
+      // 季節調整済み変化率
+      let seasonalPct: number | null = null
+      if (hasSeasonalData && startMetric.totalRevenue > 0 && revIdxStart > 0 && revIdxLatest > 0) {
+        const normStart = startMetric.totalRevenue / revIdxStart
+        const normEnd = latestMetric.totalRevenue / revIdxLatest
+        seasonalPct = ((normEnd - normStart) / normStart) * 100
+      }
       items.push({
         label: messages.improvementActions.metricsRevenue,
         startValue: `${Math.round(startMetric.totalRevenue)}`,
         latestValue: `${Math.round(latestMetric.totalRevenue)}`,
         changeText: `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`,
         changeType: pct > 0 ? "positive" : pct < 0 ? "negative" : "neutral",
+        seasonalChangeText: seasonalPct != null ? `${seasonalPct >= 0 ? "+" : ""}${seasonalPct.toFixed(1)}%` : null,
+        seasonalChangeType: seasonalPct != null ? (seasonalPct > 0 ? "positive" : seasonalPct < 0 ? "negative" : "neutral") : undefined,
       })
     }
 
     // Total patient count
     if (startMetric.totalPatientCount != null && latestMetric.totalPatientCount != null) {
       const diff = latestMetric.totalPatientCount - startMetric.totalPatientCount
+      // 季節調整済み変化
+      let seasonalDiff: number | null = null
+      if (hasSeasonalData && patIdxStart > 0 && patIdxLatest > 0) {
+        const normStart = startMetric.totalPatientCount / patIdxStart
+        const normEnd = latestMetric.totalPatientCount / patIdxLatest
+        seasonalDiff = Math.round(normEnd - normStart)
+      }
       items.push({
         label: messages.improvementActions.metricsPatients,
         startValue: `${startMetric.totalPatientCount}`,
         latestValue: `${latestMetric.totalPatientCount}`,
         changeText: `${diff >= 0 ? "+" : ""}${diff}`,
         changeType: diff > 0 ? "positive" : diff < 0 ? "negative" : "neutral",
+        seasonalChangeText: seasonalDiff != null ? `${seasonalDiff >= 0 ? "+" : ""}${seasonalDiff}` : null,
+        seasonalChangeType: seasonalDiff != null ? (seasonalDiff > 0 ? "positive" : seasonalDiff < 0 ? "negative" : "neutral") : undefined,
       })
     }
 
@@ -1249,8 +1290,10 @@ function ActionCard({
       items,
       startLabel: `${startMetric.year}/${startMetric.month}`,
       latestLabel: `${latestMetric.year}/${latestMetric.month}`,
+      seasonalLevel: seasonalIndices?.level ?? "none",
+      seasonalLabel: seasonalIndices?.label ?? null,
     }
-  }, [monthlyMetrics, action.startedAt])
+  }, [monthlyMetrics, action.startedAt, seasonalIndices])
 
   // For active: compare baseline vs current question score
   // For completed: compare baseline vs resultScore (auto-captured at completion)
@@ -1459,11 +1502,36 @@ function ActionCard({
                         "text-slate-400"
                       }`}>
                         {item.changeText}
+                        {item.seasonalChangeText && (
+                          <span className="font-normal text-[9px] text-slate-400 ml-1">
+                            ({messages.improvementActions.metricsSeasonalRaw})
+                          </span>
+                        )}
                       </p>
+                      {item.seasonalChangeText && (
+                        <p className={`text-[10px] font-semibold mt-0.5 ${
+                          item.seasonalChangeType === "positive" ? "text-blue-600" :
+                          item.seasonalChangeType === "negative" ? "text-orange-500" :
+                          "text-slate-400"
+                        }`}>
+                          {item.seasonalChangeText}
+                          <span className="font-normal text-[9px] text-slate-400 ml-1">
+                            ({messages.improvementActions.metricsSeasonalAdjusted})
+                          </span>
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
-                <p className="text-[9px] text-slate-400">{messages.improvementActions.metricsNote}</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-[9px] text-slate-400">{messages.improvementActions.metricsNote}</p>
+                  {metricsComparison.seasonalLevel !== "none" && metricsComparison.seasonalLabel && (
+                    <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-50 px-1.5 py-0.5 text-[8px] text-blue-600">
+                      <CalendarClock className="h-2 w-2" />
+                      {metricsComparison.seasonalLabel}
+                    </span>
+                  )}
+                </div>
               </div>
             )}
             {!metricsComparison && expanded && monthlyMetrics && monthlyMetrics.length < 2 && (
