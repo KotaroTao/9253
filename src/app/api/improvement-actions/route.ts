@@ -19,21 +19,24 @@ export async function GET(request: NextRequest) {
   if (!clinicId) return errorResponse(messages.errors.clinicNotAssociated, 400)
 
   const { page, limit } = parseOffsetParams(request.nextUrl.searchParams, { limit: 200, maxLimit: 200 })
+  const skip = (page - 1) * limit
 
-  const [actions, total] = await Promise.all([
-    prisma.improvementAction.findMany({
-      where: { clinicId },
-      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-      skip: (page - 1) * limit,
-      take: limit,
-      include: {
-        logs: {
-          orderBy: { createdAt: "asc" },
-        },
+  const actions = await prisma.improvementAction.findMany({
+    where: { clinicId },
+    orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+    skip,
+    take: limit,
+    include: {
+      logs: {
+        orderBy: { createdAt: "asc" },
       },
-    }),
-    prisma.improvementAction.count({ where: { clinicId } }),
-  ])
+    },
+  })
+
+  // 遅延カウント: 1ページ目でlimit未満ならtotalは確定（countクエリ不要）
+  const total = actions.length < limit && skip === 0
+    ? actions.length
+    : await prisma.improvementAction.count({ where: { clinicId } })
 
   return successResponse({ items: actions, ...calcOffsetMeta(total, { page, limit }) })
 }

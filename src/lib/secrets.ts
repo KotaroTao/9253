@@ -24,12 +24,16 @@ const COMPONENT = "secrets"
 /** シークレットキャッシュ（プロセスライフタイム） */
 const cache = new Map<string, string>()
 
-/** Secret Manager API を使ってシークレットを取得 */
-async function fetchFromSecretManager(
-  secretName: string,
-  projectId: string,
-): Promise<string> {
-  // GCP メタデータサーバーからアクセストークンを取得
+/** アクセストークンキャッシュ（有効期限の5分前に失効） */
+let tokenCache: { value: string; expiresAt: number } | null = null
+
+/** GCP メタデータサーバーからアクセストークンを取得（キャッシュ付き） */
+async function getAccessToken(): Promise<string> {
+  const now = Date.now() / 1000
+  if (tokenCache && tokenCache.expiresAt > now + 300) {
+    return tokenCache.value
+  }
+
   const tokenRes = await fetch(
     "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token",
     { headers: { "Metadata-Flavor": "Google" } },
@@ -37,19 +41,31 @@ async function fetchFromSecretManager(
   if (!tokenRes.ok) {
     throw new Error(`メタデータサーバーからトークン取得失敗: ${tokenRes.status}`)
   }
-  const { access_token } = (await tokenRes.json()) as { access_token: string }
+  const { access_token, expires_in } = (await tokenRes.json()) as {
+    access_token: string
+    expires_in: number
+  }
 
-  // Secret Manager API でシークレット値を取得
+  tokenCache = { value: access_token, expiresAt: now + expires_in }
+  return access_token
+}
+
+/** Secret Manager API を使ってシークレットを取得 */
+async function fetchFromSecretManager(
+  secretName: string,
+  projectId: string,
+): Promise<string> {
+  const accessToken = await getAccessToken()
+
   const url = `https://secretmanager.googleapis.com/v1/projects/${projectId}/secrets/${secretName}/versions/latest:access`
   const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${access_token}` },
+    headers: { Authorization: `Bearer ${accessToken}` },
   })
   if (!res.ok) {
     throw new Error(`Secret Manager からの取得失敗: ${secretName} (${res.status})`)
   }
 
   const data = (await res.json()) as { payload: { data: string } }
-  // Secret Manager は base64 エンコードで返す
   return Buffer.from(data.payload.data, "base64").toString("utf8")
 }
 
