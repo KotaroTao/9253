@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
+import { messages } from "@/lib/messages"
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,6 +17,6 @@ export async function GET(request: NextRequest) {
 
     return successResponse({ isAuthorized: device?.isAuthorized ?? false })
   } catch {
-    return errorResponse("内部エラーが発生しました", 500)
+    return errorResponse(messages.apiErrors.internalError, 500)
   }
 }

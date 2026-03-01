@@ -4,19 +4,16 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
+// Cloud Run max-instances=3 → インスタンスあたり接続数を制限
+// PostgreSQL デフォルト最大接続数100 ÷ 3インスタンス ≈ 30（余裕を持たせて10）
+const databaseUrl = process.env.NODE_ENV === "production"
+  ? appendConnectionParams(process.env.DATABASE_URL || "")
+  : process.env.DATABASE_URL
+
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    datasourceUrl: process.env.DATABASE_URL,
-    // Cloud Run max-instances=3 → インスタンスあたり接続数を制限
-    // PostgreSQL デフォルト最大接続数100 ÷ 3インスタンス ≈ 30（余裕を持たせて10）
-    ...(process.env.NODE_ENV === "production" && {
-      datasources: {
-        db: {
-          url: appendConnectionParams(process.env.DATABASE_URL || ""),
-        },
-      },
-    }),
+    datasourceUrl: databaseUrl,
   })
 
 if (process.env.NODE_ENV !== "production") {

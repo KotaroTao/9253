@@ -3,6 +3,7 @@ import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { prisma } from "@/lib/prisma"
 import { sendMail, buildWeeklySummaryEmail } from "@/lib/email"
 import { jstToday, getDayJST } from "@/lib/date-jst"
+import { messages } from "@/lib/messages"
 import type { ClinicSettings } from "@/types"
 
 const CRON_SECRET = process.env.CRON_SECRET
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
   if (CRON_SECRET) {
     const authHeader = request.headers.get("authorization")
     if (authHeader !== `Bearer ${CRON_SECRET}`) {
-      return errorResponse("認証されていません", 401)
+      return errorResponse(messages.apiErrors.unauthorized, 401)
     }
   }
 
