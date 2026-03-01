@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
   if (CRON_SECRET) {
     const authHeader = request.headers.get("authorization")
     if (authHeader !== `Bearer ${CRON_SECRET}`) {
-      return errorResponse("Unauthorized", 401)
+      return errorResponse("認証されていません", 401)
     }
   }
 

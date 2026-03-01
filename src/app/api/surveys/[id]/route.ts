@@ -2,6 +2,7 @@ import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth, isAuthError } from "@/lib/auth-helpers"
 import { errorResponse, successResponse } from "@/lib/api-helpers"
+import { messages } from "@/lib/messages"
 import { ROLES } from "@/lib/constants"
 
 export async function DELETE(
@@ -15,12 +16,12 @@ export async function DELETE(
 
   // スタッフロールは削除不可
   if (user.role === ROLES.STAFF) {
-    return errorResponse("アクセス権限がありません", 403)
+    return errorResponse(messages.errors.accessDenied, 403)
   }
 
   const clinicId = user.clinicId
   if (!clinicId) {
-    return errorResponse("クリニックが見つかりません", 400)
+    return errorResponse(messages.errors.clinicNotFound, 400)
   }
 
   // 対象の回答が自クリニックに属するか確認
@@ -30,11 +31,11 @@ export async function DELETE(
   })
 
   if (!response) {
-    return errorResponse("アンケート回答が見つかりません", 404)
+    return errorResponse(messages.apiErrors.surveyNotFound, 404)
   }
 
   if (response.clinicId !== clinicId) {
-    return errorResponse("アクセス権限がありません", 403)
+    return errorResponse(messages.errors.accessDenied, 403)
   }
 
   await prisma.surveyResponse.delete({

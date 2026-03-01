@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
   const daysParam = params.get("days")
   const days = daysParam ? parseInt(daysParam, 10) : 30
   if (isNaN(days) || days < 1 || days > MAX_DAYS) {
-    return errorResponse("無効な期間です", 400)
+    return errorResponse(messages.apiErrors.invalidPeriod, 400)
   }
 
   const data = await getDailyTrend(clinicId, days, undefined, attrFilters)

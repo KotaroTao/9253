@@ -17,7 +17,7 @@ export async function POST(_request: NextRequest) {
   const ip = getClientIp()
   const { allowed } = checkRateLimit(`resend-verify:${ip}`, "resendVerification")
   if (!allowed) {
-    return errorResponse("再送回数の上限に達しました。しばらく時間をおいてお試しください", 429)
+    return errorResponse(messages.apiErrors.rateLimitResend, 429)
   }
 
   const user = await prisma.user.findUnique({

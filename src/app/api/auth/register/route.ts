@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
   const ip = getClientIp()
   const { allowed } = checkRateLimit(`register:${ip}`, "register")
   if (!allowed) {
-    return errorResponse("登録回数の上限に達しました。しばらく時間をおいてお試しください", 429)
+    return errorResponse(messages.apiErrors.rateLimitRegister, 429)
   }
 
   let body: {
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
   // Turnstile 検証
   const turnstileValid = await verifyTurnstileToken(turnstileToken)
   if (!turnstileValid) {
-    return errorResponse("bot検証に失敗しました。ページを再読み込みしてお試しください", 400)
+    return errorResponse(messages.apiErrors.botVerificationFailed, 400)
   }
 
   // バリデーション

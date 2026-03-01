@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     if (fromMonth && toMonth) {
       const [fy, fm] = fromMonth.split("-").map(Number)
       const [ty, tm] = toMonth.split("-").map(Number)
-      if (!fy || !fm || !ty || !tm) return errorResponse("無効な月指定です", 400)
+      if (!fy || !fm || !ty || !tm) return errorResponse(messages.apiErrors.invalidMonth, 400)
       const rows = await prisma.monthlyClinicMetrics.findMany({
         where: {
           clinicId,

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server"
 import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
+import { messages } from "@/lib/messages"
 import { prisma } from "@/lib/prisma"
 
 /** GET /api/admin/kawaii-teeth — 全キャラ一覧 */
@@ -35,22 +36,22 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json()
   } catch {
-    return errorResponse("リクエストが不正です", 400)
+    return errorResponse(messages.apiErrors.invalidRequest, 400)
   }
 
   const { name, description, imageData } = body
 
   if (!name?.trim()) {
-    return errorResponse("キャラ名を入力してください", 400)
+    return errorResponse(messages.apiErrors.characterNameRequired, 400)
   }
   if (!description?.trim()) {
-    return errorResponse("説明を入力してください", 400)
+    return errorResponse(messages.apiErrors.characterDescRequired, 400)
   }
   if (!imageData || !imageData.startsWith("data:image/")) {
-    return errorResponse("画像をアップロードしてください", 400)
+    return errorResponse(messages.apiErrors.characterImageRequired, 400)
   }
   if (imageData.length > MAX_IMAGE_SIZE) {
-    return errorResponse("画像サイズが大きすぎます（2MB以下）", 400)
+    return errorResponse(messages.apiErrors.imageTooLarge, 400)
   }
 
   const character = await prisma.kawaiiTeeth.create({

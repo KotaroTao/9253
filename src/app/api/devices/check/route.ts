@@ -16,6 +16,6 @@ export async function GET(request: NextRequest) {
 
     return successResponse({ isAuthorized: device?.isAuthorized ?? false })
   } catch {
-    return errorResponse("Internal error", 500)
+    return errorResponse("内部エラーが発生しました", 500)
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server"
 import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
+import { messages } from "@/lib/messages"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 
@@ -35,38 +36,38 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json()
   } catch {
-    return errorResponse("リクエストが不正です", 400)
+    return errorResponse(messages.apiErrors.invalidRequest, 400)
   }
 
   const { name, slug, adminEmail, adminPassword, plan } = body
 
   // バリデーション
   if (!name || !name.trim()) {
-    return errorResponse("クリニック名を入力してください", 400)
+    return errorResponse(messages.validations.clinicNameRequired, 400)
   }
   if (!slug || !slug.trim()) {
-    return errorResponse("スラッグを入力してください", 400)
+    return errorResponse(messages.apiErrors.slugRequired, 400)
   }
   if (slug.length < 2 || slug.length > 50 || !SLUG_RE.test(slug)) {
-    return errorResponse("スラッグは英小文字・数字・ハイフン（2〜50文字）で入力してください", 400)
+    return errorResponse(messages.apiErrors.slugFormat, 400)
   }
   if (!adminEmail || !adminEmail.includes("@")) {
-    return errorResponse("有効なメールアドレスを入力してください", 400)
+    return errorResponse(messages.auth.emailRequired, 400)
   }
   if (!adminPassword || adminPassword.length < 6) {
-    return errorResponse("パスワードは6文字以上で入力してください", 400)
+    return errorResponse(messages.auth.passwordRequired, 400)
   }
 
   // スラッグ重複チェック
   const existingClinic = await prisma.clinic.findUnique({ where: { slug } })
   if (existingClinic) {
-    return errorResponse("このスラッグは既に使用されています", 400)
+    return errorResponse(messages.apiErrors.slugAlreadyUsed, 400)
   }
 
   // メール重複チェック
   const existingUser = await prisma.user.findUnique({ where: { email: adminEmail } })
   if (existingUser) {
-    return errorResponse("このメールアドレスは既に使用されています", 400)
+    return errorResponse(messages.auth.emailAlreadyUsed, 400)
   }
 
   const validPlans = ["free", "starter", "standard", "enterprise"]

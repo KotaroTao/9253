@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server"
 import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
+import { messages } from "@/lib/messages"
 import { prisma } from "@/lib/prisma"
 
 export async function GET(
@@ -21,7 +22,7 @@ export async function GET(
   })
 
   if (!clinic) {
-    return errorResponse("クリニックが見つかりません", 404)
+    return errorResponse(messages.errors.clinicNotFound, 404)
   }
 
   // クリニックのclinic_adminユーザー一覧（オーナー候補）
@@ -50,12 +51,12 @@ export async function PATCH(
   try {
     body = await request.json()
   } catch {
-    return errorResponse("リクエストが不正です", 400)
+    return errorResponse(messages.apiErrors.invalidRequest, 400)
   }
 
   const { ownerUserId } = body
   if (!ownerUserId) {
-    return errorResponse("オーナーユーザーIDが必要です", 400)
+    return errorResponse(messages.apiErrors.ownerUserIdRequired, 400)
   }
 
   // ユーザーが対象クリニックのclinic_adminであることを確認
@@ -63,7 +64,7 @@ export async function PATCH(
     where: { id: ownerUserId, clinicId: id, role: "clinic_admin", isActive: true },
   })
   if (!user) {
-    return errorResponse("指定されたユーザーはこのクリニックの管理者ではありません", 400)
+    return errorResponse(messages.apiErrors.userNotClinicAdmin, 400)
   }
 
   await prisma.clinic.update({

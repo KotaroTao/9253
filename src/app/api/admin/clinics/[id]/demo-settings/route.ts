@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server"
 import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
+import { messages } from "@/lib/messages"
 import { prisma } from "@/lib/prisma"
 import type { ClinicSettings } from "@/types"
 
@@ -19,12 +20,12 @@ export async function GET(
     select: { id: true, name: true, settings: true },
   })
   if (!clinic) {
-    return errorResponse("クリニックが見つかりません", 404)
+    return errorResponse(messages.errors.clinicNotFound, 404)
   }
 
   const settings = (clinic.settings ?? {}) as ClinicSettings
   if (settings.plan !== "demo") {
-    return errorResponse("デモプランの医院のみ設定可能です", 400)
+    return errorResponse(messages.apiErrors.demoOnlyFeature, 400)
   }
 
   // 獲得済みKawaii Teethを取得
@@ -74,7 +75,7 @@ export async function PATCH(
   try {
     body = await request.json()
   } catch {
-    return errorResponse("リクエストが不正です", 400)
+    return errorResponse(messages.apiErrors.invalidRequest, 400)
   }
 
   const clinic = await prisma.clinic.findUnique({
@@ -82,12 +83,12 @@ export async function PATCH(
     select: { id: true, settings: true },
   })
   if (!clinic) {
-    return errorResponse("クリニックが見つかりません", 404)
+    return errorResponse(messages.errors.clinicNotFound, 404)
   }
 
   const settings = (clinic.settings ?? {}) as ClinicSettings
   if (settings.plan !== "demo") {
-    return errorResponse("デモプランの医院のみ設定可能です", 400)
+    return errorResponse(messages.apiErrors.demoOnlyFeature, 400)
   }
 
   // AI分析カウンター更新

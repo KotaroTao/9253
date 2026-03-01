@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { parseJSTDate, parseJSTDateEnd, daysBetween } from "@/lib/date-jst"
+import { messages } from "@/lib/messages"
 import type { DateRange, AttributeFilters } from "@/lib/queries/stats"
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
@@ -52,4 +53,23 @@ export function errorResponse(
     body.details = details
   }
   return NextResponse.json(body, { status })
+}
+
+/**
+ * リクエストボディをJSONとしてパースする汎用ヘルパー。
+ * パース失敗時は errorResponse を返す。
+ */
+export async function parseJsonBody<T = Record<string, unknown>>(
+  request: NextRequest,
+): Promise<T | NextResponse> {
+  try {
+    return await request.json() as T
+  } catch {
+    return errorResponse(messages.apiErrors.invalidRequest, 400)
+  }
+}
+
+/** parseJsonBody の戻り値がエラーレスポンスかどうかを判定 */
+export function isParseError(result: unknown): result is NextResponse {
+  return result instanceof NextResponse
 }

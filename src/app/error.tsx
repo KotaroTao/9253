@@ -3,7 +3,7 @@
 import { useEffect } from "react"
 import { messages } from "@/lib/messages"
 
-export default function AdminError({
+export default function GlobalError({
   error,
   reset,
 }: {
@@ -12,12 +12,12 @@ export default function AdminError({
 }) {
   useEffect(() => {
     if (process.env.NODE_ENV !== "production") {
-      console.error("Admin error:", error)
+      console.error("Global error:", error)
     }
   }, [error])
 
   return (
-    <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-4">
       <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-6 text-center">
         <h2 className="text-lg font-semibold text-destructive">
           {messages.errorPage.title}

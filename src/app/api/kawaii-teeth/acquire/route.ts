@@ -20,7 +20,7 @@ export async function POST() {
   })
 
   if (allCharacters.length === 0) {
-    return errorResponse("キャラクターが登録されていません", 404)
+    return errorResponse(messages.apiErrors.noCharactersRegistered, 404)
   }
 
   const randomIndex = Math.floor(Math.random() * allCharacters.length)

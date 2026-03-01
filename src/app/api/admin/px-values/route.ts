@@ -1,5 +1,6 @@
 import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
+import { messages } from "@/lib/messages"
 import {
   calculateAllPxValues,
   calculateStabilityScore,
@@ -52,6 +53,6 @@ export async function GET() {
       generatedAt: new Date().toISOString(),
     })
   } catch {
-    return errorResponse("PX-Valueの計算に失敗しました", 500)
+    return errorResponse(messages.apiErrors.pxValueCalcFailed, 500)
   }
 }

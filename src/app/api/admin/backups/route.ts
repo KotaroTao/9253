@@ -3,6 +3,7 @@ import { readdir, readFile, stat } from "fs/promises"
 import { join } from "path"
 import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
+import { messages } from "@/lib/messages"
 
 const BACKUP_DIR = process.env.BACKUP_DIR || "/root/backups"
 const BACKUP_SCRIPT = process.env.BACKUP_SCRIPT || "/root/backup_mieru.sh"
@@ -144,7 +145,7 @@ export async function GET() {
       diskFree,
     })
   } catch {
-    return errorResponse("バックアップ情報の取得に失敗しました", 500)
+    return errorResponse(messages.apiErrors.backupFetchFailed, 500)
   }
 }
 

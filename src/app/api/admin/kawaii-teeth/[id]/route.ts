@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server"
 import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
+import { messages } from "@/lib/messages"
 import { prisma } from "@/lib/prisma"
 
 const MAX_IMAGE_SIZE = 3_000_000 // ~3MB base64 (≈2MB binary)
@@ -19,12 +20,12 @@ export async function PATCH(
   try {
     body = await request.json()
   } catch {
-    return errorResponse("リクエストが不正です", 400)
+    return errorResponse(messages.apiErrors.invalidRequest, 400)
   }
 
   const existing = await prisma.kawaiiTeeth.findUnique({ where: { id } })
   if (!existing) {
-    return errorResponse("キャラクターが見つかりません", 404)
+    return errorResponse(messages.apiErrors.characterNotFound, 404)
   }
 
   const data: { name?: string; description?: string; imageData?: string; isActive?: boolean } = {}
@@ -33,10 +34,10 @@ export async function PATCH(
   if (typeof body.isActive === "boolean") data.isActive = body.isActive
   if (body.imageData) {
     if (!body.imageData.startsWith("data:image/")) {
-      return errorResponse("画像形式が不正です", 400)
+      return errorResponse(messages.apiErrors.invalidImageFormat, 400)
     }
     if (body.imageData.length > MAX_IMAGE_SIZE) {
-      return errorResponse("画像サイズが大きすぎます（2MB以下）", 400)
+      return errorResponse(messages.apiErrors.imageTooLarge, 400)
     }
     data.imageData = body.imageData
   }
@@ -61,7 +62,7 @@ export async function DELETE(
 
   const existing = await prisma.kawaiiTeeth.findUnique({ where: { id } })
   if (!existing) {
-    return errorResponse("キャラクターが見つかりません", 404)
+    return errorResponse(messages.apiErrors.characterNotFound, 404)
   }
 
   await prisma.kawaiiTeeth.delete({ where: { id } })
