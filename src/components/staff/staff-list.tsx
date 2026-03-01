@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
 import { STAFF_ROLE_LABELS } from "@/lib/constants"
 import { StaffFormDialog } from "@/components/staff/staff-form-dialog"
-import { Plus, Pencil, Trash2 } from "lucide-react"
+import { Plus, Pencil, Trash2, KeyRound } from "lucide-react"
 import type { StaffWithStats } from "@/types"
 
 interface StaffListProps {
@@ -80,7 +80,25 @@ export function StaffList({ staffList, clinicId }: StaffListProps) {
                 </span>
               </div>
 
-              <div className="mt-3 text-sm">
+              <div className="mt-2 flex items-center gap-2">
+                {staff.hasLogin ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700">
+                    <KeyRound className="h-2.5 w-2.5" />
+                    {messages.staff.loginEnabled}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">
+                    {messages.staff.loginDisabled}
+                  </span>
+                )}
+                {staff.userEmail && (
+                  <span className="text-[10px] text-muted-foreground truncate max-w-[140px]">
+                    {staff.userEmail}
+                  </span>
+                )}
+              </div>
+
+              <div className="mt-2 text-sm">
                 <span className="text-muted-foreground">
                   {messages.staff.surveyCollected} : {staff.surveyCount}件
                 </span>

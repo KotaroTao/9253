@@ -23,6 +23,9 @@ export async function getStaffWithStats(clinicId: string) {
     prisma.staff.findMany({
       where: { clinicId },
       orderBy: { createdAt: "asc" },
+      include: {
+        user: { select: { email: true, role: true } },
+      },
     }),
     prisma.surveyResponse.groupBy({
       by: ["staffId"],
@@ -51,6 +54,9 @@ export async function getStaffWithStats(clinicId: string) {
       createdAt: s.createdAt,
       updatedAt: s.updatedAt,
       surveyCount: stat?.surveyCount ?? 0,
+      hasLogin: !!s.user,
+      userEmail: s.user?.email ?? null,
+      userRole: s.user?.role ?? null,
     }
   })
 }

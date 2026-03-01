@@ -30,6 +30,7 @@ interface SidebarProps {
   isOperatorMode?: boolean
   clinicSlug?: string
   planInfo?: PlanInfo
+  isOwner?: boolean
 }
 
 interface NavItem {
@@ -72,7 +73,7 @@ const PLAN_BADGE_STYLES: Record<PlanTier, string> = {
   special: "bg-emerald-100 text-emerald-700",
 }
 
-export function Sidebar({ role, isOperatorMode = false, clinicSlug, planInfo }: SidebarProps) {
+export function Sidebar({ role, isOperatorMode = false, clinicSlug, planInfo, isOwner = false }: SidebarProps) {
   const pathname = usePathname()
   const isAdmin = role === "clinic_admin" || role === "system_admin"
   const effectivePlan = planInfo?.effectivePlan
@@ -118,6 +119,9 @@ export function Sidebar({ role, isOperatorMode = false, clinicSlug, planInfo }: 
 
         {/* Admin nav items (flat list, no section headers) */}
         {isAdmin && adminNavItems.map((item) => {
+          // 経営レポートはオーナーのみ表示
+          if (item.feature === "business_metrics" && !isOwner) return null
+
           const isLocked = item.feature && effectivePlan
             ? !hasFeatureAccess(effectivePlan, item.feature)
             : false

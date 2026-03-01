@@ -12,6 +12,7 @@ import { getSeasonalIndices } from "@/lib/queries/seasonal-index"
 import { getClinicPlanInfo, hasFeature } from "@/lib/plan"
 import { messages } from "@/lib/messages"
 import { generateDemoActionOutcomes } from "@/lib/demo-action-outcomes"
+import { isClinicOwner } from "@/lib/queries/clinics"
 import type { ClinicSettings, TemplateQuestion, TemplateData } from "@/types"
 
 export default async function ActionsPage() {
@@ -142,6 +143,9 @@ export default async function ActionsPage() {
   const clinicType = ((clinic?.settings as ClinicSettings | null)?.clinicType) ?? "general"
   const seasonalIndices = await getSeasonalIndices(clinicId, clinicType)
 
+  // オーナーチェック（経営指標の表示判定用）
+  const isOwner = await isClinicOwner(clinicId, session.user.id, session.user.role)
+
   return (
     <div className="space-y-6">
       <ImprovementActionsView
@@ -158,6 +162,7 @@ export default async function ActionsPage() {
         seasonalIndices={seasonalIndices}
         platformActionOutcomes={platformActionOutcomes}
         isDemo={clinic?.slug === "demo-dental"}
+        isOwner={isOwner}
       />
     </div>
   )

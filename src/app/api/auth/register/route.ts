@@ -166,6 +166,12 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // 登録者をクリニックオーナーに設定
+    await tx.clinic.update({
+      where: { id: clinic.id },
+      data: { ownerUserId: user.id },
+    })
+
     // アンケートテンプレート作成（初診 + 再診）
     await tx.surveyTemplate.createMany({
       data: [

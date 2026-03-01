@@ -109,6 +109,13 @@ async function main() {
   })
   console.log(`Clinic admin: ${clinicAdmin.email}`)
 
+  // clinic admin をクリニックオーナーに設定
+  await prisma.clinic.update({
+    where: { id: clinic.id },
+    data: { ownerUserId: clinicAdmin.id },
+  })
+  console.log(`Clinic owner set: ${clinicAdmin.name}`)
+
   // Create authorized devices for kiosk demo
   const deviceData = [
     { deviceUuid: "d0000000-0000-4000-8000-000000000001", name: "受付iPad 1号" },

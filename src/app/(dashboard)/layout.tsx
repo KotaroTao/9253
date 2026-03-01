@@ -39,16 +39,18 @@ export default async function DashboardLayout({
   let clinicSlug: string | undefined
   let planInfo: PlanInfo | undefined
   let onboardingCompleted = true
+  let isOwner = false
   if (clinicId) {
     const clinic = await prisma.clinic.findUnique({
       where: { id: clinicId },
-      select: { name: true, slug: true, settings: true },
+      select: { name: true, slug: true, settings: true, ownerUserId: true },
     })
     clinicName = clinic?.name ?? undefined
     clinicSlug = clinic?.slug ?? undefined
     const settings = (clinic?.settings ?? {}) as ClinicSettings
     planInfo = buildPlanInfo(settings)
     onboardingCompleted = settings.onboardingCompleted ?? true
+    isOwner = role === ROLES.SYSTEM_ADMIN || clinic?.ownerUserId === session.user.id
   }
 
   // クリニック一覧（運営モードのクリニック切り替え用）
@@ -73,6 +75,7 @@ export default async function DashboardLayout({
       operatorClinicId={operatorClinicId ?? undefined}
       allClinics={allClinics}
       planInfo={planInfo}
+      isOwner={isOwner}
     >
       {showOnboarding ? (
         <OnboardingWizard />

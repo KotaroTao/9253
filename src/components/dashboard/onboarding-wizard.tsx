@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { messages } from "@/lib/messages"
-import { CheckCircle2, ChevronRight, ChevronLeft, Stethoscope, Users, Lock, Check, Loader2, Sparkles, ClipboardCheck } from "lucide-react"
+import { CheckCircle2, ChevronRight, ChevronLeft, Stethoscope, Users, Sparkles, ClipboardCheck } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { ClinicType } from "@/types"
 
@@ -42,16 +42,9 @@ export function OnboardingWizard() {
   const [staffRole, setStaffRole] = useState("dentist")
   const [staffList, setStaffList] = useState<Array<{ name: string; role: string }>>([])
 
-  // Step 3: metrics PIN
-  const [pin, setPin] = useState("")
-  const [confirmPin, setConfirmPin] = useState("")
-  const [pinError, setPinError] = useState<string | null>(null)
-  const [pinSaved, setPinSaved] = useState(false)
-
   const steps = [
     { icon: Stethoscope, title: messages.onboarding.step1Title, desc: messages.onboarding.step1Desc },
     { icon: Users, title: messages.onboarding.step2Title, desc: messages.onboarding.step2Desc },
-    { icon: Lock, title: messages.onboarding.step3Title, desc: messages.onboarding.step3Desc },
   ]
 
   function toggleClosedDay(day: number) {
@@ -89,37 +82,6 @@ export function OnboardingWizard() {
           regularClosedDays: closedDays,
         }),
       })
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  async function savePin() {
-    setPinError(null)
-    const PIN_RE = /^\d{4}$/
-    if (!PIN_RE.test(pin)) {
-      setPinError(messages.onboarding.step3PinInvalid)
-      return
-    }
-    if (pin !== confirmPin) {
-      setPinError(messages.onboarding.step3PinMismatch)
-      return
-    }
-    setSaving(true)
-    try {
-      const res = await fetch("/api/settings/metrics-pin", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "set", newPin: pin }),
-      })
-      if (res.ok) {
-        setPinSaved(true)
-      } else {
-        const data = await res.json()
-        setPinError(data.error || messages.common.error)
-      }
-    } catch {
-      setPinError(messages.common.error)
     } finally {
       setSaving(false)
     }
@@ -312,55 +274,6 @@ export function OnboardingWizard() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">{messages.onboarding.step2SkipNote}</p>
-          </div>
-        )}
-
-        {/* Step 3: Metrics PIN */}
-        {step === 2 && (
-          <div className="space-y-4">
-            {pinSaved ? (
-              <div className="flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 p-3 text-sm text-green-700">
-                <Check className="h-4 w-4 shrink-0" />
-                {messages.onboarding.step3PinSet}
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-medium shrink-0">{messages.onboarding.step3PinLabel}</label>
-                  <input
-                    type="password"
-                    inputMode="numeric"
-                    maxLength={4}
-                    value={pin}
-                    onChange={(e) => { setPin(e.target.value.replace(/\D/g, "").slice(0, 4)); setPinError(null) }}
-                    placeholder={messages.onboarding.step3PinPlaceholder}
-                    className="w-32 rounded-lg border bg-background px-3 py-2 text-center text-lg tracking-[0.5em] font-mono focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    autoFocus
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-medium shrink-0">{messages.onboarding.step3ConfirmLabel}</label>
-                  <input
-                    type="password"
-                    inputMode="numeric"
-                    maxLength={4}
-                    value={confirmPin}
-                    onChange={(e) => { setConfirmPin(e.target.value.replace(/\D/g, "").slice(0, 4)); setPinError(null) }}
-                    placeholder={messages.onboarding.step3PinPlaceholder}
-                    className="w-32 rounded-lg border bg-background px-3 py-2 text-center text-lg tracking-[0.5em] font-mono focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
-                </div>
-                {pinError && <p className="text-sm text-destructive">{pinError}</p>}
-                <Button size="sm" onClick={savePin} disabled={saving}>
-                  {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-                  {messages.metricsPin.setPinButton}
-                </Button>
-              </>
-            )}
-            <p className="text-xs text-muted-foreground">{messages.onboarding.step3PinNote}</p>
-            {!pinSaved && (
-              <p className="text-xs text-amber-600">{messages.onboarding.step3PinSkipNote}</p>
-            )}
           </div>
         )}
 

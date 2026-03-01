@@ -19,6 +19,7 @@ interface DashboardShellProps {
   operatorClinicId?: string
   allClinics?: Array<{ id: string; name: string }>
   planInfo?: PlanInfo
+  isOwner?: boolean
 }
 
 export function DashboardShell({
@@ -30,6 +31,7 @@ export function DashboardShell({
   operatorClinicId,
   allClinics = [],
   planInfo,
+  isOwner = false,
 }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [switcherOpen, setSwitcherOpen] = useState(false)
@@ -183,6 +185,7 @@ export function DashboardShell({
           isOperatorMode={isOperatorMode}
           clinicSlug={clinicSlug}
           planInfo={planInfo}
+          isOwner={isOwner}
         />
       </div>
       <div className="flex flex-1 flex-col overflow-hidden">

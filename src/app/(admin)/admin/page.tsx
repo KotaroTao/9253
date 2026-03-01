@@ -290,7 +290,7 @@ export default async function AdminPage({
                 const clinicSettings = (clinic.settings ?? {}) as ClinicSettings
                 const clinicPlan = (clinicSettings.plan ?? "free") as PlanTier
                 return (
-                  <ClinicRow key={clinic.id} clinicId={clinic.id} clinicName={clinic.name} plan={clinicPlan} hasMetricsPin={!!clinicSettings.metricsPin}>
+                  <ClinicRow key={clinic.id} clinicId={clinic.id} clinicName={clinic.name} plan={clinicPlan} ownerName={clinic.owner?.name}>
                     {/* Row 1: Clinic name + status */}
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">

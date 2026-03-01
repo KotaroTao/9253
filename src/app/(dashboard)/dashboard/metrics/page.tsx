@@ -3,11 +3,11 @@ import { auth } from "@/auth"
 import { getOperatorClinicId } from "@/lib/admin-mode"
 import { prisma } from "@/lib/prisma"
 import { MonthlyMetricsView } from "@/components/dashboard/monthly-metrics-view"
-import { MetricsPinLock } from "@/components/dashboard/metrics-pin-lock"
 import { MetricsTabNav } from "@/components/dashboard/metrics-tab-nav"
 import { UpgradePrompt } from "@/components/dashboard/upgrade-prompt"
 import { ROLES } from "@/lib/constants"
 import { getClinicPlanInfo, hasFeature } from "@/lib/plan"
+import { isClinicOwner } from "@/lib/queries/clinics"
 import { messages } from "@/lib/messages"
 import type { ClinicSettings } from "@/types"
 
@@ -23,10 +23,15 @@ export default async function MetricsPage() {
   }
 
   const operatorClinicId = session.user.role === ROLES.SYSTEM_ADMIN ? getOperatorClinicId() : null
-  const isOperatorMode = !!operatorClinicId
   const clinicId = operatorClinicId ?? session.user.clinicId
   if (!clinicId) {
     redirect("/login")
+  }
+
+  // オーナーチェック: オーナーまたはsystem_adminのみアクセス可能
+  const isOwner = await isClinicOwner(clinicId, session.user.id, session.user.role)
+  if (!isOwner) {
+    redirect("/dashboard")
   }
 
   // プランゲート
@@ -72,19 +77,11 @@ export default async function MetricsPage() {
   const enteredMonths = enteredRows.map((r) => `${r.year}-${r.month}`)
   const settings = (clinic?.settings ?? {}) as ClinicSettings
   const clinicType = settings.clinicType ?? "general"
-  const hasMetricsPin = !!settings.metricsPin
 
-  const content = (
+  return (
     <div className="space-y-6">
       <MetricsTabNav active="summary" />
       <MonthlyMetricsView enteredMonths={enteredMonths} clinicType={clinicType} />
     </div>
   )
-
-  // PINロック: PIN設定済み かつ 運営モードでない場合
-  if (hasMetricsPin && !isOperatorMode) {
-    return <MetricsPinLock>{content}</MetricsPinLock>
-  }
-
-  return content
 }

@@ -107,6 +107,7 @@ interface Props {
   seasonalIndices?: SeasonalIndices
   platformActionOutcomes?: Record<string, PlatformActionOutcome>
   isDemo?: boolean
+  isOwner?: boolean
 }
 
 export function ImprovementActionsView({
@@ -120,6 +121,7 @@ export function ImprovementActionsView({
   seasonalIndices,
   platformActionOutcomes = {},
   isDemo = false,
+  isOwner = false,
 }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -128,6 +130,7 @@ export function ImprovementActionsView({
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
   const [adoptedIds, setAdoptedIds] = useState<Set<string>>(new Set(initialAdopted))
   const [adoptingId, setAdoptingId] = useState<string | null>(null)
   const [adoptQuestionSelect, setAdoptQuestionSelect] = useState<{ platformActionId: string; questionIds: string[] } | null>(null)
@@ -652,34 +655,6 @@ export function ImprovementActionsView({
                               </p>
                             </div>
                           )}
-                          {outcome.metricsClinicCount > 0 && (
-                            <>
-                              {outcome.avgRevenueChangePct != null && (
-                                <div className="text-center">
-                                  <p className="text-[9px] text-purple-500">{messages.improvementActions.metricsRevenue}</p>
-                                  <p className={`text-xs font-bold ${outcome.avgRevenueChangePct > 0 ? "text-green-600" : outcome.avgRevenueChangePct < 0 ? "text-red-500" : "text-slate-400"}`}>
-                                    {outcome.avgRevenueChangePct > 0 ? "+" : ""}{outcome.avgRevenueChangePct.toFixed(1)}%
-                                  </p>
-                                </div>
-                              )}
-                              {outcome.avgPatientCountChange != null && (
-                                <div className="text-center">
-                                  <p className="text-[9px] text-purple-500">{messages.improvementActions.metricsPatients}</p>
-                                  <p className={`text-xs font-bold ${outcome.avgPatientCountChange > 0 ? "text-green-600" : outcome.avgPatientCountChange < 0 ? "text-red-500" : "text-slate-400"}`}>
-                                    {outcome.avgPatientCountChange > 0 ? "+" : ""}{outcome.avgPatientCountChange}{messages.platformActions.outcomePatientUnit}
-                                  </p>
-                                </div>
-                              )}
-                              {outcome.avgCancelRateChangePt != null && (
-                                <div className="text-center">
-                                  <p className="text-[9px] text-purple-500">{messages.improvementActions.metricsCancelRate}</p>
-                                  <p className={`text-xs font-bold ${outcome.avgCancelRateChangePt < 0 ? "text-green-600" : outcome.avgCancelRateChangePt > 0 ? "text-red-500" : "text-slate-400"}`}>
-                                    {outcome.avgCancelRateChangePt > 0 ? "+" : ""}{outcome.avgCancelRateChangePt.toFixed(1)}pt
-                                  </p>
-                                </div>
-                              )}
-                            </>
-                          )}
                           {outcome.avgDurationDays != null && (
                             <div className="text-center">
                               <p className="text-[9px] text-purple-500">{messages.platformActions.outcomeDuration}</p>
@@ -1098,6 +1073,7 @@ export function ImprovementActionsView({
                 seasonalIndices={seasonalIndices}
                 platformActionOutcomes={platformActionOutcomes}
                 isDemo={isDemo}
+                isOwner={isOwner}
               />
             )
           })}
@@ -1156,6 +1132,7 @@ export function ImprovementActionsView({
                 seasonalIndices={seasonalIndices}
                 platformActionOutcomes={platformActionOutcomes}
                 isDemo={isDemo}
+                isOwner={isOwner}
               />
             )
           })}
@@ -1195,6 +1172,7 @@ function ActionCard({
   seasonalIndices,
   platformActionOutcomes,
   isDemo,
+  isOwner,
 }: {
   action: ImprovementAction
   expanded: boolean
@@ -1225,6 +1203,7 @@ function ActionCard({
   seasonalIndices?: SeasonalIndices
   platformActionOutcomes?: Record<string, PlatformActionOutcome>
   isDemo?: boolean
+  isOwner?: boolean
 }) {
   const isActive = action.status === "active"
   const isCompleted = action.status === "completed"
@@ -1530,8 +1509,8 @@ function ActionCard({
               </div>
             )}
 
-            {/* Business metrics comparison */}
-            {metricsComparison && (
+            {/* Business metrics comparison — オーナーのみ表示 */}
+            {isOwner && metricsComparison && (
               <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-3 space-y-2">
                 <p className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
                   <BarChart3 className="h-3 w-3" />
@@ -1588,7 +1567,7 @@ function ActionCard({
                 </div>
               </div>
             )}
-            {!metricsComparison && expanded && monthlyMetrics && monthlyMetrics.length < 2 && (
+            {isOwner && !metricsComparison && expanded && monthlyMetrics && monthlyMetrics.length < 2 && (
               <div className="rounded-lg border border-dashed border-slate-200 p-3 text-center">
                 <p className="text-[11px] text-muted-foreground">
                   <BarChart3 className="inline h-3 w-3 mr-1" />

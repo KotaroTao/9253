@@ -13,10 +13,12 @@ model Clinic {
   slug                String   @unique
   googlePlaceId       String?  @map("google_place_id")
   unitCount           Int?     @map("unit_count")
+  ownerUserId         String?  @unique @map("owner_user_id") @db.Uuid
   settings            Json     @default("{}")
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
 
+  owner                  User?    @relation("ClinicOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
   staff                  Staff[]
   users                  User[]
   surveyTemplates        SurveyTemplate[]
@@ -62,8 +64,9 @@ model User {
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
-  clinic Clinic? @relation(fields: [clinicId], references: [id], onDelete: SetNull)
-  staff  Staff?  @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  clinic      Clinic? @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+  staff       Staff?  @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  ownedClinic Clinic? @relation("ClinicOwner")
 
   @@index([clinicId])
   @@map("users")

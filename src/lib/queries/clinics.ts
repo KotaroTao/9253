@@ -34,6 +34,19 @@ export async function updateClinicSettings(
   return merged
 }
 
+/**
+ * ユーザーがクリニックのオーナーかどうかを判定する。
+ * system_admin は常に true を返す（運営モード対応）。
+ */
+export async function isClinicOwner(clinicId: string, userId: string, role: string): Promise<boolean> {
+  if (role === "system_admin") return true
+  const clinic = await prisma.clinic.findUnique({
+    where: { id: clinicId },
+    select: { ownerUserId: true },
+  })
+  return clinic?.ownerUserId === userId
+}
+
 export async function getClinicById(clinicId: string) {
   return prisma.clinic.findUnique({
     where: { id: clinicId },
@@ -74,6 +87,7 @@ export async function getAllClinics(options?: {
       skip,
       take: limit,
       include: {
+        owner: { select: { name: true } },
         _count: {
           select: {
             staff: { where: { isActive: true } },

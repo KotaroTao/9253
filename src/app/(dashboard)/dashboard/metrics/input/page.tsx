@@ -3,7 +3,6 @@ import { auth } from "@/auth"
 import { getOperatorClinicId } from "@/lib/admin-mode"
 import { prisma } from "@/lib/prisma"
 import { MetricsInputView } from "@/components/dashboard/metrics-input-view"
-import { MetricsPinLock } from "@/components/dashboard/metrics-pin-lock"
 import { MetricsTabNav } from "@/components/dashboard/metrics-tab-nav"
 import { UpgradePrompt } from "@/components/dashboard/upgrade-prompt"
 import { getMonthStatus, calcWorkingDays } from "@/lib/metrics-utils"
@@ -11,6 +10,7 @@ import type { MonthStatus, ClinicProfile } from "@/lib/metrics-utils"
 import type { ClinicSettings } from "@/types"
 import { ROLES } from "@/lib/constants"
 import { getClinicPlanInfo, hasFeature } from "@/lib/plan"
+import { isClinicOwner } from "@/lib/queries/clinics"
 import { messages } from "@/lib/messages"
 
 const METRICS_SELECT = {
@@ -61,10 +61,15 @@ export default async function MetricsInputPage() {
   }
 
   const operatorClinicId = session.user.role === ROLES.SYSTEM_ADMIN ? getOperatorClinicId() : null
-  const isOperatorMode = !!operatorClinicId
   const clinicId = operatorClinicId ?? session.user.clinicId
   if (!clinicId) {
     redirect("/login")
+  }
+
+  // オーナーチェック: オーナーまたはsystem_adminのみアクセス可能
+  const isOwner = await isClinicOwner(clinicId, session.user.id, session.user.role)
+  if (!isOwner) {
+    redirect("/dashboard")
   }
 
   // プランゲート
@@ -150,9 +155,7 @@ export default async function MetricsInputPage() {
     hygienistCount: prevSummary?.hygienistCount ?? null,
   }
 
-  const hasMetricsPin = !!settings.metricsPin
-
-  const content = (
+  return (
     <div className="space-y-6">
       <MetricsTabNav active="input" />
       <MetricsInputView
@@ -166,11 +169,4 @@ export default async function MetricsInputPage() {
       />
     </div>
   )
-
-  // PINロック: PIN設定済み かつ 運営モードでない場合
-  if (hasMetricsPin && !isOperatorMode) {
-    return <MetricsPinLock>{content}</MetricsPinLock>
-  }
-
-  return content
 }
