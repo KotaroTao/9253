@@ -1127,6 +1127,11 @@ export const messages = {
     outcomePatientUnit: "人",
     confidenceHigh: "信頼度 高",
     confidenceModerate: "参考値",
+    outcomeAdoptBadge: "院が導入",
+    outcomeDuration: "平均実施期間",
+    outcomeDaysUnit: "日",
+    outcomeMonthsUnit: "ヶ月",
+    outcomeEstablished: "定着率",
     outcomeCollecting: "他院の実績データを収集中",
     outcomeCollectingDetail: (remaining: number, current: number) =>
       current === 0

@@ -38,6 +38,10 @@ export interface PlatformActionOutcome {
   avgCancelRateChangePt: number | null
   /** 経営指標比較に使えたクリニック数 */
   metricsClinicCount: number
+  /** 平均実施期間（日数）— 有効完了アクションのみ */
+  avgDurationDays: number | null
+  /** 定着率（%）— completionReason="established" の割合 */
+  establishedRate: number | null
   /** 信頼度レベル: "high" (5院以上) | "moderate" (3-4院) | "insufficient" (2院以下) */
   confidence: "high" | "moderate" | "insufficient"
 }
@@ -205,6 +209,26 @@ export async function getPlatformActionOutcomes(
 
     const qualifiedCount = qualified.length
 
+    // 平均実施期間（日数）
+    const durations = qualified
+      .filter((a) => a.completedAt)
+      .map((a) =>
+        Math.floor(
+          (new Date(a.completedAt!).getTime() - new Date(a.startedAt).getTime()) / (1000 * 60 * 60 * 24)
+        )
+      )
+    const avgDurationDays =
+      durations.length > 0
+        ? Math.round(durations.reduce((s, d) => s + d, 0) / durations.length)
+        : null
+
+    // 定着率: completionReason="established" の割合
+    const establishedCount = qualified.filter((a) => a.completionReason === "established").length
+    const establishedRate =
+      qualifiedCount > 0
+        ? Math.round((establishedCount / qualifiedCount) * 100)
+        : null
+
     result[paId] = {
       platformActionId: paId,
       qualifiedCount,
@@ -214,6 +238,8 @@ export async function getPlatformActionOutcomes(
       avgPatientCountChange: avg(patientChanges),
       avgCancelRateChangePt: avg(cancelRateChanges),
       metricsClinicCount: Math.max(revChanges.length, patientChanges.length, cancelRateChanges.length),
+      avgDurationDays,
+      establishedRate,
       confidence: getConfidence(qualifiedCount),
     }
   }

@@ -112,6 +112,8 @@ interface PlatformActionOutcome {
   avgPatientCountChange: number | null
   avgCancelRateChangePt: number | null
   metricsClinicCount: number
+  avgDurationDays: number | null
+  establishedRate: number | null
   confidence: "high" | "moderate" | "insufficient"
 }
 
@@ -474,7 +476,14 @@ export function ImprovementActionsView({
   }
 
   // Pickup (isPickup) platform actions to show
-  const pickupActions = platformActions.filter((pa) => pa.isPickup)
+  // ピックアップアクションを導入数の多い順にソート
+  const pickupActions = platformActions
+    .filter((pa) => pa.isPickup)
+    .sort((a, b) => {
+      const adoptA = platformActionOutcomes[a.id]?.adoptCount ?? 0
+      const adoptB = platformActionOutcomes[b.id]?.adoptCount ?? 0
+      return adoptB - adoptA
+    })
 
   return (
     <div className="space-y-4">
@@ -539,6 +548,16 @@ export function ImprovementActionsView({
                             {categoryLabel}
                           </span>
                         )}
+                        {(() => {
+                          const oc = platformActionOutcomes[pa.id]
+                          if (!oc || oc.adoptCount === 0) return null
+                          return (
+                            <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700">
+                              <Users className="h-2.5 w-2.5" />
+                              {oc.adoptCount}{messages.platformActions.outcomeAdoptBadge}
+                            </span>
+                          )
+                        })()}
                         {pa.serviceProvider && (
                           <span className="text-[10px] text-muted-foreground">
                             {messages.platformActions.provider}: {pa.serviceProvider}
@@ -649,6 +668,25 @@ export function ImprovementActionsView({
                                 </div>
                               )}
                             </>
+                          )}
+                          {outcome.avgDurationDays != null && (
+                            <div className="text-center">
+                              <p className="text-[9px] text-purple-500">{messages.platformActions.outcomeDuration}</p>
+                              <p className="text-xs font-bold text-slate-600">
+                                {outcome.avgDurationDays < 60
+                                  ? `${outcome.avgDurationDays}${messages.platformActions.outcomeDaysUnit}`
+                                  : `${(outcome.avgDurationDays / 30).toFixed(1)}${messages.platformActions.outcomeMonthsUnit}`
+                                }
+                              </p>
+                            </div>
+                          )}
+                          {outcome.establishedRate != null && (
+                            <div className="text-center">
+                              <p className="text-[9px] text-purple-500">{messages.platformActions.outcomeEstablished}</p>
+                              <p className={`text-xs font-bold ${outcome.establishedRate >= 70 ? "text-green-600" : outcome.establishedRate >= 40 ? "text-amber-600" : "text-slate-400"}`}>
+                                {outcome.establishedRate}%
+                              </p>
+                            </div>
                           )}
                         </div>
                       </div>
