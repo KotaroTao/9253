@@ -1169,6 +1169,8 @@ export const messages = {
         : `現在${current}院が実施完了。あと${remaining}院で効果データを公開します`,
     outcomeAdoptCount: (count: number) => `${count}院が導入中`,
     suggestionOutcomeCollecting: "実績データ収集中",
+    outcomeSampleBadge: "サンプル",
+    outcomeSampleNote: "※ サンプルデータです。実際の他院実績が蓄積されると自動的に置き換わります。",
     // 管理画面
     manage: "改善アクション管理",
     create: "新規作成",

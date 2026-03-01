@@ -17,6 +17,7 @@ import {
   CATEGORY_LABELS,
 } from "@/lib/constants"
 import type { ImprovementSuggestion } from "@/lib/constants"
+import { getDemoSuggestionOutcome } from "@/lib/demo-action-outcomes"
 import {
   Plus,
   Target,
@@ -105,6 +106,7 @@ interface Props {
   monthlyMetrics?: MonthlyMetric[]
   seasonalIndices?: SeasonalIndices
   platformActionOutcomes?: Record<string, PlatformActionOutcome>
+  isDemo?: boolean
 }
 
 export function ImprovementActionsView({
@@ -117,6 +119,7 @@ export function ImprovementActionsView({
   monthlyMetrics = [],
   seasonalIndices,
   platformActionOutcomes = {},
+  isDemo = false,
 }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -172,14 +175,26 @@ export function ImprovementActionsView({
   }
 
   // Build title→outcome map for suggestion cards
+  // デモ時は全提案にサンプルデータを表示
   const suggestionOutcomeMap = useMemo(() => {
     const map = new Map<string, PlatformActionOutcome>()
     for (const pa of platformActions) {
       const outcome = platformActionOutcomes[pa.id]
       if (outcome) map.set(pa.title, outcome)
     }
+    if (isDemo) {
+      // デモ: プラットフォームアクションにマッチしない提案にもサンプルデータを追加
+      for (const category of Object.values(IMPROVEMENT_SUGGESTIONS)) {
+        for (const suggestion of category) {
+          if (!map.has(suggestion.title)) {
+            const demoOutcome = getDemoSuggestionOutcome(suggestion.title)
+            if (demoOutcome) map.set(suggestion.title, demoOutcome)
+          }
+        }
+      }
+    }
     return map
-  }, [platformActions, platformActionOutcomes])
+  }, [platformActions, platformActionOutcomes, isDemo])
 
   // Get suggestions based on selected questions' categories
   // Sort: suggestions with outcome data first
@@ -606,7 +621,7 @@ export function ImprovementActionsView({
                       )
                     }
                     return (
-                      <div className="rounded-md bg-purple-50/60 border border-purple-100 px-3 py-2 space-y-1.5">
+                      <div className={`rounded-md px-3 py-2 space-y-1.5 ${isDemo ? "bg-purple-50/40 border border-dashed border-purple-200" : "bg-purple-50/60 border border-purple-100"}`}>
                         <p className="text-[11px] font-semibold text-purple-700 flex items-center gap-1">
                           <Users className="h-3 w-3" />
                           {messages.platformActions.outcomeTitle}
@@ -620,6 +635,11 @@ export function ImprovementActionsView({
                           ) : (
                             <span className="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-medium text-amber-700">
                               {messages.platformActions.confidenceModerate}
+                            </span>
+                          )}
+                          {isDemo && (
+                            <span className="ml-1 rounded-full bg-orange-100 px-1.5 py-0.5 text-[9px] font-medium text-orange-600">
+                              {messages.platformActions.outcomeSampleBadge}
                             </span>
                           )}
                         </p>
@@ -680,6 +700,9 @@ export function ImprovementActionsView({
                             </div>
                           )}
                         </div>
+                        {isDemo && (
+                          <p className="text-[9px] text-orange-500/70">{messages.platformActions.outcomeSampleNote}</p>
+                        )}
                       </div>
                     )
                   })()}
@@ -874,7 +897,7 @@ export function ImprovementActionsView({
                         </p>
                         {/* Inline outcome from other clinics */}
                         {outcome && outcome.confidence !== "insufficient" && (
-                          <div className="mt-2 flex items-center gap-3 rounded-md bg-purple-50/70 px-2.5 py-1.5">
+                          <div className={`mt-2 flex items-center gap-3 rounded-md px-2.5 py-1.5 flex-wrap ${isDemo ? "bg-purple-50/50 border border-dashed border-purple-200" : "bg-purple-50/70"}`}>
                             <span className="flex items-center gap-1 text-[11px] font-medium text-purple-700">
                               <Users className="h-3 w-3" />
                               {outcome.qualifiedCount}{messages.platformActions.outcomeClinics}
@@ -902,6 +925,11 @@ export function ImprovementActionsView({
                             ) : (
                               <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-medium text-amber-700">
                                 {messages.platformActions.confidenceModerate}
+                              </span>
+                            )}
+                            {isDemo && (
+                              <span className="rounded-full bg-orange-100 px-1.5 py-0.5 text-[9px] font-medium text-orange-600">
+                                {messages.platformActions.outcomeSampleBadge}
                               </span>
                             )}
                           </div>
@@ -1068,6 +1096,8 @@ export function ImprovementActionsView({
                 isSystemAdmin={isSystemAdmin}
                 monthlyMetrics={monthlyMetrics}
                 seasonalIndices={seasonalIndices}
+                platformActionOutcomes={platformActionOutcomes}
+                isDemo={isDemo}
               />
             )
           })}
@@ -1124,6 +1154,8 @@ export function ImprovementActionsView({
                 isSystemAdmin={isSystemAdmin}
                 monthlyMetrics={monthlyMetrics}
                 seasonalIndices={seasonalIndices}
+                platformActionOutcomes={platformActionOutcomes}
+                isDemo={isDemo}
               />
             )
           })}
@@ -1161,6 +1193,8 @@ function ActionCard({
   isSystemAdmin,
   monthlyMetrics,
   seasonalIndices,
+  platformActionOutcomes,
+  isDemo,
 }: {
   action: ImprovementAction
   expanded: boolean
@@ -1189,6 +1223,8 @@ function ActionCard({
   isSystemAdmin?: boolean
   monthlyMetrics?: MonthlyMetric[]
   seasonalIndices?: SeasonalIndices
+  platformActionOutcomes?: Record<string, PlatformActionOutcome>
+  isDemo?: boolean
 }) {
   const isActive = action.status === "active"
   const isCompleted = action.status === "completed"
@@ -1560,6 +1596,69 @@ function ActionCard({
                 </p>
               </div>
             )}
+
+            {/* 他院実績（プラットフォームアクションにリンクされている場合） */}
+            {action.platformActionId && platformActionOutcomes && (() => {
+              const outcome = platformActionOutcomes[action.platformActionId!]
+              if (!outcome || outcome.confidence === "insufficient") return null
+              return (
+                <div className={`rounded-lg px-3 py-2 space-y-1.5 ${isDemo ? "bg-purple-50/40 border border-dashed border-purple-200" : "bg-purple-50/60 border border-purple-100"}`}>
+                  <p className="text-[11px] font-semibold text-purple-700 flex items-center gap-1">
+                    <Users className="h-3 w-3" />
+                    {messages.platformActions.outcomeTitle}
+                    <span className="font-normal text-purple-500 ml-1">
+                      {outcome.qualifiedCount}{messages.platformActions.outcomeClinics}
+                    </span>
+                    {outcome.confidence === "high" ? (
+                      <span className="ml-1 rounded-full bg-green-100 px-1.5 py-0.5 text-[9px] font-medium text-green-700">
+                        {messages.platformActions.confidenceHigh}
+                      </span>
+                    ) : (
+                      <span className="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-medium text-amber-700">
+                        {messages.platformActions.confidenceModerate}
+                      </span>
+                    )}
+                    {isDemo && (
+                      <span className="ml-1 rounded-full bg-orange-100 px-1.5 py-0.5 text-[9px] font-medium text-orange-600">
+                        {messages.platformActions.outcomeSampleBadge}
+                      </span>
+                    )}
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    {outcome.avgScoreImprovement != null && (
+                      <div className="text-center">
+                        <p className="text-[9px] text-purple-500">{messages.platformActions.outcomeScore}</p>
+                        <p className={`text-xs font-bold ${outcome.avgScoreImprovement > 0 ? "text-green-600" : outcome.avgScoreImprovement < 0 ? "text-red-500" : "text-slate-400"}`}>
+                          {outcome.avgScoreImprovement > 0 ? "+" : ""}{outcome.avgScoreImprovement}
+                        </p>
+                      </div>
+                    )}
+                    {outcome.avgDurationDays != null && (
+                      <div className="text-center">
+                        <p className="text-[9px] text-purple-500">{messages.platformActions.outcomeDuration}</p>
+                        <p className="text-xs font-bold text-slate-600">
+                          {outcome.avgDurationDays < 60
+                            ? `${outcome.avgDurationDays}${messages.platformActions.outcomeDaysUnit}`
+                            : `${(outcome.avgDurationDays / 30).toFixed(1)}${messages.platformActions.outcomeMonthsUnit}`
+                          }
+                        </p>
+                      </div>
+                    )}
+                    {outcome.establishedRate != null && (
+                      <div className="text-center">
+                        <p className="text-[9px] text-purple-500">{messages.platformActions.outcomeEstablished}</p>
+                        <p className={`text-xs font-bold ${outcome.establishedRate >= 70 ? "text-green-600" : outcome.establishedRate >= 40 ? "text-amber-600" : "text-slate-400"}`}>
+                          {outcome.establishedRate}%
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  {isDemo && (
+                    <p className="text-[9px] text-orange-500/70">{messages.platformActions.outcomeSampleNote}</p>
+                  )}
+                </div>
+              )
+            })()}
 
             {/* Completion reason (shown for completed actions) */}
             {!isActive && action.completionReason && (

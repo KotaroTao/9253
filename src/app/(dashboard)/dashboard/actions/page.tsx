@@ -7,9 +7,11 @@ import { UpgradePrompt } from "@/components/dashboard/upgrade-prompt"
 import { ROLES } from "@/lib/constants"
 import { getQuestionCurrentScores } from "@/lib/queries/stats"
 import { getPlatformActionOutcomes } from "@/lib/queries/platform-action-stats"
+import type { PlatformActionOutcome } from "@/lib/queries/platform-action-stats"
 import { getSeasonalIndices } from "@/lib/queries/seasonal-index"
 import { getClinicPlanInfo, hasFeature } from "@/lib/plan"
 import { messages } from "@/lib/messages"
+import { generateDemoActionOutcomes } from "@/lib/demo-action-outcomes"
 import type { ClinicSettings, TemplateQuestion, TemplateData } from "@/types"
 
 export default async function ActionsPage() {
@@ -75,7 +77,7 @@ export default async function ActionsPage() {
     }),
     prisma.clinic.findUnique({
       where: { id: clinicId },
-      select: { settings: true },
+      select: { settings: true, slug: true },
     }),
   ])
 
@@ -116,9 +118,25 @@ export default async function ActionsPage() {
     .map((a) => a.platformActionId!)
 
   // クロスクリニック実績集計
-  const platformActionOutcomes = await getPlatformActionOutcomes(
-    platformActions.map((pa) => pa.id)
-  )
+  const platformActionIds = platformActions.map((pa) => pa.id)
+  let platformActionOutcomes: Record<string, PlatformActionOutcome>
+
+  // デモクリニックの場合のみ仮データを表示
+  if (clinic?.slug === "demo-dental") {
+    const realOutcomes = await getPlatformActionOutcomes(platformActionIds)
+    const demoOutcomes = generateDemoActionOutcomes(
+      platformActions.map((pa) => ({ id: pa.id, title: pa.title }))
+    )
+    // 実データがあればそちらを優先、なければデモデータ
+    platformActionOutcomes = { ...demoOutcomes }
+    for (const [id, outcome] of Object.entries(realOutcomes)) {
+      if (outcome.confidence !== "insufficient") {
+        platformActionOutcomes[id] = outcome
+      }
+    }
+  } else {
+    platformActionOutcomes = await getPlatformActionOutcomes(platformActionIds)
+  }
 
   // 季節指数を取得
   const clinicType = ((clinic?.settings as ClinicSettings | null)?.clinicType) ?? "general"
@@ -139,6 +157,7 @@ export default async function ActionsPage() {
         monthlyMetrics={monthlyMetrics}
         seasonalIndices={seasonalIndices}
         platformActionOutcomes={platformActionOutcomes}
+        isDemo={clinic?.slug === "demo-dental"}
       />
     </div>
   )
