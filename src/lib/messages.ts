@@ -1120,6 +1120,11 @@ export const messages = {
     reasonSuspended: "中断",
     reasonNone: "理由未記録",
     fromPlatform: "プラットフォーム提案",
+    // 他院実績
+    outcomeTitle: "他院の実績",
+    outcomeClinics: "院が実施完了",
+    outcomeScore: "満足度改善",
+    outcomePatientUnit: "人",
     // 管理画面
     manage: "改善アクション管理",
     create: "新規作成",

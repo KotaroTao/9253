@@ -42,6 +42,7 @@ import {
   ExternalLink,
   Check,
   Sparkles,
+  Users,
 } from "lucide-react"
 
 interface ActionLog {
@@ -101,6 +102,17 @@ interface MonthlyMetric {
   totalVisitCount: number | null
 }
 
+interface PlatformActionOutcome {
+  platformActionId: string
+  completedCount: number
+  adoptCount: number
+  avgScoreImprovement: number | null
+  avgRevenueChangePct: number | null
+  avgPatientCountChange: number | null
+  avgCancelRateChangePt: number | null
+  metricsClinicCount: number
+}
+
 interface Props {
   initialActions: ImprovementAction[]
   templateQuestions?: TemplateData[]
@@ -109,6 +121,7 @@ interface Props {
   adoptedPlatformActionIds?: string[]
   isSystemAdmin?: boolean
   monthlyMetrics?: MonthlyMetric[]
+  platformActionOutcomes?: Record<string, PlatformActionOutcome>
 }
 
 export function ImprovementActionsView({
@@ -119,6 +132,7 @@ export function ImprovementActionsView({
   adoptedPlatformActionIds: initialAdopted = [],
   isSystemAdmin = false,
   monthlyMetrics = [],
+  platformActionOutcomes = {},
 }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -554,6 +568,60 @@ export function ImprovementActionsView({
                       )}
                     </div>
                   </div>
+                  {/* Cross-clinic outcomes */}
+                  {(() => {
+                    const outcome = platformActionOutcomes[pa.id]
+                    if (!outcome || outcome.completedCount === 0) return null
+                    return (
+                      <div className="rounded-md bg-purple-50/60 border border-purple-100 px-3 py-2 space-y-1.5">
+                        <p className="text-[11px] font-semibold text-purple-700 flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          {messages.platformActions.outcomeTitle}
+                          <span className="font-normal text-purple-500 ml-1">
+                            {outcome.completedCount}{messages.platformActions.outcomeClinics}
+                          </span>
+                        </p>
+                        <div className="flex flex-wrap gap-3">
+                          {outcome.avgScoreImprovement != null && (
+                            <div className="text-center">
+                              <p className="text-[9px] text-purple-500">{messages.platformActions.outcomeScore}</p>
+                              <p className={`text-xs font-bold ${outcome.avgScoreImprovement > 0 ? "text-green-600" : outcome.avgScoreImprovement < 0 ? "text-red-500" : "text-slate-400"}`}>
+                                {outcome.avgScoreImprovement > 0 ? "+" : ""}{outcome.avgScoreImprovement}
+                              </p>
+                            </div>
+                          )}
+                          {outcome.metricsClinicCount > 0 && (
+                            <>
+                              {outcome.avgRevenueChangePct != null && (
+                                <div className="text-center">
+                                  <p className="text-[9px] text-purple-500">{messages.improvementActions.metricsRevenue}</p>
+                                  <p className={`text-xs font-bold ${outcome.avgRevenueChangePct > 0 ? "text-green-600" : outcome.avgRevenueChangePct < 0 ? "text-red-500" : "text-slate-400"}`}>
+                                    {outcome.avgRevenueChangePct > 0 ? "+" : ""}{outcome.avgRevenueChangePct.toFixed(1)}%
+                                  </p>
+                                </div>
+                              )}
+                              {outcome.avgPatientCountChange != null && (
+                                <div className="text-center">
+                                  <p className="text-[9px] text-purple-500">{messages.improvementActions.metricsPatients}</p>
+                                  <p className={`text-xs font-bold ${outcome.avgPatientCountChange > 0 ? "text-green-600" : outcome.avgPatientCountChange < 0 ? "text-red-500" : "text-slate-400"}`}>
+                                    {outcome.avgPatientCountChange > 0 ? "+" : ""}{outcome.avgPatientCountChange}{messages.platformActions.outcomePatientUnit}
+                                  </p>
+                                </div>
+                              )}
+                              {outcome.avgCancelRateChangePt != null && (
+                                <div className="text-center">
+                                  <p className="text-[9px] text-purple-500">{messages.improvementActions.metricsCancelRate}</p>
+                                  <p className={`text-xs font-bold ${outcome.avgCancelRateChangePt < 0 ? "text-green-600" : outcome.avgCancelRateChangePt > 0 ? "text-red-500" : "text-slate-400"}`}>
+                                    {outcome.avgCancelRateChangePt > 0 ? "+" : ""}{outcome.avgCancelRateChangePt.toFixed(1)}pt
+                                  </p>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })()}
                   <div className="flex items-center gap-2">
                     {isAdopted ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
