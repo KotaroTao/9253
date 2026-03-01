@@ -1125,6 +1125,8 @@ export const messages = {
     outcomeClinics: "院が実施完了",
     outcomeScore: "満足度改善",
     outcomePatientUnit: "人",
+    confidenceHigh: "信頼度 高",
+    confidenceModerate: "参考値",
     // 管理画面
     manage: "改善アクション管理",
     create: "新規作成",

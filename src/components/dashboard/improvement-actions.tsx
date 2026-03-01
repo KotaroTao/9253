@@ -104,13 +104,14 @@ interface MonthlyMetric {
 
 interface PlatformActionOutcome {
   platformActionId: string
-  completedCount: number
+  qualifiedCount: number
   adoptCount: number
   avgScoreImprovement: number | null
   avgRevenueChangePct: number | null
   avgPatientCountChange: number | null
   avgCancelRateChangePt: number | null
   metricsClinicCount: number
+  confidence: "high" | "moderate" | "insufficient"
 }
 
 interface Props {
@@ -571,15 +572,24 @@ export function ImprovementActionsView({
                   {/* Cross-clinic outcomes */}
                   {(() => {
                     const outcome = platformActionOutcomes[pa.id]
-                    if (!outcome || outcome.completedCount === 0) return null
+                    if (!outcome || outcome.confidence === "insufficient") return null
                     return (
                       <div className="rounded-md bg-purple-50/60 border border-purple-100 px-3 py-2 space-y-1.5">
                         <p className="text-[11px] font-semibold text-purple-700 flex items-center gap-1">
                           <Users className="h-3 w-3" />
                           {messages.platformActions.outcomeTitle}
                           <span className="font-normal text-purple-500 ml-1">
-                            {outcome.completedCount}{messages.platformActions.outcomeClinics}
+                            {outcome.qualifiedCount}{messages.platformActions.outcomeClinics}
                           </span>
+                          {outcome.confidence === "high" ? (
+                            <span className="ml-1 rounded-full bg-green-100 px-1.5 py-0.5 text-[9px] font-medium text-green-700">
+                              {messages.platformActions.confidenceHigh}
+                            </span>
+                          ) : (
+                            <span className="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-medium text-amber-700">
+                              {messages.platformActions.confidenceModerate}
+                            </span>
+                          )}
                         </p>
                         <div className="flex flex-wrap gap-3">
                           {outcome.avgScoreImprovement != null && (

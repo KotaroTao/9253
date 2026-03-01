@@ -3,14 +3,31 @@ import { prisma } from "@/lib/prisma"
 /**
  * プラットフォームアクション別の他院実績集計
  *
- * 各プラットフォームアクションについて、完了済みクリニックの
+ * 各プラットフォームアクションについて、有効な完了クリニックの
  * 満足度改善幅と経営指標変化の平均値を返す。
+ *
+ * ■ 採用条件（満足度集計・経営指標共通）
+ *   - completionReason が "established" or "uncertain"（"suspended" = 中断は除外）
+ *   - 実施期間が30日以上
+ *   - baselineScore と resultScore の両方が存在（満足度集計のみ）
+ *   - 開始月・完了月の両方に経営データが存在（経営指標のみ）
+ *
+ * ■ 表示条件
+ *   - 有効完了 3院以上で表示（MIN_CLINICS_FOR_DISPLAY）
+ *   - 5院以上で信頼度「高」バッジ（MIN_CLINICS_HIGH_CONFIDENCE）
  */
+
+/** 表示に必要な最低完了院数 */
+export const MIN_CLINICS_FOR_DISPLAY = 3
+/** 信頼度「高」の閾値 */
+export const MIN_CLINICS_HIGH_CONFIDENCE = 5
+/** 最低実施日数 */
+const MIN_DURATION_DAYS = 30
 
 export interface PlatformActionOutcome {
   platformActionId: string
-  /** 完了クリニック数 */
-  completedCount: number
+  /** 有効完了クリニック数（中断・短期間を除く） */
+  qualifiedCount: number
   /** 導入クリニック数（active + completed + cancelled） */
   adoptCount: number
   /** 満足度スコアの平均改善幅 (resultScore - baselineScore) */
@@ -21,6 +38,8 @@ export interface PlatformActionOutcome {
   avgCancelRateChangePt: number | null
   /** 経営指標比較に使えたクリニック数 */
   metricsClinicCount: number
+  /** 信頼度レベル: "high" (5院以上) | "moderate" (3-4院) | "insufficient" (2院以下) */
+  confidence: "high" | "moderate" | "insufficient"
 }
 
 export async function getPlatformActionOutcomes(
@@ -39,6 +58,7 @@ export async function getPlatformActionOutcomes(
       status: true,
       baselineScore: true,
       resultScore: true,
+      completionReason: true,
       startedAt: true,
       completedAt: true,
     },
@@ -53,11 +73,19 @@ export async function getPlatformActionOutcomes(
     grouped.set(a.platformActionId, list)
   }
 
-  // 経営指標取得に必要なclinicIdを収集（完了アクションのみ）
-  const completedActions = allActions.filter(
-    (a) => a.status === "completed" && a.completedAt
-  )
-  const clinicIds = Array.from(new Set(completedActions.map((a) => a.clinicId)))
+  // 有効完了の判定: suspended除外 + 30日以上実施
+  function isQualifiedCompletion(a: (typeof allActions)[0]): boolean {
+    if (a.status !== "completed" || !a.completedAt) return false
+    if (a.completionReason === "suspended") return false
+    const days = Math.floor(
+      (new Date(a.completedAt).getTime() - new Date(a.startedAt).getTime()) / (1000 * 60 * 60 * 24)
+    )
+    return days >= MIN_DURATION_DAYS
+  }
+
+  // 経営指標取得に必要なclinicIdを収集（有効完了アクションのみ）
+  const qualifiedActions = allActions.filter(isQualifiedCompletion)
+  const clinicIds = Array.from(new Set(qualifiedActions.map((a) => a.clinicId)))
 
   // 関連クリニックの全経営指標を一括取得
   const metricsMap = new Map<string, Array<{
@@ -90,15 +118,22 @@ export async function getPlatformActionOutcomes(
     }
   }
 
+  // 信頼度レベル判定
+  function getConfidence(count: number): PlatformActionOutcome["confidence"] {
+    if (count >= MIN_CLINICS_HIGH_CONFIDENCE) return "high"
+    if (count >= MIN_CLINICS_FOR_DISPLAY) return "moderate"
+    return "insufficient"
+  }
+
   // 各プラットフォームアクションの集計
   const result: Record<string, PlatformActionOutcome> = {}
 
   for (const paId of platformActionIds) {
     const actions = grouped.get(paId) ?? []
-    const completed = actions.filter((a) => a.status === "completed")
+    const qualified = actions.filter(isQualifiedCompletion)
 
-    // 満足度改善
-    const withScores = completed.filter(
+    // 満足度改善（両スコアがある有効完了のみ）
+    const withScores = qualified.filter(
       (a) => a.baselineScore != null && a.resultScore != null
     )
     const avgScoreImprovement =
@@ -114,11 +149,11 @@ export async function getPlatformActionOutcomes(
         : null
 
     // 経営指標変化
-    let revChanges: number[] = []
-    let patientChanges: number[] = []
-    let cancelRateChanges: number[] = []
+    const revChanges: number[] = []
+    const patientChanges: number[] = []
+    const cancelRateChanges: number[] = []
 
-    for (const a of completed) {
+    for (const a of qualified) {
       if (!a.completedAt) continue
       const clinicMetrics = metricsMap.get(a.clinicId)
       if (!clinicMetrics || clinicMetrics.length < 2) continue
@@ -168,15 +203,18 @@ export async function getPlatformActionOutcomes(
         ? Math.round((arr.reduce((a, b) => a + b, 0) / arr.length) * 100) / 100
         : null
 
+    const qualifiedCount = qualified.length
+
     result[paId] = {
       platformActionId: paId,
-      completedCount: completed.length,
+      qualifiedCount,
       adoptCount: actions.length,
       avgScoreImprovement,
       avgRevenueChangePct: avg(revChanges),
       avgPatientCountChange: avg(patientChanges),
       avgCancelRateChangePt: avg(cancelRateChanges),
       metricsClinicCount: Math.max(revChanges.length, patientChanges.length, cancelRateChanges.length),
+      confidence: getConfidence(qualifiedCount),
     }
   }
 
