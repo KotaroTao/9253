@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { generateLLMAdvisory, llmOutputToSections } from "@/lib/llm-advisory"
-import type { LLMAdvisoryInput } from "@/lib/llm-advisory"
+import type { LLMAdvisoryInput, LLMAdvisoryResult } from "@/lib/llm-advisory"
 import {
   ADVISORY,
   QUESTION_CATEGORY_MAP,
@@ -2044,14 +2044,18 @@ async function runLLMAnalysis(
       ),
     }))
 
-    // 月次経営データ概要
+    // 月次経営データ概要（キャンセル率を計算して渡す）
     let monthlyMetricsSummary: string | null = null
     if (data.monthlyMetrics.length >= 2) {
       const recent = data.monthlyMetrics.slice(-3)
       monthlyMetricsSummary = recent.map((m) => {
         const total = (m.firstVisitCount ?? 0) + (m.revisitCount ?? 0)
         const rev = ((m.insuranceRevenue ?? 0) + (m.selfPayRevenue ?? 0))
-        return `${m.year}/${m.month}: 来院${total}人, 売上${Math.round(rev / 10000)}万円, キャンセル${m.cancellationCount ?? 0}件`
+        const cancelCount = m.cancellationCount ?? 0
+        const cancelRate = total + cancelCount > 0
+          ? ((cancelCount / (total + cancelCount)) * 100).toFixed(1)
+          : "0.0"
+        return `${m.year}/${m.month}: 来院${total}人, 売上${Math.round(rev / 10000)}万円, キャンセル率${cancelRate}%（${cancelCount}件）`
       }).join("\n")
     }
 
@@ -2102,12 +2106,26 @@ async function runLLMAnalysis(
       positiveComments,
     }
 
-    const llmOutput = await generateLLMAdvisory(input)
-    if (!llmOutput) return []
-    return llmOutputToSections(llmOutput)
+    const result: LLMAdvisoryResult = await generateLLMAdvisory(input)
+    if (result.output) {
+      return llmOutputToSections(result.output)
+    }
+    if (result.error) {
+      // エラーをセクションとしてユーザーに通知
+      return [{
+        title: "AI分析",
+        content: `AI分析を実行できませんでした。ルールベースの分析結果をご確認ください。\n- エラー: ${result.error}`,
+        type: "executive_summary" as const,
+      }]
+    }
+    return [] // APIキー未設定 → サイレントスキップ
   } catch (e) {
     console.error("[Advisory] LLM analysis skipped:", e)
-    return []
+    return [{
+      title: "AI分析",
+      content: "AI分析中に予期しないエラーが発生しました。ルールベースの分析結果をご確認ください。",
+      type: "executive_summary" as const,
+    }]
   }
 }
 

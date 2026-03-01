@@ -7,6 +7,8 @@ import type { AdvisorySection } from "@/types"
 
 const MODEL = "claude-sonnet-4-6"
 const MAX_TOKENS = 4000
+const TIMEOUT_MS = 60_000 // 60秒
+const MAX_INPUT_CHARS = 30_000 // 入力テキストの上限（約7,500トークン相当）
 
 export interface LLMAdvisoryInput {
   /** 基本スコア */
@@ -44,6 +46,12 @@ interface LLMAdvisoryOutput {
   executiveSummary: string
   rootCauseAnalysis: string
   strategicActions: string
+}
+
+/** LLM分析の結果（成功 or 失敗理由） */
+export interface LLMAdvisoryResult {
+  output: LLMAdvisoryOutput | null
+  error: string | null
 }
 
 const SYSTEM_PROMPT = `あなたは歯科医院経営に精通したトップコンサルタントです。
@@ -86,21 +94,54 @@ JSON形式で以下の3セクションを返してください。マークダウ
 - 改善アクション管理で追跡可能な粒度で書く`
 
 /**
+ * JSON文字列を堅牢に抽出する。
+ * LLMの出力にコードブロックや前後の説明テキストが含まれる場合に対応。
+ */
+function extractJson(text: string): string {
+  // 最初の { から最後の } までを抽出
+  const firstBrace = text.indexOf("{")
+  const lastBrace = text.lastIndexOf("}")
+  if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
+    throw new Error("JSON object not found in LLM response")
+  }
+  return text.slice(firstBrace, lastBrace + 1)
+}
+
+/**
+ * テキストを上限文字数に収まるよう切り詰める。
+ * セクション単位で切り詰め、末尾に省略メッセージを付与。
+ */
+function truncateRuleSummary(sections: Array<{ title: string; content: string }>, maxChars: number): string {
+  const formatted: string[] = []
+  let totalLen = 0
+
+  for (const s of sections) {
+    const entry = `【${s.title}】\n${s.content}`
+    if (totalLen + entry.length > maxChars) {
+      formatted.push(`（以降${sections.length - formatted.length}セクション省略）`)
+      break
+    }
+    formatted.push(entry)
+    totalLen += entry.length
+  }
+
+  return formatted.join("\n\n---\n\n")
+}
+
+/**
  * LLM を使ってコンサルタント品質の分析を生成する。
- * ANTHROPIC_API_KEY が未設定の場合は null を返す（ルールベースにフォールバック）。
+ * ANTHROPIC_API_KEY が未設定の場合は error を返す。
  */
 export async function generateLLMAdvisory(
   input: LLMAdvisoryInput
-): Promise<LLMAdvisoryOutput | null> {
+): Promise<LLMAdvisoryResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) return null
+  if (!apiKey) return { output: null, error: null } // キー未設定はエラーではない
 
-  const client = new Anthropic({ apiKey })
+  const client = new Anthropic({ apiKey, timeout: TIMEOUT_MS })
 
-  // ルールベース分析の要約を構築
-  const ruleSummary = input.ruleBasedSections
-    .map((s) => `【${s.title}】\n${s.content}`)
-    .join("\n\n---\n\n")
+  // ルールベース分析の要約を構築（上限付き）
+  const ruleSummary = truncateRuleSummary(input.ruleBasedSections, MAX_INPUT_CHARS)
 
   // 質問別スコアの要約
   const questionSummary = input.questionBreakdown
@@ -137,10 +178,10 @@ export async function generateLLMAdvisory(
 
   // コメント
   const negComments = input.negativeComments.length > 0
-    ? input.negativeComments.map((c) => `- 「${c}`).join("\n")
+    ? input.negativeComments.map((c) => `- 「${c}」`).join("\n")
     : "なし"
   const posComments = input.positiveComments.length > 0
-    ? input.positiveComments.map((c) => `- 「${c}`).join("\n")
+    ? input.positiveComments.map((c) => `- 「${c}」`).join("\n")
     : "なし"
 
   const userMessage = `以下のデータに基づいて、歯科医院の経営改善分析を行ってください。
@@ -186,18 +227,22 @@ ${posComments}`
       .map((b) => b.text)
       .join("")
 
-    // JSON パース（コードブロックに包まれている場合も対応）
-    const jsonStr = text.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "").trim()
+    // JSON パース（コードブロックや前後テキストに対応）
+    const jsonStr = extractJson(text)
     const parsed = JSON.parse(jsonStr) as LLMAdvisoryOutput
 
     return {
-      executiveSummary: parsed.executiveSummary || "",
-      rootCauseAnalysis: parsed.rootCauseAnalysis || "",
-      strategicActions: parsed.strategicActions || "",
+      output: {
+        executiveSummary: parsed.executiveSummary || "",
+        rootCauseAnalysis: parsed.rootCauseAnalysis || "",
+        strategicActions: parsed.strategicActions || "",
+      },
+      error: null,
     }
   } catch (e) {
-    console.error("[LLM Advisory] Failed:", e)
-    return null
+    const message = e instanceof Error ? e.message : String(e)
+    console.error("[LLM Advisory] Failed:", message)
+    return { output: null, error: message }
   }
 }
 

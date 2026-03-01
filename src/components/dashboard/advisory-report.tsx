@@ -133,17 +133,17 @@ const SECTION_CONFIG = {
   executive_summary: {
     icon: Zap,
     label: messages.advisory.sectionExecutiveSummary,
-    color: "amber",
+    color: "yellow",
   },
   root_cause: {
     icon: SearchCheck,
     label: messages.advisory.sectionRootCause,
-    color: "rose",
+    color: "red",
   },
   strategic_actions: {
     icon: ListOrdered,
     label: messages.advisory.sectionStrategicActions,
-    color: "indigo",
+    color: "blue",
   },
 } as const
 
@@ -166,6 +166,7 @@ const COLOR_MAP: Record<string, { border: string; bg: string; icon: string; text
   fuchsia: { border: "border-fuchsia-200", bg: "bg-fuchsia-50", icon: "text-fuchsia-600", text: "text-fuchsia-800", muted: "text-fuchsia-600/70" },
   red: { border: "border-red-200", bg: "bg-red-50", icon: "text-red-600", text: "text-red-800", muted: "text-red-600/70" },
   stone: { border: "border-stone-200", bg: "bg-stone-50", icon: "text-stone-600", text: "text-stone-800", muted: "text-stone-600/70" },
+  yellow: { border: "border-yellow-200", bg: "bg-yellow-50", icon: "text-yellow-600", text: "text-yellow-800", muted: "text-yellow-600/70" },
 }
 
 const TRIGGER_LABELS: Record<string, string> = {
