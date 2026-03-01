@@ -215,7 +215,7 @@ async function collectAnalysisData(clinicId: string): Promise<AnalysisData> {
     heatmap,
     purposeSatisfaction,
     recentComments,
-    activeActions,
+    activeActionsWithScores,
     scoreDistRows,
     monthlyMetrics,
     monthlyScoreTrend,
@@ -250,6 +250,11 @@ async function collectAnalysisData(clinicId: string): Promise<AnalysisData> {
         baselineScore: true,
         startedAt: true,
       },
+    }).then(async (actions) => {
+      // Fetch current scores in the same async chain to avoid sequential round-trip
+      const qIds = actions.map((a) => a.targetQuestionId).filter((id): id is string => !!id)
+      const scores = qIds.length > 0 ? await getQuestionCurrentScores(clinicId, qIds) : {}
+      return { actions, scores }
     }),
     prisma.$queryRaw<ScoreDistRow[]>`
       SELECT overall_score::int AS score, COUNT(*) AS count
@@ -332,12 +337,8 @@ async function collectAnalysisData(clinicId: string): Promise<AnalysisData> {
     count: Number(r.count),
   }))
 
-  // 改善アクション対象設問の現在スコアを取得
-  const actionQIds = activeActions
-    .map((a) => a.targetQuestionId)
-    .filter((id): id is string => !!id)
-  const actionCurrentScores =
-    actionQIds.length > 0 ? await getQuestionCurrentScores(clinicId, actionQIds) : {}
+  // 改善アクション + 対象設問の現在スコア（Promise.all内で並列取得済み）
+  const { actions: activeActions, scores: actionCurrentScores } = activeActionsWithScores
 
   // カテゴリ別スコア集計（全テンプレート横断）
   const categoryScores = new Map<string, { total: number; count: number }>()
@@ -2003,7 +2004,8 @@ function buildRecommendations(
 
 async function runLLMAnalysis(
   data: AnalysisData,
-  ruleBasedSections: AdvisorySection[]
+  ruleBasedSections: AdvisorySection[],
+  clinicId: string,
 ): Promise<AdvisorySection[]> {
   try {
     // 質問別スコアの構造化
@@ -2106,7 +2108,7 @@ async function runLLMAnalysis(
       positiveComments,
     }
 
-    const result: LLMAdvisoryResult = await generateLLMAdvisory(input)
+    const result: LLMAdvisoryResult = await generateLLMAdvisory(input, clinicId)
     if (result.output) {
       return llmOutputToSections(result.output)
     }
@@ -2160,7 +2162,7 @@ export async function generateAdvisoryReport(
   analysisResults.push(buildRecommendations(data, analysisResults))
 
   // ─── LLM 分析（APIキーがあれば実行） ───
-  const llmSections = await runLLMAnalysis(data, analysisResults)
+  const llmSections = await runLLMAnalysis(data, analysisResults, clinicId)
   if (llmSections.length > 0) {
     // LLMセクションをルールベース分析の先頭に挿入
     analysisResults.unshift(...llmSections)

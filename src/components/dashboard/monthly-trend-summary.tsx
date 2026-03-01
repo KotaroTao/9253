@@ -24,6 +24,7 @@ import {
 } from "lucide-react"
 import { calcDerived, calcProfileDerived, getBenchmarkStatus, generateInsights } from "@/lib/metrics-utils"
 import type { MonthlySummary, ClinicProfile, MetricsInsight, BenchmarkStatus, ClinicType } from "@/lib/metrics-utils"
+import type { SeasonalIndices } from "@/lib/queries/seasonal-index"
 
 interface TrendRow extends MonthlySummary {
   year: number
@@ -34,14 +35,6 @@ interface TrendRow extends MonthlySummary {
 
 type FullMetrics = MonthlySummary & ClinicProfile & Record<string, unknown>
 
-interface SeasonalIndicesData {
-  level: "self" | "specialty" | "platform" | "none"
-  revenue: { byMonth: Record<number, number> }
-  patientCount: { byMonth: Record<number, number> }
-  clinicCount: number
-  label: string | null
-}
-
 interface SingleMonthData {
   summary: FullMetrics | null
   prevSummary: FullMetrics | null
@@ -49,7 +42,7 @@ interface SingleMonthData {
   surveyCount: number
   satisfactionScore: number | null
   prevSatisfactionScore: number | null
-  seasonalIndices?: SeasonalIndicesData
+  seasonalIndices?: SeasonalIndices
 }
 
 function formatMonth(year: number, month: number) {
@@ -64,6 +57,21 @@ interface MonthlyTrendSummaryProps {
   year: number
   month: number
   clinicType?: string
+}
+
+/** Format a seasonally-adjusted delta string (module-level to avoid re-creation per render) */
+function formatSeasonalDelta(
+  current: number | null,
+  prev: number | null,
+  curIdx: number,
+  prevIdx: number,
+): string | null {
+  if (current == null || prev == null || curIdx <= 0 || prevIdx <= 0) return null
+  const normCurrent = current / curIdx
+  const normPrev = prev / prevIdx
+  const diff = Math.round((normCurrent - normPrev) * 10) / 10
+  if (diff === 0) return "±0"
+  return `${diff > 0 ? "+" : ""}${diff}`
 }
 
 // Data table (always visible)
@@ -454,25 +462,8 @@ export function MonthlyTrendSummary({ year, month, clinicType }: MonthlyTrendSum
   const prevRevIdx = hasSeasonal ? (si.revenue.byMonth[prevMonth2] ?? 1.0) : 1.0
   const prevPatIdx = hasSeasonal ? (si.patientCount.byMonth[prevMonth2] ?? 1.0) : 1.0
 
-  function formatSeasonalDelta(current: number | null, prev: number | null, curIdx: number, prevIdx: number): string | null {
-    if (!hasSeasonal || current == null || prev == null || curIdx <= 0 || prevIdx <= 0) return null
-    const normCurrent = current / curIdx
-    const normPrev = prev / prevIdx
-    const diff = Math.round((normCurrent - normPrev) * 10) / 10
-    if (diff === 0) return "±0"
-    return `${diff > 0 ? "+" : ""}${diff}`
-  }
-
-  const seasonalRevDelta = formatSeasonalDelta(totalRevenue, prevTotalRevenue, revIdx, prevRevIdx)
-  const seasonalPatDelta = hasSeasonal && derived?.totalPatients != null && prevDerived?.totalPatients != null && patIdx > 0 && prevPatIdx > 0
-    ? (() => {
-        const norm = derived.totalPatients / patIdx
-        const normPrev = prevDerived.totalPatients / prevPatIdx
-        const diff = Math.round((norm - normPrev) * 10) / 10
-        if (diff === 0) return "±0"
-        return `${diff > 0 ? "+" : ""}${diff}`
-      })()
-    : null
+  const seasonalRevDelta = hasSeasonal ? formatSeasonalDelta(totalRevenue, prevTotalRevenue, revIdx, prevRevIdx) : null
+  const seasonalPatDelta = hasSeasonal ? formatSeasonalDelta(derived?.totalPatients ?? null, prevDerived?.totalPatients ?? null, patIdx, prevPatIdx) : null
 
   // Generate insights
   const insights = generateInsights({

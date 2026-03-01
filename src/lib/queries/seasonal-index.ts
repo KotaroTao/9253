@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { CLINIC_TYPE_LABELS } from "@/lib/metrics-utils"
 import type { ClinicType } from "@/types"
 
 /**
@@ -48,14 +49,6 @@ const MIN_MONTHS_SELF = 12
 const MIN_CLINICS_SPECIALTY = 5
 /** 最低クリニック数（全体集計用） */
 const MIN_CLINICS_PLATFORM = 5
-
-const CLINIC_TYPE_LABELS: Record<string, string> = {
-  general: "一般歯科",
-  orthodontic: "矯正歯科",
-  pediatric: "小児歯科",
-  cosmetic: "審美歯科",
-  oral_surgery: "口腔外科",
-}
 
 /** 全月デフォルト(1.0)の指数 */
 function defaultIndices(): MetricSeasonalIndices {
@@ -241,15 +234,12 @@ async function computeSpecialtyIndices(
   excludeClinicId: string,
   clinicType: ClinicType,
 ): Promise<SeasonalIndices | null> {
-  const clinics = await prisma.clinic.findMany({
-    where: { id: { not: excludeClinicId } },
-    select: { id: true, settings: true },
-  })
-
-  const sameTypeClinics = clinics.filter((c) => {
-    const settings = c.settings as Record<string, unknown> | null
-    return (settings?.clinicType ?? "general") === clinicType
-  })
+  // Filter by clinicType in SQL using JSONB, avoiding fetching all clinics into JS
+  const sameTypeClinics = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT id FROM clinics
+    WHERE id != ${excludeClinicId}::uuid
+      AND COALESCE(settings->>'clinicType', 'general') = ${clinicType}
+  `
 
   const clinicIds = sameTypeClinics.map((c) => c.id)
   if (clinicIds.length === 0) return null
@@ -347,24 +337,3 @@ export async function getSeasonalIndices(
   return noAdjustment
 }
 
-/**
- * 季節指数で値を正規化（季節性を除去した値を返す）
- */
-export function seasonallyNormalize(
-  value: number,
-  index: number,
-): number {
-  if (index <= 0 || index === 1.0) return value
-  return Math.round((value / index) * 10) / 10
-}
-
-/**
- * 季節指数から月の特性を判定
- */
-export function getSeasonalContext(
-  index: number,
-): "high" | "normal" | "low" {
-  if (index >= 1.05) return "high"
-  if (index <= 0.95) return "low"
-  return "normal"
-}

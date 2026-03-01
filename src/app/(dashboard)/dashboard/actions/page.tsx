@@ -10,18 +10,7 @@ import { getPlatformActionOutcomes } from "@/lib/queries/platform-action-stats"
 import { getSeasonalIndices } from "@/lib/queries/seasonal-index"
 import { getClinicPlanInfo, hasFeature } from "@/lib/plan"
 import { messages } from "@/lib/messages"
-import type { ClinicSettings } from "@/types"
-
-interface TemplateQuestion {
-  id: string
-  text: string
-  type: string
-}
-
-interface TemplateData {
-  name: string
-  questions: TemplateQuestion[]
-}
+import type { ClinicSettings, TemplateQuestion, TemplateData } from "@/types"
 
 export default async function ActionsPage() {
   const session = await auth()
@@ -55,7 +44,7 @@ export default async function ActionsPage() {
     }
   }
 
-  const [actions, templates, platformActions, monthlyMetrics] = await Promise.all([
+  const [actions, templates, platformActions, monthlyMetrics, clinic] = await Promise.all([
     prisma.improvementAction.findMany({
       where: { clinicId },
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
@@ -83,6 +72,10 @@ export default async function ActionsPage() {
         totalVisitCount: true,
       },
       orderBy: [{ year: "asc" }, { month: "asc" }],
+    }),
+    prisma.clinic.findUnique({
+      where: { id: clinicId },
+      select: { settings: true },
     }),
   ])
 
@@ -128,10 +121,6 @@ export default async function ActionsPage() {
   )
 
   // 季節指数を取得
-  const clinic = await prisma.clinic.findUnique({
-    where: { id: clinicId },
-    select: { settings: true },
-  })
   const clinicType = ((clinic?.settings as ClinicSettings | null)?.clinicType) ?? "general"
   const seasonalIndices = await getSeasonalIndices(clinicId, clinicType)
 

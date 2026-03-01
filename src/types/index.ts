@@ -138,3 +138,16 @@ export interface SatisfactionTrend {
   month: string
   patientSatisfaction: number | null
 }
+
+/** アンケートテンプレートの設問 */
+export interface TemplateQuestion {
+  id: string
+  text: string
+  type: string
+}
+
+/** アンケートテンプレート（テンプレート名 + 設問リスト） */
+export interface TemplateData {
+  name: string
+  questions: TemplateQuestion[]
+}

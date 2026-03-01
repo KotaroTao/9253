@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma"
 import { getMonthlySurveyCount } from "@/lib/queries/stats"
 import { calcWorkingDays } from "@/lib/metrics-utils"
 import { getSeasonalIndices } from "@/lib/queries/seasonal-index"
-import type { ClinicSettings } from "@/types"
+import type { ClinicSettings, ClinicType } from "@/types"
 import { jstStartOfMonth, jstEndOfMonth } from "@/lib/date-jst"
 
 const METRICS_SELECT = {
@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
   }
 
   // 満足度スコア（当月・前月）+ 季節指数
-  const clinicType = (settings.clinicType ?? "general") as "general" | "orthodontic" | "pediatric" | "cosmetic" | "oral_surgery"
+  const clinicType = (settings.clinicType ?? "general") as ClinicType
   const [satisfactionScore, prevSatisfactionScore, seasonalIndices] = await Promise.all([
     getMonthSatisfactionScore(clinicId, year, month),
     getMonthSatisfactionScore(clinicId, prevYear, prevMonth),
