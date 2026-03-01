@@ -1127,6 +1127,12 @@ export const messages = {
     outcomePatientUnit: "人",
     confidenceHigh: "信頼度 高",
     confidenceModerate: "参考値",
+    outcomeCollecting: "他院の実績データを収集中",
+    outcomeCollectingDetail: (remaining: number, current: number) =>
+      current === 0
+        ? `あと${remaining}院が実施完了すると、効果の平均値が表示されます`
+        : `現在${current}院が実施完了。あと${remaining}院で効果データを公開します`,
+    outcomeAdoptCount: (count: number) => `${count}院が導入中`,
     // 管理画面
     manage: "改善アクション管理",
     create: "新規作成",
