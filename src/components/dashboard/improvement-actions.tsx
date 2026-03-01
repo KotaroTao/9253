@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { messages } from "@/lib/messages"
+import type { SeasonalIndices } from "@/lib/queries/seasonal-index"
 import { MIN_CLINICS_FOR_DISPLAY } from "@/lib/queries/platform-action-stats"
 import {
   QUESTION_CATEGORY_MAP,
@@ -103,14 +104,6 @@ interface MonthlyMetric {
   totalVisitCount: number | null
 }
 
-interface SeasonalIndicesData {
-  level: "self" | "specialty" | "platform" | "none"
-  revenue: { byMonth: Record<number, number> }
-  patientCount: { byMonth: Record<number, number> }
-  clinicCount: number
-  label: string | null
-}
-
 interface PlatformActionOutcome {
   platformActionId: string
   qualifiedCount: number
@@ -133,7 +126,7 @@ interface Props {
   adoptedPlatformActionIds?: string[]
   isSystemAdmin?: boolean
   monthlyMetrics?: MonthlyMetric[]
-  seasonalIndices?: SeasonalIndicesData
+  seasonalIndices?: SeasonalIndices
   platformActionOutcomes?: Record<string, PlatformActionOutcome>
 }
 
@@ -1170,7 +1163,7 @@ function ActionCard({
   allQuestions?: Map<string, { text: string; templateName: string }>
   isSystemAdmin?: boolean
   monthlyMetrics?: MonthlyMetric[]
-  seasonalIndices?: SeasonalIndicesData
+  seasonalIndices?: SeasonalIndices
 }) {
   const isActive = action.status === "active"
   const isCompleted = action.status === "completed"
