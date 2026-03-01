@@ -8,7 +8,7 @@ import { STREAK_MILESTONES, ADVISORY_MILESTONES, RANKS } from "@/lib/constants"
 import {
   Flame, Trophy, CalendarOff, Smartphone, ArrowRight, Sparkles,
   Target, TrendingUp, TrendingDown, Brain, MessageCircle, Clock, HelpCircle,
-  ChevronLeft, ChevronRight, AlertTriangle,
+  ChevronLeft, ChevronRight, AlertTriangle, Users,
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -38,6 +38,7 @@ interface StaffEngagementProps {
   advisoryReportCount: number
   activeActions?: ActiveAction[]
   questionScores?: Record<string, number>
+  staffCount?: number
 }
 
 function getHappinessEmoji(score: number | null): { emoji: string; label: string } {
@@ -56,6 +57,7 @@ export function StaffEngagement({
   advisoryReportCount,
   activeActions = [],
   questionScores = {},
+  staffCount,
 }: StaffEngagementProps) {
   const {
     todayCount,
@@ -130,6 +132,23 @@ export function StaffEngagement({
     <div className="space-y-4">
       {/* Confetti when AI analysis unlocked */}
       {advisoryUnlocked && <Confetti />}
+
+      {/* スタッフ未登録アラート（管理者のみ） */}
+      {isAdmin && staffCount === 0 && (
+        <Link
+          href="/dashboard/staff"
+          className="flex items-center gap-3 rounded-xl border-2 border-amber-200 bg-gradient-to-r from-amber-50/60 to-white p-4 transition-all hover:border-amber-400 hover:shadow-md active:scale-[0.98]"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-500">
+            <Users className="h-5 w-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-amber-900">{messages.staff.noStaffAlert}</p>
+            <p className="mt-0.5 text-xs text-amber-600/70">{messages.staff.noStaffAlertDesc}</p>
+          </div>
+          <ArrowRight className="h-4 w-4 shrink-0 text-amber-400" />
+        </Link>
+      )}
 
       {/* AI分析未実行アラート（一度も分析していない & まだ閾値未達） */}
       {advisoryReportCount === 0 && !advisoryUnlocked && (

@@ -33,8 +33,8 @@ export default async function DashboardPage() {
 
   const isAdmin = session.user.role === ROLES.CLINIC_ADMIN || session.user.role === ROLES.SYSTEM_ADMIN
 
-  // Fetch engagement + active improvement actions + advisory progress + report count
-  const [engagement, activeActions, advisoryProgress, advisoryReportCount] = await Promise.all([
+  // Fetch engagement + active improvement actions + advisory progress + report count + staff count
+  const [engagement, activeActions, advisoryProgress, advisoryReportCount, staffCount] = await Promise.all([
     getStaffEngagementData(clinicId),
     prisma.improvementAction.findMany({
       where: { clinicId, status: "active" },
@@ -54,6 +54,7 @@ export default async function DashboardPage() {
     }),
     getAdvisoryProgress(clinicId),
     prisma.advisoryReport.count({ where: { clinicId } }),
+    prisma.staff.count({ where: { clinicId, isActive: true } }),
   ])
 
   // Fetch current question scores for active actions
@@ -78,6 +79,7 @@ export default async function DashboardPage() {
         advisoryReportCount={advisoryReportCount}
         activeActions={activeActions}
         questionScores={questionScores}
+        staffCount={staffCount}
       />
     </div>
   )

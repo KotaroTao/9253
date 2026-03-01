@@ -6,6 +6,7 @@ import { ImprovementActionsView } from "@/components/dashboard/improvement-actio
 import { UpgradePrompt } from "@/components/dashboard/upgrade-prompt"
 import { ROLES } from "@/lib/constants"
 import { getQuestionCurrentScores } from "@/lib/queries/stats"
+import { getPlatformActionOutcomes } from "@/lib/queries/platform-action-stats"
 import { getClinicPlanInfo, hasFeature } from "@/lib/plan"
 import { messages } from "@/lib/messages"
 
@@ -52,7 +53,7 @@ export default async function ActionsPage() {
     }
   }
 
-  const [actions, templates, platformActions] = await Promise.all([
+  const [actions, templates, platformActions, monthlyMetrics] = await Promise.all([
     prisma.improvementAction.findMany({
       where: { clinicId },
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
@@ -68,6 +69,18 @@ export default async function ActionsPage() {
     prisma.platformImprovementAction.findMany({
       where: { isActive: true },
       orderBy: [{ isPickup: "desc" }, { displayOrder: "asc" }, { createdAt: "desc" }],
+    }),
+    prisma.monthlyClinicMetrics.findMany({
+      where: { clinicId },
+      select: {
+        year: true,
+        month: true,
+        totalPatientCount: true,
+        totalRevenue: true,
+        cancellationCount: true,
+        totalVisitCount: true,
+      },
+      orderBy: [{ year: "asc" }, { month: "asc" }],
     }),
   ])
 
@@ -107,6 +120,11 @@ export default async function ActionsPage() {
     .filter((a) => a.platformActionId && a.status === "active")
     .map((a) => a.platformActionId!)
 
+  // クロスクリニック実績集計
+  const platformActionOutcomes = await getPlatformActionOutcomes(
+    platformActions.map((pa) => pa.id)
+  )
+
   return (
     <div className="space-y-6">
       <ImprovementActionsView
@@ -119,6 +137,8 @@ export default async function ActionsPage() {
         }))}
         adoptedPlatformActionIds={adoptedPlatformActionIds}
         isSystemAdmin={session.user.role === ROLES.SYSTEM_ADMIN}
+        monthlyMetrics={monthlyMetrics}
+        platformActionOutcomes={platformActionOutcomes}
       />
     </div>
   )

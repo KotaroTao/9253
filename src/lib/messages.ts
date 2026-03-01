@@ -412,6 +412,14 @@ export const messages = {
     addLogPlaceholder: "進捗メモを入力",
     addLogSaved: "メモを保存しました",
     addLogFailed: "メモの保存に失敗しました",
+    // Business metrics comparison
+    metricsTitle: "同期間の経営指標の変化",
+    metricsRevenue: "総売上",
+    metricsRevenueUnit: "万円",
+    metricsPatients: "総実人数",
+    metricsCancelRate: "キャンセル率",
+    metricsNote: "※ 経営レポート入力データに基づく参考値です",
+    metricsEmpty: "経営レポートを入力すると、施策期間中の経営指標の変化がここに表示されます",
     tips: [
       "多くの改善アクションを一度にやるのではなく、「満足度が低い」カテゴリから1～2項目だけ選び、朝礼などで「今月はこれを全員でやろう！」と決めて実行するのがおすすめです。",
       "改善アクションは「開始時スコア → 現在スコア」で効果を数値化できるので、スコアが動いたらミーティングなどでチームに共有して、成功体験をみんなで積み上げていきましょう。",
@@ -570,6 +578,9 @@ export const messages = {
     delete: "削除",
     deleteConfirm: "「{name}」を削除しますか？\n\n※ このスタッフに紐づいたアンケート回答データは保持されます。",
     deleteFailed: "スタッフの削除に失敗しました",
+    noStaffAlert: "まずはスタッフを登録しましょう",
+    noStaffAlertDesc: "スタッフを登録すると、アンケート時に担当者を選択できるようになります",
+    goToStaffManagement: "スタッフ管理へ",
   },
   kiosk: {
     nextPatient: "次の患者さまへ",
@@ -1109,6 +1120,24 @@ export const messages = {
     reasonSuspended: "中断",
     reasonNone: "理由未記録",
     fromPlatform: "プラットフォーム提案",
+    // 他院実績
+    outcomeTitle: "他院の実績",
+    outcomeClinics: "院が実施完了",
+    outcomeScore: "満足度改善",
+    outcomePatientUnit: "人",
+    confidenceHigh: "信頼度 高",
+    confidenceModerate: "参考値",
+    outcomeAdoptBadge: "院が導入",
+    outcomeDuration: "平均実施期間",
+    outcomeDaysUnit: "日",
+    outcomeMonthsUnit: "ヶ月",
+    outcomeEstablished: "定着率",
+    outcomeCollecting: "他院の実績データを収集中",
+    outcomeCollectingDetail: (remaining: number, current: number) =>
+      current === 0
+        ? `あと${remaining}院が実施完了すると、効果の平均値が表示されます`
+        : `現在${current}院が実施完了。あと${remaining}院で効果データを公開します`,
+    outcomeAdoptCount: (count: number) => `${count}院が導入中`,
     // 管理画面
     manage: "改善アクション管理",
     create: "新規作成",
