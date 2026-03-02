@@ -1301,6 +1301,8 @@ export const messages = {
     botVerificationFailed: "bot検証に失敗しました。ページを再読み込みしてお試しください",
     pxValueCalcFailed: "PX-Valueの計算に失敗しました",
     backupFetchFailed: "バックアップ情報の取得に失敗しました",
+    backupScriptNotFound: "バックアップスクリプトが見つかりません",
+    backupExecutionFailed: "バックアップの実行に失敗しました",
     noCharactersRegistered: "キャラクターが登録されていません",
     characterNotFound: "キャラクターが見つかりません",
     characterNameRequired: "キャラ名を入力してください",

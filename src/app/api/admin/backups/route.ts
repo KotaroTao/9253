@@ -160,7 +160,7 @@ export async function POST() {
   const scriptExists = await fileExists(BACKUP_SCRIPT)
   if (!scriptExists) {
     return errorResponse(
-      "バックアップスクリプトが見つかりません: " + BACKUP_SCRIPT,
+      `${messages.apiErrors.backupScriptNotFound}: ${BACKUP_SCRIPT}`,
       404
     )
   }
@@ -185,7 +185,7 @@ export async function POST() {
     })
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "バックアップの実行に失敗しました"
+      err instanceof Error ? err.message : messages.apiErrors.backupExecutionFailed
     return errorResponse(message, 500)
   }
 }
