@@ -302,6 +302,22 @@ export const messages = {
     insufficientData: "分析に十分なデータがありません（最低{min}件の回答が必要です）",
     previousReports: "過去のレポート",
     comparedTo: "前回比",
+    // 発見カード
+    discoveryOverlayTitle: "今月の分析結果",
+    discoveryOverlayDesc: "カードをタップして結果を確認しましょう",
+    discoveryLabel: "最大の発見",
+    strengthLabel: "隠れた強み",
+    kawaiiTeethLabel: "Kawaii Teeth Get!",
+    flipToReveal: "タップしてめくる",
+    viewFullReport: "レポート全文を見る",
+    // クリニックストーリー
+    clinicStoryTitle: "あなたのクリニックストーリー",
+    // ワンクリック改善アクション
+    createAction: "改善アクションを始める",
+    createActionSuccess: "改善アクションを作成しました",
+    createActionFailed: "改善アクションの作成に失敗しました",
+    createActionDuplicate: "作成済み",
+    viewActions: "改善アクション管理へ",
   },
   pxValue: {
     title: "PX-Value",

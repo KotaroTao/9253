@@ -99,6 +99,9 @@ export interface AdvisorySection {
     | "executive_summary"
     | "root_cause"
     | "strategic_actions"
+    | "highlight_discovery"
+    | "highlight_strength"
+    | "clinic_story"
 }
 
 /** AI Advisory レポートデータ */

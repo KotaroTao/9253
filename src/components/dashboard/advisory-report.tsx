@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, Fragment } from "react"
+import { useState, useCallback, Fragment } from "react"
 import { useRouter } from "next/navigation"
+import { createPortal } from "react-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
 import {
@@ -34,10 +35,17 @@ import {
   Zap,
   SearchCheck,
   ListOrdered,
+  Plus,
+  Check,
+  ArrowRight,
+  BookOpen,
+  Star,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { KawaiiTeethReveal } from "@/components/dashboard/kawaii-teeth-reveal"
+import { Confetti } from "@/components/survey/confetti"
 import type { AdvisoryReportData, AdvisoryProgress, AdvisorySection } from "@/types"
+
+// ─── セクション設定 ───
 
 const SECTION_CONFIG = {
   summary: {
@@ -145,6 +153,22 @@ const SECTION_CONFIG = {
     label: messages.advisory.sectionStrategicActions,
     color: "blue",
   },
+  // 新しいセクションタイプ（発見カード表示で使用、通常セクション表示はしない）
+  highlight_discovery: {
+    icon: Target,
+    label: messages.advisory.discoveryLabel,
+    color: "blue",
+  },
+  highlight_strength: {
+    icon: Star,
+    label: messages.advisory.strengthLabel,
+    color: "green",
+  },
+  clinic_story: {
+    icon: BookOpen,
+    label: messages.advisory.clinicStoryTitle,
+    color: "purple",
+  },
 } as const
 
 const COLOR_MAP: Record<string, { border: string; bg: string; icon: string; text: string; muted: string }> = {
@@ -175,6 +199,9 @@ const TRIGGER_LABELS: Record<string, string> = {
   manual: messages.advisory.triggerManual,
 }
 
+// 特別表示するセクションタイプ（通常のセクションリストから除外）
+const SPECIAL_SECTION_TYPES = new Set(["highlight_discovery", "highlight_strength", "clinic_story"])
+
 // ─── リッチコンテンツレンダラー ───
 
 function RichContent({ content, textClass, mutedClass }: { content: string; textClass: string; mutedClass: string }) {
@@ -186,7 +213,6 @@ function RichContent({ content, textClass, mutedClass }: { content: string; text
         const trimmed = line.trim()
         if (trimmed === "") return <div key={i} className="h-1" />
 
-        // 「⚠」「⚠️」警告行
         if (trimmed.startsWith("⚠") || trimmed.startsWith("⚠️")) {
           return (
             <div key={i} className="mt-2 flex gap-2 rounded-md bg-amber-100/60 px-3 py-2 text-amber-800">
@@ -196,7 +222,6 @@ function RichContent({ content, textClass, mutedClass }: { content: string; text
           )
         }
 
-        // 「→」推奨行
         if (trimmed.startsWith("→")) {
           return (
             <p key={i} className={cn("text-xs pl-5 leading-relaxed", mutedClass)}>
@@ -205,7 +230,6 @@ function RichContent({ content, textClass, mutedClass }: { content: string; text
           )
         }
 
-        // 「▼」「▲」見出し行
         if (trimmed.startsWith("▼") || trimmed.startsWith("▲")) {
           return (
             <p key={i} className="mt-2 text-xs font-bold">
@@ -214,7 +238,6 @@ function RichContent({ content, textClass, mutedClass }: { content: string; text
           )
         }
 
-        // 「【】」パターン見出し
         if (trimmed.startsWith("【")) {
           return (
             <p key={i} className="mt-2 text-xs font-bold">
@@ -223,11 +246,8 @@ function RichContent({ content, textClass, mutedClass }: { content: string; text
           )
         }
 
-        // 箇条書き「- 」
         if (trimmed.startsWith("- ")) {
           const text = trimmed.slice(2)
-
-          // スコア値のハイライト（例: 4.25点、+0.15）
           const parts = text.split(/([\d.]+点|[+\-][\d.]+(?:ポイント)?|↑[^\s]+|↓[^\s]+|→[^\s]+|✅[^\s]+|📈[^\s]+|➡️[^\s]+|⚠️[^\s]+)/)
 
           return (
@@ -235,23 +255,18 @@ function RichContent({ content, textClass, mutedClass }: { content: string; text
               <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-40" />
               <span className="text-xs leading-relaxed">
                 {parts.map((part, j) => {
-                  // ステータスバッジ
                   if (/^[✅📈➡️⚠️]/.test(part)) {
                     return <span key={j} className="font-medium">{part}</span>
                   }
-                  // 正の変化
                   if (/^\+[\d.]+/.test(part) || part.startsWith("↑")) {
                     return <span key={j} className="font-medium text-green-700">{part}</span>
                   }
-                  // 負の変化
                   if (/^-[\d.]+/.test(part) || part.startsWith("↓")) {
                     return <span key={j} className="font-medium text-red-700">{part}</span>
                   }
-                  // 維持
                   if (part.startsWith("→")) {
                     return <span key={j} className="text-muted-foreground">{part}</span>
                   }
-                  // スコア値
                   if (/[\d.]+点/.test(part)) {
                     return <span key={j} className="font-medium tabular-nums">{part}</span>
                   }
@@ -262,7 +277,6 @@ function RichContent({ content, textClass, mutedClass }: { content: string; text
           )
         }
 
-        // インデント行（「  」で始まる）
         if (line.startsWith("  ")) {
           return (
             <p key={i} className="text-xs pl-5 leading-relaxed">
@@ -271,7 +285,6 @@ function RichContent({ content, textClass, mutedClass }: { content: string; text
           )
         }
 
-        // 通常のテキスト行
         return (
           <p key={i} className="text-xs leading-relaxed">
             {trimmed}
@@ -282,7 +295,91 @@ function RichContent({ content, textClass, mutedClass }: { content: string; text
   )
 }
 
-// ─── セクションカード（折りたたみ対応） ───
+// ─── ワンクリック改善アクション作成ボタン ───
+
+function CreateActionButton({ title, description }: { title: string; description?: string }) {
+  const [state, setState] = useState<"idle" | "loading" | "done">("idle")
+
+  const handleCreate = useCallback(async () => {
+    setState("loading")
+    try {
+      const res = await fetch("/api/improvement-actions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, description: description ?? null }),
+      })
+      if (res.ok) {
+        setState("done")
+      } else {
+        alert(messages.advisory.createActionFailed)
+        setState("idle")
+      }
+    } catch {
+      alert(messages.advisory.createActionFailed)
+      setState("idle")
+    }
+  }, [title, description])
+
+  if (state === "done") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-md bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-700">
+        <Check className="h-3 w-3" />
+        {messages.advisory.createActionSuccess}
+      </span>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleCreate}
+      disabled={state === "loading"}
+      className="inline-flex items-center gap-1 rounded-md bg-purple-100 px-2 py-0.5 text-[10px] font-medium text-purple-700 hover:bg-purple-200 transition-colors disabled:opacity-50"
+    >
+      {state === "loading" ? (
+        <Loader2 className="h-3 w-3 animate-spin" />
+      ) : (
+        <Plus className="h-3 w-3" />
+      )}
+      {messages.advisory.createAction}
+    </button>
+  )
+}
+
+/** 改善ポイント・戦略アクションからアクション項目を抽出 */
+function extractActionItems(section: AdvisorySection): Array<{ title: string; description: string }> {
+  const items: Array<{ title: string; description: string }> = []
+
+  if (section.type === "improvement") {
+    // 「- 質問テキスト（テンプレート名）: スコア」パターン
+    const lines = section.content.split("\n")
+    for (const line of lines) {
+      const match = line.match(/^- (.+?)（(.+?)）/)
+      if (match) {
+        items.push({
+          title: `${match[1]}の改善`,
+          description: line.replace(/^- /, ""),
+        })
+      }
+    }
+  } else if (section.type === "strategic_actions") {
+    // 「【優先度X】タイトル」パターン
+    const blocks = section.content.split(/(?=【優先度)/)
+    for (const block of blocks) {
+      const titleMatch = block.match(/【優先度\d+】(.+?)(?:\n|$)/)
+      if (titleMatch) {
+        items.push({
+          title: titleMatch[1].trim(),
+          description: block.trim(),
+        })
+      }
+    }
+  }
+
+  return items.slice(0, 5)
+}
+
+// ─── セクションカード（折りたたみ対応 + アクション作成） ───
 
 function SectionCard({
   section,
@@ -301,8 +398,8 @@ function SectionCard({
   const colors = COLOR_MAP[config.color]
   const Icon = config.icon
 
-  // summary と action はデフォルト展開、折りたたみボタンなし
   const alwaysOpen = section.type === "summary" || section.type === "action" || section.type === "executive_summary" || section.type === "strategic_actions"
+  const showActionButtons = section.type === "improvement" || section.type === "strategic_actions"
 
   return (
     <div className={cn("rounded-lg border", colors.border, colors.bg)}>
@@ -331,9 +428,301 @@ function SectionCard({
       {(isOpen || alwaysOpen) && (
         <div className="px-4 pb-4">
           <RichContent content={section.content} textClass={colors.text} mutedClass={colors.muted} />
+
+          {/* ワンクリック改善アクション作成 */}
+          {showActionButtons && (
+            <div className="mt-3 space-y-1.5 border-t border-current/10 pt-3">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                {messages.advisory.createAction}
+              </p>
+              {extractActionItems(section).map((item, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <CreateActionButton title={item.title} description={item.description} />
+                  <span className="text-[10px] text-muted-foreground truncate">{item.title}</span>
+                </div>
+              ))}
+              {extractActionItems(section).length === 0 && (
+                <CreateActionButton
+                  title={section.title}
+                  description={section.content.slice(0, 500)}
+                />
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
+  )
+}
+
+// ─── クリニックストーリー ───
+
+function ClinicStoryCard({ section }: { section: AdvisorySection }) {
+  return (
+    <div className="rounded-xl border border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <BookOpen className="h-4 w-4 text-purple-600" />
+        <h3 className="text-sm font-bold text-purple-800">{messages.advisory.clinicStoryTitle}</h3>
+      </div>
+      <p className="text-sm leading-relaxed text-purple-900/80">
+        {section.content}
+      </p>
+    </div>
+  )
+}
+
+// ─── ハイライトカード（レポート内表示） ───
+
+function HighlightCards({ sections }: { sections: AdvisorySection[] }) {
+  const discovery = sections.find((s) => s.type === "highlight_discovery")
+  const strength = sections.find((s) => s.type === "highlight_strength")
+
+  if (!discovery && !strength) return null
+
+  const cards = [discovery, strength].filter(Boolean) as AdvisorySection[]
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {cards.map((card, i) => {
+        const lines = card.content.split("\n")
+        const emoji = lines[0] || (i === 0 ? "🎯" : "🌟")
+        const text = lines.slice(1).join("\n") || card.content
+        const isDiscovery = card.type === "highlight_discovery"
+
+        return (
+          <div
+            key={i}
+            className={cn(
+              "rounded-xl border-2 p-4 transition-all",
+              isDiscovery
+                ? "border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50"
+                : "border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50"
+            )}
+          >
+            <div className="text-2xl mb-2">{emoji}</div>
+            <h4 className={cn(
+              "text-xs font-bold uppercase tracking-wider mb-1",
+              isDiscovery ? "text-blue-600" : "text-emerald-600"
+            )}>
+              {card.title}
+            </h4>
+            <p className={cn(
+              "text-sm leading-relaxed",
+              isDiscovery ? "text-blue-800" : "text-emerald-800"
+            )}>
+              {text}
+            </p>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ─── 発見カードオーバーレイ（新規レポート生成時） ───
+
+interface AcquiredCharacter {
+  character: { id: string; name: string; description: string; imageData: string }
+  count: number
+  isNew: boolean
+}
+
+interface FlipCardData {
+  category: string
+  emoji: string
+  content: string
+  title: string
+  gradient: string
+  textColor: string
+  imageData?: string
+}
+
+function DiscoveryOverlay({
+  highlightSections,
+  acquiredChar,
+  onClose,
+}: {
+  highlightSections: AdvisorySection[]
+  acquiredChar: AcquiredCharacter | null
+  onClose: () => void
+}) {
+  const [flipped, setFlipped] = useState<Set<number>>(new Set())
+  const [showConfetti, setShowConfetti] = useState(false)
+
+  const discovery = highlightSections.find((s) => s.type === "highlight_discovery")
+  const strength = highlightSections.find((s) => s.type === "highlight_strength")
+
+  const cards: FlipCardData[] = []
+
+  if (discovery) {
+    const lines = discovery.content.split("\n")
+    cards.push({
+      category: messages.advisory.discoveryLabel,
+      emoji: lines[0] || "🎯",
+      content: lines.slice(1).join("\n") || discovery.content,
+      title: discovery.title,
+      gradient: "from-blue-500 to-indigo-600",
+      textColor: "text-blue-800",
+    })
+  }
+
+  if (strength) {
+    const lines = strength.content.split("\n")
+    cards.push({
+      category: messages.advisory.strengthLabel,
+      emoji: lines[0] || "🌟",
+      content: lines.slice(1).join("\n") || strength.content,
+      title: strength.title,
+      gradient: "from-emerald-500 to-teal-600",
+      textColor: "text-emerald-800",
+    })
+  }
+
+  if (acquiredChar) {
+    cards.push({
+      category: messages.advisory.kawaiiTeethLabel,
+      emoji: "🦷",
+      content: acquiredChar.character.description,
+      title: acquiredChar.isNew
+        ? `NEW! ${acquiredChar.character.name}`
+        : `${acquiredChar.character.name} x${acquiredChar.count}`,
+      gradient: "from-pink-500 to-purple-600",
+      textColor: "text-pink-800",
+      imageData: acquiredChar.character.imageData,
+    })
+  }
+
+  if (cards.length === 0) return null
+
+  const totalCards = cards.length
+  const allFlipped = flipped.size >= totalCards
+
+  const handleFlip = (index: number) => {
+    setFlipped((prev) => {
+      const next = new Set(prev)
+      next.add(index)
+      if (next.size >= totalCards && !showConfetti) {
+        setShowConfetti(true)
+      }
+      return next
+    })
+  }
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/70" />
+
+      {showConfetti && <Confetti />}
+
+      <div className="relative z-10 w-full max-w-lg">
+        {/* タイトル */}
+        <div className="text-center mb-6">
+          <h2 className="text-xl font-bold text-white flex items-center justify-center gap-2">
+            <Sparkles className="h-5 w-5 text-yellow-400" />
+            {messages.advisory.discoveryOverlayTitle}
+          </h2>
+          <p className="mt-1 text-sm text-white/70">
+            {messages.advisory.discoveryOverlayDesc}
+          </p>
+        </div>
+
+        {/* カードグリッド */}
+        <div className={cn(
+          "grid gap-3",
+          totalCards === 3 ? "grid-cols-3" : totalCards === 2 ? "grid-cols-2" : "grid-cols-1"
+        )}>
+          {cards.map((card, i) => {
+            const isFlipped = flipped.has(i)
+
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => handleFlip(i)}
+                className="group"
+                style={{ perspective: "800px" }}
+              >
+                <div
+                  className="relative w-full transition-transform duration-700"
+                  style={{
+                    transformStyle: "preserve-3d",
+                    transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
+                    minHeight: "180px",
+                  }}
+                >
+                  {/* Front (face-down) */}
+                  <div
+                    className={cn(
+                      "absolute inset-0 flex flex-col items-center justify-center rounded-xl bg-gradient-to-br p-4 shadow-lg",
+                      card.gradient,
+                      !isFlipped && "group-hover:scale-[1.02] transition-transform"
+                    )}
+                    style={{ backfaceVisibility: "hidden" }}
+                  >
+                    <span className="text-3xl mb-2">{card.emoji}</span>
+                    <span className="text-xs font-bold text-white/90 uppercase tracking-wider text-center">
+                      {card.category}
+                    </span>
+                    <span className="mt-2 text-[10px] text-white/60">
+                      {messages.advisory.flipToReveal}
+                    </span>
+                  </div>
+
+                  {/* Back (revealed) */}
+                  <div
+                    className="absolute inset-0 flex flex-col items-center justify-center rounded-xl border-2 bg-white p-4 shadow-lg"
+                    style={{
+                      backfaceVisibility: "hidden",
+                      transform: "rotateY(180deg)",
+                    }}
+                  >
+                    {card.imageData ? (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={card.imageData}
+                          alt={card.title}
+                          className="h-16 w-16 rounded-xl object-contain mb-2"
+                        />
+                        <h4 className="text-xs font-bold text-pink-600 text-center">{card.title}</h4>
+                        <p className="mt-1 text-[10px] text-muted-foreground text-center line-clamp-3">
+                          {card.content}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-xl mb-1">{card.emoji}</span>
+                        <h4 className={cn("text-xs font-bold text-center", card.textColor)}>
+                          {card.title}
+                        </h4>
+                        <p className="mt-1 text-[10px] text-muted-foreground text-center leading-relaxed line-clamp-4">
+                          {card.content}
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* 全カードめくった後のボタン */}
+        {allFlipped && (
+          <div className="mt-6 text-center animate-in fade-in-0 slide-in-from-bottom-2 duration-500">
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-purple-700 shadow-lg hover:bg-purple-50 transition-colors"
+            >
+              {messages.advisory.viewFullReport}
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>,
+    document.body
   )
 }
 
@@ -344,23 +733,18 @@ interface AdvisoryReportViewProps {
   reports: AdvisoryReportData[]
 }
 
-interface AcquiredCharacter {
-  character: { id: string; name: string; description: string; imageData: string }
-  count: number
-  isNew: boolean
-}
-
 export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProps) {
   const router = useRouter()
   const [isGenerating, setIsGenerating] = useState(false)
   const [expandedReport, setExpandedReport] = useState<string | null>(
     reports.length > 0 ? reports[0].id : null
   )
-  // 個別セクションの展開状態（レポートID:インデックス）
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set())
-  const [acquiredChar, setAcquiredChar] = useState<AcquiredCharacter | null>(null)
-  // 生成直後のレポートID（キャラ獲得演出後にスクロール対象）
-  const [newReportId, setNewReportId] = useState<string | null>(null)
+  const [discoveryData, setDiscoveryData] = useState<{
+    sections: AdvisorySection[]
+    acquiredChar: AcquiredCharacter | null
+    reportId: string
+  } | null>(null)
 
   function toggleSection(reportId: string, index: number) {
     const key = `${reportId}:${index}`
@@ -375,15 +759,15 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
     })
   }
 
-  function handleRevealClose() {
-    setAcquiredChar(null)
-    // キャラ獲得演出が閉じたら、新規レポートにスクロール
-    if (newReportId) {
-      setExpandedReport(newReportId)
-      setNewReportId(null)
-      // DOM更新後にスクロール
+  function handleDiscoveryClose() {
+    const reportId = discoveryData?.reportId
+    setDiscoveryData(null)
+    router.refresh()
+
+    if (reportId) {
+      setExpandedReport(reportId)
       setTimeout(() => {
-        const el = document.getElementById(`report-${newReportId}`)
+        const el = document.getElementById(`report-${reportId}`)
         el?.scrollIntoView({ behavior: "smooth", block: "start" })
       }, 100)
     }
@@ -398,30 +782,41 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
       if (res.ok) {
         const { report } = await res.json()
         const reportId = report?.id as string | undefined
+        const sections = (report?.sections ?? []) as AdvisorySection[]
 
-        // AI分析成功 → Kawaii Teethをランダム獲得
-        let charAcquired = false
+        // ハイライトセクションを抽出
+        const highlightSections = sections.filter((s: AdvisorySection) =>
+          s.type === "highlight_discovery" || s.type === "highlight_strength"
+        )
+
+        // Kawaii Teeth をランダム獲得
+        let acquiredChar: AcquiredCharacter | null = null
         try {
           const acquireRes = await fetch("/api/kawaii-teeth/acquire", { method: "POST" })
           if (acquireRes.ok) {
-            const acquired = await acquireRes.json()
-            setAcquiredChar(acquired)
-            charAcquired = true
-            if (reportId) setNewReportId(reportId)
+            acquiredChar = await acquireRes.json()
           }
         } catch {
           // キャラ獲得失敗はサイレントに無視
         }
 
-        router.refresh()
-
-        // キャラ獲得演出がなかった場合は直接レポートへスクロール
-        if (!charAcquired && reportId) {
-          setExpandedReport(reportId)
-          setTimeout(() => {
-            const el = document.getElementById(`report-${reportId}`)
-            el?.scrollIntoView({ behavior: "smooth", block: "start" })
-          }, 300)
+        // 発見カードオーバーレイを表示
+        if (highlightSections.length > 0 || acquiredChar) {
+          setDiscoveryData({
+            sections: highlightSections,
+            acquiredChar,
+            reportId: reportId ?? "",
+          })
+        } else {
+          // ハイライトもキャラもない場合はそのまま表示
+          router.refresh()
+          if (reportId) {
+            setExpandedReport(reportId)
+            setTimeout(() => {
+              const el = document.getElementById(`report-${reportId}`)
+              el?.scrollIntoView({ behavior: "smooth", block: "start" })
+            }, 300)
+          }
         }
       } else {
         const data = await res.json()
@@ -433,10 +828,6 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
       setIsGenerating(false)
     }
   }
-
-  const sectionCount = reports.length > 0
-    ? reports[0].sections.filter((s) => s.type !== "summary" && s.type !== "action").length
-    : 0
 
   return (
     <div className="space-y-6">
@@ -561,7 +952,7 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
               <p className="text-[10px] font-medium text-purple-600 uppercase tracking-wider">分析に含まれる項目</p>
               <div className="flex flex-wrap justify-center gap-1.5">
                 {(Object.keys(SECTION_CONFIG) as Array<keyof typeof SECTION_CONFIG>)
-                  .filter((k) => k !== "summary" && k !== "action")
+                  .filter((k) => k !== "summary" && k !== "action" && !SPECIAL_SECTION_TYPES.has(k))
                   .map((key) => {
                     const cfg = SECTION_CONFIG[key]
                     return (
@@ -585,9 +976,18 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
           </h2>
           {reports.map((report) => {
             const isExpanded = expandedReport === report.id
-            const analysisCount = report.sections.filter(
+            const regularSections = report.sections.filter(
+              (s) => !SPECIAL_SECTION_TYPES.has(s.type)
+            )
+            const analysisCount = regularSections.filter(
               (s) => s.type !== "summary" && s.type !== "action"
             ).length
+
+            // 特別セクション
+            const clinicStory = report.sections.find((s) => s.type === "clinic_story")
+            const hasHighlights = report.sections.some(
+              (s) => s.type === "highlight_discovery" || s.type === "highlight_strength"
+            )
 
             return (
               <Card key={report.id} id={`report-${report.id}`}>
@@ -622,7 +1022,6 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
                     </div>
                   </div>
 
-                  {/* Summary & Priority always visible */}
                   <p className="mt-2 text-sm text-muted-foreground">{report.summary}</p>
                   {report.priority && (
                     <div className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-amber-50 border border-amber-200 px-2.5 py-1">
@@ -636,9 +1035,28 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
                 </CardHeader>
 
                 {isExpanded && (
-                  <CardContent className="pt-0">
+                  <CardContent className="pt-0 space-y-4">
+                    {/* クリニックストーリー */}
+                    {clinicStory && <ClinicStoryCard section={clinicStory} />}
+
+                    {/* ハイライトカード */}
+                    {hasHighlights && <HighlightCards sections={report.sections} />}
+
+                    {/* 改善アクション管理へのリンク */}
+                    {regularSections.some((s) => s.type === "improvement" || s.type === "strategic_actions") && (
+                      <a
+                        href="/dashboard/actions"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-purple-50 border border-purple-200 px-3 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors"
+                      >
+                        <Target className="h-3.5 w-3.5" />
+                        {messages.advisory.viewActions}
+                        <ArrowRight className="h-3 w-3" />
+                      </a>
+                    )}
+
+                    {/* 通常セクション */}
                     <div className="space-y-2">
-                      {report.sections.map((section, i) => (
+                      {regularSections.map((section, i) => (
                         <SectionCard
                           key={i}
                           section={section}
@@ -656,11 +1074,14 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
         </div>
       )}
 
-      {/* Kawaii Teeth reveal overlay */}
-      <KawaiiTeethReveal
-        acquired={acquiredChar}
-        onClose={handleRevealClose}
-      />
+      {/* 発見カードオーバーレイ */}
+      {discoveryData && (
+        <DiscoveryOverlay
+          highlightSections={discoveryData.sections}
+          acquiredChar={discoveryData.acquiredChar}
+          onClose={handleDiscoveryClose}
+        />
+      )}
     </div>
   )
 }
