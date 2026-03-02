@@ -318,6 +318,20 @@ export const messages = {
     createActionFailed: "改善アクションの作成に失敗しました",
     createActionDuplicate: "作成済み",
     viewActions: "改善アクション管理へ",
+    // パーソナルAIコンサルタント
+    advisorName: "MIERUアドバイザー",
+    advisorLearnMore: "この分析について詳しく知りたい",
+    advisorLearnMoreHint: "チャット機能は近日公開予定です",
+    // 今月のフォーカス
+    monthlyFocusTitle: "今月のフォーカス",
+    monthlyFocusSteps: "具体的なアクションステップ",
+    monthlyFocusLabel: "最重要",
+    // 優先度マトリクス
+    priorityMatrixTitle: "優先度マトリクス",
+    priorityMatrixImpact: "効果",
+    priorityMatrixEase: "実行容易度",
+    priorityMatrixHigh: "高",
+    priorityMatrixLow: "低",
   },
   pxValue: {
     title: "PX-Value",

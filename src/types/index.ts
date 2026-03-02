@@ -102,6 +102,9 @@ export interface AdvisorySection {
     | "highlight_discovery"
     | "highlight_strength"
     | "clinic_story"
+    | "advisor_comment"
+    | "monthly_focus"
+    | "priority_matrix"
 }
 
 /** AI Advisory レポートデータ */

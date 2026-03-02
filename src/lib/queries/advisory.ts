@@ -2087,6 +2087,78 @@ function generateFallbackClinicStory(data: AnalysisData): AdvisorySection {
   }
 }
 
+/** ルールベースデータからアドバイザーコメントを生成（LLM未使用時用） */
+function generateFallbackAdvisorComments(data: AnalysisData): AdvisorySection[] {
+  const comments: AdvisorySection[] = []
+  const { stats } = data
+
+  // エグゼクティブサマリー後のコメント
+  if (stats.prevAverageScore !== null) {
+    const delta = stats.averageScore - stats.prevAverageScore
+    if (delta > 0.1) {
+      comments.push({
+        title: "executiveSummary",
+        content: `素晴らしいですね！前月から+${delta.toFixed(2)}ポイントの改善は、確実にスタッフの皆さんの努力が実を結んでいる証拠です。`,
+        type: "advisor_comment",
+      })
+    } else if (delta < -0.1) {
+      comments.push({
+        title: "executiveSummary",
+        content: "この変化、少し気になりますね。でも心配しすぎないでください。原因を特定して対策すれば、必ず改善できますよ。",
+        type: "advisor_comment",
+      })
+    }
+  }
+
+  // 改善ポイントが多い場合
+  if (stats.totalResponses >= 30) {
+    comments.push({
+      title: "rootCauseAnalysis",
+      content: `${stats.totalResponses}件のデータから見えてくるパターンがあります。一つひとつのデータに患者さんの声が詰まっていますね。`,
+      type: "advisor_comment",
+    })
+  }
+
+  return comments
+}
+
+/** ルールベースデータから今月のフォーカスを生成（LLM未使用時用） */
+function generateFallbackMonthlyFocus(data: AnalysisData, sections: AdvisorySection[]): AdvisorySection | null {
+  const improvementSection = sections.find((s) => s.type === "improvement")
+  if (!improvementSection) return null
+
+  const match = improvementSection.content.match(/- (.+?)（(.+?)）/)
+  if (!match) return null
+
+  const questionText = match[1]
+  return {
+    title: `「${questionText}」の改善`,
+    content: `この質問のスコア改善が、全体の満足度向上に最も大きく寄与します。\n---\n1. 朝礼でこの項目をスタッフ全員に共有する\n2. 1週間、この項目を意識した接遇を実践する\n3. 次回の分析で変化を確認し、効果を測定する`,
+    type: "monthly_focus",
+  }
+}
+
+/** ルールベースデータから優先度マトリクスを生成（LLM未使用時用） */
+function generateFallbackPriorityMatrix(sections: AdvisorySection[]): AdvisorySection | null {
+  const actionSection = sections.find((s) => s.type === "action")
+  if (!actionSection) return null
+
+  const lines = actionSection.content.split("\n").filter((l) => l.startsWith("- "))
+  if (lines.length === 0) return null
+
+  const items = lines.slice(0, 5).map((line, i) => {
+    const text = line.replace(/^- /, "").split("（")[0].trim()
+    // 優先度が高い（先頭）ほどimpact高く、ease は中程度で変動
+    return `${text.slice(0, 20)}|${5 - i}|${3 + (i % 2 === 0 ? 1 : -1)}`
+  })
+
+  return {
+    title: "優先度マトリクス",
+    content: items.join("\n"),
+    type: "priority_matrix",
+  }
+}
+
 // ─── メインジェネレーター ───
 
 // ─── LLM 分析統合 ───
@@ -2267,6 +2339,23 @@ export async function generateAdvisoryReport(
     analysisResults.unshift(fallbackStory, ...fallbackCards)
   }
 
+  // ─── フォールバック: アドバイザーコメント・フォーカス・マトリクス ───
+  const hasAdvisorComments = analysisResults.some((s) => s.type === "advisor_comment")
+  const hasMonthlyFocus = analysisResults.some((s) => s.type === "monthly_focus")
+  const hasPriorityMatrix = analysisResults.some((s) => s.type === "priority_matrix")
+
+  if (!hasAdvisorComments) {
+    analysisResults.push(...generateFallbackAdvisorComments(data))
+  }
+  if (!hasMonthlyFocus) {
+    const focus = generateFallbackMonthlyFocus(data, analysisResults)
+    if (focus) analysisResults.push(focus)
+  }
+  if (!hasPriorityMatrix) {
+    const matrix = generateFallbackPriorityMatrix(analysisResults)
+    if (matrix) analysisResults.push(matrix)
+  }
+
   // 最優先改善領域の特定
   let priority: string | null = null
   const improvementSection = analysisResults.find((s) => s.type === "improvement")
@@ -2278,7 +2367,7 @@ export async function generateAdvisoryReport(
 
   // サマリー生成
   const label = scoreLabel(data.stats.averageScore)
-  const EXCLUDED_TYPES = new Set(["summary", "action", "highlight_discovery", "highlight_strength", "clinic_story"])
+  const EXCLUDED_TYPES = new Set(["summary", "action", "highlight_discovery", "highlight_strength", "clinic_story", "advisor_comment", "monthly_focus", "priority_matrix"])
   const sectionCount = analysisResults.filter(
     (s) => !EXCLUDED_TYPES.has(s.type)
   ).length

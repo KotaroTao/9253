@@ -8,7 +8,7 @@ import { logger } from "@/lib/logger"
 // トップコンサルタント品質の分析を生成する。
 
 const MODEL = "claude-sonnet-4-6"
-const MAX_TOKENS = 4000
+const MAX_TOKENS = 6000
 const TIMEOUT_MS = 60_000 // 60秒
 const MAX_INPUT_CHARS = 30_000 // 入力テキストの上限（約7,500トークン相当）
 const RATE_LIMIT_MS = 60 * 60 * 1000 // 同一クリニック1時間に1回まで
@@ -54,6 +54,9 @@ interface LLMAdvisoryOutput {
   strategicActions: string
   clinicStory: string
   highlightCards: Array<{ title: string; content: string; emoji: string }>
+  advisorComments: Array<{ afterSection: string; comment: string }>
+  monthlyFocus: { title: string; reason: string; steps: string[] } | null
+  priorityMatrix: Array<{ action: string; impact: number; ease: number }> | null
 }
 
 /** LLM分析の結果（成功 or 失敗理由） */
@@ -72,12 +75,21 @@ const SYSTEM_PROMPT = `あなたは歯科医院経営に精通したトップコ
 - 院長が朝礼で即座にスタッフに伝えられるレベルの具体性で書く
 - 改善の優先順位は「患者体験への影響度 × 実行の容易さ」で判断する
 
+## あなたのパーソナリティ
+- あなたは「MIERUアドバイザー」として院長に直接語りかける
+- データを見て感動や気付きを率直に表現する: 「ここ、すごく良い傾向ですね！」「この数字、ちょっと気になります」
+- 冷たいレポートではなく、温かく頼りになるコンサルタントとして振る舞う
+- 院長の努力やスタッフの頑張りを見逃さず認める
+
 ## 出力形式
-JSON形式で以下の5セクションを返してください。マークダウンコードブロックは不要です。
+JSON形式で以下の8セクションを返してください。マークダウンコードブロックは不要です。
 
 {
   "clinicStory": "...",
   "highlightCards": [...],
+  "advisorComments": [...],
+  "monthlyFocus": {...},
+  "priorityMatrix": [...],
   "executiveSummary": "...",
   "rootCauseAnalysis": "...",
   "strategicActions": "..."
@@ -107,6 +119,24 @@ JSON形式で以下の5セクションを返してください。マークダウ
 - 各行を「- 」で始める箇条書き
 - 因果関係は「→」で繋ぐ
 
+### advisorComments（アドバイザーコメント）
+- 2〜3個のコメントを生成
+- 各コメントは { "afterSection": "セクション名", "comment": "..." }
+- afterSectionは挿入先セクション: "executiveSummary", "rootCauseAnalysis", "strategicActions" のいずれか
+- 語りかけ口調で1〜2文。驚き・共感・励ましを含める
+- 例: 「ここ、すごく良い傾向ですね！スタッフの皆さんの努力が数字に表れています」
+- 例: 「この部分、ちょっと気になりますね。でも、原因がわかれば改善は早いですよ」
+
+### monthlyFocus（今月のフォーカス）
+- 最もインパクトの大きい改善項目を1つ選び、具体的なアクションステップを3つ提案
+- { "title": "フォーカス項目名", "reason": "なぜこれが最重要か（1文）", "steps": ["ステップ1", "ステップ2", "ステップ3"] }
+- ステップは「明日からできる」レベルの具体性で書く
+
+### priorityMatrix（優先度マトリクス）
+- strategicActionsの各アクションに「効果(impact)」と「実行容易度(ease)」を1〜5で数値化
+- [{ "action": "アクション名（短縮）", "impact": 4, "ease": 3 }, ...]
+- 3〜5個
+
 ### strategicActions（戦略的推奨アクション）
 - 優先度順に3〜5個
 - 各アクションのフォーマット:
@@ -123,6 +153,26 @@ const highlightCardSchema = z.object({
   emoji: z.coerce.string().default(""),
 })
 
+/** Zod schema for advisor comment */
+const advisorCommentSchema = z.object({
+  afterSection: z.coerce.string().default(""),
+  comment: z.coerce.string().default(""),
+})
+
+/** Zod schema for monthly focus */
+const monthlyFocusSchema = z.object({
+  title: z.coerce.string().default(""),
+  reason: z.coerce.string().default(""),
+  steps: z.array(z.coerce.string()).default([]),
+}).nullable().default(null)
+
+/** Zod schema for priority matrix item */
+const priorityMatrixItemSchema = z.object({
+  action: z.coerce.string().default(""),
+  impact: z.coerce.number().default(3),
+  ease: z.coerce.number().default(3),
+})
+
 /** Zod schema for LLM advisory output */
 const llmAdvisoryOutputSchema = z.object({
   executiveSummary: z.coerce.string().default(""),
@@ -130,6 +180,9 @@ const llmAdvisoryOutputSchema = z.object({
   strategicActions: z.coerce.string().default(""),
   clinicStory: z.coerce.string().default(""),
   highlightCards: z.array(highlightCardSchema).default([]),
+  advisorComments: z.array(advisorCommentSchema).default([]),
+  monthlyFocus: monthlyFocusSchema,
+  priorityMatrix: z.array(priorityMatrixItemSchema).nullable().default(null),
 })
 
 /**
@@ -350,6 +403,43 @@ export function llmOutputToSections(output: LLMAdvisoryOutput): AdvisorySection[
       title: "戦略的推奨アクション",
       content: output.strategicActions,
       type: "strategic_actions",
+    })
+  }
+
+  // アドバイザーコメント
+  if (output.advisorComments && output.advisorComments.length > 0) {
+    for (const ac of output.advisorComments) {
+      if (ac.comment) {
+        sections.push({
+          title: ac.afterSection || "advisor",
+          content: ac.comment,
+          type: "advisor_comment",
+        })
+      }
+    }
+  }
+
+  // 今月のフォーカス
+  if (output.monthlyFocus && output.monthlyFocus.title) {
+    const stepsText = output.monthlyFocus.steps
+      .map((s, i) => `${i + 1}. ${s}`)
+      .join("\n")
+    sections.push({
+      title: output.monthlyFocus.title,
+      content: `${output.monthlyFocus.reason}\n---\n${stepsText}`,
+      type: "monthly_focus",
+    })
+  }
+
+  // 優先度マトリクス
+  if (output.priorityMatrix && output.priorityMatrix.length > 0) {
+    const matrixContent = output.priorityMatrix
+      .map((item) => `${item.action}|${item.impact}|${item.ease}`)
+      .join("\n")
+    sections.push({
+      title: "優先度マトリクス",
+      content: matrixContent,
+      type: "priority_matrix",
     })
   }
 

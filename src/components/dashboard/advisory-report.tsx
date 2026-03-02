@@ -40,6 +40,9 @@ import {
   ArrowRight,
   BookOpen,
   Star,
+  MessageCircle,
+  Crosshair,
+  Grid3x3,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Confetti } from "@/components/survey/confetti"
@@ -169,6 +172,21 @@ const SECTION_CONFIG = {
     label: messages.advisory.clinicStoryTitle,
     color: "purple",
   },
+  advisor_comment: {
+    icon: MessageCircle,
+    label: messages.advisory.advisorName,
+    color: "purple",
+  },
+  monthly_focus: {
+    icon: Crosshair,
+    label: messages.advisory.monthlyFocusTitle,
+    color: "rose",
+  },
+  priority_matrix: {
+    icon: Grid3x3,
+    label: messages.advisory.priorityMatrixTitle,
+    color: "indigo",
+  },
 } as const
 
 const COLOR_MAP: Record<string, { border: string; bg: string; icon: string; text: string; muted: string }> = {
@@ -200,7 +218,7 @@ const TRIGGER_LABELS: Record<string, string> = {
 }
 
 // 特別表示するセクションタイプ（通常のセクションリストから除外）
-const SPECIAL_SECTION_TYPES = new Set(["highlight_discovery", "highlight_strength", "clinic_story"])
+const SPECIAL_SECTION_TYPES = new Set(["highlight_discovery", "highlight_strength", "clinic_story", "advisor_comment", "monthly_focus", "priority_matrix"])
 
 // ─── リッチコンテンツレンダラー ───
 
@@ -449,6 +467,11 @@ function SectionCard({
               )}
             </div>
           )}
+
+          {/* 「詳しく知りたい」ボタン */}
+          <div className="mt-3 border-t border-current/10 pt-3">
+            <LearnMoreButton />
+          </div>
         </div>
       )}
     </div>
@@ -515,6 +538,228 @@ function HighlightCards({ sections }: { sections: AdvisorySection[] }) {
           </div>
         )
       })}
+    </div>
+  )
+}
+
+// ─── アドバイザーコメント ───
+
+function AdvisorCommentCard({ comment }: { comment: string }) {
+  return (
+    <div className="flex gap-3 items-start rounded-xl bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-100 p-4">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-purple-600 text-white shadow-md">
+        <Brain className="h-4 w-4" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wider mb-1">
+          {messages.advisory.advisorName}
+        </p>
+        <p className="text-sm leading-relaxed text-purple-900/80">
+          {comment}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// ─── 「詳しく知りたい」ボタン ───
+
+function LearnMoreButton() {
+  const [showHint, setShowHint] = useState(false)
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setShowHint(!showHint)}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-purple-200 bg-white px-3 py-1.5 text-[11px] font-medium text-purple-600 hover:bg-purple-50 transition-colors"
+      >
+        <MessageCircle className="h-3 w-3" />
+        {messages.advisory.advisorLearnMore}
+      </button>
+      {showHint && (
+        <div className="mt-1.5 rounded-lg bg-purple-50 border border-purple-100 px-3 py-2 text-[10px] text-purple-600 animate-in fade-in-0 slide-in-from-top-1 duration-200">
+          {messages.advisory.advisorLearnMoreHint}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── 今月のフォーカス ───
+
+function MonthlyFocusCard({ section }: { section: AdvisorySection }) {
+  const [reason, stepsBlock] = section.content.split("\n---\n")
+  const steps = stepsBlock
+    ? stepsBlock.split("\n").filter((l) => l.trim())
+    : []
+
+  return (
+    <div className="rounded-xl border-2 border-rose-200 bg-gradient-to-br from-rose-50 to-orange-50 p-5 shadow-sm">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500 text-white shadow">
+          <Crosshair className="h-4 w-4" />
+        </div>
+        <div>
+          <span className="text-[10px] font-bold text-rose-500 uppercase tracking-wider block">
+            {messages.advisory.monthlyFocusLabel}
+          </span>
+          <h3 className="text-sm font-bold text-rose-800">{section.title}</h3>
+        </div>
+      </div>
+
+      {reason && (
+        <p className="text-xs text-rose-700/80 mb-4 leading-relaxed">{reason}</p>
+      )}
+
+      {steps.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[10px] font-bold text-rose-600 uppercase tracking-wider">
+            {messages.advisory.monthlyFocusSteps}
+          </p>
+          {steps.map((step, i) => (
+            <div key={i} className="flex gap-3 items-start">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-500 text-white text-[11px] font-bold shadow-sm">
+                {i + 1}
+              </span>
+              <p className="text-sm text-rose-800 leading-relaxed pt-0.5">
+                {step.replace(/^\d+\.\s*/, "")}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── 優先度マトリクス ───
+
+interface MatrixItem {
+  action: string
+  impact: number
+  ease: number
+}
+
+function PriorityMatrixChart({ section }: { section: AdvisorySection }) {
+  const items: MatrixItem[] = section.content
+    .split("\n")
+    .filter((l) => l.includes("|"))
+    .map((line) => {
+      const [action, impactStr, easeStr] = line.split("|")
+      return {
+        action: action?.trim() ?? "",
+        impact: Number(impactStr) || 3,
+        ease: Number(easeStr) || 3,
+      }
+    })
+    .filter((item) => item.action)
+
+  if (items.length === 0) return null
+
+  return (
+    <div className="rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-blue-50 p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <Grid3x3 className="h-4 w-4 text-indigo-600" />
+        <h3 className="text-sm font-bold text-indigo-800">{messages.advisory.priorityMatrixTitle}</h3>
+      </div>
+
+      {/* 2x2 Matrix Grid */}
+      <div className="relative aspect-square max-w-xs mx-auto">
+        {/* Grid background */}
+        <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-px bg-indigo-200 rounded-lg overflow-hidden">
+          {/* Top-left: high impact, low ease */}
+          <div className="bg-amber-50/80 flex items-center justify-center p-1">
+            <span className="text-[8px] text-amber-600/60 font-medium text-center">
+              効果大・難易度高
+            </span>
+          </div>
+          {/* Top-right: high impact, high ease = BEST */}
+          <div className="bg-emerald-50/80 flex items-center justify-center p-1">
+            <span className="text-[8px] text-emerald-600/60 font-medium text-center">
+              効果大・実行容易
+            </span>
+          </div>
+          {/* Bottom-left: low impact, low ease */}
+          <div className="bg-slate-50/80 flex items-center justify-center p-1">
+            <span className="text-[8px] text-slate-500/60 font-medium text-center">
+              効果小・難易度高
+            </span>
+          </div>
+          {/* Bottom-right: low impact, high ease */}
+          <div className="bg-blue-50/80 flex items-center justify-center p-1">
+            <span className="text-[8px] text-blue-600/60 font-medium text-center">
+              効果小・実行容易
+            </span>
+          </div>
+        </div>
+
+        {/* Axis labels */}
+        <div className="absolute -left-1 top-1/2 -translate-y-1/2 -rotate-90 text-[9px] font-bold text-indigo-600 whitespace-nowrap">
+          {messages.advisory.priorityMatrixImpact} →
+        </div>
+        <div className="absolute bottom-[-18px] left-1/2 -translate-x-1/2 text-[9px] font-bold text-indigo-600 whitespace-nowrap">
+          {messages.advisory.priorityMatrixEase} →
+        </div>
+
+        {/* Data points */}
+        {items.map((item, i) => {
+          // Convert 1-5 to percentage (inverted Y for impact: 5=top, 1=bottom)
+          const xPct = ((item.ease - 0.5) / 5) * 100
+          const yPct = ((5.5 - item.impact) / 5) * 100
+          const isTopRight = item.impact >= 3.5 && item.ease >= 3.5
+
+          return (
+            <div
+              key={i}
+              className="absolute -translate-x-1/2 -translate-y-1/2 z-10 group"
+              style={{ left: `${xPct}%`, top: `${yPct}%` }}
+            >
+              <div
+                className={cn(
+                  "flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold text-white shadow-md transition-transform group-hover:scale-125",
+                  isTopRight
+                    ? "bg-emerald-500 ring-2 ring-emerald-300"
+                    : "bg-indigo-400"
+                )}
+              >
+                {i + 1}
+              </div>
+              {/* Tooltip */}
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-20">
+                <div className="whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-[10px] text-white shadow-lg">
+                  {item.action}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="mt-6 space-y-1">
+        {items.map((item, i) => {
+          const isTopRight = item.impact >= 3.5 && item.ease >= 3.5
+          return (
+            <div key={i} className="flex items-center gap-2 text-xs">
+              <span
+                className={cn(
+                  "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white",
+                  isTopRight ? "bg-emerald-500" : "bg-indigo-400"
+                )}
+              >
+                {i + 1}
+              </span>
+              <span className={cn("truncate", isTopRight ? "font-medium text-emerald-800" : "text-indigo-700")}>
+                {item.action}
+              </span>
+              <span className="ml-auto text-[10px] text-muted-foreground whitespace-nowrap tabular-nums">
+                効果{item.impact} / 容易度{item.ease}
+              </span>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -1034,40 +1279,63 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
                   )}
                 </CardHeader>
 
-                {isExpanded && (
-                  <CardContent className="pt-0 space-y-4">
-                    {/* クリニックストーリー */}
-                    {clinicStory && <ClinicStoryCard section={clinicStory} />}
+                {isExpanded && (() => {
+                  const advisorComments = report.sections.filter((s) => s.type === "advisor_comment")
+                  const monthlyFocus = report.sections.find((s) => s.type === "monthly_focus")
+                  const priorityMatrix = report.sections.find((s) => s.type === "priority_matrix")
 
-                    {/* ハイライトカード */}
-                    {hasHighlights && <HighlightCards sections={report.sections} />}
+                  // advisor_comment の title に対象セクションタイプが入っている
+                  const getAdvisorCommentAfter = (sectionType: string) =>
+                    advisorComments.find((c) => c.title === sectionType)
 
-                    {/* 改善アクション管理へのリンク */}
-                    {regularSections.some((s) => s.type === "improvement" || s.type === "strategic_actions") && (
-                      <a
-                        href="/dashboard/actions"
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-purple-50 border border-purple-200 px-3 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors"
-                      >
-                        <Target className="h-3.5 w-3.5" />
-                        {messages.advisory.viewActions}
-                        <ArrowRight className="h-3 w-3" />
-                      </a>
-                    )}
+                  return (
+                    <CardContent className="pt-0 space-y-4">
+                      {/* クリニックストーリー */}
+                      {clinicStory && <ClinicStoryCard section={clinicStory} />}
 
-                    {/* 通常セクション */}
-                    <div className="space-y-2">
-                      {regularSections.map((section, i) => (
-                        <SectionCard
-                          key={i}
-                          section={section}
-                          index={i}
-                          isOpen={!collapsedSections.has(`${report.id}:${i}`)}
-                          onToggle={() => toggleSection(report.id, i)}
-                        />
-                      ))}
-                    </div>
-                  </CardContent>
-                )}
+                      {/* ハイライトカード */}
+                      {hasHighlights && <HighlightCards sections={report.sections} />}
+
+                      {/* 今月のフォーカス */}
+                      {monthlyFocus && <MonthlyFocusCard section={monthlyFocus} />}
+
+                      {/* 優先度マトリクス */}
+                      {priorityMatrix && <PriorityMatrixChart section={priorityMatrix} />}
+
+                      {/* 改善アクション管理へのリンク */}
+                      {regularSections.some((s) => s.type === "improvement" || s.type === "strategic_actions") && (
+                        <a
+                          href="/dashboard/actions"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-purple-50 border border-purple-200 px-3 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors"
+                        >
+                          <Target className="h-3.5 w-3.5" />
+                          {messages.advisory.viewActions}
+                          <ArrowRight className="h-3 w-3" />
+                        </a>
+                      )}
+
+                      {/* 通常セクション（アドバイザーコメント挟み込み） */}
+                      <div className="space-y-2">
+                        {regularSections.map((section, i) => (
+                          <Fragment key={i}>
+                            <SectionCard
+                              section={section}
+                              index={i}
+                              isOpen={!collapsedSections.has(`${report.id}:${i}`)}
+                              onToggle={() => toggleSection(report.id, i)}
+                            />
+                            {/* セクション後にアドバイザーコメントを挿入 */}
+                            {getAdvisorCommentAfter(section.type) && (
+                              <AdvisorCommentCard
+                                comment={getAdvisorCommentAfter(section.type)!.content}
+                              />
+                            )}
+                          </Fragment>
+                        ))}
+                      </div>
+                    </CardContent>
+                  )
+                })()}
               </Card>
             )
           })}
