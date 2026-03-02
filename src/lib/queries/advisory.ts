@@ -2002,6 +2002,91 @@ function buildRecommendations(
   }
 }
 
+// ─── フォールバックハイライト/ストーリー生成 ───
+
+/** ルールベース分析結果からハイライトカードを生成（LLM未使用時用） */
+function generateFallbackHighlightCards(data: AnalysisData, sections: AdvisorySection[]): AdvisorySection[] {
+  const cards: AdvisorySection[] = []
+
+  // Card 1: 最大の発見
+  let discoveryContent = ""
+  const trendSection = sections.find((s) => s.type === "trend")
+  const improvementSection = sections.find((s) => s.type === "improvement")
+
+  if (trendSection && trendSection.content.includes("上昇")) {
+    discoveryContent = "📈\n患者満足度が上昇トレンド！改善施策の効果が現れています。"
+  } else if (improvementSection) {
+    const match = improvementSection.content.match(/- (.+?)（/)
+    if (match) {
+      discoveryContent = `🎯\n「${match[1]}」が最も改善の余地があるポイント。集中対策が効果的です。`
+    }
+  }
+  if (!discoveryContent) {
+    const sectionCount = sections.filter((s) => !["summary", "action"].includes(s.type)).length
+    discoveryContent = `🎯\n${data.stats.totalResponses}件の回答から${sectionCount}項目の分析を完了しました。`
+  }
+
+  cards.push({
+    title: "今月の最大の発見",
+    content: discoveryContent,
+    type: "highlight_discovery",
+  })
+
+  // Card 2: 隠れた強み
+  let strengthContent = ""
+  const strengthSection = sections.find((s) => s.type === "strength")
+  if (strengthSection) {
+    const match = strengthSection.content.match(/- (.+?)（/)
+    if (match) {
+      strengthContent = `🌟\n「${match[1]}」が高評価！患者さんに特に評価されています。`
+    }
+  }
+  if (!strengthContent) {
+    if (data.stats.averageScore >= 4.0) {
+      strengthContent = `🌟\n総合スコア${data.stats.averageScore.toFixed(2)}点！患者さんの高い満足度を維持できています。`
+    } else {
+      strengthContent = "🌟\nデータドリブンな改善に取り組んでいること自体が大きな強みです。"
+    }
+  }
+
+  cards.push({
+    title: "隠れた強み",
+    content: strengthContent,
+    type: "highlight_strength",
+  })
+
+  return cards
+}
+
+/** ルールベースデータからクリニックストーリーを生成（LLM未使用時用） */
+function generateFallbackClinicStory(data: AnalysisData): AdvisorySection {
+  const { stats } = data
+  const label = scoreLabel(stats.averageScore)
+
+  let story = `あなたのクリニックの患者満足度は${stats.averageScore.toFixed(2)}点（${label}水準）です。`
+
+  if (stats.prevAverageScore !== null) {
+    const delta = stats.averageScore - stats.prevAverageScore
+    if (delta > 0.05) {
+      story += `先月から+${delta.toFixed(2)}ポイントの改善を達成しました。日々の取り組みが確実に数字に表れています。`
+    } else if (delta < -0.05) {
+      story += `先月からやや低下していますが、データを分析して原因を特定すれば必ず改善できます。`
+    } else {
+      story += `先月と同水準を安定して維持しています。着実な運営の証拠です。`
+    }
+  } else {
+    story += `これからデータが蓄積されるにつれて、より深い分析が可能になります。`
+  }
+
+  story += `次の分析までに、推奨アクションに取り組んでみてください。きっと良い変化が見えてきます。`
+
+  return {
+    title: "クリニックストーリー",
+    content: story,
+    type: "clinic_story",
+  }
+}
+
 // ─── メインジェネレーター ───
 
 // ─── LLM 分析統合 ───
@@ -2167,9 +2252,19 @@ export async function generateAdvisoryReport(
 
   // ─── LLM 分析（APIキーがあれば実行） ───
   const llmSections = await runLLMAnalysis(data, analysisResults, clinicId)
+  const hasLLMHighlights = llmSections.some((s) =>
+    s.type === "highlight_discovery" || s.type === "highlight_strength" || s.type === "clinic_story"
+  )
   if (llmSections.length > 0) {
     // LLMセクションをルールベース分析の先頭に挿入
     analysisResults.unshift(...llmSections)
+  }
+
+  // ─── フォールバック: LLMが生成しなかった場合、ルールベースからハイライト・ストーリーを生成 ───
+  if (!hasLLMHighlights) {
+    const fallbackCards = generateFallbackHighlightCards(data, analysisResults)
+    const fallbackStory = generateFallbackClinicStory(data)
+    analysisResults.unshift(fallbackStory, ...fallbackCards)
   }
 
   // 最優先改善領域の特定
@@ -2183,8 +2278,9 @@ export async function generateAdvisoryReport(
 
   // サマリー生成
   const label = scoreLabel(data.stats.averageScore)
+  const EXCLUDED_TYPES = new Set(["summary", "action", "highlight_discovery", "highlight_strength", "clinic_story"])
   const sectionCount = analysisResults.filter(
-    (s) => s.type !== "summary" && s.type !== "action"
+    (s) => !EXCLUDED_TYPES.has(s.type)
   ).length
 
   const summary =

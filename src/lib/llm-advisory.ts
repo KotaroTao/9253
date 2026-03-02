@@ -52,6 +52,8 @@ interface LLMAdvisoryOutput {
   executiveSummary: string
   rootCauseAnalysis: string
   strategicActions: string
+  clinicStory: string
+  highlightCards: Array<{ title: string; content: string; emoji: string }>
 }
 
 /** LLM分析の結果（成功 or 失敗理由） */
@@ -71,13 +73,28 @@ const SYSTEM_PROMPT = `あなたは歯科医院経営に精通したトップコ
 - 改善の優先順位は「患者体験への影響度 × 実行の容易さ」で判断する
 
 ## 出力形式
-JSON形式で以下の3セクションを返してください。マークダウンコードブロックは不要です。
+JSON形式で以下の5セクションを返してください。マークダウンコードブロックは不要です。
 
 {
+  "clinicStory": "...",
+  "highlightCards": [...],
   "executiveSummary": "...",
   "rootCauseAnalysis": "...",
   "strategicActions": "..."
 }
+
+### clinicStory（クリニックストーリー）
+- 3文で、院長に語りかけるような温かく親しみのあるトーンで要約する
+- 1文目: 最も印象的な変化や発見を「あなたのクリニックでは〜」で始める
+- 2文目: その背景にある要因（改善アクションの効果やスタッフの努力、患者さんの声）
+- 3文目: 次の一歩への期待感を込めた前向きなメッセージ
+
+### highlightCards（発見カード）
+- 2枚のカードを生成する
+- 各カードは { "title": "...", "content": "...(1-2文、50文字以内)", "emoji": "..." }
+- 1枚目: タイトルは「今月の最大の発見」。最も注目すべきデータの変化やパターンを短く
+- 2枚目: タイトルは「隠れた強み」。データから読み取れる意外な強みや良い兆候を短く
+- ワクワクするトーンで、数値を1つは含める
 
 ### executiveSummary（エグゼクティブサマリー）
 - 3〜5文で経営者向けの要約を書く
@@ -99,11 +116,20 @@ JSON形式で以下の3セクションを返してください。マークダウ
   測定方法: 1ヶ月後に○○のスコアを確認
 - 改善アクション管理で追跡可能な粒度で書く`
 
+/** Zod schema for highlight card */
+const highlightCardSchema = z.object({
+  title: z.coerce.string().default(""),
+  content: z.coerce.string().default(""),
+  emoji: z.coerce.string().default(""),
+})
+
 /** Zod schema for LLM advisory output */
 const llmAdvisoryOutputSchema = z.object({
   executiveSummary: z.coerce.string().default(""),
   rootCauseAnalysis: z.coerce.string().default(""),
   strategicActions: z.coerce.string().default(""),
+  clinicStory: z.coerce.string().default(""),
+  highlightCards: z.array(highlightCardSchema).default([]),
 })
 
 /**
@@ -277,6 +303,31 @@ ${posComments}`
  */
 export function llmOutputToSections(output: LLMAdvisoryOutput): AdvisorySection[] {
   const sections: AdvisorySection[] = []
+
+  // クリニックストーリー
+  if (output.clinicStory) {
+    sections.push({
+      title: "クリニックストーリー",
+      content: output.clinicStory,
+      type: "clinic_story",
+    })
+  }
+
+  // ハイライトカード（発見・強み）
+  if (output.highlightCards && output.highlightCards.length >= 1) {
+    sections.push({
+      title: output.highlightCards[0].title || "今月の最大の発見",
+      content: `${output.highlightCards[0].emoji || "🎯"}\n${output.highlightCards[0].content}`,
+      type: "highlight_discovery",
+    })
+  }
+  if (output.highlightCards && output.highlightCards.length >= 2) {
+    sections.push({
+      title: output.highlightCards[1].title || "隠れた強み",
+      content: `${output.highlightCards[1].emoji || "🌟"}\n${output.highlightCards[1].content}`,
+      type: "highlight_strength",
+    })
+  }
 
   if (output.executiveSummary) {
     sections.push({
