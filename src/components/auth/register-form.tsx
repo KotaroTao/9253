@@ -64,7 +64,7 @@ export function RegisterForm({ plan }: RegisterFormProps) {
       }
 
       // 登録成功 → メール認証案内ページへ（メール送信失敗時はパラメータ付き）
-      const emailSent = data.data?.emailSent !== false
+      const emailSent = data.emailSent !== false
       router.push(emailSent ? "/verify-email/sent" : "/verify-email/sent?emailFailed=1")
     } catch {
       setError(messages.auth.registerError)
