@@ -5,16 +5,12 @@ import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
 import { DYNAMIC_MESSAGES, MESSAGE_CATEGORIES } from "@/lib/dynamic-messages"
+import type { StoredComment } from "@/lib/dynamic-messages"
 
 const SETTING_KEY = "dashboardComments"
 
-export type CommentItem = {
-  category: string
-  text: string
-}
-
 type CommentsSettingValue = {
-  comments: CommentItem[]
+  comments: StoredComment[]
 }
 
 export async function GET() {
@@ -27,8 +23,8 @@ export async function GET() {
 
   if (!setting) {
     // Return defaults from hardcoded messages
-    const defaults = DYNAMIC_MESSAGES.map((msg) => ({
-      category: getCategoryFromMessage(msg),
+    const defaults: StoredComment[] = DYNAMIC_MESSAGES.map((msg) => ({
+      category: msg.category ?? "generic",
       text: msg.text,
     }))
     return successResponse({ comments: defaults, isCustom: false })
@@ -54,8 +50,8 @@ export async function PUT(request: NextRequest) {
       await prisma.platformSetting.deleteMany({
         where: { key: SETTING_KEY },
       })
-      const defaults = DYNAMIC_MESSAGES.map((msg) => ({
-        category: getCategoryFromMessage(msg),
+      const defaults: StoredComment[] = DYNAMIC_MESSAGES.map((msg) => ({
+        category: msg.category ?? "generic",
         text: msg.text,
       }))
       return successResponse({ comments: defaults, isCustom: false })
@@ -67,7 +63,7 @@ export async function PUT(request: NextRequest) {
 
     const validCategories: string[] = MESSAGE_CATEGORIES.map((c) => c.key)
 
-    const validatedComments: CommentItem[] = comments
+    const validatedComments: StoredComment[] = comments
       .filter(
         (c: Record<string, unknown>) =>
           c &&
@@ -98,41 +94,4 @@ export async function PUT(request: NextRequest) {
   } catch {
     return errorResponse(messages.commentsManager.saveFailed, 500)
   }
-}
-
-/** Map a DynamicMessage to its category key based on its condition */
-function getCategoryFromMessage(msg: (typeof DYNAMIC_MESSAGES)[number]): string {
-  if (!msg.condition) return "generic"
-
-  // Test against known contexts to determine category
-  const priority = msg.priority ?? 0
-
-  if (priority === 10) return "goalAchieved"
-  if (priority === 8) return "almostGoal"
-  if (priority === 5) return "todayZero"
-  if (priority === 6) return "lowScore"
-
-  // Check condition with specific contexts
-  const streakCtx = { todayCount: 5, dailyGoal: 10, streak: 14, todayAvgScore: 4.0, totalCount: 100 }
-  const highScoreCtx = { todayCount: 5, dailyGoal: 10, streak: 0, todayAvgScore: 4.8, totalCount: 100 }
-
-  if (msg.condition(streakCtx, "daytime") && priority >= 2 && priority <= 4) {
-    // Could be streak or highScore - disambiguate
-    if (msg.condition(highScoreCtx, "daytime") && !msg.condition({ ...highScoreCtx, streak: 0 }, "daytime")) {
-      return "streak"
-    }
-    if (msg.condition(highScoreCtx, "daytime")) return "highScore"
-    return "streak"
-  }
-
-  // Time-based checks
-  const neutralCtx = { todayCount: 5, dailyGoal: 10, streak: 0, todayAvgScore: 4.0, totalCount: 100 }
-  if (msg.condition(neutralCtx, "morning") && !msg.condition(neutralCtx, "evening") && !msg.condition(neutralCtx, "daytime")) {
-    return "morning"
-  }
-  if (msg.condition(neutralCtx, "evening") && !msg.condition(neutralCtx, "morning") && !msg.condition(neutralCtx, "daytime")) {
-    return "evening"
-  }
-
-  return "generic"
 }

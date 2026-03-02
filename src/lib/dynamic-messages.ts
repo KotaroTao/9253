@@ -28,10 +28,18 @@ export interface MessageContext {
 interface DynamicMessage {
   /** 表示テキスト */
   text: string
+  /** カテゴリ（省略時は "generic"） */
+  category?: MessageCategory
   /** 適用条件（省略時は汎用メッセージ） */
   condition?: (ctx: MessageContext, time: TimeSlot) => boolean
   /** 優先度（高いほど優先。デフォルト 0） */
   priority?: number
+}
+
+/** DB保存・API共有用のメッセージ型 */
+export type StoredComment = {
+  category: string
+  text: string
 }
 
 // ---------------------------------------------------------------------------
@@ -56,6 +64,36 @@ function jstTodayKey(): string {
 }
 
 // ---------------------------------------------------------------------------
+// カテゴリ定義（条件関数の単一ソース）
+// ---------------------------------------------------------------------------
+
+export const MESSAGE_CATEGORIES = [
+  { key: "goalAchieved", label: "目標達成", priority: 10 },
+  { key: "almostGoal", label: "あと少しで達成", priority: 8 },
+  { key: "todayZero", label: "今日まだゼロ", priority: 5 },
+  { key: "streak", label: "ストリーク継続中", priority: 3 },
+  { key: "highScore", label: "高スコア維持", priority: 4 },
+  { key: "lowScore", label: "スコアが低め", priority: 6 },
+  { key: "morning", label: "朝の挨拶", priority: 1 },
+  { key: "evening", label: "夕方のねぎらい", priority: 1 },
+  { key: "generic", label: "汎用（教育的コンテンツ）", priority: 0 },
+] as const
+
+export type MessageCategory = (typeof MESSAGE_CATEGORIES)[number]["key"]
+
+/** カテゴリキーに対応する条件関数（単一ソース） */
+const CATEGORY_CONDITIONS: Record<string, (ctx: MessageContext, time: TimeSlot) => boolean> = {
+  goalAchieved: (ctx) => ctx.dailyGoal > 0 && ctx.todayCount >= ctx.dailyGoal,
+  almostGoal: (ctx) => ctx.dailyGoal > 0 && ctx.todayCount > 0 && ctx.dailyGoal - ctx.todayCount <= 3 && ctx.todayCount < ctx.dailyGoal,
+  todayZero: (ctx) => ctx.todayCount === 0 && ctx.totalCount > 0,
+  streak: (ctx) => ctx.streak >= 3,
+  highScore: (ctx) => ctx.todayAvgScore !== null && ctx.todayAvgScore >= 4.5,
+  lowScore: (ctx) => ctx.todayAvgScore !== null && ctx.todayAvgScore < 3.5 && ctx.todayCount >= 3,
+  morning: (_, t) => t === "morning",
+  evening: (_, t) => t === "evening",
+}
+
+// ---------------------------------------------------------------------------
 // メッセージプール
 // ---------------------------------------------------------------------------
 
@@ -65,41 +103,41 @@ export const DYNAMIC_MESSAGES: DynamicMessage[] = [
   // ===================================================================
 
   // --- 目標達成 ---
-  { text: "目標達成おめでとうございます！今日集まった声が明日の改善につながります", condition: (ctx) => ctx.dailyGoal > 0 && ctx.todayCount >= ctx.dailyGoal, priority: 10 },
-  { text: "今日の目標をクリアしました！患者さまの声に耳を傾ける姿勢がチームの財産です", condition: (ctx) => ctx.dailyGoal > 0 && ctx.todayCount >= ctx.dailyGoal, priority: 10 },
-  { text: "目標達成！一人ひとりの声が、医院をより良くするヒントを教えてくれます", condition: (ctx) => ctx.dailyGoal > 0 && ctx.todayCount >= ctx.dailyGoal, priority: 10 },
+  { text: "目標達成おめでとうございます！今日集まった声が明日の改善につながります", category: "goalAchieved", condition: CATEGORY_CONDITIONS.goalAchieved, priority: 10 },
+  { text: "今日の目標をクリアしました！患者さまの声に耳を傾ける姿勢がチームの財産です", category: "goalAchieved", condition: CATEGORY_CONDITIONS.goalAchieved, priority: 10 },
+  { text: "目標達成！一人ひとりの声が、医院をより良くするヒントを教えてくれます", category: "goalAchieved", condition: CATEGORY_CONDITIONS.goalAchieved, priority: 10 },
 
   // --- あと少しで目標達成 ---
-  { text: "目標まであと少し。次の患者さまへの「お願いします」が、大きな一歩になります", condition: (ctx) => ctx.dailyGoal > 0 && ctx.todayCount > 0 && ctx.dailyGoal - ctx.todayCount <= 3 && ctx.todayCount < ctx.dailyGoal, priority: 8 },
-  { text: "ゴールが見えてきました。ラストスパート、頑張りましょう！", condition: (ctx) => ctx.dailyGoal > 0 && ctx.todayCount > 0 && ctx.dailyGoal - ctx.todayCount <= 3 && ctx.todayCount < ctx.dailyGoal, priority: 8 },
+  { text: "目標まであと少し。次の患者さまへの「お願いします」が、大きな一歩になります", category: "almostGoal", condition: CATEGORY_CONDITIONS.almostGoal, priority: 8 },
+  { text: "ゴールが見えてきました。ラストスパート、頑張りましょう！", category: "almostGoal", condition: CATEGORY_CONDITIONS.almostGoal, priority: 8 },
 
   // --- 今日まだゼロ ---
-  { text: "最初の1件が一番大切。まずは1人の患者さまにお声がけしてみましょう", condition: (ctx) => ctx.todayCount === 0 && ctx.totalCount > 0, priority: 5 },
-  { text: "今日の第一歩を踏み出しましょう。「30秒のアンケートにご協力いただけますか？」", condition: (ctx) => ctx.todayCount === 0 && ctx.totalCount > 0, priority: 5 },
-  { text: "今日はまだ回答がありません。会計時のちょっとした声かけがきっかけになります", condition: (ctx) => ctx.todayCount === 0 && ctx.totalCount > 0, priority: 5 },
+  { text: "最初の1件が一番大切。まずは1人の患者さまにお声がけしてみましょう", category: "todayZero", condition: CATEGORY_CONDITIONS.todayZero, priority: 5 },
+  { text: "今日の第一歩を踏み出しましょう。「30秒のアンケートにご協力いただけますか？」", category: "todayZero", condition: CATEGORY_CONDITIONS.todayZero, priority: 5 },
+  { text: "今日はまだ回答がありません。会計時のちょっとした声かけがきっかけになります", category: "todayZero", condition: CATEGORY_CONDITIONS.todayZero, priority: 5 },
 
   // --- ストリーク継続中 ---
-  { text: "連続記録を更新中！毎日の積み重ねが、医院全体の意識を変えていきます", condition: (ctx) => ctx.streak >= 7, priority: 3 },
-  { text: "素晴らしい継続力です。習慣化されたアンケート収集は最も確実な改善手段です", condition: (ctx) => ctx.streak >= 14, priority: 4 },
-  { text: "コツコツ続けることが最高の戦略。今日もその1件が未来をつくります", condition: (ctx) => ctx.streak >= 3, priority: 2 },
+  { text: "連続記録を更新中！毎日の積み重ねが、医院全体の意識を変えていきます", category: "streak", condition: (ctx) => ctx.streak >= 7, priority: 3 },
+  { text: "素晴らしい継続力です。習慣化されたアンケート収集は最も確実な改善手段です", category: "streak", condition: (ctx) => ctx.streak >= 14, priority: 4 },
+  { text: "コツコツ続けることが最高の戦略。今日もその1件が未来をつくります", category: "streak", condition: CATEGORY_CONDITIONS.streak, priority: 2 },
 
   // --- 高スコア維持 ---
-  { text: "高い満足度を維持できています。何が好評なのかを振り返ってみましょう", condition: (ctx) => ctx.todayAvgScore !== null && ctx.todayAvgScore >= 4.5, priority: 4 },
-  { text: "素晴らしいスコアです！この状態を「当たり前」にできるとチームの自信になります", condition: (ctx) => ctx.todayAvgScore !== null && ctx.todayAvgScore >= 4.5, priority: 4 },
+  { text: "高い満足度を維持できています。何が好評なのかを振り返ってみましょう", category: "highScore", condition: CATEGORY_CONDITIONS.highScore, priority: 4 },
+  { text: "素晴らしいスコアです！この状態を「当たり前」にできるとチームの自信になります", category: "highScore", condition: CATEGORY_CONDITIONS.highScore, priority: 4 },
 
   // --- スコアが低め ---
-  { text: "今日のスコアは改善のチャンス。低いスコアの背景を考えてみましょう", condition: (ctx) => ctx.todayAvgScore !== null && ctx.todayAvgScore < 3.5 && ctx.todayCount >= 3, priority: 6 },
-  { text: "スコアが低い日こそ学びの宝庫。フリーコメントにヒントが隠れているかもしれません", condition: (ctx) => ctx.todayAvgScore !== null && ctx.todayAvgScore < 3.5 && ctx.todayCount >= 3, priority: 6 },
+  { text: "今日のスコアは改善のチャンス。低いスコアの背景を考えてみましょう", category: "lowScore", condition: CATEGORY_CONDITIONS.lowScore, priority: 6 },
+  { text: "スコアが低い日こそ学びの宝庫。フリーコメントにヒントが隠れているかもしれません", category: "lowScore", condition: CATEGORY_CONDITIONS.lowScore, priority: 6 },
 
   // --- 朝の挨拶 ---
-  { text: "おはようございます。今日も患者さまに寄り添う1日にしましょう", condition: (_, t) => t === "morning", priority: 1 },
-  { text: "おはようございます。朝一番の笑顔が、その日の医院の雰囲気を決めます", condition: (_, t) => t === "morning", priority: 1 },
-  { text: "おはようございます。開院前の深呼吸が、穏やかな対応につながります", condition: (_, t) => t === "morning", priority: 1 },
+  { text: "おはようございます。今日も患者さまに寄り添う1日にしましょう", category: "morning", condition: CATEGORY_CONDITIONS.morning, priority: 1 },
+  { text: "おはようございます。朝一番の笑顔が、その日の医院の雰囲気を決めます", category: "morning", condition: CATEGORY_CONDITIONS.morning, priority: 1 },
+  { text: "おはようございます。開院前の深呼吸が、穏やかな対応につながります", category: "morning", condition: CATEGORY_CONDITIONS.morning, priority: 1 },
 
   // --- 夕方のねぎらい ---
-  { text: "今日もお疲れさまでした。集まった声を明日のエネルギーにしましょう", condition: (_, t) => t === "evening", priority: 1 },
-  { text: "お疲れさまです。今日の頑張りは、明日来る患者さまの笑顔につながっています", condition: (_, t) => t === "evening", priority: 1 },
-  { text: "1日の終わりに、今日良かったことを1つ思い出してみてください", condition: (_, t) => t === "evening", priority: 1 },
+  { text: "今日もお疲れさまでした。集まった声を明日のエネルギーにしましょう", category: "evening", condition: CATEGORY_CONDITIONS.evening, priority: 1 },
+  { text: "お疲れさまです。今日の頑張りは、明日来る患者さまの笑顔につながっています", category: "evening", condition: CATEGORY_CONDITIONS.evening, priority: 1 },
+  { text: "1日の終わりに、今日良かったことを1つ思い出してみてください", category: "evening", condition: CATEGORY_CONDITIONS.evening, priority: 1 },
 
   // ===================================================================
   // 教育的コンテンツ（汎用 — 状況を問わず表示可能）
@@ -252,47 +290,29 @@ export const DYNAMIC_MESSAGES: DynamicMessage[] = [
 ]
 
 // ---------------------------------------------------------------------------
-// カテゴリ定義（管理画面で使用）
-// ---------------------------------------------------------------------------
-
-export const MESSAGE_CATEGORIES = [
-  { key: "goalAchieved", label: "目標達成", priority: 10 },
-  { key: "almostGoal", label: "あと少しで達成", priority: 8 },
-  { key: "todayZero", label: "今日まだゼロ", priority: 5 },
-  { key: "streak", label: "ストリーク継続中", priority: 3 },
-  { key: "highScore", label: "高スコア維持", priority: 4 },
-  { key: "lowScore", label: "スコアが低め", priority: 6 },
-  { key: "morning", label: "朝の挨拶", priority: 1 },
-  { key: "evening", label: "夕方のねぎらい", priority: 1 },
-  { key: "generic", label: "汎用（教育的コンテンツ）", priority: 0 },
-] as const
-
-export type MessageCategory = (typeof MESSAGE_CATEGORIES)[number]["key"]
-
-/** カテゴリキーに対応する条件関数 */
-const CATEGORY_CONDITIONS: Record<string, (ctx: MessageContext, time: TimeSlot) => boolean> = {
-  goalAchieved: (ctx) => ctx.dailyGoal > 0 && ctx.todayCount >= ctx.dailyGoal,
-  almostGoal: (ctx) => ctx.dailyGoal > 0 && ctx.todayCount > 0 && ctx.dailyGoal - ctx.todayCount <= 3 && ctx.todayCount < ctx.dailyGoal,
-  todayZero: (ctx) => ctx.todayCount === 0 && ctx.totalCount > 0,
-  streak: (ctx) => ctx.streak >= 3,
-  highScore: (ctx) => ctx.todayAvgScore !== null && ctx.todayAvgScore >= 4.5,
-  lowScore: (ctx) => ctx.todayAvgScore !== null && ctx.todayAvgScore < 3.5 && ctx.todayCount >= 3,
-  morning: (_, t) => t === "morning",
-  evening: (_, t) => t === "evening",
-}
-
-// ---------------------------------------------------------------------------
-// DB メッセージ型
-// ---------------------------------------------------------------------------
-
-export type StoredComment = {
-  category: string
-  text: string
-}
-
-// ---------------------------------------------------------------------------
 // メッセージ選択ロジック
 // ---------------------------------------------------------------------------
+
+const FALLBACK_MESSAGE = "患者さまの「ありがとう」を増やす活動を続けましょう"
+
+/** 状況メッセージと汎用メッセージから1つ選択する共通ロジック */
+function selectMessage(
+  contextual: Array<{ text: string; priority: number }>,
+  generic: string[],
+  today: string,
+): string {
+  if (contextual.length > 0) {
+    const maxPriority = Math.max(...contextual.map((m) => m.priority))
+    const top = contextual.filter((m) => m.priority === maxPriority)
+    const seed = hashString(`${today}-ctx-${maxPriority}`)
+    return top[Math.abs(seed) % top.length].text
+  }
+
+  if (generic.length === 0) return FALLBACK_MESSAGE
+
+  const index = Math.floor(Math.random() * generic.length)
+  return generic[index]
+}
 
 /**
  * 現在のコンテキストに合ったメッセージを1つ選ぶ。
@@ -315,34 +335,20 @@ export function pickDashboardMessage(ctx: MessageContext, dbComments?: StoredCom
   }
 
   // ハードコードのメッセージプールを使用
-  const contextual: DynamicMessage[] = []
-  const generic: DynamicMessage[] = []
+  const contextual: Array<{ text: string; priority: number }> = []
+  const generic: string[] = []
 
   for (const msg of DYNAMIC_MESSAGES) {
     if (msg.condition) {
       if (msg.condition(ctx, time)) {
-        contextual.push(msg)
+        contextual.push({ text: msg.text, priority: msg.priority ?? 0 })
       }
     } else {
-      generic.push(msg)
+      generic.push(msg.text)
     }
   }
 
-  // 状況メッセージがある場合: 日付ベースで1つ固定選択
-  if (contextual.length > 0) {
-    const maxPriority = Math.max(...contextual.map((m) => m.priority ?? 0))
-    const top = contextual.filter((m) => (m.priority ?? 0) === maxPriority)
-    const seed = hashString(`${today}-ctx-${maxPriority}`)
-    return top[Math.abs(seed) % top.length].text
-  }
-
-  // 状況メッセージがない場合: 教育tipsを毎回ランダム表示
-  if (generic.length === 0) {
-    return "患者さまの「ありがとう」を増やす活動を続けましょう"
-  }
-
-  const index = Math.floor(Math.random() * generic.length)
-  return generic[index].text
+  return selectMessage(contextual, generic, today)
 }
 
 /** DB保存メッセージからコンテキストに合ったものを選択 */
@@ -363,24 +369,11 @@ function pickFromStoredComments(
         contextual.push({ text: comment.text, priority: catDef?.priority ?? 0 })
       }
     } else {
-      // generic category or unknown
       generic.push(comment.text)
     }
   }
 
-  if (contextual.length > 0) {
-    const maxPriority = Math.max(...contextual.map((m) => m.priority))
-    const top = contextual.filter((m) => m.priority === maxPriority)
-    const seed = hashString(`${today}-ctx-${maxPriority}`)
-    return top[Math.abs(seed) % top.length].text
-  }
-
-  if (generic.length === 0) {
-    return "患者さまの「ありがとう」を増やす活動を続けましょう"
-  }
-
-  const index = Math.floor(Math.random() * generic.length)
-  return generic[index]
+  return selectMessage(contextual, generic, today)
 }
 
 /** 簡易文字列ハッシュ (djb2) */

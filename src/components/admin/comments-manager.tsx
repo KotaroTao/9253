@@ -7,11 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
 import { MESSAGE_CATEGORIES } from "@/lib/dynamic-messages"
-
-type CommentItem = {
-  category: string
-  text: string
-}
+import type { StoredComment } from "@/lib/dynamic-messages"
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   goalAchieved: { bg: "bg-emerald-100", text: "text-emerald-700", border: "border-emerald-200" },
@@ -35,15 +31,22 @@ function getCategoryColor(key: string) {
 }
 
 export function CommentsManager() {
-  const [comments, setComments] = useState<CommentItem[]>([])
+  const [comments, setComments] = useState<StoredComment[]>([])
   const [isCustom, setIsCustom] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
-  const [editForm, setEditForm] = useState<CommentItem>({ category: "generic", text: "" })
+  const [editForm, setEditForm] = useState<StoredComment>({ category: "generic", text: "" })
   const [filterCategory, setFilterCategory] = useState<string>("all")
+
+  // Auto-clear success message with cleanup
+  useEffect(() => {
+    if (!success) return
+    const timer = setTimeout(() => setSuccess(""), 3000)
+    return () => clearTimeout(timer)
+  }, [success])
 
   const fetchComments = useCallback(async () => {
     try {
@@ -63,7 +66,7 @@ export function CommentsManager() {
     fetchComments()
   }, [fetchComments])
 
-  async function saveComments(newComments: CommentItem[]) {
+  async function sendCommentsRequest(body: object): Promise<boolean> {
     setIsSaving(true)
     setError("")
     setSuccess("")
@@ -71,7 +74,7 @@ export function CommentsManager() {
       const res = await fetch("/api/admin/comments", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ comments: newComments }),
+        body: JSON.stringify(body),
       })
       if (!res.ok) {
         const data = await res.json()
@@ -82,7 +85,6 @@ export function CommentsManager() {
       setComments(data.comments)
       setIsCustom(data.isCustom)
       setSuccess(messages.commentsManager.saveSuccess)
-      setTimeout(() => setSuccess(""), 3000)
       return true
     } catch {
       setError(messages.commentsManager.saveFailed)
@@ -92,31 +94,13 @@ export function CommentsManager() {
     }
   }
 
+  async function saveComments(newComments: StoredComment[]) {
+    return sendCommentsRequest({ comments: newComments })
+  }
+
   async function handleResetToDefaults() {
     if (!confirm(messages.commentsManager.resetConfirm)) return
-    setIsSaving(true)
-    setError("")
-    setSuccess("")
-    try {
-      const res = await fetch("/api/admin/comments", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resetToDefaults: true }),
-      })
-      if (!res.ok) {
-        setError(messages.commentsManager.saveFailed)
-        return
-      }
-      const data = await res.json()
-      setComments(data.comments)
-      setIsCustom(data.isCustom)
-      setSuccess(messages.commentsManager.saveSuccess)
-      setTimeout(() => setSuccess(""), 3000)
-    } catch {
-      setError(messages.commentsManager.saveFailed)
-    } finally {
-      setIsSaving(false)
-    }
+    await sendCommentsRequest({ resetToDefaults: true })
   }
 
   function startAdd() {
@@ -364,8 +348,8 @@ function CommentEditForm({
   isSaving,
   isNew,
 }: {
-  form: CommentItem
-  onChange: (f: CommentItem) => void
+  form: StoredComment
+  onChange: (f: StoredComment) => void
   onSave: () => void
   onCancel: () => void
   isSaving: boolean
