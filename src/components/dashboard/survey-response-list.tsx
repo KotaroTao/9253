@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Star, Trash2, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { messages } from "@/lib/messages"
@@ -41,22 +40,18 @@ interface ResponseItem {
 
 interface SurveyResponseListProps {
   responses: ResponseItem[]
+  onDelete?: (id: string) => Promise<boolean>
 }
 
-export function SurveyResponseList({ responses: initialResponses }: SurveyResponseListProps) {
-  const router = useRouter()
-  const [responses, setResponses] = useState(initialResponses)
+export function SurveyResponseList({ responses, onDelete }: SurveyResponseListProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [confirmId, setConfirmId] = useState<string | null>(null)
 
   async function handleDelete(id: string) {
+    if (!onDelete) return
     setDeletingId(id)
     try {
-      const res = await fetch(`/api/surveys/${id}`, { method: "DELETE" })
-      if (res.ok) {
-        setResponses((prev) => prev.filter((r) => r.id !== id))
-        router.refresh()
-      }
+      await onDelete(id)
     } finally {
       setDeletingId(null)
       setConfirmId(null)

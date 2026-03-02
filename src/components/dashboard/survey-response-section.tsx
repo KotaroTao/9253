@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -30,10 +31,12 @@ export function SurveyResponseSection({
   initialPage,
   limit,
 }: SurveyResponseSectionProps) {
+  const router = useRouter()
   const [responses, setResponses] = useState<ResponseItem[]>(initialResponses)
+  const [totalCount, setTotalCount] = useState(total)
   const [page, setPage] = useState(initialPage)
   const [loading, setLoading] = useState(false)
-  const hasMore = responses.length < total
+  const hasMore = responses.length < totalCount
 
   const loadMore = useCallback(async () => {
     setLoading(true)
@@ -50,13 +53,24 @@ export function SurveyResponseSection({
     }
   }, [page, limit])
 
+  const handleDelete = useCallback(async (id: string) => {
+    const res = await fetch(`/api/surveys/${id}`, { method: "DELETE" })
+    if (res.ok) {
+      setResponses((prev) => prev.filter((r) => r.id !== id))
+      setTotalCount((prev) => prev - 1)
+      router.refresh()
+      return true
+    }
+    return false
+  }, [router])
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base">
           {messages.nav.surveys}
           <span className="ml-2 text-sm font-normal text-muted-foreground">
-            {total}{messages.common.countSuffix}
+            {totalCount}{messages.common.countSuffix}
           </span>
         </CardTitle>
       </CardHeader>
@@ -66,7 +80,7 @@ export function SurveyResponseSection({
             {messages.common.noData}
           </p>
         ) : (
-          <SurveyResponseList responses={responses} />
+          <SurveyResponseList responses={responses} onDelete={handleDelete} />
         )}
 
         {hasMore && (
@@ -83,7 +97,7 @@ export function SurveyResponseSection({
                   {messages.common.loading}
                 </>
               ) : (
-                `もっと表示（残り${total - responses.length}件）`
+                `もっと表示（残り${totalCount - responses.length}件）`
               )}
             </Button>
           </div>
