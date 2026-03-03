@@ -87,7 +87,7 @@ export async function getAllClinics(options?: {
       skip,
       take: limit,
       include: {
-        owner: { select: { name: true } },
+        owner: { select: { name: true, email: true } },
         _count: {
           select: {
             staff: { where: { isActive: true } },

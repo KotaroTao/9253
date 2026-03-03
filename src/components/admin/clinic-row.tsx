@@ -1,10 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { LogIn, Loader2, Settings2, Sparkles, Crown } from "lucide-react"
+import { LogIn, Loader2, Settings2, Sparkles, Crown, Mail } from "lucide-react"
 import { PlanSwitcher } from "@/components/admin/plan-switcher"
 import { DemoSettingsDialog } from "@/components/admin/demo-settings-dialog"
 import { OwnerSwitcher } from "@/components/admin/owner-switcher"
+import { EmailSwitcher } from "@/components/admin/email-switcher"
 import { PLANS } from "@/lib/constants"
 import { messages } from "@/lib/messages"
 import type { PlanTier } from "@/types"
@@ -23,16 +24,19 @@ interface ClinicRowProps {
   clinicName: string
   plan?: PlanTier
   ownerName?: string | null
+  ownerEmail?: string | null
   children: React.ReactNode
 }
 
-export function ClinicRow({ clinicId, clinicName, plan, ownerName: initialOwnerName, children }: ClinicRowProps) {
+export function ClinicRow({ clinicId, clinicName, plan, ownerName: initialOwnerName, ownerEmail: initialOwnerEmail, children }: ClinicRowProps) {
   const [loading, setLoading] = useState(false)
   const [planDialogOpen, setPlanDialogOpen] = useState(false)
   const [demoDialogOpen, setDemoDialogOpen] = useState(false)
   const [ownerDialogOpen, setOwnerDialogOpen] = useState(false)
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false)
   const [currentPlan, setCurrentPlan] = useState<PlanTier>(plan ?? "free")
   const [ownerName, setOwnerName] = useState(initialOwnerName ?? null)
+  const [ownerEmail, setOwnerEmail] = useState(initialOwnerEmail ?? null)
 
   async function handleClick() {
     setLoading(true)
@@ -63,6 +67,11 @@ export function ClinicRow({ clinicId, clinicName, plan, ownerName: initialOwnerN
   function handleOwnerClick(e: React.MouseEvent) {
     e.stopPropagation()
     setOwnerDialogOpen(true)
+  }
+
+  function handleEmailClick(e: React.MouseEvent) {
+    e.stopPropagation()
+    setEmailDialogOpen(true)
   }
 
   const planDef = PLANS[currentPlan]
@@ -100,6 +109,14 @@ export function ClinicRow({ clinicId, clinicName, plan, ownerName: initialOwnerN
             >
               <Crown className="h-2.5 w-2.5" />
               {ownerName ?? "未設定"}
+            </button>
+            <button
+              type="button"
+              onClick={handleEmailClick}
+              className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-0.5 text-[10px] font-medium text-sky-700 transition-colors hover:bg-sky-100"
+            >
+              <Mail className="h-2.5 w-2.5" />
+              {ownerEmail ?? "メール未設定"}
             </button>
             {currentPlan === "demo" && (
               <button
@@ -146,6 +163,16 @@ export function ClinicRow({ clinicId, clinicName, plan, ownerName: initialOwnerN
           clinicName={clinicName}
           onClose={() => setOwnerDialogOpen(false)}
           onUpdated={(name) => setOwnerName(name)}
+        />
+      )}
+
+      {/* Email switcher dialog */}
+      {emailDialogOpen && (
+        <EmailSwitcher
+          clinicId={clinicId}
+          clinicName={clinicName}
+          onClose={() => setEmailDialogOpen(false)}
+          onUpdated={(email) => setOwnerEmail(email)}
         />
       )}
 
