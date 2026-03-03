@@ -826,6 +826,14 @@ export const messages = {
     // スタッフ向けガイド
     guideUrlTitle: "スタッフ向け使い方ガイド",
     guideUrlDesc: "医院スタッフ向けの操作マニュアル（認証不要で閲覧可能）",
+    // メールアドレス管理
+    emailManagement: "メールアドレス管理",
+    emailNotSet: "メール未設定",
+    emailChangeSuccess: "メールアドレスを変更しました",
+    emailChangeTitle: "メールアドレスを変更",
+    noAdminUsers: "管理者ユーザーがいません",
+    inactive: "無効",
+    fetchError: "データの取得に失敗しました",
   },
   operatorMode: {
     banner: "運営モード",

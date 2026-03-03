@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server"
+import { Prisma } from "@prisma/client"
 import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
@@ -13,23 +14,24 @@ export async function GET(
 
   const { id } = await params
 
+  // clinic存在チェックとadmin一覧を1クエリで取得
   const clinic = await prisma.clinic.findUnique({
     where: { id },
-    select: { id: true, name: true },
+    select: {
+      id: true,
+      users: {
+        where: { role: "clinic_admin" },
+        select: { id: true, name: true, email: true, isActive: true },
+        orderBy: { createdAt: "asc" },
+      },
+    },
   })
 
   if (!clinic) {
     return errorResponse(messages.errors.clinicNotFound, 404)
   }
 
-  // クリニックのclinic_adminユーザー一覧（メール確認用）
-  const admins = await prisma.user.findMany({
-    where: { clinicId: id, role: "clinic_admin" },
-    select: { id: true, name: true, email: true, isActive: true },
-    orderBy: { createdAt: "asc" },
-  })
-
-  return successResponse({ admins })
+  return successResponse({ admins: clinic.users })
 }
 
 export async function PATCH(
@@ -61,10 +63,18 @@ export async function PATCH(
     return errorResponse(messages.auth.emailRequired, 400)
   }
 
-  // 対象ユーザーがこのクリニックのclinic_adminであることを確認
-  const user = await prisma.user.findFirst({
-    where: { id: userId, clinicId: id, role: "clinic_admin" },
-  })
+  // ユーザー検証とメール重複チェックを並列実行
+  const [user, existing] = await Promise.all([
+    prisma.user.findFirst({
+      where: { id: userId, clinicId: id, role: "clinic_admin" },
+      select: { id: true, email: true },
+    }),
+    prisma.user.findUnique({
+      where: { email: trimmedEmail },
+      select: { id: true },
+    }),
+  ])
+
   if (!user) {
     return errorResponse(messages.apiErrors.userNotClinicAdmin, 400)
   }
@@ -75,19 +85,22 @@ export async function PATCH(
   }
 
   // メール重複チェック
-  const existing = await prisma.user.findUnique({
-    where: { email: trimmedEmail },
-  })
   if (existing) {
     return errorResponse(messages.auth.emailAlreadyUsed, 400)
   }
 
-  // メール更新
-  const updated = await prisma.user.update({
-    where: { id: userId },
-    data: { email: trimmedEmail },
-    select: { email: true },
-  })
-
-  return successResponse({ email: updated.email })
+  // メール更新（unique制約違反をキャッチしてレースコンディションに対応）
+  try {
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { email: trimmedEmail },
+      select: { email: true },
+    })
+    return successResponse({ email: updated.email })
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      return errorResponse(messages.auth.emailAlreadyUsed, 400)
+    }
+    throw e
+  }
 }

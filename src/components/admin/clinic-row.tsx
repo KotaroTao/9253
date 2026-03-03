@@ -23,12 +23,13 @@ interface ClinicRowProps {
   clinicId: string
   clinicName: string
   plan?: PlanTier
+  ownerUserId?: string | null
   ownerName?: string | null
   ownerEmail?: string | null
   children: React.ReactNode
 }
 
-export function ClinicRow({ clinicId, clinicName, plan, ownerName: initialOwnerName, ownerEmail: initialOwnerEmail, children }: ClinicRowProps) {
+export function ClinicRow({ clinicId, clinicName, plan, ownerUserId, ownerName: initialOwnerName, ownerEmail: initialOwnerEmail, children }: ClinicRowProps) {
   const [loading, setLoading] = useState(false)
   const [planDialogOpen, setPlanDialogOpen] = useState(false)
   const [demoDialogOpen, setDemoDialogOpen] = useState(false)
@@ -116,7 +117,7 @@ export function ClinicRow({ clinicId, clinicName, plan, ownerName: initialOwnerN
               className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-0.5 text-[10px] font-medium text-sky-700 transition-colors hover:bg-sky-100"
             >
               <Mail className="h-2.5 w-2.5" />
-              {ownerEmail ?? "メール未設定"}
+              {ownerEmail ?? messages.admin.emailNotSet}
             </button>
             {currentPlan === "demo" && (
               <button
@@ -171,6 +172,7 @@ export function ClinicRow({ clinicId, clinicName, plan, ownerName: initialOwnerN
         <EmailSwitcher
           clinicId={clinicId}
           clinicName={clinicName}
+          ownerUserId={ownerUserId}
           onClose={() => setEmailDialogOpen(false)}
           onUpdated={(email) => setOwnerEmail(email)}
         />

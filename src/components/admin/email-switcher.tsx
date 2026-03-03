@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Loader2, X, Mail, Pencil, Check } from "lucide-react"
+import { messages } from "@/lib/messages"
 
 interface AdminUser {
   id: string
@@ -13,18 +14,25 @@ interface AdminUser {
 interface EmailSwitcherProps {
   clinicId: string
   clinicName: string
+  ownerUserId?: string | null
   onClose: () => void
   onUpdated?: (email: string) => void
 }
 
-export function EmailSwitcher({ clinicId, clinicName, onClose, onUpdated }: EmailSwitcherProps) {
+export function EmailSwitcher({ clinicId, clinicName, ownerUserId, onClose, onUpdated }: EmailSwitcherProps) {
   const [admins, setAdmins] = useState<AdminUser[]>([])
   const [loading, setLoading] = useState(true)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editEmail, setEditEmail] = useState("")
+  const [editing, setEditing] = useState<{ id: string; email: string } | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     async function fetchAdmins() {
@@ -32,7 +40,10 @@ export function EmailSwitcher({ clinicId, clinicName, onClose, onUpdated }: Emai
         const res = await fetch(`/api/admin/clinics/${clinicId}/email`)
         if (res.ok) {
           const data = await res.json()
-          setAdmins(data.data.admins)
+          setAdmins(data.admins)
+        } else {
+          const data = await res.json().catch(() => ({}))
+          setError(data.error || messages.admin.fetchError)
         }
       } finally {
         setLoading(false)
@@ -42,22 +53,21 @@ export function EmailSwitcher({ clinicId, clinicName, onClose, onUpdated }: Emai
   }, [clinicId])
 
   function startEdit(admin: AdminUser) {
-    setEditingId(admin.id)
-    setEditEmail(admin.email)
+    setEditing({ id: admin.id, email: admin.email })
     setError(null)
     setSuccess(null)
   }
 
   function cancelEdit() {
-    setEditingId(null)
-    setEditEmail("")
+    setEditing(null)
     setError(null)
   }
 
   async function handleSave(userId: string) {
-    const trimmed = editEmail.trim().toLowerCase()
+    if (!editing) return
+    const trimmed = editing.email.trim().toLowerCase()
     if (!trimmed || !trimmed.includes("@")) {
-      setError("有効なメールアドレスを入力してください")
+      setError(messages.auth.emailRequired)
       return
     }
 
@@ -79,16 +89,18 @@ export function EmailSwitcher({ clinicId, clinicName, onClose, onUpdated }: Emai
       if (res.ok) {
         const data = await res.json()
         setAdmins((prev) =>
-          prev.map((a) => (a.id === userId ? { ...a, email: data.data.email } : a))
+          prev.map((a) => (a.id === userId ? { ...a, email: data.email } : a))
         )
-        setEditingId(null)
-        setEditEmail("")
-        setSuccess("メールアドレスを変更しました")
-        onUpdated?.(data.data.email)
-        setTimeout(() => setSuccess(null), 3000)
+        setEditing(null)
+        setSuccess(messages.admin.emailChangeSuccess)
+        // オーナーのメールが変更された場合のみ親に通知
+        if (userId === ownerUserId) {
+          onUpdated?.(data.email)
+        }
+        successTimerRef.current = setTimeout(() => setSuccess(null), 3000)
       } else {
         const data = await res.json()
-        setError(data.error || "エラーが発生しました")
+        setError(data.error || messages.common.error)
       }
     } finally {
       setSaving(false)
@@ -101,7 +113,7 @@ export function EmailSwitcher({ clinicId, clinicName, onClose, onUpdated }: Emai
         <div className="mb-4 flex items-center justify-between">
           <h3 className="flex items-center gap-1.5 text-sm font-bold">
             <Mail className="h-4 w-4 text-sky-500" />
-            メールアドレス管理
+            {messages.admin.emailManagement}
           </h3>
           <button onClick={onClose} className="rounded-full p-1 hover:bg-muted">
             <X className="h-4 w-4" />
@@ -116,7 +128,7 @@ export function EmailSwitcher({ clinicId, clinicName, onClose, onUpdated }: Emai
           </div>
         ) : admins.length === 0 ? (
           <p className="py-4 text-center text-sm text-muted-foreground">
-            管理者ユーザーがいません
+            {messages.admin.noAdminUsers}
           </p>
         ) : (
           <div className="max-h-72 space-y-2 overflow-y-auto">
@@ -131,30 +143,30 @@ export function EmailSwitcher({ clinicId, clinicName, onClose, onUpdated }: Emai
                       <span className="text-sm font-medium">{admin.name}</span>
                       {!admin.isActive && (
                         <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500">
-                          無効
+                          {messages.admin.inactive}
                         </span>
                       )}
                     </div>
                   </div>
-                  {editingId !== admin.id && (
+                  {editing?.id !== admin.id && (
                     <button
                       type="button"
                       onClick={() => startEdit(admin)}
                       className="ml-2 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-                      title="メールアドレスを変更"
+                      title={messages.admin.emailChangeTitle}
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
                   )}
                 </div>
 
-                {editingId === admin.id ? (
+                {editing?.id === admin.id ? (
                   <div className="mt-2">
                     <div className="flex gap-2">
                       <input
                         type="email"
-                        value={editEmail}
-                        onChange={(e) => setEditEmail(e.target.value)}
+                        value={editing.email}
+                        onChange={(e) => setEditing({ ...editing, email: e.target.value })}
                         className="flex-1 rounded-md border px-2.5 py-1.5 text-sm focus:border-sky-300 focus:outline-none focus:ring-1 focus:ring-sky-300"
                         placeholder="email@example.com"
                         autoFocus
@@ -180,7 +192,7 @@ export function EmailSwitcher({ clinicId, clinicName, onClose, onUpdated }: Emai
                         onClick={cancelEdit}
                         className="rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:bg-muted"
                       >
-                        取消
+                        {messages.common.cancel}
                       </button>
                     </div>
                   </div>
@@ -200,7 +212,7 @@ export function EmailSwitcher({ clinicId, clinicName, onClose, onUpdated }: Emai
             onClick={onClose}
             className="rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted"
           >
-            閉じる
+            {messages.common.close}
           </button>
         </div>
       </div>
