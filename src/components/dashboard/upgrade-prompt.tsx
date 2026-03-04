@@ -107,7 +107,7 @@ export function UpgradePrompt({ feature, featureLabel, requiredPlan, planInfo }:
             </Button>
           )}
           <Button asChild variant="outline" size="lg" className="w-full">
-            <a href="/#cta">
+            <a href="/dashboard/settings/billing">
               {planInfo.canStartTrial ? messages.plan.contactForUpgrade : messages.plan.upgradePromptUpgradeCta}
               <ArrowRight className="ml-2 h-4 w-4" />
             </a>

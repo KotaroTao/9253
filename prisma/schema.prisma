@@ -28,6 +28,7 @@ model Clinic {
   authorizedDevices      AuthorizedDevice[]
   advisoryReports        AdvisoryReport[]
   kawaiiTeethCollections KawaiiTeethCollection[]
+  billingEvents          BillingEvent[]
 
   @@map("clinics")
 }
@@ -286,6 +287,23 @@ model MonthlyClinicMetrics {
   @@unique([clinicId, year, month])
   @@index([clinicId])
   @@map("monthly_clinic_metrics")
+}
+
+model BillingEvent {
+  id             String   @id @default(uuid()) @db.Uuid
+  clinicId       String   @map("clinic_id") @db.Uuid
+  type           String   // checkout_completed, payment_succeeded, payment_failed, subscription_updated, subscription_deleted
+  stripeEventId  String   @unique @map("stripe_event_id")
+  amount         Int?     // 円
+  currency       String?  @default("jpy")
+  metadata       Json     @default("{}")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@index([clinicId, createdAt])
+  @@map("billing_events")
 }
 
 model AdminNotification {
