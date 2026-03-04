@@ -33,22 +33,23 @@ export async function POST(_request: NextRequest) {
     return successResponse({ alreadyVerified: true })
   }
 
-  // 新しいトークン生成・保存
+  // 新しいトークン生成・メール送信（送信成功後にDB保存）
   const token = generateVerificationToken()
-  await prisma.user.update({
-    where: { id: userId },
-    data: { verificationToken: token },
-  })
-
-  // 認証メール送信
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://mieru-clinic.com"
   const verifyUrl = `${appUrl}/verify-email?token=${token}`
   const { subject, html } = buildVerificationEmail(verifyUrl, user.clinic?.name || user.name)
   const emailSent = await sendMail({ to: user.email, subject, html })
 
   if (!emailSent) {
+    // メール送信失敗時は既存トークンを維持（以前の認証リンクを無効化しない）
     return errorResponse(messages.auth.verifyEmailResendFailed, 500)
   }
+
+  // メール送信成功後にトークンを更新
+  await prisma.user.update({
+    where: { id: userId },
+    data: { verificationToken: token },
+  })
 
   return successResponse({ sent: true })
 }

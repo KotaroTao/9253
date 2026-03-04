@@ -19,31 +19,85 @@ interface SendMailOptions {
   html: string
 }
 
+/** 一時的なエラー（リトライ対象）かどうか判定 */
+function isTransientError(status: number): boolean {
+  return status >= 500 || status === 408 || status === 429
+}
+
+/** 指定ミリ秒待機 */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+const MAX_RETRIES = 2
+const RETRY_DELAYS = [1000, 3000] // 1秒, 3秒
+
 export async function sendMail({ to, subject, html }: SendMailOptions): Promise<boolean> {
   const smtpHost = process.env.SMTP_HOST
 
   if (smtpHost) {
-    try {
-      const apiKey = process.env.SMTP_PASS || ""
-      const fromAddress = process.env.SMTP_FROM || "MIERU Clinic <register@mieru-clinic.com>"
-      const res = await fetch(smtpHost, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({ from: fromAddress, to, subject, html }),
+    const apiKey = process.env.SMTP_PASS
+    if (!apiKey) {
+      logger.error("SMTP_PASS is not configured — cannot authenticate with mail API", {
+        component: "sendMail", to, subject,
       })
-      if (!res.ok) {
-        const body = await res.text().catch(() => "")
-        logger.error("Mail API responded with error", { component: "sendMail", status: res.status, body })
-        return false
-      }
-      return true
-    } catch (err) {
-      logger.error("Mail send failed", { component: "sendMail", error: String(err) })
       return false
     }
+
+    const fromAddress = process.env.SMTP_FROM || "MIERU Clinic <register@mieru-clinic.com>"
+    const payload = JSON.stringify({ from: fromAddress, to, subject, html })
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const res = await fetch(smtpHost, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`,
+          },
+          body: payload,
+        })
+
+        if (res.ok) {
+          if (attempt > 0) {
+            logger.info("Mail sent after retry", { component: "sendMail", to, attempt })
+          }
+          return true
+        }
+
+        const body = await res.text().catch(() => "")
+
+        // 一時的なエラーならリトライ
+        if (isTransientError(res.status) && attempt < MAX_RETRIES) {
+          logger.warn("Mail API transient error, retrying", {
+            component: "sendMail", to, status: res.status, attempt: attempt + 1, body,
+          })
+          await sleep(RETRY_DELAYS[attempt])
+          continue
+        }
+
+        // リトライ不可のエラー（認証失敗、バリデーションエラー等）
+        logger.error("Mail API responded with error", {
+          component: "sendMail", to, subject, status: res.status, body, attempt,
+        })
+        return false
+      } catch (err) {
+        // ネットワークエラーはリトライ
+        if (attempt < MAX_RETRIES) {
+          logger.warn("Mail send network error, retrying", {
+            component: "sendMail", to, error: String(err), attempt: attempt + 1,
+          })
+          await sleep(RETRY_DELAYS[attempt])
+          continue
+        }
+        logger.error("Mail send failed after retries", {
+          component: "sendMail", to, subject, error: String(err), attempts: attempt + 1,
+        })
+        return false
+      }
+    }
+
+    return false
   }
 
   // SMTP未設定: 開発環境ではログ出力して成功扱い、本番では警告
