@@ -6,7 +6,12 @@ import {
   Store,
   TrendingUp,
   Users,
+  Users2,
   ShieldCheck,
+  Crown,
+  MessageCircle,
+  Trophy,
+  Megaphone,
   Zap,
   ArrowRight,
   ChevronRight,
@@ -272,6 +277,149 @@ export default function InvestorPage() {
                   <div className="text-xs text-gray-500 mt-1">{m.sub}</div>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ============================================================ */}
+        {/* Core Strategy — Most Important                               */}
+        {/* ============================================================ */}
+        <section className="relative py-20 sm:py-24 overflow-hidden">
+          {/* Glow background */}
+          <div className="absolute inset-0 bg-gradient-to-b from-amber-600/5 via-orange-600/5 to-transparent pointer-events-none" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-amber-500/5 rounded-full blur-[100px] pointer-events-none" />
+
+          <div className="max-w-7xl mx-auto px-6 relative">
+            {/* Label */}
+            <div className="flex justify-center mb-8">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 border-amber-500/30 bg-amber-500/10 text-amber-400 text-sm font-semibold">
+                <Crown className="w-4 h-4" />
+                D-Code Projectの最重要戦略
+              </div>
+            </div>
+
+            <div className="max-w-4xl mx-auto text-center mb-12">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-[1.2] mb-6">
+                日本最大の
+                <br className="sm:hidden" />
+                <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-red-400 bg-clip-text text-transparent">
+                  医療版AI開発者コミュニティ
+                </span>
+                <br />
+                を最速で作る。
+              </h2>
+              <p className="text-lg text-gray-400 leading-relaxed max-w-3xl mx-auto">
+                このコミュニティの規模と熱量こそが、レセコン会社各社に
+                <span className="text-amber-400 font-semibold">「APIを開放しなければ取り残される」</span>
+                と思わせる最大の交渉カードになる。
+              </p>
+            </div>
+
+            {/* Strategy Flow */}
+            <div className="max-w-4xl mx-auto mb-12">
+              <div className="grid sm:grid-cols-3 gap-4">
+                {[
+                  {
+                    step: "STEP 1",
+                    icon: Users2,
+                    title: "コミュニティを作る",
+                    desc: "Academy卒業生を核に、歯科×AIの開発者コミュニティを急速に拡大。日本中の「自分で作りたい」歯科医院スタッフが集まる場を作る。",
+                    color: "border-amber-500/30 bg-amber-500/10",
+                    iconColor: "text-amber-400",
+                  },
+                  {
+                    step: "STEP 2",
+                    icon: Megaphone,
+                    title: "交渉力を持つ",
+                    desc: "「数千人の開発者がAPIを待っている」という事実が、レセコン各社への最強の交渉材料に。APIを開放した会社から順に連携開始。",
+                    color: "border-orange-500/30 bg-orange-500/10",
+                    iconColor: "text-orange-400",
+                  },
+                  {
+                    step: "STEP 3",
+                    icon: Zap,
+                    title: "一気に展開する",
+                    desc: "API連携が実現すれば、コミュニティの開発者がアプリを量産。Hub + Store の売上が爆発的に伸び、事業全体が加速する。",
+                    color: "border-red-500/30 bg-red-500/10",
+                    iconColor: "text-red-400",
+                  },
+                ].map((item) => (
+                  <div key={item.step} className={`rounded-xl border ${item.color} p-6 relative`}>
+                    <div className="text-xs font-mono font-bold text-gray-500 mb-3">{item.step}</div>
+                    <div className={`w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center mb-4`}>
+                      <item.icon className={`w-5 h-5 ${item.iconColor}`} />
+                    </div>
+                    <h3 className="font-bold text-lg mb-2">{item.title}</h3>
+                    <p className="text-sm text-gray-400 leading-relaxed">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Arrow connectors (desktop) */}
+              <div className="hidden sm:flex justify-center items-center gap-2 mt-6 text-gray-600">
+                <span className="text-xs">コミュニティ拡大</span>
+                <ArrowRight className="w-4 h-4 text-amber-500" />
+                <span className="text-xs">交渉力UP</span>
+                <ArrowRight className="w-4 h-4 text-orange-500" />
+                <span className="text-xs">事業爆発</span>
+              </div>
+            </div>
+
+            {/* How to build the community */}
+            <div className="max-w-4xl mx-auto">
+              <h3 className="text-xl font-bold text-center mb-8">
+                コミュニティを
+                <span className="text-amber-400">最速で</span>
+                拡大するための施策
+              </h3>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {[
+                  {
+                    icon: GraduationCap,
+                    title: "Academy卒業生を核にする",
+                    desc: "研修で成功体験を得た受講者が、最も熱量の高いコミュニティメンバーになる。卒業生専用グループで継続的につながり、互いに刺激し合う環境を作る。",
+                  },
+                  {
+                    icon: Trophy,
+                    title: "ハッカソン・開発コンテスト",
+                    desc: "「歯科業務改善アプリコンテスト」を定期開催。優秀作品はD-Code Storeで販売。開発意欲を刺激し、コミュニティの活性化と外部への認知拡大を同時に実現。",
+                  },
+                  {
+                    icon: MessageCircle,
+                    title: "オンラインコミュニティ運営",
+                    desc: "Slack/Discordで常時つながる場を提供。質問・相談・成果共有を通じて「一人じゃない」安心感を醸成。月次のオンライン勉強会でスキルアップも継続支援。",
+                  },
+                  {
+                    icon: Megaphone,
+                    title: "SNS・メディア発信",
+                    desc: "卒業生の成功事例をYouTube・SNSで発信。「プログラミング未経験の歯科衛生士がアプリを作った」というストーリーは強力な集客コンテンツになる。",
+                  },
+                ].map((item) => (
+                  <div key={item.title} className="flex gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-5">
+                    <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                      <item.icon className="w-5 h-5 text-amber-400" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-sm mb-1">{item.title}</h4>
+                      <p className="text-xs text-gray-400 leading-relaxed">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Key insight callout */}
+              <div className="mt-8 rounded-xl border-2 border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-orange-500/5 p-6 text-center">
+                <p className="text-sm text-gray-300 leading-relaxed">
+                  <span className="text-amber-400 font-bold">なぜコミュニティが先か？</span>
+                  <br className="sm:hidden" />
+                  <span className="hidden sm:inline"> — </span>
+                  レセコン会社は「需要がある」と確信しなければAPIを開放しない。
+                  <br />
+                  先にコミュニティを作り、
+                  <span className="text-white font-semibold">「これだけの開発者がAPIを求めている」</span>
+                  という既成事実を作ることで、交渉の主導権を握る。
+                </p>
+              </div>
             </div>
           </div>
         </section>
