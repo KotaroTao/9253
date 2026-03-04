@@ -11,6 +11,8 @@ export const RATE_LIMIT_PRESETS = {
   resendVerification: { windowMs: 3_600_000, maxRequests: 3 },
   /** ログイン失敗: 15分に10回 */
   loginFailed: { windowMs: 900_000, maxRequests: 10 },
+  /** パスワードリセット: 1時間に5回 */
+  forgotPassword: { windowMs: 3_600_000, maxRequests: 5 },
   /** アンケート提出: 1分に30回（同一IP） */
   surveySubmit: { windowMs: 60_000, maxRequests: 30 },
 } as const

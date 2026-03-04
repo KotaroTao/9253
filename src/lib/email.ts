@@ -306,6 +306,30 @@ export function buildReminderEmail(clinicName: string, loginUrl: string, daysSin
   }
 }
 
+/** パスワードリセットメール */
+export function buildPasswordResetEmail(resetUrl: string, userName: string): {
+  subject: string
+  html: string
+} {
+  const safeName = escapeHtml(userName)
+  return {
+    subject: "【MIERU Clinic】パスワードのリセット",
+    html: emailLayout(`
+  <p>${safeName} 様</p>
+  <p>パスワードリセットのリクエストを受け付けました。以下のボタンをクリックして、新しいパスワードを設定してください。</p>
+  <div style="text-align: center; margin: 30px 0;">
+    <a href="${resetUrl}" style="display: inline-block; background-color: #0f172a; color: #ffffff; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-weight: bold;">
+      パスワードを再設定する
+    </a>
+  </div>
+  <p style="color: #64748b; font-size: 14px;">ボタンが動作しない場合は、以下のURLをブラウザに貼り付けてください:</p>
+  <p style="color: #64748b; font-size: 12px; word-break: break-all;">${resetUrl}</p>
+  <p style="color: #64748b; font-size: 14px;">このリンクの有効期限は1時間です。</p>
+  <p style="color: #94a3b8; font-size: 12px;">このメールに心当たりがない場合は、このメールを無視してください。パスワードは変更されません。</p>
+`),
+  }
+}
+
 /** 週次サマリーメール */
 export function buildWeeklySummaryEmail(
   clinicName: string,

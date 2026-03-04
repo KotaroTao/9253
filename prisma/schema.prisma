@@ -60,9 +60,10 @@ model User {
   clinicId          String?   @map("clinic_id") @db.Uuid
   staffId           String?   @unique @map("staff_id") @db.Uuid
   isActive          Boolean   @default(true) @map("is_active")
-  emailVerified     DateTime? @map("email_verified")
-  verificationToken String?   @unique @map("verification_token")
-  createdAt         DateTime  @default(now()) @map("created_at")
+  emailVerified      DateTime? @map("email_verified")
+  verificationToken  String?   @unique @map("verification_token")
+  passwordResetToken String?   @unique @map("password_reset_token")
+  createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
   clinic      Clinic? @relation(fields: [clinicId], references: [id], onDelete: SetNull)

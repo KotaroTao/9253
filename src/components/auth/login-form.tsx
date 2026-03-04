@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -57,7 +58,16 @@ export function LoginForm() {
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password">{messages.auth.password}</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="password">{messages.auth.password}</Label>
+          <Link
+            href="/forgot-password"
+            className="text-xs text-muted-foreground underline-offset-4 hover:underline"
+            tabIndex={-1}
+          >
+            {messages.auth.forgotPassword}
+          </Link>
+        </div>
         <Input
           id="password"
           type="password"

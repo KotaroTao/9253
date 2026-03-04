@@ -23,3 +23,20 @@ export const registerSchema = z.object({
 })
 
 export type RegisterInput = z.infer<typeof registerSchema>
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email(messages.auth.emailRequired),
+})
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1),
+  password: z.string().min(6, messages.auth.passwordRequired),
+  passwordConfirm: z.string().min(6, messages.auth.passwordRequired),
+}).refine((data) => data.password === data.passwordConfirm, {
+  message: messages.auth.passwordMismatch,
+  path: ["passwordConfirm"],
+})
+
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>
