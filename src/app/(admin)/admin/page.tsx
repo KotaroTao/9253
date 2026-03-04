@@ -4,7 +4,7 @@ import { getAllClinics, getClinicHealthBatch, getPlatformTodayStats } from "@/li
 import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
-import { Lightbulb, HardDrive, SmilePlus, Megaphone, MessageSquare, ArrowRight, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, AlertTriangle, Activity } from "lucide-react"
+import { Lightbulb, HardDrive, SmilePlus, Megaphone, MessageSquare, Mail, ArrowRight, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, AlertTriangle, Activity } from "lucide-react"
 import { SpecialPlanUrl, GuideUrl } from "@/components/admin/special-plan-url"
 import { ClinicSearch } from "@/components/admin/clinic-search"
 import { ClinicRow } from "@/components/admin/clinic-row"
@@ -218,6 +218,22 @@ export default async function AdminPage({
             <div>
               <p className="text-sm font-medium">{messages.commentsManager.title}</p>
               <p className="text-xs text-muted-foreground">{messages.commentsManager.description}</p>
+            </div>
+          </div>
+          <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </Link>
+
+        <Link
+          href="/admin/email-templates"
+          className="flex items-center justify-between rounded-lg border border-sky-200 bg-gradient-to-r from-sky-50/80 to-white p-4 transition-colors hover:border-sky-300 hover:shadow-sm"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-600">
+              <Mail className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">{messages.emailTemplates.title}</p>
+              <p className="text-xs text-muted-foreground">{messages.emailTemplates.description}</p>
             </div>
           </div>
           <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />

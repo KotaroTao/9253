@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { prisma } from "@/lib/prisma"
-import { getTokenTimestamp, sendMail, buildWelcomeEmail } from "@/lib/email"
+import { getTokenTimestamp, sendMail, buildWelcomeEmail, getEmailTemplates } from "@/lib/email"
 import { messages } from "@/lib/messages"
 import { logger } from "@/lib/logger"
 
@@ -44,7 +44,8 @@ export async function GET(request: NextRequest) {
   if (updatedUser.clinic?.name) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://mieru-clinic.com"
     const loginUrl = `${appUrl}/login`
-    const { subject, html } = buildWelcomeEmail(updatedUser.clinic.name, loginUrl)
+    const templates = await getEmailTemplates()
+    const { subject, html } = buildWelcomeEmail(updatedUser.clinic.name, loginUrl, templates.welcome)
     sendMail({ to: updatedUser.email, subject, html }).catch((err) => {
       logger.error("Failed to send welcome email", { component: "verify-email", error: String(err) })
     })

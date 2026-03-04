@@ -4,7 +4,7 @@ import { requireAuth, isAuthError } from "@/lib/auth-helpers"
 import { prisma } from "@/lib/prisma"
 import { checkRateLimit } from "@/lib/rate-limit"
 import { getClientIp } from "@/lib/ip"
-import { sendMail, generateVerificationToken, buildVerificationEmail } from "@/lib/email"
+import { sendMail, generateVerificationToken, buildVerificationEmail, getEmailTemplates } from "@/lib/email"
 import { messages } from "@/lib/messages"
 
 export async function POST(_request: NextRequest) {
@@ -37,7 +37,8 @@ export async function POST(_request: NextRequest) {
   const token = generateVerificationToken()
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://mieru-clinic.com"
   const verifyUrl = `${appUrl}/verify-email?token=${token}`
-  const { subject, html } = buildVerificationEmail(verifyUrl, user.clinic?.name || user.name)
+  const templates = await getEmailTemplates()
+  const { subject, html } = buildVerificationEmail(verifyUrl, user.clinic?.name || user.name, templates.verification)
   const emailSent = await sendMail({ to: user.email, subject, html })
 
   if (!emailSent) {

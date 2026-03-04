@@ -5,7 +5,7 @@ import { checkRateLimit } from "@/lib/rate-limit"
 import { getClientIp } from "@/lib/ip"
 import { logger } from "@/lib/logger"
 import { verifyTurnstileToken } from "@/lib/turnstile"
-import { sendMail, generateVerificationToken, buildVerificationEmail } from "@/lib/email"
+import { sendMail, generateVerificationToken, buildVerificationEmail, getEmailTemplates } from "@/lib/email"
 import { messages } from "@/lib/messages"
 import bcrypt from "bcryptjs"
 
@@ -205,7 +205,8 @@ export async function POST(request: NextRequest) {
   // メール認証メール送信（トランザクション外で実行、結果をレスポンスに含める）
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://mieru-clinic.com"
   const verifyUrl = `${appUrl}/verify-email?token=${verificationToken}`
-  const { subject, html } = buildVerificationEmail(verifyUrl, clinicName.trim())
+  const templates = await getEmailTemplates()
+  const { subject, html } = buildVerificationEmail(verifyUrl, clinicName.trim(), templates.verification)
   let emailSent = false
   try {
     emailSent = await sendMail({ to: email.trim().toLowerCase(), subject, html })

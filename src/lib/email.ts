@@ -1,5 +1,14 @@
 import crypto from "crypto"
 import { logger } from "@/lib/logger"
+import { prisma } from "@/lib/prisma"
+import {
+  SETTING_KEY as EMAIL_TEMPLATES_KEY,
+  DEFAULT_VERIFICATION_TEMPLATE,
+  DEFAULT_WELCOME_TEMPLATE,
+  type EmailTemplatesSettingValue,
+  type VerificationEmailTemplate,
+  type WelcomeEmailTemplate,
+} from "@/lib/email-templates"
 
 /**
  * メール送信ユーティリティ（Resend API）
@@ -154,18 +163,50 @@ function emailLayout(body: string): string {
 </html>`.trim()
 }
 
+/** PlatformSettingからカスタムメールテンプレートを取得。未設定時はデフォルトを返す */
+export async function getEmailTemplates(): Promise<{
+  verification: VerificationEmailTemplate
+  welcome: WelcomeEmailTemplate
+}> {
+  try {
+    const setting = await prisma.platformSetting.findUnique({
+      where: { key: EMAIL_TEMPLATES_KEY },
+    })
+    if (setting) {
+      const value = setting.value as unknown as EmailTemplatesSettingValue
+      return {
+        verification: value.verification ?? DEFAULT_VERIFICATION_TEMPLATE,
+        welcome: value.welcome ?? DEFAULT_WELCOME_TEMPLATE,
+      }
+    }
+  } catch (err) {
+    logger.warn("Failed to fetch email templates, using defaults", {
+      component: "getEmailTemplates", error: String(err),
+    })
+  }
+  return {
+    verification: DEFAULT_VERIFICATION_TEMPLATE,
+    welcome: DEFAULT_WELCOME_TEMPLATE,
+  }
+}
+
 /** メール認証用のHTMLメール本文を生成 */
-export function buildVerificationEmail(verifyUrl: string, clinicName: string): {
+export function buildVerificationEmail(
+  verifyUrl: string,
+  clinicName: string,
+  template?: VerificationEmailTemplate,
+): {
   subject: string
   html: string
 } {
+  const t = template ?? DEFAULT_VERIFICATION_TEMPLATE
   const safeName = escapeHtml(clinicName)
   return {
-    subject: "【MIERU Clinic】メールアドレスの確認",
+    subject: t.subject,
     html: emailLayout(`
   <p>${safeName} 様</p>
-  <p>MIERU Clinic にご登録いただきありがとうございます。</p>
-  <p>以下のボタンをクリックして、メールアドレスの確認を完了してください。</p>
+  <p>${escapeHtml(t.greeting)}</p>
+  ${t.body ? `<p>${escapeHtml(t.body)}</p>` : ""}
   <div style="text-align: center; margin: 30px 0;">
     <a href="${verifyUrl}" style="display: inline-block; background-color: #0f172a; color: #ffffff; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-weight: bold;">
       メールアドレスを確認する
@@ -174,49 +215,55 @@ export function buildVerificationEmail(verifyUrl: string, clinicName: string): {
   <p style="color: #64748b; font-size: 14px;">ボタンが動作しない場合は、以下のURLをブラウザに貼り付けてください:</p>
   <p style="color: #64748b; font-size: 12px; word-break: break-all;">${verifyUrl}</p>
   <p style="color: #64748b; font-size: 14px;">このリンクの有効期限は24時間です。</p>
-  <p style="color: #94a3b8; font-size: 12px;">このメールに心当たりがない場合は、このメールを無視してください。</p>
+  ${t.note ? `<p style="color: #94a3b8; font-size: 12px;">${escapeHtml(t.note)}</p>` : ""}
 `),
   }
 }
 
 /** ウェルカムメール（メール認証完了後に送信） */
-export function buildWelcomeEmail(clinicName: string, loginUrl: string): {
+export function buildWelcomeEmail(
+  clinicName: string,
+  loginUrl: string,
+  template?: WelcomeEmailTemplate,
+): {
   subject: string
   html: string
 } {
+  const t = template ?? DEFAULT_WELCOME_TEMPLATE
   const safeName = escapeHtml(clinicName)
+  const steps = t.steps ?? DEFAULT_WELCOME_TEMPLATE.steps!
+  const stepsHtml = steps.map((step, i) => {
+    const borderRadius = i === 0
+      ? "border-radius: 8px 8px 0 0;"
+      : i === steps.length - 1
+        ? "border-radius: 0 0 8px 8px;"
+        : ""
+    const borderBottom = i < steps.length - 1 ? "border-bottom: 1px solid #e0f2fe;" : ""
+    return `
+    <tr>
+      <td style="padding: 12px; background: #f0f9ff; ${borderRadius} ${borderBottom}">
+        <strong style="color: #0369a1;">Step ${i + 1}.</strong> ${escapeHtml(step.title)}<br>
+        <span style="font-size: 13px; color: #64748b;">${escapeHtml(step.description)}</span>
+      </td>
+    </tr>`
+  }).join("")
+
   return {
-    subject: "【MIERU Clinic】ご利用開始ガイド",
+    subject: t.subject,
     html: emailLayout(`
   <p>${safeName} 様</p>
-  <p>メールアドレスの確認が完了しました。MIERU Clinic をご利用いただけます。</p>
+  <p>${escapeHtml(t.greeting)}</p>
+  ${t.body ? `<p>${escapeHtml(t.body)}</p>` : ""}
   <h2 style="font-size: 16px; color: #0f172a; margin-top: 24px;">最初にやること 3ステップ</h2>
   <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
-    <tr>
-      <td style="padding: 12px; background: #f0f9ff; border-radius: 8px 8px 0 0; border-bottom: 1px solid #e0f2fe;">
-        <strong style="color: #0369a1;">Step 1.</strong> スタッフを登録する<br>
-        <span style="font-size: 13px; color: #64748b;">ダッシュボード → スタッフ管理 から追加できます</span>
-      </td>
-    </tr>
-    <tr>
-      <td style="padding: 12px; background: #f0f9ff; border-bottom: 1px solid #e0f2fe;">
-        <strong style="color: #0369a1;">Step 2.</strong> テストアンケートを試す<br>
-        <span style="font-size: 13px; color: #64748b;">ダッシュボード → テスト から、実際の画面を確認できます</span>
-      </td>
-    </tr>
-    <tr>
-      <td style="padding: 12px; background: #f0f9ff; border-radius: 0 0 8px 8px;">
-        <strong style="color: #0369a1;">Step 3.</strong> 初回アンケートを実施<br>
-        <span style="font-size: 13px; color: #64748b;">受付のタブレットでアンケート画面を開き、患者さまにお渡しください</span>
-      </td>
-    </tr>
+    ${stepsHtml}
   </table>
   <div style="text-align: center; margin: 24px 0;">
     <a href="${loginUrl}" style="display: inline-block; background-color: #0f172a; color: #ffffff; padding: 12px 32px; border-radius: 6px; text-decoration: none; font-weight: bold;">
       ダッシュボードにログイン
     </a>
   </div>
-  <p style="color: #64748b; font-size: 14px;">ご不明な点がございましたら、使い方ガイドをご覧ください。</p>
+  ${t.note ? `<p style="color: #64748b; font-size: 14px;">${escapeHtml(t.note)}</p>` : ""}
 `),
   }
 }
