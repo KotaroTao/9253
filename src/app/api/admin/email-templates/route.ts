@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
+import { getEmailTemplates } from "@/lib/email"
 import {
   SETTING_KEY,
   DEFAULT_VERIFICATION_TEMPLATE,
@@ -15,24 +16,8 @@ export async function GET() {
   const authResult = await requireRole("system_admin")
   if (isAuthError(authResult)) return authResult
 
-  const setting = await prisma.platformSetting.findUnique({
-    where: { key: SETTING_KEY },
-  })
-
-  if (!setting) {
-    return successResponse({
-      verification: DEFAULT_VERIFICATION_TEMPLATE,
-      welcome: DEFAULT_WELCOME_TEMPLATE,
-      isCustom: false,
-    })
-  }
-
-  const value = setting.value as unknown as EmailTemplatesSettingValue
-  return successResponse({
-    verification: value.verification ?? DEFAULT_VERIFICATION_TEMPLATE,
-    welcome: value.welcome ?? DEFAULT_WELCOME_TEMPLATE,
-    isCustom: true,
-  })
+  const { verification, welcome, isCustom } = await getEmailTemplates()
+  return successResponse({ verification, welcome, isCustom })
 }
 
 export async function PUT(request: NextRequest) {
@@ -58,11 +43,11 @@ export async function PUT(request: NextRequest) {
       return errorResponse(messages.errors.invalidInput, 400)
     }
 
-    // Validate required fields
+    // Validate required fields (body is optional for welcome template)
     if (!verification.subject?.trim() || !verification.greeting?.trim() || !verification.body?.trim()) {
       return errorResponse(messages.errors.invalidInput, 400)
     }
-    if (!welcome.subject?.trim() || !welcome.greeting?.trim() || !welcome.body?.trim()) {
+    if (!welcome.subject?.trim() || !welcome.greeting?.trim()) {
       return errorResponse(messages.errors.invalidInput, 400)
     }
 
@@ -76,7 +61,7 @@ export async function PUT(request: NextRequest) {
       welcome: {
         subject: welcome.subject.trim().slice(0, 200),
         greeting: welcome.greeting.trim().slice(0, 500),
-        body: welcome.body.trim().slice(0, 2000),
+        body: (welcome.body ?? "").trim().slice(0, 2000),
         note: (welcome.note ?? "").trim().slice(0, 500),
         steps: welcome.steps
           ? welcome.steps.map((s: { title: string; description: string }) => ({

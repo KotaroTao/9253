@@ -5,6 +5,7 @@ import { Mail, RotateCcw, Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
 import {
@@ -53,7 +54,8 @@ export function EmailTemplateManager() {
     fetchTemplates()
   }, [fetchTemplates])
 
-  async function handleSave() {
+  /** Send PUT request and apply result */
+  async function sendRequest(body: Record<string, unknown>) {
     setIsSaving(true)
     setError("")
     setSuccess("")
@@ -61,7 +63,7 @@ export function EmailTemplateManager() {
       const res = await fetch("/api/admin/email-templates", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ verification, welcome }),
+        body: JSON.stringify(body),
       })
       if (!res.ok) {
         const data = await res.json()
@@ -80,30 +82,21 @@ export function EmailTemplateManager() {
     }
   }
 
+  async function handleSave() {
+    await sendRequest({ verification, welcome })
+  }
+
   async function handleReset() {
     if (!confirm(messages.emailTemplates.resetConfirm)) return
-    setIsSaving(true)
-    setError("")
-    setSuccess("")
-    try {
-      const res = await fetch("/api/admin/email-templates", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resetToDefaults: true }),
-      })
-      if (!res.ok) {
-        setError(messages.emailTemplates.saveFailed)
-        return
-      }
-      const data = await res.json()
-      setVerification(data.verification)
-      setWelcome(data.welcome)
-      setIsCustom(data.isCustom)
-      setSuccess(messages.emailTemplates.saveSuccess)
-    } catch {
-      setError(messages.emailTemplates.saveFailed)
-    } finally {
-      setIsSaving(false)
+    await sendRequest({ resetToDefaults: true })
+  }
+
+  /** Update a field on the active template */
+  function updateField(field: string, value: string) {
+    if (activeTab === "verification") {
+      setVerification({ ...verification, [field]: value })
+    } else {
+      setWelcome({ ...welcome, [field]: value })
     }
   }
 
@@ -201,52 +194,32 @@ export function EmailTemplateManager() {
                 <Input
                   id="subject"
                   value={currentTemplate.subject}
-                  onChange={(e) => {
-                    if (activeTab === "verification") {
-                      setVerification({ ...verification, subject: e.target.value })
-                    } else {
-                      setWelcome({ ...welcome, subject: e.target.value })
-                    }
-                  }}
+                  onChange={(e) => updateField("subject", e.target.value)}
                   disabled={isSaving}
                 />
               </div>
 
               <div className="space-y-1">
                 <Label htmlFor="greeting" className="text-xs">{messages.emailTemplates.greetingLabel}</Label>
-                <textarea
+                <Textarea
                   id="greeting"
                   value={currentTemplate.greeting}
-                  onChange={(e) => {
-                    if (activeTab === "verification") {
-                      setVerification({ ...verification, greeting: e.target.value })
-                    } else {
-                      setWelcome({ ...welcome, greeting: e.target.value })
-                    }
-                  }}
+                  onChange={(e) => updateField("greeting", e.target.value)}
                   placeholder={messages.emailTemplates.greetingPlaceholder}
                   disabled={isSaving}
                   rows={2}
-                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
 
               <div className="space-y-1">
                 <Label htmlFor="body" className="text-xs">{messages.emailTemplates.bodyLabel}</Label>
-                <textarea
+                <Textarea
                   id="body"
                   value={currentTemplate.body}
-                  onChange={(e) => {
-                    if (activeTab === "verification") {
-                      setVerification({ ...verification, body: e.target.value })
-                    } else {
-                      setWelcome({ ...welcome, body: e.target.value })
-                    }
-                  }}
+                  onChange={(e) => updateField("body", e.target.value)}
                   placeholder={messages.emailTemplates.bodyPlaceholder}
                   disabled={isSaving}
                   rows={3}
-                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
 
@@ -285,20 +258,13 @@ export function EmailTemplateManager() {
 
               <div className="space-y-1">
                 <Label htmlFor="note" className="text-xs">{messages.emailTemplates.noteLabel}</Label>
-                <textarea
+                <Textarea
                   id="note"
                   value={currentTemplate.note}
-                  onChange={(e) => {
-                    if (activeTab === "verification") {
-                      setVerification({ ...verification, note: e.target.value })
-                    } else {
-                      setWelcome({ ...welcome, note: e.target.value })
-                    }
-                  }}
+                  onChange={(e) => updateField("note", e.target.value)}
                   placeholder={messages.emailTemplates.notePlaceholder}
                   disabled={isSaving}
                   rows={2}
-                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 />
               </div>
             </div>
@@ -324,6 +290,9 @@ function EmailPreview({
   type: Tab
 }) {
   const sampleClinicName = "サンプル歯科クリニック"
+  const steps = type === "welcome"
+    ? ((template as WelcomeEmailTemplate).steps ?? DEFAULT_WELCOME_TEMPLATE.steps!)
+    : []
 
   return (
     <div className="space-y-2">
@@ -332,7 +301,7 @@ function EmailPreview({
         {/* Email preview */}
         <div style={{ fontFamily: "sans-serif", maxWidth: 600, margin: "0 auto", color: "#334155" }}>
           <div style={{ textAlign: "center", marginBottom: 24 }}>
-            <h1 style={{ color: "#0f172a", fontSize: 20 }}>MIERU Clinic</h1>
+            <h1 style={{ color: "#0f172a", fontSize: 24 }}>MIERU Clinic</h1>
           </div>
 
           <p style={{ fontSize: 14 }}>{sampleClinicName} 様</p>
@@ -347,7 +316,7 @@ function EmailPreview({
                   display: "inline-block",
                   backgroundColor: "#0f172a",
                   color: "#ffffff",
-                  padding: "10px 28px",
+                  padding: "12px 32px",
                   borderRadius: 6,
                   fontWeight: "bold",
                   fontSize: 14,
@@ -363,12 +332,12 @@ function EmailPreview({
             <>
               <h2 style={{ fontSize: 15, color: "#0f172a", marginTop: 20 }}>最初にやること 3ステップ</h2>
               <div style={{ margin: "12px 0" }}>
-                {((template as WelcomeEmailTemplate).steps ?? DEFAULT_WELCOME_TEMPLATE.steps!).map((step, i) => (
+                {steps.map((step, i) => (
                   <div key={i} style={{
-                    padding: 10,
+                    padding: 12,
                     background: "#f0f9ff",
-                    borderBottom: i < 2 ? "1px solid #e0f2fe" : "none",
-                    borderRadius: i === 0 ? "8px 8px 0 0" : i === 2 ? "0 0 8px 8px" : 0,
+                    borderBottom: i < steps.length - 1 ? "1px solid #e0f2fe" : "none",
+                    borderRadius: i === 0 ? "8px 8px 0 0" : i === steps.length - 1 ? "0 0 8px 8px" : 0,
                     fontSize: 13,
                   }}>
                     <strong style={{ color: "#0369a1" }}>Step {i + 1}.</strong> {step.title}
@@ -382,7 +351,7 @@ function EmailPreview({
                   display: "inline-block",
                   backgroundColor: "#0f172a",
                   color: "#ffffff",
-                  padding: "10px 28px",
+                  padding: "12px 32px",
                   borderRadius: 6,
                   fontWeight: "bold",
                   fontSize: 14,

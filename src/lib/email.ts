@@ -167,6 +167,7 @@ function emailLayout(body: string): string {
 export async function getEmailTemplates(): Promise<{
   verification: VerificationEmailTemplate
   welcome: WelcomeEmailTemplate
+  isCustom: boolean
 }> {
   try {
     const setting = await prisma.platformSetting.findUnique({
@@ -177,6 +178,7 @@ export async function getEmailTemplates(): Promise<{
       return {
         verification: value.verification ?? DEFAULT_VERIFICATION_TEMPLATE,
         welcome: value.welcome ?? DEFAULT_WELCOME_TEMPLATE,
+        isCustom: true,
       }
     }
   } catch (err) {
@@ -187,6 +189,7 @@ export async function getEmailTemplates(): Promise<{
   return {
     verification: DEFAULT_VERIFICATION_TEMPLATE,
     welcome: DEFAULT_WELCOME_TEMPLATE,
+    isCustom: false,
   }
 }
 
