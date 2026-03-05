@@ -194,21 +194,6 @@ export default function InvestorPage() {
                 <br className="hidden sm:block" />
                 API基盤とアプリストアで65,000院のデジタル化を支援する。
               </p>
-              <div className="flex flex-wrap justify-center gap-4">
-                <Link
-                  href="#products"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-violet-600 text-white font-medium hover:opacity-90 transition-opacity"
-                >
-                  事業の詳細
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  href="#financials"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-white/10 text-gray-300 hover:bg-white/5 transition-colors"
-                >
-                  売上見込み
-                </Link>
-              </div>
             </div>
           </div>
         </section>
@@ -461,57 +446,6 @@ export default function InvestorPage() {
               </div>
             </div>
 
-            {/* ── Community Strategy (Concise) ── */}
-            <div className="max-w-4xl mx-auto">
-              <div className="rounded-2xl border border-amber-500/10 bg-gradient-to-r from-amber-500/[0.03] to-orange-500/[0.03] p-8 sm:p-10">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                    <Users2 className="w-5 h-5 text-amber-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-white">最重要KPI：コミュニティの規模と熱量</h3>
-                    <p className="text-xs text-gray-500">Academy卒業生を核に、日本最大の医療版AI開発者コミュニティを最速で構築する</p>
-                  </div>
-                </div>
-
-                <div className="grid sm:grid-cols-3 gap-4 mb-6">
-                  {[
-                    {
-                      step: "STEP 1",
-                      title: "コミュニティを作る",
-                      desc: "Academy卒業生＋開発コンテスト＋オンライングループで歯科×AI開発者を急速に集結",
-                      color: "border-amber-500/20 bg-amber-500/5",
-                    },
-                    {
-                      step: "STEP 2",
-                      title: "交渉力を持つ",
-                      desc: "「数千人の開発者がAPIを待っている」事実がレセコン各社への最強の交渉カードに",
-                      color: "border-orange-500/20 bg-orange-500/5",
-                    },
-                    {
-                      step: "STEP 3",
-                      title: "一気に展開する",
-                      desc: "API連携実現→開発者がアプリを量産→Hub＋Storeの売上が爆発的に伸びる",
-                      color: "border-red-500/20 bg-red-500/5",
-                    },
-                  ].map((item) => (
-                    <div key={item.step} className={`rounded-xl border ${item.color} p-4`}>
-                      <div className="text-[10px] font-mono font-bold text-gray-500 mb-2">{item.step}</div>
-                      <h4 className="text-sm font-bold text-white mb-1">{item.title}</h4>
-                      <p className="text-xs text-gray-400 leading-relaxed">{item.desc}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex justify-center items-center gap-2 text-gray-600 text-xs">
-                  <span>コミュニティ拡大</span>
-                  <ArrowRight className="w-3 h-3 text-amber-500" />
-                  <span>交渉力UP</span>
-                  <ArrowRight className="w-3 h-3 text-orange-500" />
-                  <span>3事業が加速</span>
-                </div>
-              </div>
-            </div>
           </div>
         </section>
 
