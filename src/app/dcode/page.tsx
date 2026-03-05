@@ -20,7 +20,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Investor Relations | D-Code Project",
+  title: "D-Code Project",
   description:
     "D-Code Project: 歯科医院のデジタル化を支援する3つの事業。研修・API基盤・アプリストアで65,000院の業務改善を実現",
   robots: { index: false, follow: false },
@@ -59,7 +59,7 @@ const products = [
       "歯科医院で使われている各社のレセコン（電子カルテ）のデータを、統一されたAPIで簡単に利用できる仕組みを提供。アプリ開発者はレセコンごとの違いを気にせず、患者情報や予約データを活用したアプリを作れるようになる。",
     pricing: [
       { plan: "基本料", price: "¥30,000/月", note: "2万円分のAPI利用料込み" },
-      { plan: "API利用料", price: "¥5/回", note: "レセコンAPIを1回呼び出すごとに発生" },
+      { plan: "API利用料", price: "¥3〜5/回", note: "レセコンAPIを1回呼び出すごとに発生" },
     ],
     highlights: [
       "各社レセコンとの連携を一本化",
@@ -124,8 +124,8 @@ const revenueData = {
 }
 
 const milestones = [
-  { month: "M1-3", title: "Academy最速立ち上げ", items: ["研修カリキュラム完成", "Academy受講者募集開始", "Store製品化コンサル案件獲得"] },
-  { month: "M4-6", title: "Academy本格稼働", items: ["Academy受講者100名達成", "Store初期アプリ販売開始", "認定講師2名育成"] },
+  { month: "M1-3", title: "Academy最速立ち上げ", items: ["研修カリキュラム完成", "Academy受講者募集開始", "認定講師2名育成"] },
+  { month: "M4-6", title: "Academy本格稼働", items: ["Academy受講者100名達成", "Store製品化コンサル案件獲得", "Store初期アプリ販売開始"] },
   { month: "M7-12", title: "Store拡大", items: ["Academy受講者200名・売上7,500万達成", "Storeアプリ販売5,000万達成", "レベニューシェア型案件の拡大"] },
   { month: "Y2", title: "Hub参入・全国展開", items: ["Academy・Storeの実績をもとにレセコン会社へAPI開放交渉", "D-Code Hub テスト運用開始", "講師5名・全国3都市で研修展開"] },
   { month: "Y3", title: "売上12億円", items: ["Hub本格稼働・レセコン連携拡大", "Store年間売上3.5億円", "医科への展開開始"] },
@@ -136,7 +136,7 @@ const milestones = [
 /* Component                                                           */
 /* ================================================================== */
 
-export default function InvestorPage() {
+export default function DCodePage() {
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-gray-100">
       {/* Background Effects */}
@@ -749,7 +749,7 @@ export default function InvestorPage() {
                   3年目末の年間売上 ¥12.0億 × 評価倍率 10〜20倍 =
                 </p>
                 <p className="text-2xl font-bold mt-2 bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
-                  想定企業価値 ¥120〜240億
+                  想定企業価値 120〜240億円
                 </p>
               </div>
             </div>
@@ -800,52 +800,6 @@ export default function InvestorPage() {
         </section>
 
         {/* ============================================================ */}
-        {/* Market Size Expansion                                        */}
-        {/* ============================================================ */}
-        <section className="py-20 sm:py-24 border-t border-white/5">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="text-center mb-12">
-              <h2 className="text-2xl sm:text-3xl font-bold mb-4">将来の市場規模</h2>
-              <p className="text-gray-400">歯科で確立した仕組みを医療・介護・薬局へ展開</p>
-            </div>
-            <div className="max-w-3xl mx-auto">
-              <div className="space-y-4">
-                {[
-                  { market: "歯科（1年目〜）", count: "65,000院", size: "245億円", width: 25, color: "from-blue-500 to-blue-400", active: true },
-                  { market: "医科（3年目〜）", count: "102,000院", size: "367億円", width: 38, color: "from-violet-500 to-violet-400", active: false },
-                  { market: "介護（4年目〜）", count: "40,000施設", size: "144億円", width: 15, color: "from-emerald-500 to-emerald-400", active: false },
-                  { market: "薬局（4年目〜）", count: "60,000店", size: "216億円", width: 22, color: "from-amber-500 to-amber-400", active: false },
-                ].map((m) => (
-                  <div key={m.market} className={`rounded-xl border p-5 ${m.active ? 'border-blue-500/20 bg-blue-500/5' : 'border-white/5 bg-white/[0.02]'}`}>
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <span className="font-medium text-sm">{m.market}</span>
-                        <span className="text-xs text-gray-500 ml-2">{m.count}</span>
-                      </div>
-                      <span className="text-sm font-semibold bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
-                        {m.size}
-                      </span>
-                    </div>
-                    <div className="h-2 rounded-full bg-white/5 overflow-hidden">
-                      <div
-                        className={`h-full rounded-full bg-gradient-to-r ${m.color} ${!m.active ? 'opacity-30' : ''}`}
-                        style={{ width: `${m.width}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="text-center mt-8 p-4 rounded-xl border border-white/5 bg-white/[0.02]">
-                <span className="text-sm text-gray-400">合計市場規模:</span>
-                <span className="text-2xl font-bold ml-3 bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
-                  ¥972億
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ============================================================ */}
         {/* CTA                                                          */}
         {/* ============================================================ */}
         <section className="py-20 sm:py-24 border-t border-white/5">
@@ -860,7 +814,7 @@ export default function InvestorPage() {
               <p className="text-gray-400 mb-8 leading-relaxed">
                 65,000院の歯科医院が変われば、日本の医療が変わる。
                 <br />
-                D-Code Projectは、その最初の一歩を踏み出しています。
+                D-Code Projectは、その変化を最加速します。
               </p>
               <div className="inline-flex flex-col items-center gap-4">
                 <div className="text-sm text-gray-500">
