@@ -571,22 +571,6 @@ export default function InvestorPage() {
                 <span className="text-white font-semibold">日本最大の医療AI開発者コミュニティを先に構築し、レセコン会社がAPIを公開するメリットを明確にする</span>
                 ことで、この構造を突破する。
               </p>
-              <div className="grid sm:grid-cols-2 gap-4 mb-6">
-                {[
-                  { label: "バイパス", desc: "レセコンデータに依存しない価値を先に作る（アンケート・研修起点）" },
-                  { label: "手入力ブリッジ", desc: "月次手入力 → CSV → API と段階的に移行" },
-                  { label: "デファクト化", desc: "ユーザー数拡大で「連携しないと選ばれない」圧力を形成" },
-                  { label: "ORCA攻略", desc: "唯一OSSのORCAから実績を作り、他ベンダーへの交渉材料に" },
-                ].map((s) => (
-                  <div key={s.label} className="flex gap-3">
-                    <ChevronRight className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
-                    <div>
-                      <span className="text-sm font-medium text-white">{s.label}</span>
-                      <p className="text-xs text-gray-400 mt-0.5">{s.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
 
               {/* The "only path" callout */}
               <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-5">
