@@ -4,29 +4,19 @@ import {
   GraduationCap,
   Code2,
   Store,
-  TrendingUp,
-  Users,
   Users2,
-  ShieldCheck,
   Crown,
-  MessageCircle,
-  Trophy,
-  Megaphone,
   Zap,
   ArrowRight,
   ChevronRight,
-  Stethoscope,
   Layers,
-  Globe,
-  BarChart3,
-  Rocket,
   CheckCircle2,
   Link2,
-  Briefcase,
   Lock,
   AlertTriangle,
   Database,
   Scale,
+  ShieldCheck,
 } from "lucide-react"
 
 export const metadata: Metadata = {
@@ -133,29 +123,6 @@ const revenueData = {
   },
 }
 
-const whyUs = [
-  {
-    icon: Stethoscope,
-    title: "歯科医師が創業",
-    desc: "創業者自身が歯科医師。臨床経験に基づく深い業界理解と、現場の課題を知り尽くしたサービス設計。「外から見た歯科DX」ではなく「中から変える歯科DX」。",
-  },
-  {
-    icon: Layers,
-    title: "3事業の好循環",
-    desc: "研修が開発者を生み、開発者がアプリを生み、アプリが医院を集め、医院が新たな研修受講者を生む。一方通行ではない、自然に成長する循環構造。",
-  },
-  {
-    icon: ShieldCheck,
-    title: "自社サービスの開発・運用実績",
-    desc: "患者体験改善プラットフォーム「MIERU Clinic」や、QRコード診断で新患を集める「QRくるくる診断DX」を自社で開発・運用中。歯科向けサービスの開発ノウハウを蓄積済み。",
-  },
-  {
-    icon: Globe,
-    title: "歯科から医療全体への展開",
-    desc: "歯科（65,000院）で仕組みを確立した後、医科（102,000院）→ 介護（40,000施設）→ 薬局（60,000店）へ展開可能。サービスの構造は業種を問わず応用できる。",
-  },
-]
-
 const milestones = [
   { month: "M1-3", title: "基盤づくり", items: ["研修カリキュラム完成", "D-Code Hub 試作版の開発", "レセコン会社1社と連携交渉"] },
   { month: "M4-6", title: "研修スタート", items: ["対面研修の開始", "受講者50名達成", "D-Code Hub テスト運用"] },
@@ -164,24 +131,6 @@ const milestones = [
   { month: "Y3", title: "売上10億円", items: ["講師10名・全国5都市", "Hub 1,500院導入", "医科への展開開始"] },
 ]
 
-const competitiveEdges = [
-  { label: "汎用AI研修", weakness: "歯科の課題を知らない", dcode: "歯科医師が教える" },
-  { label: "歯科コンサル", weakness: "高額・担当者次第", dcode: "ITで仕組み化・低コスト" },
-  { label: "レセコン会社", weakness: "自社開発のみで閉鎖的", dcode: "APIを開放し誰でも開発可能" },
-]
-
-const trackRecord = [
-  {
-    name: "MIERU Clinic",
-    description: "歯科医院向け患者体験改善プラットフォーム。匿名アンケートで患者満足度を「見える化」し、改善アクションの効果測定まで一気通貫で支援。",
-    url: "https://mieru-clinic.com",
-  },
-  {
-    name: "QRくるくる診断DX",
-    description: "歯科医院専用の集患ツール。QRコードを載せるだけで「お口年齢診断」等の診断コンテンツが新患を呼び込む。経路別QRコード発行で広告効果を可視化し、診断結果画面から予約へ直接誘導。14日間無料・導入5分。",
-    url: "https://qrqr-dental.com",
-  },
-]
 
 /* ================================================================== */
 /* Component                                                           */
@@ -529,7 +478,7 @@ export default function InvestorPage() {
                     {
                       step: "STEP 1",
                       title: "コミュニティを作る",
-                      desc: "Academy卒業生＋ハッカソン＋オンライングループで歯科×AI開発者を急速に集結",
+                      desc: "Academy卒業生＋開発コンテスト＋オンライングループで歯科×AI開発者を急速に集結",
                       color: "border-amber-500/20 bg-amber-500/5",
                     },
                     {
@@ -561,39 +510,6 @@ export default function InvestorPage() {
                   <span>3事業が加速</span>
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ============================================================ */}
-        {/* Market Problem                                               */}
-        {/* ============================================================ */}
-        <section className="py-20 sm:py-24">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="max-w-3xl mx-auto text-center mb-16">
-              <h2 className="text-2xl sm:text-3xl font-bold mb-4">
-                歯科業界は
-                <span className="text-red-400">20年前のまま</span>
-                止まっている
-              </h2>
-              <p className="text-gray-400 leading-relaxed">
-                レセコン（電子カルテ）以外のIT化はほぼゼロ。予約管理は紙と電話、患者情報の共有はカルテの手渡し、経営分析は院長の勘。65,000院がデジタル化を待っている。
-              </p>
-            </div>
-            <div className="grid sm:grid-cols-3 gap-6">
-              {[
-                { stat: "83%", desc: "紙ベースの予約管理を続けている歯科医院の割合" },
-                { stat: "92%", desc: "データに基づく経営判断ができていない院長の割合" },
-                { stat: "¥0", desc: "歯科に特化したデジタル化支援サービスへの投資額（国内）" },
-              ].map((item) => (
-                <div
-                  key={item.desc}
-                  className="rounded-xl border border-white/5 bg-white/[0.02] p-6 text-center"
-                >
-                  <div className="text-3xl font-bold text-red-400 mb-3">{item.stat}</div>
-                  <p className="text-sm text-gray-400">{item.desc}</p>
-                </div>
-              ))}
             </div>
           </div>
         </section>
@@ -797,113 +713,6 @@ export default function InvestorPage() {
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ============================================================ */}
-        {/* Track Record                                                 */}
-        {/* ============================================================ */}
-        <section className="py-20 sm:py-24 border-t border-white/5">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="text-center mb-12">
-              <h2 className="text-2xl sm:text-3xl font-bold mb-4">
-                <span className="bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
-                  自社開発
-                </span>
-                の実績
-              </h2>
-              <p className="text-gray-400">歯科業界向けサービスの開発・運用ノウハウを蓄積済み</p>
-            </div>
-            <div className="grid sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
-              {trackRecord.map((item) => (
-                <div
-                  key={item.name}
-                  className="rounded-xl border border-white/5 bg-white/[0.02] p-6 sm:p-8 hover:border-white/10 transition-colors"
-                >
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                      <Briefcase className="w-5 h-5 text-blue-400" />
-                    </div>
-                    <h3 className="text-lg font-semibold">{item.name}</h3>
-                  </div>
-                  <p className="text-sm text-gray-400 leading-relaxed">{item.description}</p>
-                  {item.url && (
-                    <a
-                      href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 mt-4 transition-colors"
-                    >
-                      サイトを見る <ArrowRight className="w-3 h-3" />
-                    </a>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ============================================================ */}
-        {/* Why Us                                                       */}
-        {/* ============================================================ */}
-        <section className="py-20 sm:py-24 border-t border-white/5">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="text-center mb-16">
-              <h2 className="text-2xl sm:text-3xl font-bold mb-4">
-                なぜ
-                <span className="bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
-                  私たちが
-                </span>
-                やるのか
-              </h2>
-              <p className="text-gray-400 max-w-2xl mx-auto">
-                歯科のデジタル化は「外からIT企業が持ち込むもの」ではない。業界の内側から、現場を知る者が変える必要がある。
-              </p>
-            </div>
-            <div className="grid sm:grid-cols-2 gap-6">
-              {whyUs.map((item) => (
-                <div
-                  key={item.title}
-                  className="rounded-xl border border-white/5 bg-white/[0.02] p-6 sm:p-8 hover:border-white/10 transition-colors"
-                >
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                      <item.icon className="w-5 h-5 text-blue-400" />
-                    </div>
-                    <h3 className="text-lg font-semibold">{item.title}</h3>
-                  </div>
-                  <p className="text-sm text-gray-400 leading-relaxed">{item.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ============================================================ */}
-        {/* Competitive Advantage                                        */}
-        {/* ============================================================ */}
-        <section className="py-20 sm:py-24 border-t border-white/5">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="text-center mb-12">
-              <h2 className="text-2xl sm:text-3xl font-bold mb-4">他社との違い</h2>
-              <p className="text-gray-400">既存のどのサービスとも異なる立ち位置</p>
-            </div>
-            <div className="max-w-3xl mx-auto">
-              <div className="rounded-xl border border-white/5 overflow-hidden">
-                <div className="grid grid-cols-3 gap-0 text-sm font-semibold bg-white/[0.03] border-b border-white/5">
-                  <div className="p-4 text-gray-400">既存サービス</div>
-                  <div className="p-4 text-gray-400 border-l border-white/5">課題</div>
-                  <div className="p-4 text-blue-400 border-l border-white/5">D-Code</div>
-                </div>
-                {competitiveEdges.map((row) => (
-                  <div key={row.label} className="grid grid-cols-3 gap-0 text-sm border-b border-white/5 last:border-0">
-                    <div className="p-4 text-gray-300 font-medium">{row.label}</div>
-                    <div className="p-4 text-gray-500 border-l border-white/5">{row.weakness}</div>
-                    <div className="p-4 text-gray-200 border-l border-white/5">{row.dcode}</div>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         </section>
