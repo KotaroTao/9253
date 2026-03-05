@@ -5,7 +5,6 @@ import {
   TrendingUp,
   ShieldCheck,
   Zap,
-  Tablet,
   BarChart3,
   Target,
   Users,
@@ -20,6 +19,13 @@ import {
   Globe,
   CircleAlert,
   ExternalLink,
+  Store,
+  MessageSquare,
+  Trash2,
+  MapPin,
+  FileText,
+  QrCode,
+  Package,
 } from "lucide-react"
 import Link from "next/link"
 import type { Metadata } from "next"
@@ -234,6 +240,78 @@ const competitors = [
   { name: "Gyro-n キキコミ", type: "口コミ獲得", compliance: true, analysis: false, staffTracking: false, price: "非公開" },
   { name: "MIERU Clinic", type: "患者体験改善", compliance: true, analysis: true, staffTracking: true, price: "¥1-4万/月" },
 ]
+
+const dcodeApps = [
+  {
+    icon: Eye,
+    name: "MIERU Clinic",
+    desc: "患者体験改善プラットフォーム",
+    detail: "患者満足度の可視化・改善サイクル・経営指標接続。旗艦プロダクト",
+    color: "bg-blue-500",
+  },
+  {
+    icon: Trash2,
+    name: "Google口コミ削除判定ツール",
+    desc: "削除可否をAI判定",
+    detail: "Googleポリシー違反の口コミを自動判定し、削除申請の可否と手順を案内",
+    color: "bg-red-500",
+  },
+  {
+    icon: MessageSquare,
+    name: "Google口コミ返信作成ツール",
+    desc: "返信文をAI生成",
+    detail: "口コミ内容に応じた適切な返信文を自動生成。トーン・文体のカスタマイズ対応",
+    color: "bg-amber-500",
+  },
+  {
+    icon: MapPin,
+    name: "NAP統一管理ツール",
+    desc: "MEO/ローカルSEO最適化",
+    detail: "Name・Address・Phoneの表記揺れを一括検出・修正。Googleビジネスプロフィール最適化",
+    color: "bg-emerald-500",
+  },
+  {
+    icon: FileText,
+    name: "歯科特化SEO記事作成ツール",
+    desc: "専門コンテンツ自動生成",
+    detail: "歯科領域に特化した高品質SEO記事をAI生成。E-E-A-T対応、医療広告ガイドライン準拠",
+    color: "bg-purple-500",
+  },
+  {
+    icon: QrCode,
+    name: "QRくるくる診断DX",
+    desc: "院内DXツール",
+    detail: "QRコードを活用した院内業務のデジタル化・効率化ソリューション",
+    color: "bg-teal-500",
+  },
+]
+
+const dcodePhases = [
+  {
+    phase: "Phase 1",
+    title: "自社アプリのみ",
+    desc: "既存6本を個別販売。バンドル割引も提供。実質「自社SaaSのショーケース」として信頼性を確立",
+    status: "current",
+  },
+  {
+    phase: "Phase 2",
+    title: "第三者アプリ開放",
+    desc: "開発者ポータル開設・審査基準公開。自社アプリの実績がストアの信頼性を担保。手数料30%",
+    status: "future",
+  },
+  {
+    phase: "Phase 3",
+    title: "OEM / API連携",
+    desc: "レセコン会社・歯科ディーラー等にストアごとOEM提供。プラットフォーム収益の多角化",
+    status: "future",
+  },
+]
+
+const dcodeRevenue = {
+  selfApps: "利益率90%+（自社開発・運用）",
+  thirdParty: "手数料30%（審査制・品質保証）",
+  oem: "OEMライセンス料（固定+従量）",
+}
 
 /* ------------------------------------------------------------------ */
 /* Page Component                                                     */
@@ -623,25 +701,132 @@ export default function StrategyPage() {
         </div>
       </section>
 
+      {/* ===== D-Code Store ===== */}
+      <section className="border-t py-14 lg:py-20">
+        <div className="container max-w-4xl">
+          <SectionTitle number="12" title="D-Code Store — プラットフォーム戦略" />
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+            自社開発の6本のSaaSアプリを核に、歯科医院向けアプリストアを展開。
+            将来的に第三者開発者のアプリも取り扱い、歯科DXのエコシステムを構築する。
+          </p>
+
+          {/* App Grid */}
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {dcodeApps.map((app, i) => (
+              <div key={i} className="card-hover rounded-2xl border bg-card p-5">
+                <div className="flex items-start gap-3">
+                  <div className={`shrink-0 rounded-xl p-2.5 ${app.color}/10`}>
+                    <app.icon className={`h-5 w-5 ${app.color.replace("bg-", "text-")}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-semibold leading-tight">{app.name}</h3>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{app.desc}</p>
+                  </div>
+                </div>
+                <p className="mt-3 text-xs leading-relaxed text-muted-foreground/80">{app.detail}</p>
+                {i === 0 && (
+                  <span className="mt-2 inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                    旗艦プロダクト
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Store Phases */}
+          <div className="mt-10">
+            <h3 className="mb-4 flex items-center gap-2 font-semibold">
+              <Store className="h-5 w-5 text-primary" />
+              D-Code Store ロードマップ
+            </h3>
+            <div className="space-y-3">
+              {dcodePhases.map((p, i) => (
+                <div
+                  key={i}
+                  className={`rounded-xl border p-4 ${
+                    p.status === "current"
+                      ? "border-primary/30 bg-primary/5"
+                      : "bg-card"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                      p.status === "current"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                    }`}>
+                      {i + 1}
+                    </span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold">{p.phase}: {p.title}</h4>
+                        {p.status === "current" && (
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                            現在
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-0.5 text-sm text-muted-foreground">{p.desc}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Revenue Model */}
+          <div className="mt-8 rounded-xl bg-muted/40 p-5">
+            <h3 className="mb-3 flex items-center gap-2 font-semibold">
+              <Package className="h-5 w-5 text-primary" />
+              収益モデル
+            </h3>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-lg border bg-card p-3">
+                <p className="text-xs font-medium text-primary">自社アプリ</p>
+                <p className="mt-1 text-sm font-semibold">{dcodeRevenue.selfApps}</p>
+              </div>
+              <div className="rounded-lg border bg-card p-3">
+                <p className="text-xs font-medium text-primary">第三者アプリ</p>
+                <p className="mt-1 text-sm font-semibold">{dcodeRevenue.thirdParty}</p>
+              </div>
+              <div className="rounded-lg border bg-card p-3">
+                <p className="text-xs font-medium text-primary">OEM提供</p>
+                <p className="mt-1 text-sm font-semibold">{dcodeRevenue.oem}</p>
+              </div>
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              <strong>戦略的優位性:</strong> 自社6本で棚が埋まった状態でスタート。第三者アプリ不在でもストアとして成立し、
+              自社アプリの品質基準がそのまま審査基準になる。「D-Code 公式」バッジで自社アプリの信頼性を差別化。
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* ===== Key Message ===== */}
       <section className="border-t">
         <div className="landing-gradient py-16 lg:py-24">
           <div className="container max-w-3xl text-center">
-            <Tablet className="mx-auto mb-6 h-12 w-12 text-primary/60" />
+            <Store className="mx-auto mb-6 h-12 w-12 text-primary/60" />
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
               口コミツールではない。
               <br />
-              <span className="text-gradient">患者体験改善プラットフォーム。</span>
+              <span className="text-gradient">歯科DXのエコシステムを創る。</span>
             </h2>
             <p className="mx-auto mt-6 max-w-xl text-muted-foreground">
-              飽和した口コミツール市場から離脱し、
-              競合ゼロの新カテゴリを定義する。
-              歯科医院の患者満足度を可視化し、
-              データに基づく改善サイクルで経営成果につなげる。
+              MIERU Clinicを旗艦に、自社開発6本のSaaSで
+              D-Code Storeを展開。歯科医院の患者体験改善から
+              集患・業務効率化まで、ワンストップで支援する
+              プラットフォームを構築する。
             </p>
-            <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-5 py-2 text-sm font-medium text-primary">
-              <BarChart3 className="h-4 w-4" />
-              mieru-clinic.com
+            <div className="mt-8 flex flex-wrap justify-center gap-3">
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-5 py-2 text-sm font-medium text-primary">
+                <BarChart3 className="h-4 w-4" />
+                mieru-clinic.com
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-5 py-2 text-sm font-medium text-primary">
+                <Store className="h-4 w-4" />
+                D-Code Store
+              </div>
             </div>
           </div>
         </div>
