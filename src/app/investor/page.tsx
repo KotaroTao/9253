@@ -36,13 +36,6 @@ export const metadata: Metadata = {
 /* Data                                                                */
 /* ================================================================== */
 
-const keyMetrics = [
-  { value: "65,000", label: "日本の歯科医院数", sub: "コンビニより多い" },
-  { value: "97%", label: "IT未活用率", sub: "レセコン以外ほぼ手作業" },
-  { value: "¥3.1兆", label: "歯科医療費市場", sub: "2024年度" },
-  { value: "0", label: "歯科特化の総合支援", sub: "競合不在" },
-]
-
 const products = [
   {
     id: "academy",
@@ -223,27 +216,35 @@ export default function InvestorPage() {
         {/* Hero                                                         */}
         {/* ============================================================ */}
         <section className="relative pt-20 pb-24 sm:pt-28 sm:pb-32 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-blue-600/5 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-b from-blue-600/8 via-violet-600/5 to-transparent" />
+          <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
           <div className="max-w-7xl mx-auto px-6 relative">
-            <div className="max-w-4xl">
+            <div className="max-w-5xl mx-auto text-center">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-blue-500/20 bg-blue-500/5 text-blue-400 text-sm mb-8">
                 <Rocket className="w-3.5 h-3.5" />
                 Pre-Seed / Seed Round
               </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] mb-6">
-                歯科業界に
-                <br />
-                <span className="bg-gradient-to-r from-blue-400 via-violet-400 to-purple-400 bg-clip-text text-transparent">
-                  デジタル革命
-                </span>
-                を。
-              </h1>
-              <p className="text-lg sm:text-xl text-gray-400 leading-relaxed max-w-2xl mb-10">
+
+              {/* Project name — large & prominent */}
+              <div className="mb-6">
+                <h1 className="text-6xl sm:text-7xl lg:text-8xl font-black tracking-tight leading-none">
+                  <span className="bg-gradient-to-r from-blue-400 via-violet-400 to-purple-400 bg-clip-text text-transparent">
+                    D-Code
+                  </span>
+                  {" "}
+                  <span className="text-white">Project</span>
+                </h1>
+              </div>
+
+              <p className="text-xl sm:text-2xl font-semibold text-gray-200 mb-4">
+                歯科業界にデジタル革命を。
+              </p>
+              <p className="text-base sm:text-lg text-gray-400 leading-relaxed max-w-2xl mx-auto mb-10">
                 AI研修で歯科医院スタッフを開発者に変え、
                 <br className="hidden sm:block" />
                 API基盤とアプリストアで65,000院のデジタル化を支援する。
               </p>
-              <div className="flex flex-wrap gap-4">
+              <div className="flex flex-wrap justify-center gap-4">
                 <Link
                   href="#products"
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-violet-600 text-white font-medium hover:opacity-90 transition-opacity"
@@ -258,25 +259,6 @@ export default function InvestorPage() {
                   売上見込み
                 </Link>
               </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ============================================================ */}
-        {/* Key Metrics                                                  */}
-        {/* ============================================================ */}
-        <section className="py-16 border-y border-white/5">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-              {keyMetrics.map((m) => (
-                <div key={m.label} className="text-center">
-                  <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent mb-2">
-                    {m.value}
-                  </div>
-                  <div className="text-sm text-gray-300 font-medium">{m.label}</div>
-                  <div className="text-xs text-gray-500 mt-1">{m.sub}</div>
-                </div>
-              ))}
             </div>
           </div>
         </section>
