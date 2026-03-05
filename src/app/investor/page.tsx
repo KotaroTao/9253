@@ -264,154 +264,301 @@ export default function InvestorPage() {
         </section>
 
         {/* ============================================================ */}
-        {/* Core Strategy — Most Important                               */}
+        {/* Three Pillars — D-Code Projectの3つの柱                      */}
         {/* ============================================================ */}
-        <section className="relative py-20 sm:py-24 overflow-hidden">
+        <section className="relative py-20 sm:py-28 overflow-hidden">
           {/* Glow background */}
-          <div className="absolute inset-0 bg-gradient-to-b from-amber-600/5 via-orange-600/5 to-transparent pointer-events-none" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-amber-500/5 rounded-full blur-[100px] pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-b from-amber-600/5 via-blue-600/5 to-transparent pointer-events-none" />
+          <div className="absolute top-1/3 left-1/4 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] bg-violet-500/5 rounded-full blur-[120px] pointer-events-none" />
 
           <div className="max-w-7xl mx-auto px-6 relative">
             {/* Label */}
             <div className="flex justify-center mb-8">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 border-amber-500/30 bg-amber-500/10 text-amber-400 text-sm font-semibold">
+              <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border-2 border-amber-500/30 bg-amber-500/10 text-amber-400 text-sm font-bold">
                 <Crown className="w-4 h-4" />
-                D-Code Projectの最重要戦略
+                D-Code Projectの3つの柱
               </div>
             </div>
 
-            <div className="max-w-4xl mx-auto text-center mb-12">
+            <div className="max-w-4xl mx-auto text-center mb-16">
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-[1.2] mb-6">
-                日本最大の
-                <br className="sm:hidden" />
-                <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-red-400 bg-clip-text text-transparent">
-                  医療版AI開発者コミュニティ
+                <span className="bg-gradient-to-r from-blue-400 via-violet-400 to-emerald-400 bg-clip-text text-transparent">
+                  育てる・つなぐ・届ける
                 </span>
                 <br />
-                を最速で作る。
+                の循環で歯科を変える。
               </h2>
               <p className="text-lg text-gray-400 leading-relaxed max-w-3xl mx-auto">
-                このコミュニティの規模と熱量こそが、レセコン会社各社に
-                <span className="text-amber-400 font-semibold">「APIを開放しなければ取り残される」</span>
-                と思わせる最大の交渉カードになる。
+                3つの柱が互いに補完し合い、
+                <span className="text-white font-semibold">単独では生まれない価値</span>
+                を生む。
+                <br className="hidden sm:block" />
+                この循環構造こそが、D-Code Projectの最大の競争優位性。
               </p>
             </div>
 
-            {/* Strategy Flow */}
-            <div className="max-w-4xl mx-auto mb-12">
-              <div className="grid sm:grid-cols-3 gap-4">
-                {[
-                  {
-                    step: "STEP 1",
-                    icon: Users2,
-                    title: "コミュニティを作る",
-                    desc: "Academy卒業生を核に、歯科×AIの開発者コミュニティを急速に拡大。日本中の「自分で作りたい」歯科医院スタッフが集まる場を作る。",
-                    color: "border-amber-500/30 bg-amber-500/10",
-                    iconColor: "text-amber-400",
-                  },
-                  {
-                    step: "STEP 2",
-                    icon: Megaphone,
-                    title: "交渉力を持つ",
-                    desc: "「数千人の開発者がAPIを待っている」という事実が、レセコン各社への最強の交渉材料に。APIを開放した会社から順に連携開始。",
-                    color: "border-orange-500/30 bg-orange-500/10",
-                    iconColor: "text-orange-400",
-                  },
-                  {
-                    step: "STEP 3",
-                    icon: Zap,
-                    title: "一気に展開する",
-                    desc: "API連携が実現すれば、コミュニティの開発者がアプリを量産。Hub + Store の売上が爆発的に伸び、事業全体が加速する。",
-                    color: "border-red-500/30 bg-red-500/10",
-                    iconColor: "text-red-400",
-                  },
-                ].map((item) => (
-                  <div key={item.step} className={`rounded-xl border ${item.color} p-6 relative`}>
-                    <div className="text-xs font-mono font-bold text-gray-500 mb-3">{item.step}</div>
-                    <div className={`w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center mb-4`}>
-                      <item.icon className={`w-5 h-5 ${item.iconColor}`} />
+            {/* ── Three Pillar Cards ── */}
+            <div className="grid lg:grid-cols-3 gap-6 mb-16">
+              {/* Pillar 1: Academy */}
+              <div className="group relative rounded-2xl border-2 border-blue-500/20 bg-gradient-to-b from-blue-500/10 to-blue-500/[0.02] p-8 hover:border-blue-500/40 transition-all duration-300">
+                <div className="absolute top-4 right-4 text-xs font-mono font-bold text-blue-400/50">PILLAR 1</div>
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform duration-300">
+                  <GraduationCap className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">D-Code Academy</h3>
+                <p className="text-sm font-semibold text-blue-400 mb-4">
+                  日本最大の医療版AI開発者コミュニティ
+                </p>
+                <p className="text-sm text-gray-400 leading-relaxed mb-6">
+                  AI（Claude Code）を使い、未経験の歯科スタッフが4日間で業務改善アプリを開発。卒業生が核となるコミュニティが、レセコン会社への交渉カードになる。
+                </p>
+                <div className="space-y-2">
+                  {[
+                    "歯科医師が教える唯一のAI研修",
+                    "助成金で最大75%補助",
+                    "卒業生コミュニティで継続成長",
+                  ].map((h) => (
+                    <div key={h} className="flex items-center gap-2 text-xs text-gray-300">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+                      {h}
                     </div>
-                    <h3 className="font-bold text-lg mb-2">{item.title}</h3>
-                    <p className="text-sm text-gray-400 leading-relaxed">{item.desc}</p>
+                  ))}
+                </div>
+                {/* Role tag */}
+                <div className="mt-6 pt-4 border-t border-blue-500/10">
+                  <div className="text-xs text-gray-500">
+                    <span className="text-blue-400 font-semibold">役割:</span> 開発者を育て、コミュニティの規模と熱量を作る
                   </div>
-                ))}
+                </div>
               </div>
 
-              {/* Arrow connectors (desktop) */}
-              <div className="hidden sm:flex justify-center items-center gap-2 mt-6 text-gray-600">
-                <span className="text-xs">コミュニティ拡大</span>
-                <ArrowRight className="w-4 h-4 text-amber-500" />
-                <span className="text-xs">交渉力UP</span>
-                <ArrowRight className="w-4 h-4 text-orange-500" />
-                <span className="text-xs">事業爆発</span>
+              {/* Pillar 2: Hub */}
+              <div className="group relative rounded-2xl border-2 border-violet-500/20 bg-gradient-to-b from-violet-500/10 to-violet-500/[0.02] p-8 hover:border-violet-500/40 transition-all duration-300">
+                <div className="absolute top-4 right-4 text-xs font-mono font-bold text-violet-400/50">PILLAR 2</div>
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-violet-500 to-purple-400 flex items-center justify-center mb-6 shadow-lg shadow-violet-500/20 group-hover:scale-110 transition-transform duration-300">
+                  <Link2 className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">D-Code Hub</h3>
+                <p className="text-sm font-semibold text-violet-400 mb-4">
+                  各社レセコンのAPIを簡単に使える共通基盤
+                </p>
+                <p className="text-sm text-gray-400 leading-relaxed mb-6">
+                  バラバラなレセコン各社のデータ仕様を統一API化。開発者はHub経由で1つのAPIを覚えるだけで、どのレセコンとも連携できる。
+                </p>
+                <div className="space-y-2">
+                  {[
+                    "各社レセコンを共通API化",
+                    "D-Codeコミュニティ限定アクセス",
+                    "月額課金で安定収益",
+                  ].map((h) => (
+                    <div key={h} className="flex items-center gap-2 text-xs text-gray-300">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-violet-400 flex-shrink-0" />
+                      {h}
+                    </div>
+                  ))}
+                </div>
+                {/* Role tag */}
+                <div className="mt-6 pt-4 border-t border-violet-500/10">
+                  <div className="text-xs text-gray-500">
+                    <span className="text-violet-400 font-semibold">役割:</span> データ連携を実現し、アプリ開発を可能にする
+                  </div>
+                </div>
+              </div>
+
+              {/* Pillar 3: Store */}
+              <div className="group relative rounded-2xl border-2 border-emerald-500/20 bg-gradient-to-b from-emerald-500/10 to-emerald-500/[0.02] p-8 hover:border-emerald-500/40 transition-all duration-300">
+                <div className="absolute top-4 right-4 text-xs font-mono font-bold text-emerald-400/50">PILLAR 3</div>
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-500 to-green-400 flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform duration-300">
+                  <Store className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">D-Code Store</h3>
+                <p className="text-sm font-semibold text-emerald-400 mb-4">
+                  歯科版Apple Store
+                </p>
+                <p className="text-sm text-gray-400 leading-relaxed mb-6">
+                  Academy卒業生やサードパーティ開発者が作ったアプリを、全国の歯科医院がワンクリックで導入。レビュー・課金・アップデートをプラットフォームが一括管理。
+                </p>
+                <div className="space-y-2">
+                  {[
+                    "ワンクリックで導入・課金",
+                    "開発者は販売に集中できる",
+                    "レビューで品質を担保",
+                  ].map((h) => (
+                    <div key={h} className="flex items-center gap-2 text-xs text-gray-300">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                      {h}
+                    </div>
+                  ))}
+                </div>
+                {/* Role tag */}
+                <div className="mt-6 pt-4 border-t border-emerald-500/10">
+                  <div className="text-xs text-gray-500">
+                    <span className="text-emerald-400 font-semibold">役割:</span> アプリを全国に届け、収益を生む
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* How to build the community */}
-            <div className="max-w-4xl mx-auto">
-              <h3 className="text-xl font-bold text-center mb-8">
-                コミュニティを
-                <span className="text-amber-400">最速で</span>
-                拡大するための施策
-              </h3>
-              <div className="grid sm:grid-cols-2 gap-4">
-                {[
-                  {
-                    icon: GraduationCap,
-                    title: "Academy卒業生を核にする",
-                    desc: "研修で成功体験を得た受講者が、最も熱量の高いコミュニティメンバーになる。卒業生専用グループで継続的につながり、互いに刺激し合う環境を作る。",
-                  },
-                  {
-                    icon: Trophy,
-                    title: "ハッカソン・開発コンテスト",
-                    desc: "「歯科業務改善アプリコンテスト」を定期開催。優秀作品はD-Code Storeで販売。開発意欲を刺激し、コミュニティの活性化と外部への認知拡大を同時に実現。",
-                  },
-                  {
-                    icon: MessageCircle,
-                    title: "オンラインコミュニティ運営",
-                    desc: "Slack/Discordで常時つながる場を提供。質問・相談・成果共有を通じて「一人じゃない」安心感を醸成。月次のオンライン勉強会でスキルアップも継続支援。",
-                  },
-                  {
-                    icon: Megaphone,
-                    title: "SNS・メディア発信",
-                    desc: "卒業生の成功事例をYouTube・SNSで発信。「プログラミング未経験の歯科衛生士がアプリを作った」というストーリーは強力な集客コンテンツになる。",
-                  },
-                ].map((item) => (
-                  <div key={item.title} className="flex gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-5">
-                    <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                      <item.icon className="w-5 h-5 text-amber-400" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-sm mb-1">{item.title}</h4>
-                      <p className="text-xs text-gray-400 leading-relaxed">{item.desc}</p>
+            {/* ── Complementary Relationship Diagram ── */}
+            <div className="max-w-4xl mx-auto mb-16">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-8 sm:p-12">
+                <h3 className="text-lg font-bold text-center text-white mb-2">3つの柱の補完関係</h3>
+                <p className="text-sm text-gray-500 text-center mb-10">それぞれが互いを強め合い、単独では作れない価値を生む循環構造</p>
+
+                {/* Triangle Diagram */}
+                <div className="relative max-w-lg mx-auto">
+                  {/* Top node: Academy */}
+                  <div className="flex justify-center mb-4">
+                    <div className="flex flex-col items-center">
+                      <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-blue-500/20 mb-3">
+                        <GraduationCap className="w-8 h-8 text-white" />
+                      </div>
+                      <span className="text-sm font-bold text-blue-400">Academy</span>
+                      <span className="text-xs text-gray-500">開発者を育てる</span>
                     </div>
                   </div>
-                ))}
-              </div>
 
-              {/* Key insight callout */}
-              <div className="mt-8 rounded-xl border-2 border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-orange-500/5 p-6 text-center">
-                <p className="text-sm text-gray-300 leading-relaxed">
-                  <span className="text-amber-400 font-bold">なぜコミュニティが先か？</span>
-                  <br className="sm:hidden" />
-                  <span className="hidden sm:inline"> — </span>
-                  レセコン会社は「需要がある」と確信しなければAPIを開放しない。
-                  <br />
-                  先にコミュニティを作り、
-                  <span className="text-white font-semibold">「これだけの開発者がAPIを求めている」</span>
-                  という既成事実を作ることで、交渉の主導権を握る。
-                </p>
-                <div className="mt-4 pt-4 border-t border-amber-500/10">
+                  {/* Connection arrows: Academy → Hub, Academy → Store */}
+                  <div className="flex justify-center gap-20 sm:gap-32 mb-2">
+                    <div className="flex flex-col items-center text-center">
+                      <div className="text-xs text-blue-400/70 mb-1">卒業生が</div>
+                      <div className="w-px h-6 bg-gradient-to-b from-blue-400/50 to-violet-400/50" />
+                      <div className="text-xs text-violet-400/70 mt-1">APIを活用</div>
+                    </div>
+                    <div className="flex flex-col items-center text-center">
+                      <div className="text-xs text-blue-400/70 mb-1">卒業生が</div>
+                      <div className="w-px h-6 bg-gradient-to-b from-blue-400/50 to-emerald-400/50" />
+                      <div className="text-xs text-emerald-400/70 mt-1">アプリを出品</div>
+                    </div>
+                  </div>
+
+                  {/* Bottom nodes: Hub & Store */}
+                  <div className="flex justify-between items-start px-4 sm:px-8">
+                    <div className="flex flex-col items-center">
+                      <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-violet-500 to-purple-400 flex items-center justify-center shadow-lg shadow-violet-500/20 mb-3">
+                        <Link2 className="w-8 h-8 text-white" />
+                      </div>
+                      <span className="text-sm font-bold text-violet-400">Hub</span>
+                      <span className="text-xs text-gray-500">データをつなぐ</span>
+                    </div>
+
+                    {/* Horizontal connection: Hub ↔ Store */}
+                    <div className="flex items-center gap-2 mt-6">
+                      <div className="h-px w-8 sm:w-16 bg-gradient-to-r from-violet-400/50 to-transparent" />
+                      <div className="flex flex-col items-center">
+                        <span className="text-[10px] text-gray-500 whitespace-nowrap">APIを提供</span>
+                        <ArrowRight className="w-4 h-4 text-gray-600 my-0.5" />
+                        <span className="text-[10px] text-gray-500 whitespace-nowrap">需要をフィードバック</span>
+                      </div>
+                      <div className="h-px w-8 sm:w-16 bg-gradient-to-r from-transparent to-emerald-400/50" />
+                    </div>
+
+                    <div className="flex flex-col items-center">
+                      <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-emerald-500 to-green-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 mb-3">
+                        <Store className="w-8 h-8 text-white" />
+                      </div>
+                      <span className="text-sm font-bold text-emerald-400">Store</span>
+                      <span className="text-xs text-gray-500">アプリを届ける</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Circular Flow Description */}
+                <div className="mt-10 grid sm:grid-cols-3 gap-4">
+                  {[
+                    {
+                      from: "Academy",
+                      to: "Hub / Store",
+                      desc: "研修で育った開発者がHub APIを使いアプリを開発、Storeで販売",
+                      arrow: "from-blue-400 to-violet-400",
+                    },
+                    {
+                      from: "Hub",
+                      to: "Store / Academy",
+                      desc: "APIでデータ連携を実現し高度なアプリを可能に。API需要がコミュニティ拡大を牽引",
+                      arrow: "from-violet-400 to-emerald-400",
+                    },
+                    {
+                      from: "Store",
+                      to: "Academy / Hub",
+                      desc: "アプリ販売の成功事例が新たな受講者を呼び、利用医院数がAPI連携の交渉力に",
+                      arrow: "from-emerald-400 to-blue-400",
+                    },
+                  ].map((flow) => (
+                    <div key={flow.from} className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className={`text-xs font-bold bg-gradient-to-r ${flow.arrow} bg-clip-text text-transparent`}>
+                          {flow.from} → {flow.to}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-400 leading-relaxed">{flow.desc}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Key insight */}
+                <div className="mt-8 rounded-xl border-2 border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-orange-500/5 p-5 text-center">
                   <p className="text-sm text-gray-300 leading-relaxed">
-                    <span className="text-amber-400 font-bold">レセコンAPIを使える唯一の方法</span>
+                    <span className="text-amber-400 font-bold">なぜ3つが揃う必要があるのか？</span>
                     <br className="sm:hidden" />
                     <span className="hidden sm:inline"> — </span>
-                    API連携が実現したとき、アクセスできるのはD-Code Hub経由のみ。
+                    Academyだけでは開発者が作ったアプリを活かせない。Hubだけでは使う人がいない。Storeだけではアプリが集まらない。
                     <br />
-                    医療AI開発を志すエンジニアにとって、
-                    <span className="text-white font-semibold">D-Codeへの参加がレセコンAPIを利用できる唯一の道</span>
-                    となる。この独占的アクセス権がコミュニティの求心力を生む。
+                    <span className="text-white font-semibold">3つが揃って初めて「育てる→つなぐ→届ける」の好循環が生まれる。</span>
                   </p>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Community Strategy (Concise) ── */}
+            <div className="max-w-4xl mx-auto">
+              <div className="rounded-2xl border border-amber-500/10 bg-gradient-to-r from-amber-500/[0.03] to-orange-500/[0.03] p-8 sm:p-10">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                    <Users2 className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">最重要KPI：コミュニティの規模と熱量</h3>
+                    <p className="text-xs text-gray-500">Academy卒業生を核に、日本最大の医療版AI開発者コミュニティを最速で構築する</p>
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-3 gap-4 mb-6">
+                  {[
+                    {
+                      step: "STEP 1",
+                      title: "コミュニティを作る",
+                      desc: "Academy卒業生＋ハッカソン＋オンライングループで歯科×AI開発者を急速に集結",
+                      color: "border-amber-500/20 bg-amber-500/5",
+                    },
+                    {
+                      step: "STEP 2",
+                      title: "交渉力を持つ",
+                      desc: "「数千人の開発者がAPIを待っている」事実がレセコン各社への最強の交渉カードに",
+                      color: "border-orange-500/20 bg-orange-500/5",
+                    },
+                    {
+                      step: "STEP 3",
+                      title: "一気に展開する",
+                      desc: "API連携実現→開発者がアプリを量産→Hub＋Storeの売上が爆発的に伸びる",
+                      color: "border-red-500/20 bg-red-500/5",
+                    },
+                  ].map((item) => (
+                    <div key={item.step} className={`rounded-xl border ${item.color} p-4`}>
+                      <div className="text-[10px] font-mono font-bold text-gray-500 mb-2">{item.step}</div>
+                      <h4 className="text-sm font-bold text-white mb-1">{item.title}</h4>
+                      <p className="text-xs text-gray-400 leading-relaxed">{item.desc}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex justify-center items-center gap-2 text-gray-600 text-xs">
+                  <span>コミュニティ拡大</span>
+                  <ArrowRight className="w-3 h-3 text-amber-500" />
+                  <span>交渉力UP</span>
+                  <ArrowRight className="w-3 h-3 text-orange-500" />
+                  <span>3事業が加速</span>
                 </div>
               </div>
             </div>
@@ -571,53 +718,6 @@ export default function InvestorPage() {
                     この構造こそが、プラットフォームの最大の競争優位性となる。
                   </span>
                 </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ============================================================ */}
-        {/* Solution Overview                                            */}
-        {/* ============================================================ */}
-        <section className="py-20 sm:py-24 border-t border-white/5">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="max-w-3xl mx-auto text-center mb-16">
-              <h2 className="text-2xl sm:text-3xl font-bold mb-4">
-                3つの事業が
-                <span className="bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
-                  互いに強め合う
-                </span>
-                仕組み
-              </h2>
-              <p className="text-gray-400">
-                研修が開発者を育て、開発者がアプリを作り、アプリが医院を集め、医院が新たな研修受講者を生む。自然に成長していく循環構造。
-              </p>
-            </div>
-
-            {/* Flywheel Diagram */}
-            <div className="max-w-2xl mx-auto mb-20">
-              <div className="relative rounded-2xl border border-white/5 bg-white/[0.02] p-8 sm:p-12">
-                <div className="grid grid-cols-3 gap-6 sm:gap-8">
-                  {[
-                    { icon: GraduationCap, label: "Academy", sub: "研修でスタッフを育成", color: "text-blue-400 border-blue-500/20 bg-blue-500/5" },
-                    { icon: Link2, label: "Hub", sub: "APIでデータ連携", color: "text-violet-400 border-violet-500/20 bg-violet-500/5" },
-                    { icon: Store, label: "Store", sub: "アプリを販売", color: "text-emerald-400 border-emerald-500/20 bg-emerald-500/5" },
-                  ].map((item) => (
-                    <div key={item.label} className={`flex flex-col items-center text-center p-4 sm:p-6 rounded-xl border ${item.color}`}>
-                      <item.icon className="w-8 h-8 mb-3" />
-                      <div className="font-semibold text-sm mb-1">{item.label}</div>
-                      <div className="text-xs text-gray-400">{item.sub}</div>
-                    </div>
-                  ))}
-                </div>
-                {/* Connecting arrows */}
-                <div className="flex justify-center mt-6">
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <ArrowRight className="w-4 h-4 text-blue-400" />
-                    <span>研修 → 開発者 → アプリ → 医院 → 研修...</span>
-                    <ArrowRight className="w-4 h-4 text-emerald-400" />
-                  </div>
-                </div>
               </div>
             </div>
           </div>
