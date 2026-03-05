@@ -90,46 +90,45 @@ const products = [
 
 const revenueData = {
   year1: {
-    total: "1.0",
-    profit: "0.5",
+    total: "1.4",
+    profit: "0.7",
     margin: "50%",
     items: [
-      { name: "研修事業（Academy）", amount: 6000, pct: 60 },
-      { name: "API基盤（Hub）", amount: 1000, pct: 10 },
-      { name: "アプリストア（Store）", amount: 500, pct: 5 },
-      { name: "コンサル・その他", amount: 2500, pct: 25 },
+      { name: "研修事業（Academy）", amount: 7500, pct: 54 },
+      { name: "製品化コンサル（Store）", amount: 1500, pct: 11 },
+      { name: "アプリ販売（Store）", amount: 5000, pct: 35 },
     ],
   },
   year2: {
-    total: "3.5",
-    profit: "1.5",
-    margin: "43%",
+    total: "4.5",
+    profit: "2.0",
+    margin: "44%",
     items: [
-      { name: "研修事業（Academy）", amount: 14000, pct: 40 },
-      { name: "API基盤（Hub）", amount: 8400, pct: 24 },
-      { name: "アプリストア（Store）", amount: 7000, pct: 20 },
-      { name: "コンサル・その他", amount: 5600, pct: 16 },
+      { name: "研修事業（Academy）", amount: 15000, pct: 33 },
+      { name: "アプリ販売・レベシェア（Store）", amount: 15000, pct: 33 },
+      { name: "API基盤（Hub）", amount: 10000, pct: 22 },
+      { name: "コンサル・その他", amount: 5000, pct: 12 },
     ],
   },
   year3: {
-    total: "10.0",
-    profit: "7.0",
-    margin: "70%",
+    total: "12.0",
+    profit: "8.0",
+    margin: "67%",
     items: [
-      { name: "研修事業（Academy）", amount: 25000, pct: 25 },
-      { name: "API基盤（Hub）", amount: 35000, pct: 35 },
-      { name: "アプリストア（Store）", amount: 20000, pct: 20 },
-      { name: "コンサル・医科展開", amount: 20000, pct: 20 },
+      { name: "研修事業（Academy）", amount: 25000, pct: 21 },
+      { name: "アプリ販売・レベシェア（Store）", amount: 35000, pct: 29 },
+      { name: "API基盤（Hub）", amount: 40000, pct: 33 },
+      { name: "コンサル・医科展開", amount: 20000, pct: 17 },
     ],
   },
 }
 
 const milestones = [
-  { month: "M1-3", title: "基盤づくり", items: ["研修カリキュラム完成", "D-Code Hub 試作版の開発", "レセコン会社1社と連携交渉"] },
-  { month: "M4-6", title: "研修スタート", items: ["対面研修の開始", "受講者50名達成", "D-Code Hub テスト運用"] },
-  { month: "M7-12", title: "事業拡大", items: ["D-Code Hub 50院導入", "D-Code Store オープン", "認定講師3名育成"] },
-  { month: "Y2", title: "全国展開", items: ["講師5名・全国3都市で研修", "Hub 400院導入", "レセコン会社との正式提携"] },
-  { month: "Y3", title: "売上10億円", items: ["講師10名・全国5都市", "Hub 1,500院導入", "医科への展開開始"] },
+  { month: "M1-3", title: "Academy最速立ち上げ", items: ["研修カリキュラム完成", "Academy受講者募集開始", "Store製品化コンサル案件獲得"] },
+  { month: "M4-6", title: "Academy本格稼働", items: ["Academy受講者100名達成", "Store初期アプリ販売開始", "認定講師2名育成"] },
+  { month: "M7-12", title: "Store拡大", items: ["Academy受講者200名・売上7,500万達成", "Storeアプリ販売5,000万達成", "レベニューシェア型案件の拡大"] },
+  { month: "Y2", title: "Hub参入・全国展開", items: ["Academy・Storeの実績をもとにレセコン会社へAPI開放交渉", "D-Code Hub テスト運用開始", "講師5名・全国3都市で研修展開"] },
+  { month: "Y3", title: "売上12億円", items: ["Hub本格稼働・レセコン連携拡大", "Store年間売上3.5億円", "医科への展開開始"] },
 ]
 
 
@@ -523,7 +522,7 @@ export default function InvestorPage() {
                 },
                 {
                   icon: Scale,
-                  title: "市場がAPIを報酬しない",
+                  title: "市場がAPIを求めていなかった",
                   desc: "歯科医院にAPI有無で選ぶリテラシーがなく、ディーラー営業が主流。APIを出しても売上が増えない。",
                   color: "text-violet-400",
                 },
@@ -564,29 +563,13 @@ export default function InvestorPage() {
             <div className="max-w-3xl mx-auto rounded-xl border border-amber-500/20 bg-amber-500/5 p-8">
               <h3 className="text-lg font-bold text-amber-400 mb-4 flex items-center gap-2">
                 <Zap className="w-5 h-5" />
-                D-Code Projectの戦略：先に需要を作る
+                D-Code Projectの戦略：Academy → Store → Hub
               </h3>
               <p className="text-gray-300 text-sm leading-relaxed mb-4">
                 レセコン会社にとってAPI開放は「コストは確実、リターンは不確実」。彼らが動くのは、連携しないことが失注理由になる市場環境が整ったとき。
-                <span className="text-white font-semibold">日本最大の医療AI開発者コミュニティを先に構築し、レセコン会社がAPIを公開するメリットを明確にする</span>
+                <span className="text-white font-semibold">まずAcademyで歯科AI人材を育成し、Storeでアプリの実績を積み上げる。この2つの実績をもとにレセコン会社へAPI開放を交渉する</span>
                 ことで、この構造を突破する。
               </p>
-              <div className="grid sm:grid-cols-2 gap-4 mb-6">
-                {[
-                  { label: "バイパス", desc: "レセコンデータに依存しない価値を先に作る（アンケート・研修起点）" },
-                  { label: "手入力ブリッジ", desc: "月次手入力 → CSV → API と段階的に移行" },
-                  { label: "デファクト化", desc: "ユーザー数拡大で「連携しないと選ばれない」圧力を形成" },
-                  { label: "ORCA攻略", desc: "唯一OSSのORCAから実績を作り、他ベンダーへの交渉材料に" },
-                ].map((s) => (
-                  <div key={s.label} className="flex gap-3">
-                    <ChevronRight className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
-                    <div>
-                      <span className="text-sm font-medium text-white">{s.label}</span>
-                      <p className="text-xs text-gray-400 mt-0.5">{s.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
 
               {/* The "only path" callout */}
               <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-5">
@@ -737,12 +720,12 @@ export default function InvestorPage() {
             {/* Monthly Revenue Growth */}
             <div className="rounded-xl border border-white/5 bg-white/[0.02] p-6 sm:p-8 max-w-3xl mx-auto">
               <h3 className="text-lg font-semibold mb-2">月額売上の成長イメージ</h3>
-              <p className="text-sm text-gray-400 mb-6">Hub・Storeの月額収益が3年目で事業の柱に成長</p>
+              <p className="text-sm text-gray-400 mb-6">Academy起点でStoreを拡大し、3年目にHub収益が本格化</p>
               <div className="space-y-4">
                 {[
-                  { label: "1年目末", monthly: "235万円", yearly: "0.28億円", width: 3 },
-                  { label: "2年目末", monthly: "2,770万円", yearly: "3.32億円", width: 37 },
-                  { label: "3年目末", monthly: "7,520万円", yearly: "9.02億円", width: 100 },
+                  { label: "1年目末", monthly: "1,170万円", yearly: "1.4億円", width: 12 },
+                  { label: "2年目末", monthly: "3,750万円", yearly: "4.5億円", width: 38 },
+                  { label: "3年目末", monthly: "10,000万円", yearly: "12.0億円", width: 100 },
                 ].map((row) => (
                   <div key={row.label}>
                     <div className="flex justify-between text-sm mb-1.5">
@@ -763,10 +746,10 @@ export default function InvestorPage() {
               </div>
               <div className="mt-6 pt-6 border-t border-white/5 text-center">
                 <p className="text-sm text-gray-400">
-                  3年目末の年間売上 ¥9.02億 × 評価倍率 10〜20倍 =
+                  3年目末の年間売上 ¥12.0億 × 評価倍率 10〜20倍 =
                 </p>
                 <p className="text-2xl font-bold mt-2 bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">
-                  想定企業価値 ¥90〜180億
+                  想定企業価値 ¥120〜240億
                 </p>
               </div>
             </div>
