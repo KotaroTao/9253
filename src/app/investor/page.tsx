@@ -23,6 +23,10 @@ import {
   CheckCircle2,
   Link2,
   Briefcase,
+  Lock,
+  AlertTriangle,
+  Database,
+  Scale,
 } from "lucide-react"
 
 export const metadata: Metadata = {
@@ -435,6 +439,101 @@ export default function InvestorPage() {
                   <p className="text-sm text-gray-400">{item.desc}</p>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ============================================================ */}
+        {/* Why レセコン Won't Open APIs                                 */}
+        {/* ============================================================ */}
+        <section className="py-20 sm:py-24 border-t border-white/5">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="max-w-3xl mx-auto text-center mb-16">
+              <h2 className="text-2xl sm:text-3xl font-bold mb-4">
+                なぜレセコン会社は
+                <span className="text-amber-400">APIを開放しない</span>
+                のか
+              </h2>
+              <p className="text-gray-400 leading-relaxed">
+                歯科のデジタル化が進まない最大のボトルネックは、レセコン（電子カルテ）ベンダーがAPIを出さないこと。これは怠慢ではなく、合理的な経営判断の結果である。
+              </p>
+            </div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+              {[
+                {
+                  icon: Lock,
+                  title: "ロックイン戦略",
+                  desc: "データ移行コストが極めて高く、API開放は乗り換え障壁を下げてしまう。「うちでしか使えない」状態が最大の防御壁。",
+                  color: "text-red-400",
+                },
+                {
+                  icon: Layers,
+                  title: "周辺ビジネスの侵食",
+                  desc: "予約管理・会計連携など周辺機能を自社で囲い込み追加課金。API開放でサードパーティに代替されるリスク。",
+                  color: "text-orange-400",
+                },
+                {
+                  icon: Database,
+                  title: "20〜30年前の技術的負債",
+                  desc: "Windows専用・独自DBのモノリシック設計。そもそもAPI化できる内部構造になっていない。",
+                  color: "text-yellow-400",
+                },
+                {
+                  icon: ShieldCheck,
+                  title: "責任・セキュリティ回避",
+                  desc: "医療データの外部連携は個人情報保護法・3省2ガイドラインへの準拠コスト増。障害時の責任問題も曖昧に。",
+                  color: "text-blue-400",
+                },
+                {
+                  icon: Scale,
+                  title: "市場がAPIを報酬しない",
+                  desc: "歯科医院にAPI有無で選ぶリテラシーがなく、ディーラー営業が主流。APIを出しても売上が増えない。",
+                  color: "text-violet-400",
+                },
+                {
+                  icon: AlertTriangle,
+                  title: "競合への情報流出",
+                  desc: "API仕様 ≒ 内部データ構造の公開。寡占市場で数社が互いを警戒し、情報を出したくない。",
+                  color: "text-pink-400",
+                },
+              ].map((item) => (
+                <div
+                  key={item.title}
+                  className="rounded-xl border border-white/5 bg-white/[0.02] p-6"
+                >
+                  <item.icon className={`w-6 h-6 ${item.color} mb-4`} />
+                  <h3 className="text-base font-semibold text-white mb-2">{item.title}</h3>
+                  <p className="text-sm text-gray-400 leading-relaxed">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* D-Code's approach callout */}
+            <div className="max-w-3xl mx-auto rounded-xl border border-amber-500/20 bg-amber-500/5 p-8">
+              <h3 className="text-lg font-bold text-amber-400 mb-4 flex items-center gap-2">
+                <Zap className="w-5 h-5" />
+                D-Code Projectの戦略
+              </h3>
+              <p className="text-gray-300 text-sm leading-relaxed mb-4">
+                レセコン会社にとってAPI開放は「コストは確実、リターンは不確実」。彼らが動くのは、連携しないことが失注理由になる市場環境が整ったとき。
+              </p>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {[
+                  { label: "バイパス", desc: "レセコンデータに依存しない価値を先に作る（アンケート・研修起点）" },
+                  { label: "手入力ブリッジ", desc: "月次手入力 → CSV → API と段階的に移行" },
+                  { label: "デファクト化", desc: "ユーザー数拡大で「連携しないと選ばれない」圧力を形成" },
+                  { label: "ORCA攻略", desc: "唯一OSSのORCAから実績を作り、他ベンダーへの交渉材料に" },
+                ].map((s) => (
+                  <div key={s.label} className="flex gap-3">
+                    <ChevronRight className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
+                    <div>
+                      <span className="text-sm font-medium text-white">{s.label}</span>
+                      <p className="text-xs text-gray-400 mt-0.5">{s.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>
