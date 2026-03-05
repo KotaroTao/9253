@@ -94,7 +94,14 @@
 ### 検証コマンド（変更後は必ず実行）
 ```bash
 npm run validate     # typecheck + lint 一括実行（推奨）
+npm test             # ユニットテスト実行（vitest run）
 npm run build        # 本番ビルド確認
+```
+
+### コードフォーマット
+```bash
+npm run format       # Prettierでコードフォーマット
+npm run format:check # フォーマット違反チェック（CI用）
 ```
 
 ### DB操作

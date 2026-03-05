@@ -46,7 +46,7 @@ function emit(entry: LogEntry) {
     } else if (entry.severity === "WARNING") {
       console.warn(`${prefix} ${entry.message}${extraStr}`)
     } else {
-      console.log(`${prefix} ${entry.message}${extraStr}`)
+      console.info(`${prefix} ${entry.message}${extraStr}`)
     }
   }
 }
