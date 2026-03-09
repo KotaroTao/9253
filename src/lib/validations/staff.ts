@@ -26,6 +26,9 @@ export const updateStaffSchema = z.object({
   email: z.string().email().optional(),
   password: z.string().min(6).optional(),
   userRole: z.enum(["staff", "clinic_admin"]).optional(),
+  // 既存ログインの管理
+  removeLogin: z.boolean().optional(),
+  newPassword: z.string().min(6).optional(),
 }).refine(
   (data) => {
     if (data.email && !data.password) return false

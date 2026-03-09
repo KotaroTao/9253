@@ -30,7 +30,11 @@ export function StaffFormDialog({
   const [password, setPassword] = useState("")
   const [userRole, setUserRole] = useState<"staff" | "clinic_admin">("staff")
   const [error, setError] = useState("")
+  const [successMsg, setSuccessMsg] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  // パスワードリセット
+  const [showResetPassword, setShowResetPassword] = useState(false)
+  const [newPassword, setNewPassword] = useState("")
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -68,9 +72,67 @@ export function StaffFormDialog({
     }
   }
 
+  async function handleResetPassword() {
+    if (!staff || !newPassword) return
+    setError("")
+    setSuccessMsg("")
+    setIsLoading(true)
+
+    try {
+      const res = await fetch(`/api/staff/${staff.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword }),
+      })
+
+      if (!res.ok) {
+        const body = await res.json()
+        setError(body.error || messages.common.error)
+        return
+      }
+
+      setSuccessMsg(messages.staff.passwordResetSuccess)
+      setNewPassword("")
+      setShowResetPassword(false)
+    } catch {
+      setError(messages.common.error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  async function handleRemoveLogin() {
+    if (!staff) return
+    if (!confirm(messages.staff.removeLoginConfirm)) return
+    setError("")
+    setSuccessMsg("")
+    setIsLoading(true)
+
+    try {
+      const res = await fetch(`/api/staff/${staff.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ removeLogin: true }),
+      })
+
+      if (!res.ok) {
+        const body = await res.json()
+        setError(body.error || messages.common.error)
+        return
+      }
+
+      setSuccessMsg(messages.staff.removeLoginSuccess)
+      onSuccess()
+    } catch {
+      setError(messages.common.error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-lg border bg-card p-6 shadow-lg">
+      <div className="w-full max-w-md rounded-lg border bg-card p-6 shadow-lg max-h-[90vh] overflow-y-auto">
         <h2 className="mb-4 text-lg font-semibold">
           {isEdit ? messages.staff.editStaff : messages.staff.addStaff}
         </h2>
@@ -102,7 +164,7 @@ export function StaffFormDialog({
             </select>
           </div>
 
-          {/* ログイン設定（未設定の場合のみ表示） */}
+          {/* ログイン設定（未設定の場合のみ：新規追加UI） */}
           {!hasExistingLogin && (
             <div className="space-y-3 rounded-md border p-3">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -164,9 +226,83 @@ export function StaffFormDialog({
             </div>
           )}
 
+          {/* 既存ログイン管理（設定済みの場合） */}
+          {hasExistingLogin && (
+            <div className="space-y-3 rounded-md border p-3">
+              <p className="text-sm font-medium">{messages.staff.loginSettings}</p>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">{messages.staff.loginCurrentEmail}</p>
+                <p className="text-sm">{staff.userEmail}</p>
+              </div>
+
+              {/* パスワードリセット */}
+              {!showResetPassword ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowResetPassword(true)}
+                  disabled={isLoading}
+                >
+                  {messages.staff.resetPassword}
+                </Button>
+              ) : (
+                <div className="space-y-2 rounded border bg-muted/30 p-2">
+                  <p className="text-xs text-muted-foreground">{messages.staff.resetPasswordDesc}</p>
+                  <Input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder={messages.staff.passwordMinLength}
+                    minLength={6}
+                    disabled={isLoading}
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleResetPassword}
+                      disabled={isLoading || newPassword.length < 6}
+                    >
+                      {messages.staff.resetPassword}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { setShowResetPassword(false); setNewPassword("") }}
+                      disabled={isLoading}
+                    >
+                      {messages.common.cancel}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* ログイン削除 */}
+              <div className="pt-1 border-t">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={handleRemoveLogin}
+                  disabled={isLoading}
+                >
+                  {messages.staff.removeLogin}
+                </Button>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
               {error}
+            </div>
+          )}
+          {successMsg && (
+            <div className="rounded-md bg-green-50 p-3 text-sm text-green-700">
+              {successMsg}
             </div>
           )}
           <div className="flex justify-end gap-2">

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { updateStaffSchema } from "@/lib/validations/staff"
-import { requireAuth, requireRole, isAuthError } from "@/lib/auth-helpers"
+import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
 import bcrypt from "bcryptjs"
@@ -10,7 +10,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const authResult = await requireAuth()
+  const authResult = await requireRole("clinic_admin", "system_admin")
   if (isAuthError(authResult)) return authResult
 
   try {
@@ -38,7 +38,35 @@ export async function PATCH(
       return errorResponse(messages.errors.invalidInput, 400)
     }
 
-    const { email, password, userRole, ...staffData } = parsed.data
+    const { email, password, userRole, removeLogin, newPassword, ...staffData } = parsed.data
+
+    // ログイン削除がリクエストされた場合
+    if (removeLogin && existing.user) {
+      const result = await prisma.$transaction(async (tx) => {
+        await tx.user.delete({ where: { id: existing.user!.id } })
+        return tx.staff.update({
+          where: { id: params.id },
+          data: staffData,
+        })
+      })
+      return successResponse(result)
+    }
+
+    // パスワードリセットがリクエストされた場合
+    if (newPassword && existing.user) {
+      const hashedPassword = await bcrypt.hash(newPassword, 10)
+      const result = await prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: existing.user!.id },
+          data: { password: hashedPassword },
+        })
+        return tx.staff.update({
+          where: { id: params.id },
+          data: staffData,
+        })
+      })
+      return successResponse(result)
+    }
 
     // ログイン追加がリクエストされた場合
     if (email && password) {

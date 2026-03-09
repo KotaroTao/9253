@@ -23,9 +23,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const user = await prisma.user.findUnique({
           where: { email },
+          include: { staff: { select: { isActive: true } } },
         })
 
         if (!user || !user.isActive) {
+          return null
+        }
+
+        // スタッフに紐づくユーザーの場合、スタッフの有効状態もチェック
+        if (user.staff && !user.staff.isActive) {
           return null
         }
 
