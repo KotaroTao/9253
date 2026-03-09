@@ -230,9 +230,18 @@ export function StaffFormDialog({
           {hasExistingLogin && (
             <div className="space-y-3 rounded-md border p-3">
               <p className="text-sm font-medium">{messages.staff.loginSettings}</p>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">{messages.staff.loginCurrentEmail}</p>
-                <p className="text-sm">{staff.userEmail}</p>
+              <div className="flex items-center gap-3">
+                <div className="space-y-1 flex-1">
+                  <p className="text-xs text-muted-foreground">{messages.staff.loginCurrentEmail}</p>
+                  <p className="text-sm">{staff.userEmail}</p>
+                </div>
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                  staff.userRole === "clinic_admin"
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-blue-100 text-blue-700"
+                }`}>
+                  {staff.userRole === "clinic_admin" ? messages.staff.userRoleAdmin : messages.staff.userRoleStaff}
+                </span>
               </div>
 
               {/* パスワードリセット */}

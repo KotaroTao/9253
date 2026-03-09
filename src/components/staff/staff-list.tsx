@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
 import { STAFF_ROLE_LABELS } from "@/lib/constants"
 import { StaffFormDialog } from "@/components/staff/staff-form-dialog"
-import { Plus, Pencil, Trash2, KeyRound } from "lucide-react"
+import { Plus, Pencil, Trash2, KeyRound, Crown } from "lucide-react"
 import type { StaffWithStats } from "@/types"
 
 interface StaffListProps {
@@ -82,10 +82,17 @@ export function StaffList({ staffList, clinicId }: StaffListProps) {
 
               <div className="mt-2 flex items-center gap-2">
                 {staff.hasLogin ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700">
-                    <KeyRound className="h-2.5 w-2.5" />
-                    {messages.staff.loginEnabled}
-                  </span>
+                  staff.userRole === "clinic_admin" ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                      <Crown className="h-2.5 w-2.5" />
+                      {messages.staff.loginEnabledOwner}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700">
+                      <KeyRound className="h-2.5 w-2.5" />
+                      {messages.staff.loginEnabledStaff}
+                    </span>
+                  )
                 ) : (
                   <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">
                     {messages.staff.loginDisabled}
