@@ -17,7 +17,6 @@
       "Bash(npm run db:push)",
       "Bash(npm run db:seed)",
       "Bash(npm run db:migrate*)",
-      "Bash(npm run db:studio)",
       "Bash(git status*)",
       "Bash(git log*)",
       "Bash(git diff*)",
@@ -29,9 +28,6 @@
       "Bash(git pull*)",
       "Bash(git checkout*)",
       "Bash(git stash*)",
-      "Bash(git merge*)",
-      "Bash(git rebase*)",
-      "Bash(git remote*)",
       "Bash(git show*)",
       "Bash(git rev-parse*)"
     ]
