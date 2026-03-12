@@ -184,12 +184,13 @@ function truncateRuleSummary(sections: Array<{ title: string; content: string }>
 export async function generateLLMAdvisory(
   input: LLMAdvisoryInput,
   clinicId?: string,
+  options?: { skipRateLimit?: boolean },
 ): Promise<LLMAdvisoryResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return { output: null, error: null } // キー未設定はエラーではない
 
   // Per-clinic rate limit check
-  if (clinicId) {
+  if (clinicId && !options?.skipRateLimit) {
     const lastCall = lastCallByClinic.get(clinicId)
     if (lastCall && Date.now() - lastCall < RATE_LIMIT_MS) {
       return { output: null, error: "レート制限: 次の分析は1時間後に実行できます" }

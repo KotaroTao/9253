@@ -2095,6 +2095,7 @@ async function runLLMAnalysis(
   data: AnalysisData,
   ruleBasedSections: AdvisorySection[],
   clinicId: string,
+  options?: { skipRateLimit?: boolean },
 ): Promise<AdvisorySection[]> {
   try {
     // 質問別スコアの構造化
@@ -2197,7 +2198,7 @@ async function runLLMAnalysis(
       positiveComments,
     }
 
-    const result: LLMAdvisoryResult = await generateLLMAdvisory(input, clinicId)
+    const result: LLMAdvisoryResult = await generateLLMAdvisory(input, clinicId, options)
     if (result.output) {
       return llmOutputToSections(result.output)
     }
@@ -2224,6 +2225,13 @@ export async function generateAdvisoryReport(
   clinicId: string,
   triggerType: "threshold" | "scheduled" | "manual"
 ): Promise<AdvisoryReportData> {
+  // デモクリニックはLLMレート制限をスキップ
+  const clinic = await prisma.clinic.findUnique({
+    where: { id: clinicId },
+    select: { slug: true },
+  })
+  const isDemo = clinic?.slug === "demo-dental"
+
   const data = await collectAnalysisData(clinicId)
 
   // 各分析エンジンを実行（nullは除外）
@@ -2251,7 +2259,9 @@ export async function generateAdvisoryReport(
   analysisResults.push(buildRecommendations(data, analysisResults))
 
   // ─── LLM 分析（APIキーがあれば実行） ───
-  const llmSections = await runLLMAnalysis(data, analysisResults, clinicId)
+  const llmSections = await runLLMAnalysis(data, analysisResults, clinicId, {
+    skipRateLimit: isDemo,
+  })
   const hasLLMHighlights = llmSections.some((s) =>
     s.type === "highlight_discovery" || s.type === "highlight_strength" || s.type === "clinic_story"
   )
