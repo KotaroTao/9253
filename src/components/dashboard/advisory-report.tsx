@@ -767,7 +767,8 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
         }
       } else {
         const data = await res.json()
-        alert(data.error || messages.advisory.generateFailed)
+        const detail = data.details?.detail ? `\n(${data.details.detail})` : ""
+        alert((data.error || messages.advisory.generateFailed) + detail)
       }
     } catch {
       alert(messages.advisory.generateFailed)
