@@ -160,7 +160,7 @@ const SECTION_CONFIG = {
   },
   segment_insights: {
     icon: UserCircle,
-    label: messages.advisory.sectionSegmentInsights,
+    label: messages.advisory.sectionPatientSegments,
     color: "lime",
   },
   // 新しいセクションタイプ（発見カード表示で使用、通常セクション表示はしない）

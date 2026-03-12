@@ -318,7 +318,6 @@ export const messages = {
     sectionRootCause: "根本原因分析",
     sectionStrategicActions: "戦略的推奨アクション",
     sectionStaffInsights: "スタッフ別分析",
-    sectionSegmentInsights: "患者セグメント分析",
     responseCount: "分析対象: {count}件の回答",
     priority: "最優先改善領域",
     generateFailed: "分析の生成に失敗しました",

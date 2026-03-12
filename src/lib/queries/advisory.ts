@@ -2268,14 +2268,23 @@ export async function generateAdvisoryReport(
     skipRateLimit: isDemo,
   })
   const llmSucceeded = llmSections.some((s) =>
-    s.type === "highlight_discovery" || s.type === "highlight_strength" || s.type === "clinic_story"
+    s.type === "executive_summary" || s.type === "strategic_actions"
   )
 
   // LLM成功時: LLMセクションのみ使用（ルールベースは非表示）
   // LLM失敗時: ルールベースセクションにフォールバック
   let finalSections: AdvisorySection[]
   if (llmSucceeded) {
-    finalSections = llmSections
+    finalSections = [...llmSections]
+    // LLMがハイライト/ストーリーを生成しなかった場合、フォールバックで補完
+    const hasHighlights = finalSections.some((s) =>
+      s.type === "highlight_discovery" || s.type === "highlight_strength" || s.type === "clinic_story"
+    )
+    if (!hasHighlights) {
+      const fallbackCards = generateFallbackHighlightCards(data, analysisResults)
+      const fallbackStory = generateFallbackClinicStory(data)
+      finalSections.unshift(fallbackStory, ...fallbackCards)
+    }
   } else {
     // フォールバック: ルールベース分析 + フォールバックハイライト
     const fallbackCards = generateFallbackHighlightCards(data, analysisResults)
@@ -2288,7 +2297,7 @@ export async function generateAdvisoryReport(
   if (llmSucceeded) {
     const strategicSection = finalSections.find((s) => s.type === "strategic_actions")
     if (strategicSection) {
-      const match = strategicSection.content.match(/【優先度1】(.+?)[\n]/)
+      const match = strategicSection.content.match(/【優先度1】\s*([^\n]+)/)
       if (match) priority = match[1].trim()
     }
   } else {
@@ -2306,14 +2315,17 @@ export async function generateAdvisoryReport(
     const execSummary = finalSections.find((s) => s.type === "executive_summary")
     if (execSummary) {
       // エグゼクティブサマリーの最初の1文を使用
-      const firstSentence = execSummary.content.split(/[。！]/).filter(Boolean)[0]
-      summary = `${firstSentence}。${priority ? `重点改善領域:「${priority}」` : ""}`
+      const firstSentence = execSummary.content.split(/[。！？]/).filter(Boolean)[0]?.trim()
+      summary = firstSentence
+        ? `${firstSentence}。${priority ? `重点改善領域:「${priority}」` : ""}`
+        : `AIコンサルタント分析完了 — 患者満足度${data.stats.averageScore.toFixed(2)}点（${label}）。${priority ? `重点改善領域:「${priority}」` : ""}`
     } else {
       summary = `AIコンサルタント分析完了 — 患者満足度${data.stats.averageScore.toFixed(2)}点（${label}）。${priority ? `重点改善領域:「${priority}」` : ""}`
     }
   } else {
+    const EXCLUDED_TYPES = new Set(["summary", "action", "highlight_discovery", "highlight_strength", "clinic_story"])
     const sectionCount = finalSections.filter(
-      (s) => !new Set(["summary", "action", "highlight_discovery", "highlight_strength", "clinic_story"]).has(s.type)
+      (s) => !EXCLUDED_TYPES.has(s.type)
     ).length
     summary = data.stats.averageScore >= 4.0
       ? `患者満足度は${label}水準（${data.stats.averageScore.toFixed(2)}点）。${sectionCount}項目の分析を実施しました。${priority ? `重点改善領域:「${priority}」` : "現在の水準を維持しましょう。"}`
