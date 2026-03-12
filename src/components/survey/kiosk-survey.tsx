@@ -44,14 +44,9 @@ interface KioskSurveyProps {
 type KioskState = "setup" | "survey" | "thanks"
 
 function resolveTemplate(
-  templates: SurveyTemplateInfo[],
-  visitType: string,
-  _purpose: string
+  templates: SurveyTemplateInfo[]
 ): SurveyTemplateInfo | undefined {
-  if (visitType === "first_visit") {
-    return templates.find((t) => t.name === "初診") ?? templates[0]
-  }
-  // "再診" first, then legacy "治療中" name, then any non-初診 template
+  // Prefer "再診" template, then legacy "治療中" name, then any non-初診, then first
   return (
     templates.find((t) => t.name === "再診") ??
     templates.find((t) => t.name === "治療中") ??
@@ -195,7 +190,7 @@ export function KioskSurvey({
 
   const handleStartSurvey = useCallback(() => {
     if (!canProceed) return
-    const template = resolveTemplate(templates, "revisit", purpose)
+    const template = resolveTemplate(templates)
     if (!template) return
 
     setSelectedData({
@@ -206,7 +201,6 @@ export function KioskSurvey({
       questions: template.questions,
     })
     setPatientAttrs({
-      visitType: "revisit",
       insuranceType: insuranceType as PatientAttributes["insuranceType"],
       purpose,
       ageGroup,
