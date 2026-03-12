@@ -699,7 +699,7 @@ export const messages = {
   surveyIntro: {
     heading: "医院改善アンケートにご協力ください",
     privacyNotice: "個人情報の収集は行いません。匿名でご回答いただけます。",
-    timeEstimate: "所要時間：約1分",
+    timeEstimate: "所要時間：約30秒〜1分",
   },
   dailyTip: {
     label: "患者満足度向上のヒント",
