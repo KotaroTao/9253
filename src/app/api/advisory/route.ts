@@ -66,6 +66,8 @@ export async function POST() {
     return successResponse({ report }, 201)
   } catch (e) {
     const detail = e instanceof Error ? e.message : String(e)
+    // Cloud Runログに確実に出力
+    console.error("[advisory-api] generateAdvisoryReport failed:", detail, e instanceof Error ? e.stack : "")
     logger.error("Advisory report generation failed", {
       component: "advisory-api",
       clinicId,

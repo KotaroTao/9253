@@ -80,6 +80,7 @@ jobs:
             --cpu 1 \
             --min-instances 0 \
             --max-instances 3 \
+            --timeout 120 \
             --service-account "cloud-run-mieru@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com" \
             --add-cloudsql-instances ${{ secrets.CLOUD_SQL_CONNECTION }} \
             --vpc-connector "mieru-vpc-connector" \
