@@ -10,6 +10,9 @@ import {
   generateAdvisoryReport,
 } from "@/lib/queries/advisory"
 
+/** LLM分析に時間がかかるため、ルートの最大実行時間を延長 */
+export const maxDuration = 120
+
 /**
  * GET /api/advisory — プログレス情報とレポート一覧を取得
  */
