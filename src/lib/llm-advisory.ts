@@ -9,8 +9,8 @@ import { logger } from "@/lib/logger"
 
 const MODEL = "claude-sonnet-4-6"
 const MAX_TOKENS = 4000
-const TIMEOUT_MS = 45_000 // 45秒（Cloud Run 60秒タイムアウト内に収めるため）
-const MAX_INPUT_CHARS = 30_000 // 入力テキストの上限（約7,500トークン相当）
+const TIMEOUT_MS = 30_000 // 30秒（データ収集+分析で約15秒かかるため、合計を60秒以内に収める）
+const MAX_INPUT_CHARS = 20_000 // 入力テキストの上限（約5,000トークン相当、応答速度改善のため縮小）
 const RATE_LIMIT_MS = 60 * 60 * 1000 // 同一クリニック1時間に1回まで
 
 /** Per-clinic rate limit tracker (in-memory, resets on server restart) */
@@ -294,6 +294,7 @@ ${posComments}`
     return { output: parsed, error: null }
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)
+    console.error("[llm-advisory] LLM advisory call failed:", message)
     logger.error("LLM advisory call failed", { component: "llm-advisory", error: message })
     return { output: null, error: message }
   }
