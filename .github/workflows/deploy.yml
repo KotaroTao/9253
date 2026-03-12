@@ -89,7 +89,8 @@ jobs:
             --set-env-vars "AUTH_SECRET=${{ secrets.AUTH_SECRET }}" \
             --set-env-vars "AUTH_URL=https://mieru-clinic.com" \
             --set-env-vars "NEXT_PUBLIC_APP_URL=https://mieru-clinic.com" \
-            --set-env-vars "RUN_MIGRATIONS=true"
+            --set-env-vars "RUN_MIGRATIONS=true" \
+            --set-env-vars "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}"
 
       # --- 7. ヘルスチェック ---
       - name: デプロイ後ヘルスチェック
