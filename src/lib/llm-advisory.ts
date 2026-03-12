@@ -4,12 +4,12 @@ import type { AdvisorySection } from "@/types"
 import { logger } from "@/lib/logger"
 
 // ─── LLM Advisory Engine ───
-// ルールベース分析の全結果 + 定量データを LLM に渡し、
-// トップコンサルタント品質の分析を生成する。
+// 定量データ + ルールベース分析結果を LLM に渡し、
+// AIコンサルタントとしてレポート全体を生成する。
 
 const MODEL = "claude-sonnet-4-6"
-const MAX_TOKENS = 4000
-const TIMEOUT_MS = 30_000 // 30秒（データ収集+分析で約15秒かかるため、合計を60秒以内に収める）
+const MAX_TOKENS = 6000
+const TIMEOUT_MS = 50_000 // 50秒（6000トークン出力に対応、高負荷時のマージン確保）
 const MAX_INPUT_CHARS = 20_000 // 入力テキストの上限（約5,000トークン相当、応答速度改善のため縮小）
 const RATE_LIMIT_MS = 60 * 60 * 1000 // 同一クリニック1時間に1回まで
 
@@ -54,6 +54,8 @@ interface LLMAdvisoryOutput {
   strategicActions: string
   clinicStory: string
   highlightCards: Array<{ title: string; content: string; emoji: string }>
+  staffInsights: string
+  segmentInsights: string
 }
 
 /** LLM分析の結果（成功 or 失敗理由） */
@@ -65,6 +67,10 @@ export interface LLMAdvisoryResult {
 const SYSTEM_PROMPT = `あなたは歯科医院経営に精通したトップコンサルタントです。
 20年以上の歯科コンサルティング経験を持ち、延べ500院以上の改善実績があります。
 
+## あなたの役割
+院長の「専属AIコンサルタント」として、データから読み取れる洞察を分かりやすく伝えます。
+単なるデータの羅列ではなく、**なぜそうなっているのか**、**何をすべきか**を具体的に助言してください。
+
 ## あなたの分析スタイル
 - データの表面的な記述ではなく、**因果関係の推論**と**具体的な打ち手**を示す
 - 複数のデータポイントを**クロスリファレンス**して根本原因を特定する
@@ -73,14 +79,16 @@ const SYSTEM_PROMPT = `あなたは歯科医院経営に精通したトップコ
 - 改善の優先順位は「患者体験への影響度 × 実行の容易さ」で判断する
 
 ## 出力形式
-JSON形式で以下の5セクションを返してください。マークダウンコードブロックは不要です。
+JSON形式で以下の7セクションを返してください。マークダウンコードブロックは不要です。
 
 {
   "clinicStory": "...",
   "highlightCards": [...],
   "executiveSummary": "...",
   "rootCauseAnalysis": "...",
-  "strategicActions": "..."
+  "strategicActions": "...",
+  "staffInsights": "...",
+  "segmentInsights": "..."
 }
 
 ### clinicStory（クリニックストーリー）
@@ -114,7 +122,26 @@ JSON形式で以下の5セクションを返してください。マークダウ
   具体策: ○○を△△に変更する
   期待効果: スコアが□□pt改善（根拠: 他の分析データから）
   測定方法: 1ヶ月後に○○のスコアを確認
-- 改善アクション管理で追跡可能な粒度で書く`
+- 改善アクション管理で追跡可能な粒度で書く
+
+### staffInsights（スタッフ別分析）
+- スタッフごとの傾向と具体的なアドバイスを書く
+- スタッフ別のデータがない場合は空文字列 "" を返す（セクション自体を非表示にする）
+- フォーマット:
+  ▶ スタッフ名（平均○○点、○件）
+  強み: ○○が高評価
+  改善点: ○○への対応を強化
+  アドバイス: 具体的な行動提案
+- スタッフ名は匿名化せず、データにあるまま使用する
+
+### segmentInsights（患者セグメント分析）
+- 患者属性（初診/再診、保険種別、年代、性別等）ごとの満足度の差を分析する
+- セグメント別のデータがない場合は空文字列 "" を返す（セクション自体を非表示にする）
+- 顕著な差がある場合、その原因と対策を具体的に提案する
+- フォーマット:
+  ▶ セグメント名（平均○○点、全体比+/-○○点）
+  考察: なぜこの差が生まれているか
+  対策: 具体的な改善アクション`
 
 /** Zod schema for highlight card */
 const highlightCardSchema = z.object({
@@ -130,6 +157,8 @@ const llmAdvisoryOutputSchema = z.object({
   strategicActions: z.coerce.string().default(""),
   clinicStory: z.coerce.string().default(""),
   highlightCards: z.array(highlightCardSchema).default([]),
+  staffInsights: z.coerce.string().default(""),
+  segmentInsights: z.coerce.string().default(""),
 })
 
 /**
@@ -252,7 +281,7 @@ export async function generateLLMAdvisory(
 ## 質問別スコア
 ${questionSummary}
 
-## ルールベース分析（既存の17エンジンの出力）
+## 分析エンジンの出力（参考データ）
 ${ruleSummary}
 
 ## ヒートマップ低スコアスロット（曜日×時間帯）
@@ -382,6 +411,22 @@ export function llmOutputToSections(output: LLMAdvisoryOutput): AdvisorySection[
       title: "戦略的推奨アクション",
       content: output.strategicActions,
       type: "strategic_actions",
+    })
+  }
+
+  if (output.staffInsights) {
+    sections.push({
+      title: "スタッフ別分析",
+      content: output.staffInsights,
+      type: "staff_insights",
+    })
+  }
+
+  if (output.segmentInsights) {
+    sections.push({
+      title: "患者セグメント分析",
+      content: output.segmentInsights,
+      type: "segment_insights",
     })
   }
 

@@ -153,6 +153,16 @@ const SECTION_CONFIG = {
     label: messages.advisory.sectionStrategicActions,
     color: "blue",
   },
+  staff_insights: {
+    icon: Users,
+    label: messages.advisory.sectionStaffInsights,
+    color: "violet",
+  },
+  segment_insights: {
+    icon: UserCircle,
+    label: messages.advisory.sectionPatientSegments,
+    color: "lime",
+  },
   // 新しいセクションタイプ（発見カード表示で使用、通常セクション表示はしない）
   highlight_discovery: {
     icon: Target,
@@ -897,10 +907,9 @@ export function AdvisoryReportView({ progress, reports }: AdvisoryReportViewProp
             </p>
 
             <div className="mt-6 mx-auto max-w-xs space-y-2">
-              <p className="text-[10px] font-medium text-purple-600 uppercase tracking-wider">分析に含まれる項目</p>
+              <p className="text-[10px] font-medium text-purple-600 uppercase tracking-wider">AIコンサルタントの分析項目</p>
               <div className="flex flex-wrap justify-center gap-1.5">
-                {(Object.keys(SECTION_CONFIG) as Array<keyof typeof SECTION_CONFIG>)
-                  .filter((k) => k !== "summary" && k !== "action" && !SPECIAL_SECTION_TYPES.has(k))
+                {(["executive_summary", "root_cause", "strategic_actions", "staff_insights", "segment_insights"] as Array<keyof typeof SECTION_CONFIG>)
                   .map((key) => {
                     const cfg = SECTION_CONFIG[key]
                     return (

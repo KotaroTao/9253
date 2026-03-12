@@ -107,6 +107,8 @@ export interface AdvisorySection {
     | "highlight_discovery"
     | "highlight_strength"
     | "clinic_story"
+    | "staff_insights"
+    | "segment_insights"
 }
 
 /** AI Advisory レポートデータ */

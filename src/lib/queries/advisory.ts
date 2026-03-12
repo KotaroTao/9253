@@ -2263,45 +2263,74 @@ export async function generateAdvisoryReport(
   // 推奨アクション（全分析結果を統合）
   analysisResults.push(buildRecommendations(data, analysisResults))
 
-  // ─── LLM 分析（APIキーがあれば実行） ───
+  // ─── LLM 分析（AIコンサルタントレポートの主軸） ───
   const llmSections = await runLLMAnalysis(data, analysisResults, clinicId, {
     skipRateLimit: isDemo,
   })
-  const hasLLMHighlights = llmSections.some((s) =>
-    s.type === "highlight_discovery" || s.type === "highlight_strength" || s.type === "clinic_story"
+  const llmSucceeded = llmSections.some((s) =>
+    s.type === "executive_summary" || s.type === "strategic_actions"
   )
-  if (llmSections.length > 0) {
-    // LLMセクションをルールベース分析の先頭に挿入
-    analysisResults.unshift(...llmSections)
-  }
 
-  // ─── フォールバック: LLMが生成しなかった場合、ルールベースからハイライト・ストーリーを生成 ───
-  if (!hasLLMHighlights) {
+  // LLM成功時: LLMセクションのみ使用（ルールベースは非表示）
+  // LLM失敗時: ルールベースセクションにフォールバック
+  let finalSections: AdvisorySection[]
+  if (llmSucceeded) {
+    finalSections = [...llmSections]
+    // LLMがハイライト/ストーリーを生成しなかった場合、フォールバックで補完
+    const hasHighlights = finalSections.some((s) =>
+      s.type === "highlight_discovery" || s.type === "highlight_strength" || s.type === "clinic_story"
+    )
+    if (!hasHighlights) {
+      const fallbackCards = generateFallbackHighlightCards(data, analysisResults)
+      const fallbackStory = generateFallbackClinicStory(data)
+      finalSections.unshift(fallbackStory, ...fallbackCards)
+    }
+  } else {
+    // フォールバック: ルールベース分析 + フォールバックハイライト
     const fallbackCards = generateFallbackHighlightCards(data, analysisResults)
     const fallbackStory = generateFallbackClinicStory(data)
-    analysisResults.unshift(fallbackStory, ...fallbackCards)
+    finalSections = [fallbackStory, ...fallbackCards, ...analysisResults]
   }
 
-  // 最優先改善領域の特定
+  // 最優先改善領域の特定（LLM成功時はstrategic_actionsから、失敗時はimprovementから）
   let priority: string | null = null
-  const improvementSection = analysisResults.find((s) => s.type === "improvement")
-  if (improvementSection) {
-    // 改善ポイントの最初の項目からテキストを抽出
-    const match = improvementSection.content.match(/- (.+?)（/)
-    if (match) priority = match[1]
+  if (llmSucceeded) {
+    const strategicSection = finalSections.find((s) => s.type === "strategic_actions")
+    if (strategicSection) {
+      const match = strategicSection.content.match(/【優先度1】\s*([^\n]+)/)
+      if (match) priority = match[1].trim()
+    }
+  } else {
+    const improvementSection = finalSections.find((s) => s.type === "improvement")
+    if (improvementSection) {
+      const match = improvementSection.content.match(/- (.+?)（/)
+      if (match) priority = match[1]
+    }
   }
 
-  // サマリー生成
+  // サマリー生成（LLM成功時はエグゼクティブサマリーの冒頭を使用）
+  let summary: string
   const label = scoreLabel(data.stats.averageScore)
-  const EXCLUDED_TYPES = new Set(["summary", "action", "highlight_discovery", "highlight_strength", "clinic_story"])
-  const sectionCount = analysisResults.filter(
-    (s) => !EXCLUDED_TYPES.has(s.type)
-  ).length
-
-  const summary =
-    data.stats.averageScore >= 4.0
+  if (llmSucceeded) {
+    const execSummary = finalSections.find((s) => s.type === "executive_summary")
+    if (execSummary) {
+      // エグゼクティブサマリーの最初の1文を使用
+      const firstSentence = execSummary.content.split(/[。！？]/).filter(Boolean)[0]?.trim()
+      summary = firstSentence
+        ? `${firstSentence}。${priority ? `重点改善領域:「${priority}」` : ""}`
+        : `AIコンサルタント分析完了 — 患者満足度${data.stats.averageScore.toFixed(2)}点（${label}）。${priority ? `重点改善領域:「${priority}」` : ""}`
+    } else {
+      summary = `AIコンサルタント分析完了 — 患者満足度${data.stats.averageScore.toFixed(2)}点（${label}）。${priority ? `重点改善領域:「${priority}」` : ""}`
+    }
+  } else {
+    const EXCLUDED_TYPES = new Set(["summary", "action", "highlight_discovery", "highlight_strength", "clinic_story"])
+    const sectionCount = finalSections.filter(
+      (s) => !EXCLUDED_TYPES.has(s.type)
+    ).length
+    summary = data.stats.averageScore >= 4.0
       ? `患者満足度は${label}水準（${data.stats.averageScore.toFixed(2)}点）。${sectionCount}項目の分析を実施しました。${priority ? `重点改善領域:「${priority}」` : "現在の水準を維持しましょう。"}`
       : `患者満足度は${data.stats.averageScore.toFixed(2)}点（${label}）。${sectionCount}項目の分析を実施しました。${priority ? `最優先で「${priority}」への対策を進めてください。` : "改善施策の検討をお勧めします。"}`
+  }
 
   // DBに保存
   const report = await prisma.advisoryReport.create({
@@ -2309,7 +2338,7 @@ export async function generateAdvisoryReport(
       clinicId,
       triggerType,
       responseCount: data.stats.totalResponses,
-      sections: JSON.parse(JSON.stringify(analysisResults)),
+      sections: JSON.parse(JSON.stringify(finalSections)),
       summary,
       priority,
     },
@@ -2326,7 +2355,7 @@ export async function generateAdvisoryReport(
     id: report.id,
     triggerType: report.triggerType,
     responseCount: report.responseCount,
-    sections: analysisResults,
+    sections: finalSections,
     summary,
     priority,
     generatedAt: report.generatedAt.toISOString(),
