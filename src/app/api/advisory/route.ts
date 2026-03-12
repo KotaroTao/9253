@@ -3,6 +3,7 @@ import { requireAuth, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
 import { ADVISORY } from "@/lib/constants"
+import { logger } from "@/lib/logger"
 import {
   getAdvisoryProgress,
   getAdvisoryReports,
@@ -63,7 +64,14 @@ export async function POST() {
   try {
     const report = await generateAdvisoryReport(clinicId, "manual")
     return successResponse({ report }, 201)
-  } catch {
-    return errorResponse(messages.advisory.generateFailed, 500)
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : String(e)
+    logger.error("Advisory report generation failed", {
+      component: "advisory-api",
+      clinicId,
+      error: detail,
+      stack: e instanceof Error ? e.stack : undefined,
+    })
+    return errorResponse(messages.advisory.generateFailed, 500, { detail })
   }
 }
