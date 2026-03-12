@@ -695,8 +695,13 @@ export const messages = {
     ageGroup: "年代",
     gender: "性別",
     handToPatient: "患者さまに渡す",
-    requiredHint: "来院区分・診療区分・内容を選択してください",
+    requiredHint: "診療区分・内容を選択してください",
     staffRequiredHint: "公認端末では担当スタッフの選択が必須です",
+  },
+  surveyIntro: {
+    heading: "医院改善アンケートにご協力ください",
+    privacyNotice: "個人情報の収集は行いません。匿名でご回答いただけます。",
+    timeEstimate: "所要時間：約1分",
   },
   dailyTip: {
     label: "患者満足度向上のヒント",
