@@ -18,6 +18,21 @@ export interface DateRange {
   to: Date
 }
 
+/** デモクリニック用: endOfDay をカットオフ日で制限する */
+function clampEndDate(endDate: Date, cutoffDate?: Date): Date {
+  if (!cutoffDate) return endDate
+  return endDate.getTime() > cutoffDate.getTime() ? cutoffDate : endDate
+}
+
+/** デモクリニック用: DateRange の to をカットオフ日で制限する */
+function clampRange(range: DateRange | undefined, cutoffDate?: Date): DateRange | undefined {
+  if (!range || !cutoffDate) return range
+  return {
+    from: range.from,
+    to: range.to.getTime() > cutoffDate.getTime() ? cutoffDate : range.to,
+  }
+}
+
 /** 患者属性フィルタ（JSONB patient_attributes に対する条件） */
 export interface AttributeFilters {
   visitType?: string
@@ -68,7 +83,8 @@ function buildAttrPrismaWhere(filters?: AttributeFilters): object[] {
 export async function getDashboardStats(
   clinicId: string,
   dateFrom?: Date,
-  dateTo?: Date
+  dateTo?: Date,
+  cutoffDate?: Date,
 ) {
   // Previous month boundaries (JST)
   const { year, month } = jstNowParts()
@@ -83,16 +99,20 @@ export async function getDashboardStats(
     prev_count: bigint
   }
   const hasDateRange = dateFrom && dateTo
+  const effectiveTo = cutoffDate
+    ? (hasDateRange && dateTo && dateTo.getTime() > cutoffDate.getTime() ? cutoffDate : dateTo)
+    : dateTo
 
   const statsRows = await (hasDateRange
     ? prisma.$queryRaw<StatsRow[]>`
         SELECT
-          COUNT(*) FILTER (WHERE responded_at >= ${dateFrom} AND responded_at <= ${dateTo}) AS total_responses,
-          ROUND(AVG(overall_score) FILTER (WHERE responded_at >= ${dateFrom} AND responded_at <= ${dateTo})::numeric, 2)::float AS avg_score,
+          COUNT(*) FILTER (WHERE responded_at >= ${dateFrom} AND responded_at <= ${effectiveTo}) AS total_responses,
+          ROUND(AVG(overall_score) FILTER (WHERE responded_at >= ${dateFrom} AND responded_at <= ${effectiveTo})::numeric, 2)::float AS avg_score,
           ROUND(AVG(overall_score) FILTER (WHERE responded_at >= ${prevStart} AND responded_at <= ${prevEnd})::numeric, 2)::float AS prev_avg_score,
           COUNT(*) FILTER (WHERE responded_at >= ${prevStart} AND responded_at <= ${prevEnd}) AS prev_count
         FROM survey_responses
         WHERE clinic_id = ${clinicId}::uuid
+          ${cutoffDate ? Prisma.sql`AND responded_at <= ${cutoffDate}` : Prisma.empty}
       `
     : prisma.$queryRaw<StatsRow[]>`
         SELECT
@@ -102,6 +122,7 @@ export async function getDashboardStats(
           COUNT(*) FILTER (WHERE responded_at >= ${prevStart} AND responded_at <= ${prevEnd}) AS prev_count
         FROM survey_responses
         WHERE clinic_id = ${clinicId}::uuid
+          ${cutoffDate ? Prisma.sql`AND responded_at <= ${cutoffDate}` : Prisma.empty}
       `)
 
   const stats = statsRows[0]
@@ -164,7 +185,7 @@ interface MonthlyTrendRow {
   count: bigint
 }
 
-export async function getMonthlyTrend(clinicId: string, months: number = 6) {
+export async function getMonthlyTrend(clinicId: string, months: number = 6, cutoffDate?: Date) {
   const startDate = jstMonthsAgoStart(months)
 
   const rows = await prisma.$queryRaw<MonthlyTrendRow[]>`
@@ -175,6 +196,7 @@ export async function getMonthlyTrend(clinicId: string, months: number = 6) {
     FROM survey_responses
     WHERE clinic_id = ${clinicId}::uuid
       AND responded_at >= ${startDate}
+      ${cutoffDate ? Prisma.sql`AND responded_at <= ${cutoffDate}` : Prisma.empty}
     GROUP BY TO_CHAR(responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'YYYY-MM')
     ORDER BY month ASC
   `
@@ -191,7 +213,7 @@ export async function getMonthlyTrend(clinicId: string, months: number = 6) {
  * and returns both monthlyTrend (last 6 months) and satisfactionTrend (last 12 months).
  * This replaces separate getMonthlyTrend + getSatisfactionTrend calls on the dashboard.
  */
-export async function getCombinedMonthlyTrends(clinicId: string) {
+export async function getCombinedMonthlyTrends(clinicId: string, cutoffDate?: Date) {
   const startDate = jstMonthsAgoStart(12)
 
   const rows = await prisma.$queryRaw<MonthlyTrendRow[]>`
@@ -202,6 +224,7 @@ export async function getCombinedMonthlyTrends(clinicId: string) {
     FROM survey_responses
     WHERE clinic_id = ${clinicId}::uuid
       AND responded_at >= ${startDate}
+      ${cutoffDate ? Prisma.sql`AND responded_at <= ${cutoffDate}` : Prisma.empty}
     GROUP BY TO_CHAR(responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'YYYY-MM')
     ORDER BY month ASC
   `
@@ -248,7 +271,8 @@ interface QuestionBreakdownRow {
 
 export async function getQuestionBreakdown(
   clinicId: string,
-  months: number = 3
+  months: number = 3,
+  cutoffDate?: Date,
 ): Promise<TemplateQuestionScores[]> {
   // Get active templates with question definitions
   const templates = await prisma.surveyTemplate.findMany({
@@ -274,13 +298,17 @@ export async function getQuestionBreakdown(
     WHERE clinic_id = ${clinicId}::uuid
       AND template_id = ANY(${templateIds}::uuid[])
       AND responded_at >= ${sinceDate}
+      ${cutoffDate ? Prisma.sql`AND responded_at <= ${cutoffDate}` : Prisma.empty}
     GROUP BY template_id, key
   `
 
   // Count responses per template (same date range)
+  const respondedAtWhere = cutoffDate
+    ? { gte: sinceDate, lte: cutoffDate }
+    : { gte: sinceDate }
   const responseCounts = await prisma.surveyResponse.groupBy({
     by: ["templateId"],
-    where: { clinicId, templateId: { in: templateIds }, respondedAt: { gte: sinceDate } },
+    where: { clinicId, templateId: { in: templateIds }, respondedAt: respondedAtWhere },
     _count: { _all: true },
   })
   const countMap = new Map(responseCounts.map((r) => [r.templateId, r._count._all]))
@@ -331,6 +359,7 @@ export async function getQuestionBreakdownByDays(
   days: number = 30,
   range?: DateRange,
   attrFilters?: AttributeFilters,
+  cutoffDate?: Date,
 ): Promise<TemplateQuestionScores[]> {
   const templates = await prisma.surveyTemplate.findMany({
     where: { clinicId, isActive: true },
@@ -340,7 +369,7 @@ export async function getQuestionBreakdownByDays(
   if (templates.length === 0) return []
 
   const sinceDate = range?.from ?? jstDaysAgo(days)
-  const untilDate = range?.to ?? jstEndOfDay(0)
+  const untilDate = clampEndDate(range?.to ?? jstEndOfDay(0), cutoffDate)
   const af = buildAttrSql(attrFilters)
 
   const templateIds = templates.map((t) => t.id)
@@ -416,8 +445,9 @@ export async function getQuestionBreakdownByDays(
 /**
  * Get current overall satisfaction score for a clinic (last 30 days average)
  */
-export async function getCurrentSatisfactionScore(clinicId: string): Promise<number | null> {
+export async function getCurrentSatisfactionScore(clinicId: string, cutoffDate?: Date): Promise<number | null> {
   const since = jstDaysAgo(30)
+  const until = cutoffDate ?? jstEndOfDay(0)
 
   interface ScoreRow { avg_score: number | null }
   const rows = await prisma.$queryRaw<ScoreRow[]>`
@@ -425,6 +455,7 @@ export async function getCurrentSatisfactionScore(clinicId: string): Promise<num
     FROM survey_responses
     WHERE clinic_id = ${clinicId}::uuid
       AND responded_at >= ${since}
+      AND responded_at <= ${until}
       AND overall_score IS NOT NULL
   `
   return rows[0]?.avg_score ?? null
@@ -436,8 +467,10 @@ export async function getCurrentSatisfactionScore(clinicId: string): Promise<num
 export async function getQuestionCurrentScore(
   clinicId: string,
   questionId: string,
+  cutoffDate?: Date,
 ): Promise<number | null> {
   const since = jstDaysAgo(30)
+  const until = cutoffDate ?? jstEndOfDay(0)
 
   interface QScoreRow { avg_score: number | null }
   const rows = await prisma.$queryRaw<QScoreRow[]>`
@@ -445,6 +478,7 @@ export async function getQuestionCurrentScore(
     FROM survey_responses
     WHERE clinic_id = ${clinicId}::uuid
       AND responded_at >= ${since}
+      AND responded_at <= ${until}
       AND answers ? ${questionId}
   `
   return rows[0]?.avg_score ?? null
@@ -456,10 +490,12 @@ export async function getQuestionCurrentScore(
 export async function getQuestionCurrentScores(
   clinicId: string,
   questionIds: string[],
+  cutoffDate?: Date,
 ): Promise<Record<string, number>> {
   if (questionIds.length === 0) return {}
 
   const since = jstDaysAgo(30)
+  const until = cutoffDate ?? jstEndOfDay(0)
 
   interface QScoresRow { question_id: string; avg_score: number | null }
   const rows = await prisma.$queryRaw<QScoresRow[]>`
@@ -470,6 +506,7 @@ export async function getQuestionCurrentScores(
       jsonb_each_text(answers)
     WHERE clinic_id = ${clinicId}::uuid
       AND responded_at >= ${since}
+      AND responded_at <= ${until}
       AND key = ANY(${questionIds}::text[])
     GROUP BY key
   `
@@ -510,12 +547,14 @@ export async function getDailyTrend(
   days: number = 30,
   range?: DateRange,
   attrFilters?: AttributeFilters,
+  cutoffDate?: Date,
 ): Promise<DailyTrendPoint[]> {
-  const effectiveDays = range ? daysBetween(range.from, range.to) : days
+  const clampedRange = clampRange(range, cutoffDate)
+  const effectiveDays = clampedRange ? daysBetween(clampedRange.from, clampedRange.to) : days
   const granularity = autoGranularity(effectiveDays)
-  if (granularity === "month") return getDailyTrendMonthly(clinicId, days, range, attrFilters)
-  if (granularity === "week") return getDailyTrendWeekly(clinicId, days, range, attrFilters)
-  return getDailyTrendDaily(clinicId, days, range, attrFilters)
+  if (granularity === "month") return getDailyTrendMonthly(clinicId, days, clampedRange, attrFilters, cutoffDate)
+  if (granularity === "week") return getDailyTrendWeekly(clinicId, days, clampedRange, attrFilters, cutoffDate)
+  return getDailyTrendDaily(clinicId, days, clampedRange, attrFilters, cutoffDate)
 }
 
 async function getDailyTrendDaily(
@@ -523,9 +562,10 @@ async function getDailyTrendDaily(
   days: number,
   range?: DateRange,
   attrFilters?: AttributeFilters,
+  cutoffDate?: Date,
 ): Promise<DailyTrendPoint[]> {
   const sinceDate = range?.from ?? jstDaysAgo(days)
-  const untilDate = range?.to ?? jstEndOfDay(0)
+  const untilDate = clampEndDate(range?.to ?? jstEndOfDay(0), cutoffDate)
   const af = buildAttrSql(attrFilters)
 
   const rows = await prisma.$queryRaw<DailyTrendRow[]>`
@@ -555,9 +595,10 @@ async function getDailyTrendWeekly(
   days: number,
   range?: DateRange,
   attrFilters?: AttributeFilters,
+  cutoffDate?: Date,
 ): Promise<DailyTrendPoint[]> {
   const sinceDate = range?.from ?? jstDaysAgo(days)
-  const untilDate = range?.to ?? jstEndOfDay(0)
+  const untilDate = clampEndDate(range?.to ?? jstEndOfDay(0), cutoffDate)
   const af = buildAttrSql(attrFilters)
 
   const rows = await prisma.$queryRaw<DailyTrendRow[]>`
@@ -587,9 +628,10 @@ async function getDailyTrendMonthly(
   days: number,
   range?: DateRange,
   attrFilters?: AttributeFilters,
+  cutoffDate?: Date,
 ): Promise<DailyTrendPoint[]> {
   const sinceDate = range?.from ?? jstDaysAgo(days)
-  const untilDate = range?.to ?? jstEndOfDay(0)
+  const untilDate = clampEndDate(range?.to ?? jstEndOfDay(0), cutoffDate)
   const af = buildAttrSql(attrFilters)
 
   const rows = await prisma.$queryRaw<DailyTrendRow[]>`
@@ -636,12 +678,14 @@ export async function getTemplateTrend(
   offsetDays: number = 0,
   range?: DateRange,
   attrFilters?: AttributeFilters,
+  cutoffDate?: Date,
 ): Promise<TemplateTrendPoint[]> {
-  const effectiveDays = range ? daysBetween(range.from, range.to) : days
+  const clampedRange = clampRange(range, cutoffDate)
+  const effectiveDays = clampedRange ? daysBetween(clampedRange.from, clampedRange.to) : days
   const granularity = autoGranularity(effectiveDays)
-  if (granularity === "month") return getTemplateTrendMonthly(clinicId, days, offsetDays, range, attrFilters)
-  if (granularity === "week") return getTemplateTrendWeekly(clinicId, days, offsetDays, range, attrFilters)
-  return getTemplateTrendDaily(clinicId, days, offsetDays, range, attrFilters)
+  if (granularity === "month") return getTemplateTrendMonthly(clinicId, days, offsetDays, clampedRange, attrFilters, cutoffDate)
+  if (granularity === "week") return getTemplateTrendWeekly(clinicId, days, offsetDays, clampedRange, attrFilters, cutoffDate)
+  return getTemplateTrendDaily(clinicId, days, offsetDays, clampedRange, attrFilters, cutoffDate)
 }
 
 async function getTemplateTrendDaily(
@@ -650,9 +694,10 @@ async function getTemplateTrendDaily(
   offsetDays: number,
   range?: DateRange,
   attrFilters?: AttributeFilters,
+  cutoffDate?: Date,
 ): Promise<TemplateTrendPoint[]> {
   const sinceDate = range?.from ?? jstDaysAgo(offsetDays + days)
-  const untilDate = range?.to ?? jstEndOfDay(offsetDays)
+  const untilDate = clampEndDate(range?.to ?? jstEndOfDay(offsetDays), cutoffDate)
   const af = buildAttrSqlAliased(attrFilters)
 
   const rows = await prisma.$queryRaw<TemplateTrendRow[]>`
@@ -687,9 +732,10 @@ async function getTemplateTrendWeekly(
   offsetDays: number,
   range?: DateRange,
   attrFilters?: AttributeFilters,
+  cutoffDate?: Date,
 ): Promise<TemplateTrendPoint[]> {
   const sinceDate = range?.from ?? jstDaysAgo(offsetDays + days)
-  const untilDate = range?.to ?? jstEndOfDay(offsetDays)
+  const untilDate = clampEndDate(range?.to ?? jstEndOfDay(offsetDays), cutoffDate)
   const af = buildAttrSqlAliased(attrFilters)
 
   const rows = await prisma.$queryRaw<TemplateTrendRow[]>`
@@ -724,9 +770,10 @@ async function getTemplateTrendMonthly(
   offsetDays: number,
   range?: DateRange,
   attrFilters?: AttributeFilters,
+  cutoffDate?: Date,
 ): Promise<TemplateTrendPoint[]> {
   const sinceDate = range?.from ?? jstDaysAgo(offsetDays + days)
-  const untilDate = range?.to ?? jstEndOfDay(offsetDays)
+  const untilDate = clampEndDate(range?.to ?? jstEndOfDay(offsetDays), cutoffDate)
   const af = buildAttrSqlAliased(attrFilters)
 
   const rows = await prisma.$queryRaw<TemplateTrendRow[]>`
@@ -776,9 +823,10 @@ export async function getHourlyHeatmapData(
   days: number = 90,
   range?: DateRange,
   attrFilters?: AttributeFilters,
+  cutoffDate?: Date,
 ): Promise<HeatmapCell[]> {
   const sinceDate = range?.from ?? jstDaysAgo(days)
-  const untilDate = range?.to ?? jstEndOfDay(0)
+  const untilDate = clampEndDate(range?.to ?? jstEndOfDay(0), cutoffDate)
   const af = buildAttrSql(attrFilters)
 
   const rows = await prisma.$queryRaw<HeatmapRow[]>`
@@ -812,7 +860,8 @@ interface SatisfactionTrendRow {
 
 export async function getSatisfactionTrend(
   clinicId: string,
-  months: number = 12
+  months: number = 12,
+  cutoffDate?: Date,
 ): Promise<SatisfactionTrend[]> {
   const startDate = jstMonthsAgoStart(months)
 
@@ -823,6 +872,7 @@ export async function getSatisfactionTrend(
     FROM survey_responses
     WHERE clinic_id = ${clinicId}::uuid
       AND responded_at >= ${startDate}
+      ${cutoffDate ? Prisma.sql`AND responded_at <= ${cutoffDate}` : Prisma.empty}
     GROUP BY TO_CHAR(responded_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Tokyo', 'YYYY-MM')
     ORDER BY month ASC
   `
@@ -854,9 +904,10 @@ export async function getPurposeSatisfaction(
   days: number = 30,
   range?: DateRange,
   attrFilters?: AttributeFilters,
+  cutoffDate?: Date,
 ): Promise<PurposeSatisfactionRow[]> {
   const sinceDate = range?.from ?? jstDaysAgo(days)
-  const untilDate = range?.to ?? jstEndOfDay(0)
+  const untilDate = clampEndDate(range?.to ?? jstEndOfDay(0), cutoffDate)
   const af = buildAttrSql(attrFilters)
 
   const rows = await prisma.$queryRaw<PurposeSatisfactionDbRow[]>`

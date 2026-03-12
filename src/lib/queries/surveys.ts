@@ -54,19 +54,31 @@ export async function getSurveyResponses(
     staffId?: string
     from?: Date
     to?: Date
+    cutoffDate?: Date
   }
 ) {
   const page = options?.page ?? 1
   const limit = options?.limit ?? 20
   const skip = (page - 1) * limit
 
+  // デモクリニック用カットオフ: カットオフ日以降のデータを除外
+  const effectiveTo = options?.cutoffDate
+    ? (options?.to && options.to.getTime() <= options.cutoffDate.getTime() ? options.to : options.cutoffDate)
+    : options?.to
+
+  // Build respondedAt filter
+  const respondedAtFilter = options?.from && effectiveTo
+    ? { gte: options.from, lte: effectiveTo }
+    : effectiveTo
+      ? { lte: effectiveTo }
+      : options?.from
+        ? { gte: options.from }
+        : undefined
+
   const where = {
     clinicId,
     ...(options?.staffId && { staffId: options.staffId }),
-    ...(options?.from &&
-      options?.to && {
-        respondedAt: { gte: options.from, lte: options.to },
-      }),
+    ...(respondedAtFilter && { respondedAt: respondedAtFilter }),
   }
 
   const [responses, total] = await Promise.all([

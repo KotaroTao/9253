@@ -9,6 +9,7 @@ import { SurveyResponseSection } from "@/components/dashboard/survey-response-se
 import { ROLES } from "@/lib/constants"
 import { getClinicPlanInfo, hasFeature } from "@/lib/plan"
 import { messages } from "@/lib/messages"
+import { getDemoCutoffForClinic } from "@/lib/demo-cutoff"
 
 const INITIAL_LIMIT = 50
 
@@ -46,14 +47,16 @@ export default async function AnalyticsPage() {
     }
   }
 
+  const cutoff = (await getDemoCutoffForClinic(clinicId)) ?? undefined
+
   const [heatmapData, dailyTrend, templateTrend, templateTrendPrev, questionBreakdown, surveyData] =
     await Promise.all([
-      getHourlyHeatmapData(clinicId, 30),
-      getDailyTrend(clinicId, 30),
-      getTemplateTrend(clinicId, 30),
-      getTemplateTrend(clinicId, 30, 30),
-      getQuestionBreakdownByDays(clinicId, 30),
-      getSurveyResponses(clinicId, { page: 1, limit: INITIAL_LIMIT }),
+      getHourlyHeatmapData(clinicId, 30, undefined, undefined, cutoff),
+      getDailyTrend(clinicId, 30, undefined, undefined, cutoff),
+      getTemplateTrend(clinicId, 30, 0, undefined, undefined, cutoff),
+      getTemplateTrend(clinicId, 30, 30, undefined, undefined, cutoff),
+      getQuestionBreakdownByDays(clinicId, 30, undefined, undefined, cutoff),
+      getSurveyResponses(clinicId, { page: 1, limit: INITIAL_LIMIT, cutoffDate: cutoff }),
     ])
 
   return (

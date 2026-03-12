@@ -5,6 +5,7 @@ import { messages } from "@/lib/messages"
 import { ROLES } from "@/lib/constants"
 import { getSurveyResponses } from "@/lib/queries/surveys"
 import { parseOffsetParams } from "@/lib/pagination"
+import { getDemoCutoffForClinic } from "@/lib/demo-cutoff"
 
 export async function GET(request: NextRequest) {
   const result = await requireAuth()
@@ -21,9 +22,10 @@ export async function GET(request: NextRequest) {
     return errorResponse(messages.errors.clinicNotFound, 400)
   }
 
+  const cutoff = await getDemoCutoffForClinic(clinicId)
   const { page, limit } = parseOffsetParams(request.nextUrl.searchParams, { maxLimit: 50 })
 
-  const data = await getSurveyResponses(clinicId, { page, limit })
+  const data = await getSurveyResponses(clinicId, { page, limit, cutoffDate: cutoff ?? undefined })
 
   return successResponse(data)
 }

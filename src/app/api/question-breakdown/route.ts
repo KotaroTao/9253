@@ -2,6 +2,7 @@ import { requireRole, isAuthError } from "@/lib/auth-helpers"
 import { successResponse, errorResponse, parseDateRangeParams, parseAttributeFilters } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
 import { getQuestionBreakdownByDays } from "@/lib/queries/stats"
+import { getDemoCutoffForClinic } from "@/lib/demo-cutoff"
 import { NextRequest } from "next/server"
 
 export const dynamic = "force-dynamic"
@@ -21,13 +22,14 @@ export async function GET(request: NextRequest) {
   const clinicId = authResult.user.clinicId
   if (!clinicId) return errorResponse(messages.errors.clinicNotAssociated, 400)
 
+  const cutoff = await getDemoCutoffForClinic(clinicId)
   const params = request.nextUrl.searchParams
   const rangeResult = parseDateRangeParams(params, MAX_DAYS)
   if (rangeResult && "error" in rangeResult) return errorResponse(rangeResult.error, 400)
   const attrFilters = parseAttributeFilters(params)
 
   if (rangeResult) {
-    const data = await getQuestionBreakdownByDays(clinicId, rangeResult.days, rangeResult.range, attrFilters)
+    const data = await getQuestionBreakdownByDays(clinicId, rangeResult.days, rangeResult.range, attrFilters, cutoff ?? undefined)
     return successResponse(data)
   }
 
@@ -37,6 +39,6 @@ export async function GET(request: NextRequest) {
     return errorResponse(messages.apiErrors.invalidPeriod, 400)
   }
 
-  const data = await getQuestionBreakdownByDays(clinicId, days, undefined, attrFilters)
+  const data = await getQuestionBreakdownByDays(clinicId, days, undefined, attrFilters, cutoff ?? undefined)
   return successResponse(data)
 }

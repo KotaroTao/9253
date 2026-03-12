@@ -45,7 +45,7 @@ export default async function DashboardPage() {
 
   // Fetch engagement + active improvement actions + advisory progress + report count + staff count + dashboard comments
   const [engagement, activeActions, advisoryProgress, advisoryReportCount, staffCount, commentsSetting] = await Promise.all([
-    getStaffEngagementData(clinicId),
+    getStaffEngagementData(clinicId, clinic?.slug),
     prisma.improvementAction.findMany({
       where: { clinicId, status: "active" },
       select: {

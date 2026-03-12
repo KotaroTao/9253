@@ -5,12 +5,13 @@ import type { ClinicSettings } from "@/types"
 import { logger } from "@/lib/logger"
 import {
   jstToday,
-  jstDaysAgo,
   jstNowParts,
   formatDateKeyJST,
   getDayOfWeekJaJST,
   getDayJST,
+  jstEndOfDay,
 } from "@/lib/date-jst"
+import { isDemoClinic, demoCutoffStartOfDay } from "@/lib/demo-cutoff"
 
 export interface StreakBreakInfo {
   date: string // YYYY-MM-DD
@@ -58,15 +59,25 @@ export interface EngagementData {
 }
 
 export async function getStaffEngagementData(
-  clinicId: string
+  clinicId: string,
+  clinicSlug?: string,
 ): Promise<EngagementData> {
+  // デモクリニックの場合、カットオフ日を「今日」として扱う
+  const isDemo = clinicSlug ? isDemoClinic(clinicSlug) : false
+  const effectiveToday = isDemo ? demoCutoffStartOfDay() : jstToday()
+  const effectiveEndOfDay = isDemo
+    ? new Date(effectiveToday.getTime() + 24 * 60 * 60 * 1000 - 1)
+    : jstEndOfDay(0)
+
+  const DAY_MS = 24 * 60 * 60 * 1000
+
   // All date boundaries are JST-aware (midnight JST expressed as UTC timestamps)
-  const todayStart = jstToday()
-  const streakStart = jstDaysAgo(90)
-  const commentStart = jstDaysAgo(30)
+  const todayStart = effectiveToday
+  const streakStart = new Date(effectiveToday.getTime() - 90 * DAY_MS)
+  const commentStart = new Date(effectiveToday.getTime() - 30 * DAY_MS)
 
   // Week start (past 7 days: today - 6 days)
-  const weekStart = jstDaysAgo(6)
+  const weekStart = new Date(effectiveToday.getTime() - 6 * DAY_MS)
 
   // Consolidate count/avg queries into a single raw SQL to reduce round-trips
   interface AggRow {
@@ -77,22 +88,42 @@ export async function getStaffEngagementData(
     week_avg: number | null
   }
 
+  // デモクリニックの場合、カットオフ日以降のデータを除外
+  const respondedAtFilter = isDemo
+    ? { gte: streakStart, lte: effectiveEndOfDay }
+    : { gte: streakStart }
+  const commentDateFilter = isDemo
+    ? { gte: commentStart, lte: effectiveEndOfDay }
+    : { gte: commentStart }
+
   const [aggRows, streakResponses, positiveComments, lowScoreComments, clinic, prevMetrics] =
     await Promise.all([
-      prisma.$queryRaw<AggRow[]>`
-        SELECT
-          COUNT(*) AS total_count,
-          COUNT(*) FILTER (WHERE responded_at >= ${todayStart}) AS today_count,
-          ROUND(AVG(overall_score) FILTER (WHERE responded_at >= ${todayStart})::numeric, 1)::float AS today_avg,
-          COUNT(*) FILTER (WHERE responded_at >= ${weekStart}) AS week_count,
-          ROUND(AVG(overall_score) FILTER (WHERE responded_at >= ${weekStart})::numeric, 1)::float AS week_avg
-        FROM survey_responses
-        WHERE clinic_id = ${clinicId}::uuid
-      `,
+      isDemo
+        ? prisma.$queryRaw<AggRow[]>`
+            SELECT
+              COUNT(*) AS total_count,
+              COUNT(*) FILTER (WHERE responded_at >= ${todayStart} AND responded_at <= ${effectiveEndOfDay}) AS today_count,
+              ROUND(AVG(overall_score) FILTER (WHERE responded_at >= ${todayStart} AND responded_at <= ${effectiveEndOfDay})::numeric, 1)::float AS today_avg,
+              COUNT(*) FILTER (WHERE responded_at >= ${weekStart} AND responded_at <= ${effectiveEndOfDay}) AS week_count,
+              ROUND(AVG(overall_score) FILTER (WHERE responded_at >= ${weekStart} AND responded_at <= ${effectiveEndOfDay})::numeric, 1)::float AS week_avg
+            FROM survey_responses
+            WHERE clinic_id = ${clinicId}::uuid
+              AND responded_at <= ${effectiveEndOfDay}
+          `
+        : prisma.$queryRaw<AggRow[]>`
+            SELECT
+              COUNT(*) AS total_count,
+              COUNT(*) FILTER (WHERE responded_at >= ${todayStart}) AS today_count,
+              ROUND(AVG(overall_score) FILTER (WHERE responded_at >= ${todayStart})::numeric, 1)::float AS today_avg,
+              COUNT(*) FILTER (WHERE responded_at >= ${weekStart}) AS week_count,
+              ROUND(AVG(overall_score) FILTER (WHERE responded_at >= ${weekStart})::numeric, 1)::float AS week_avg
+            FROM survey_responses
+            WHERE clinic_id = ${clinicId}::uuid
+          `,
 
       // Only fetch respondedAt for streak calculation (minimal data)
       prisma.surveyResponse.findMany({
-        where: { clinicId, respondedAt: { gte: streakStart } },
+        where: { clinicId, respondedAt: respondedAtFilter },
         select: { respondedAt: true },
         orderBy: { respondedAt: "desc" },
       }),
@@ -103,7 +134,7 @@ export async function getStaffEngagementData(
           overallScore: { gte: 4.5 },
           freeText: { not: null },
           isVerified: true,
-          respondedAt: { gte: commentStart },
+          respondedAt: commentDateFilter,
         },
         select: { freeText: true, overallScore: true, respondedAt: true },
         orderBy: { respondedAt: "desc" },
@@ -116,7 +147,7 @@ export async function getStaffEngagementData(
           overallScore: { lte: 3.0 },
           freeText: { not: null },
           isVerified: true,
-          respondedAt: { gte: commentStart },
+          respondedAt: commentDateFilter,
         },
         select: { freeText: true, overallScore: true, respondedAt: true },
         orderBy: { respondedAt: "desc" },
@@ -130,7 +161,11 @@ export async function getStaffEngagementData(
 
       // Previous month metrics for daily goal calculation
       (() => {
-        const { year, month } = jstNowParts()
+        // デモクリニックの場合、カットオフ日の前月を使用
+        const effectiveParts = isDemo
+          ? { year: 2026, month: 2 }
+          : jstNowParts()
+        const { year, month } = effectiveParts
         const prevYear = month === 1 ? year - 1 : year
         const prevMonth = month === 1 ? 12 : month - 1
         return prisma.monthlyClinicMetrics.findUnique({
@@ -152,8 +187,6 @@ export async function getStaffEngagementData(
   const closedDates = new Set<string>(settings.closedDates ?? [])
   const openDates = new Set<string>(settings.openDates ?? [])
   const regularClosedDays = new Set<number>(settings.regularClosedDays ?? [])
-
-  const DAY_MS = 24 * 60 * 60 * 1000
 
   // Helper: check if a date is closed (ad-hoc or regular, with open override)
   function isClosedDate(dateKey: string, date: Date): boolean {
@@ -262,7 +295,8 @@ export async function getStaffEngagementData(
   // Only first request of the day per clinic triggers this (idempotent).
   // Uses atomic JSONB update to avoid read-modify-write races, and
   // fire-and-forget to avoid blocking the dashboard render.
-  if (settings.goalLastCheckedDate !== todayKey) {
+  // デモクリニックではカットオフ日固定のため、設定の永続化をスキップ
+  if (!isDemo && settings.goalLastCheckedDate !== todayKey) {
     let achieveStreak = settings.goalAchieveStreak ?? 0
     let missStreak = settings.goalMissStreak ?? 0
 
