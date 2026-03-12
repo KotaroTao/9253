@@ -9,7 +9,7 @@ import { logger } from "@/lib/logger"
 
 const MODEL = "claude-sonnet-4-6"
 const MAX_TOKENS = 4000
-const TIMEOUT_MS = 60_000 // 60秒
+const TIMEOUT_MS = 45_000 // 45秒（Cloud Run 60秒タイムアウト内に収めるため）
 const MAX_INPUT_CHARS = 30_000 // 入力テキストの上限（約7,500トークン相当）
 const RATE_LIMIT_MS = 60 * 60 * 1000 // 同一クリニック1時間に1回まで
 

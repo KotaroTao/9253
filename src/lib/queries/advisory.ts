@@ -897,17 +897,22 @@ function analyzeTrend(data: AnalysisData): AdvisorySection | null {
     const sumXY = validPoints.reduce((s, p) => s + p.x * p.y, 0)
     const sumXX = validPoints.reduce((s, p) => s + p.x * p.x, 0)
 
-    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX)
-    const monthlySlope = slope * 30 // 30日あたりの変化量
-
-    if (Math.abs(monthlySlope) >= 0.1) {
-      if (monthlySlope > 0) {
-        lines.push(`30日間の全体傾向: 月あたり+${monthlySlope.toFixed(2)}の上昇トレンド。`)
-      } else {
-        lines.push(`30日間の全体傾向: 月あたり${monthlySlope.toFixed(2)}の下降トレンド。原因の特定を推奨します。`)
-      }
-    } else {
+    const denominator = n * sumXX - sumX * sumX
+    if (denominator === 0) {
       lines.push("30日間のスコアは横ばいで安定しています。")
+    } else {
+      const slope = (n * sumXY - sumX * sumY) / denominator
+      const monthlySlope = slope * 30 // 30日あたりの変化量
+
+      if (Math.abs(monthlySlope) >= 0.1) {
+        if (monthlySlope > 0) {
+          lines.push(`30日間の全体傾向: 月あたり+${monthlySlope.toFixed(2)}の上昇トレンド。`)
+        } else {
+          lines.push(`30日間の全体傾向: 月あたり${monthlySlope.toFixed(2)}の下降トレンド。原因の特定を推奨します。`)
+        }
+      } else {
+        lines.push("30日間のスコアは横ばいで安定しています。")
+      }
     }
   }
 
