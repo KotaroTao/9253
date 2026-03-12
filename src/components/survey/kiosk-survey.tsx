@@ -13,12 +13,14 @@ import {
   User,
   Globe,
   FlaskConical,
+  ShieldCheck,
+  ClipboardList,
+  Clock,
 } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 import { Confetti } from "@/components/survey/confetti"
 import {
   DENTAL_TIPS,
-  VISIT_TYPES,
   INSURANCE_TYPES,
   INSURANCE_PURPOSES,
   SELF_PAY_PURPOSES,
@@ -124,7 +126,6 @@ export function KioskSurvey({
 
   // Staff setup state
   const [selectedStaffId, setSelectedStaffId] = useState("")
-  const [visitType, setVisitType] = useState("")
   const [insuranceType, setInsuranceType] = useState("")
   const [purpose, setPurpose] = useState("")
   const [ageGroup, setAgeGroup] = useState("")
@@ -161,9 +162,8 @@ export function KioskSurvey({
     setPurpose("")
   }, [])
 
-  // All three mandatory fields required
+  // Mandatory fields: insurance type + purpose (+ staff if authorized device)
   const canProceed =
-    visitType !== "" &&
     insuranceType !== "" &&
     purpose !== "" &&
     (!isAuthorizedDevice || selectedStaffId !== "")
@@ -176,7 +176,6 @@ export function KioskSurvey({
     setState("setup")
     setShowConfetti(false)
     // Keep selectedStaffId across patients (same staff hands tablet)
-    setVisitType("")
     setInsuranceType("")
     setPurpose("")
     setAgeGroup("")
@@ -196,7 +195,7 @@ export function KioskSurvey({
 
   const handleStartSurvey = useCallback(() => {
     if (!canProceed) return
-    const template = resolveTemplate(templates, visitType, purpose)
+    const template = resolveTemplate(templates, "revisit", purpose)
     if (!template) return
 
     setSelectedData({
@@ -207,7 +206,7 @@ export function KioskSurvey({
       questions: template.questions,
     })
     setPatientAttrs({
-      visitType: visitType as PatientAttributes["visitType"],
+      visitType: "revisit",
       insuranceType: insuranceType as PatientAttributes["insuranceType"],
       purpose,
       ageGroup,
@@ -215,7 +214,7 @@ export function KioskSurvey({
     })
     setState("survey")
     window.scrollTo(0, 0)
-  }, [canProceed, templates, visitType, insuranceType, purpose, ageGroup, gender, clinicName, clinicSlug])
+  }, [canProceed, templates, insuranceType, purpose, ageGroup, gender, clinicName, clinicSlug])
 
   const handleExit = useCallback(() => {
     router.push("/dashboard")
@@ -276,16 +275,6 @@ export function KioskSurvey({
                 </div>
               </div>
             )}
-
-            {/* Visit type */}
-            <PillSelector
-              label={messages.patientSetup.visitType}
-              options={VISIT_TYPES}
-              value={visitType}
-              onChange={setVisitType}
-              columns={2}
-              required
-            />
 
             {/* Insurance type */}
             <PillSelector
@@ -453,7 +442,32 @@ export function KioskSurvey({
   if (!selectedData) return null
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-8">
+    <div className="flex min-h-screen flex-col items-center bg-muted/40 px-4 py-6">
+      {isTestMode && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg bg-amber-100 px-4 py-2 text-xs font-semibold text-amber-800">
+          <FlaskConical className="h-3.5 w-3.5" />
+          {messages.kiosk.testModeBanner}
+        </div>
+      )}
+      {/* Patient-facing survey introduction */}
+      <div className="mb-4 w-full max-w-md rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white px-5 py-5 text-center shadow-sm">
+        <div className="mb-2 flex items-center justify-center gap-2">
+          <ClipboardList className="h-5 w-5 text-blue-600" />
+          <h2 className="text-lg font-bold text-blue-900">
+            {messages.surveyIntro.heading}
+          </h2>
+        </div>
+        <div className="flex flex-col items-center gap-1.5">
+          <p className="flex items-center gap-1.5 text-sm font-medium text-green-700">
+            <ShieldCheck className="h-4 w-4 shrink-0" />
+            {messages.surveyIntro.privacyNotice}
+          </p>
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Clock className="h-3.5 w-3.5 shrink-0" />
+            {messages.surveyIntro.timeEstimate}
+          </p>
+        </div>
+      </div>
       <div className="w-full max-w-md">
         <SurveyForm
           key={formKey}
