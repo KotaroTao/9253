@@ -695,7 +695,7 @@ export const messages = {
     ageGroup: "年代",
     gender: "性別",
     handToPatient: "患者さまに渡す",
-    requiredHint: "診療区分・内容を選択してください",
+    requiredHint: "来院区分・診療区分・内容を選択してください",
     staffRequiredHint: "公認端末では担当スタッフの選択が必須です",
   },
   surveyIntro: {

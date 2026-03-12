@@ -2,7 +2,7 @@ import { z } from "zod"
 import { messages } from "@/lib/messages"
 
 export const patientAttributesSchema = z.object({
-  visitType: z.enum(["first_visit", "revisit"]).optional(),
+  visitType: z.enum(["first_visit", "revisit"]),
   insuranceType: z.enum(["insurance", "self_pay"]).optional(),
   purpose: z.enum([
     // Insurance purposes (8)

@@ -23,7 +23,7 @@ export interface SurveyTemplateInfo {
 }
 
 export interface PatientAttributes {
-  visitType?: "first_visit" | "revisit"
+  visitType: "first_visit" | "revisit"
   insuranceType: "insurance" | "self_pay"
   purpose: string
   ageGroup: string

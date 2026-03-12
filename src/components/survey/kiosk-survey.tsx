@@ -21,6 +21,7 @@ import { QRCodeSVG } from "qrcode.react"
 import { Confetti } from "@/components/survey/confetti"
 import {
   DENTAL_TIPS,
+  VISIT_TYPES,
   INSURANCE_TYPES,
   INSURANCE_PURPOSES,
   SELF_PAY_PURPOSES,
@@ -44,9 +45,13 @@ interface KioskSurveyProps {
 type KioskState = "setup" | "survey" | "thanks"
 
 function resolveTemplate(
-  templates: SurveyTemplateInfo[]
+  templates: SurveyTemplateInfo[],
+  visitType: string
 ): SurveyTemplateInfo | undefined {
-  // Prefer "再診" template, then legacy "治療中" name, then any non-初診, then first
+  if (visitType === "first_visit") {
+    return templates.find((t) => t.name === "初診") ?? templates[0]
+  }
+  // "再診" first, then legacy "治療中" name, then any non-初診 template
   return (
     templates.find((t) => t.name === "再診") ??
     templates.find((t) => t.name === "治療中") ??
@@ -121,6 +126,7 @@ export function KioskSurvey({
 
   // Staff setup state
   const [selectedStaffId, setSelectedStaffId] = useState("")
+  const [visitType, setVisitType] = useState("")
   const [insuranceType, setInsuranceType] = useState("")
   const [purpose, setPurpose] = useState("")
   const [ageGroup, setAgeGroup] = useState("")
@@ -157,8 +163,9 @@ export function KioskSurvey({
     setPurpose("")
   }, [])
 
-  // Mandatory fields: insurance type + purpose (+ staff if authorized device)
+  // Mandatory fields: visit type + insurance type + purpose (+ staff if authorized device)
   const canProceed =
+    visitType !== "" &&
     insuranceType !== "" &&
     purpose !== "" &&
     (!isAuthorizedDevice || selectedStaffId !== "")
@@ -171,6 +178,7 @@ export function KioskSurvey({
     setState("setup")
     setShowConfetti(false)
     // Keep selectedStaffId across patients (same staff hands tablet)
+    setVisitType("")
     setInsuranceType("")
     setPurpose("")
     setAgeGroup("")
@@ -190,7 +198,7 @@ export function KioskSurvey({
 
   const handleStartSurvey = useCallback(() => {
     if (!canProceed) return
-    const template = resolveTemplate(templates)
+    const template = resolveTemplate(templates, visitType)
     if (!template) return
 
     setSelectedData({
@@ -201,6 +209,7 @@ export function KioskSurvey({
       questions: template.questions,
     })
     setPatientAttrs({
+      visitType: visitType as PatientAttributes["visitType"],
       insuranceType: insuranceType as PatientAttributes["insuranceType"],
       purpose,
       ageGroup,
@@ -208,7 +217,7 @@ export function KioskSurvey({
     })
     setState("survey")
     window.scrollTo(0, 0)
-  }, [canProceed, templates, insuranceType, purpose, ageGroup, gender, clinicName, clinicSlug])
+  }, [canProceed, templates, visitType, insuranceType, purpose, ageGroup, gender, clinicName, clinicSlug])
 
   const handleExit = useCallback(() => {
     router.push("/dashboard")
@@ -269,6 +278,16 @@ export function KioskSurvey({
                 </div>
               </div>
             )}
+
+            {/* Visit type */}
+            <PillSelector
+              label={messages.patientSetup.visitType}
+              options={VISIT_TYPES}
+              value={visitType}
+              onChange={setVisitType}
+              columns={2}
+              required
+            />
 
             {/* Insurance type */}
             <PillSelector
