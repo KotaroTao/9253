@@ -18,8 +18,8 @@ interface CollectionEntry {
 }
 
 interface DemoData {
-  responsesSinceLastAdvisory: number
-  advisoryThreshold: number
+  teethProgress: number
+  teethThreshold: number
   collections: CollectionEntry[]
   allTeeth: TeethOption[]
 }
@@ -37,7 +37,7 @@ export function DemoSettingsDialog({ clinicId, clinicName, onClose }: DemoSettin
   const [success, setSuccess] = useState(false)
   const [data, setData] = useState<DemoData | null>(null)
 
-  const [advisoryCount, setAdvisoryCount] = useState(0)
+  const [teethCount, setTeethCount] = useState(0)
   const [pendingAddIds, setPendingAddIds] = useState<string[]>([])
   const [pendingRemoveIds, setPendingRemoveIds] = useState<string[]>([])
 
@@ -49,7 +49,7 @@ export function DemoSettingsDialog({ clinicId, clinicName, onClose }: DemoSettin
       if (res.ok) {
         const d = await res.json()
         setData(d)
-        setAdvisoryCount(d.responsesSinceLastAdvisory)
+        setTeethCount(d.teethProgress)
       } else {
         const d = await res.json()
         setError(d.error ?? "読み込みに失敗しました")
@@ -72,7 +72,7 @@ export function DemoSettingsDialog({ clinicId, clinicName, onClose }: DemoSettin
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          responsesSinceLastAdvisory: advisoryCount,
+          teethProgress: teethCount,
           addTeethIds: pendingAddIds,
           removeCollectionIds: pendingRemoveIds,
         }),
@@ -124,7 +124,7 @@ export function DemoSettingsDialog({ clinicId, clinicName, onClose }: DemoSettin
     : []
 
   const hasChanges =
-    (data && advisoryCount !== data.responsesSinceLastAdvisory) ||
+    (data && teethCount !== data.teethProgress) ||
     pendingAddIds.length > 0 ||
     pendingRemoveIds.length > 0
 
@@ -155,29 +155,29 @@ export function DemoSettingsDialog({ clinicId, clinicName, onClose }: DemoSettin
             </div>
           ) : data ? (
             <>
-              {/* AI分析カウンター */}
+              {/* Kawaii Teeth 進捗カウンター */}
               <div>
-                <h3 className="text-sm font-semibold">{m.advisorySection}</h3>
-                <p className="mt-1 text-xs text-muted-foreground">{m.advisoryCountHint}</p>
+                <h3 className="text-sm font-semibold">{m.teethProgressSection}</h3>
+                <p className="mt-1 text-xs text-muted-foreground">{m.teethProgressHint}</p>
                 <div className="mt-3 flex items-center gap-3">
-                  <label className="text-sm font-medium">{m.advisoryCountLabel}</label>
+                  <label className="text-sm font-medium">{m.teethProgressLabel}</label>
                   <input
                     type="number"
                     min={0}
-                    max={data.advisoryThreshold}
-                    value={advisoryCount}
-                    onChange={(e) => setAdvisoryCount(Math.max(0, parseInt(e.target.value) || 0))}
+                    max={data.teethThreshold}
+                    value={teethCount}
+                    onChange={(e) => setTeethCount(Math.max(0, parseInt(e.target.value) || 0))}
                     className="w-24 rounded-lg border bg-background px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                   <span className="text-sm text-muted-foreground">
-                    / {data.advisoryThreshold}
+                    / {data.teethThreshold}
                   </span>
                 </div>
                 {/* プレビューバー */}
                 <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
                   <div
-                    className="h-full rounded-full bg-purple-400 transition-all"
-                    style={{ width: `${Math.min(100, (advisoryCount / data.advisoryThreshold) * 100)}%` }}
+                    className="h-full rounded-full bg-pink-400 transition-all"
+                    style={{ width: `${Math.min(100, (teethCount / data.teethThreshold) * 100)}%` }}
                   />
                 </div>
               </div>

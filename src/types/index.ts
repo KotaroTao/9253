@@ -78,60 +78,6 @@ export interface PostSurveyLinks {
   clinicHomepageUrl?: string // 医院HPリンク（独立して表示可能）
 }
 
-/** AI Advisory レポートのセクション型 */
-export interface AdvisorySection {
-  title: string
-  content: string
-  type:
-    | "strength"
-    | "improvement"
-    | "action"
-    | "trend"
-    | "summary"
-    | "correlation"
-    | "first_revisit_gap"
-    | "time_pattern"
-    | "action_effect"
-    | "distribution"
-    | "business_correlation"
-    | "seasonality"
-    | "staff_performance"
-    | "comment_themes"
-    | "patient_segments"
-    | "purpose_deep_dive"
-    | "retention_signals"
-    | "response_quality"
-    | "executive_summary"
-    | "root_cause"
-    | "strategic_actions"
-    | "highlight_discovery"
-    | "highlight_strength"
-    | "clinic_story"
-    | "staff_insights"
-    | "segment_insights"
-}
-
-/** AI Advisory レポートデータ */
-export interface AdvisoryReportData {
-  id: string
-  triggerType: string
-  responseCount: number
-  sections: AdvisorySection[]
-  summary: string
-  priority: string | null
-  generatedAt: string | Date
-}
-
-/** AI Advisory プログレスデータ */
-export interface AdvisoryProgress {
-  current: number       // 最終分析以降の回答数
-  threshold: number     // アンロック閾値
-  percentage: number    // 進捗率 0-100
-  totalResponses: number // 全回答数
-  lastReport: AdvisoryReportData | null
-  canGenerate: boolean  // 手動生成可能か
-  daysSinceLastReport: number | null
-}
 
 export interface RecentResponse {
   id: string

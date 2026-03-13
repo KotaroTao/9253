@@ -990,145 +990,16 @@ async function main() {
     console.log("\nPlatform tips already exist, skipping (preserving custom settings)")
   }
 
-  // =========================================================================
-  // AI Advisory レポート（デモデータ: 2件のレポート + カウンター設定）
-  // =========================================================================
-  await prisma.advisoryReport.deleteMany({ where: { clinicId: clinic.id } })
-
-  // 直近1ヶ月のデータで分析レポートを計算
-  const recentResponses = allResponses.filter((r) => {
-    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-    return r.respondedAt >= oneMonthAgo
-  })
-  const recentAvgScore = recentResponses.length > 0
-    ? Math.round((recentResponses.reduce((a, b) => a + b.overallScore, 0) / recentResponses.length) * 100) / 100
-    : 4.2
-
-  // レポート1: 2週間前に自動生成されたレポート
-  const report1Date = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
-  await prisma.advisoryReport.create({
-    data: {
-      clinicId: clinic.id,
-      triggerType: "threshold",
-      responseCount: allResponses.length - 150,
-      summary: `患者満足度は良好水準（${(recentAvgScore - 0.15).toFixed(1)}点）です。「待ち時間は気にならない程度でしたか？」の改善に取り組むことでさらなる向上が期待できます。`,
-      priority: "待ち時間は気にならない程度でしたか？",
-      generatedAt: report1Date,
-      sections: JSON.parse(JSON.stringify([
-        {
-          title: "総合評価",
-          content: `現在の患者満足度スコアは ${(recentAvgScore - 0.15).toFixed(1)} で、良好水準です。前月比 +0.2ポイントの上昇傾向です。総回答数は ${allResponses.length - 150}件です。`,
-          type: "summary",
-        },
-        {
-          title: "強み",
-          content: "以下の項目で高い評価を得ています: 「スタッフの対応は丁寧でしたか？」(4.6点)、「不安や痛みへの配慮は十分でしたか？」(4.5点)。これらの強みを維持し、患者さまへの訴求ポイントとして活用しましょう。",
-          type: "strength",
-        },
-        {
-          title: "改善ポイント",
-          content: "以下の項目でスコアが低めです: 「待ち時間は気にならない程度でしたか？」(3.8点)、「費用に関する説明は十分でしたか？」(3.9点)。特に最もスコアの低い「待ち時間」への対策を優先的に検討してください。",
-          type: "improvement",
-        },
-        {
-          title: "トレンド分析",
-          content: "直近1週間の回答数は42件、平均スコアは4.3点です。前週(4.1点)から上昇しており、良い傾向です。",
-          type: "trend",
-        },
-        {
-          title: "推奨アクション",
-          content: "現在2件の改善アクションが進行中です。効果をモニタリングし、スコアの変化を確認しましょう。\n高スコアの回答に8件のコメントが寄せられています。スタッフのモチベーション向上に活用しましょう。",
-          type: "action",
-        },
-      ])),
-    },
-  })
-
-  // レポート2: 最新レポート（3日前に手動実行）— Phase A 拡張版
-  const report2Date = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)
-  await prisma.advisoryReport.create({
-    data: {
-      clinicId: clinic.id,
-      triggerType: "manual",
-      responseCount: allResponses.length,
-      summary: `患者満足度は良好水準（${recentAvgScore.toFixed(2)}点）。8項目の分析を実施しました。重点改善領域:「費用に関する説明は十分でしたか？」`,
-      priority: "費用に関する説明は十分でしたか？",
-      generatedAt: report2Date,
-      sections: JSON.parse(JSON.stringify([
-        {
-          title: "総合評価",
-          content: `患者満足度スコアは ${recentAvgScore.toFixed(2)} で良好水準です。前月比 +0.12ポイントの上昇傾向です。\n総回答数: ${allResponses.length}件（直近30日の診療日平均: 8.2件/日）`,
-          type: "summary",
-        },
-        {
-          title: "強み — 高評価項目",
-          content: "以下の項目で高い評価を得ています。スタッフへの共有・モチベーション向上に活用してください。\n- スタッフの対応は丁寧でしたか？（再診）: 4.72点 ↑前期比+0.15\n- 不安や痛みへの配慮は十分でしたか？（再診）: 4.58点 →維持\n- 本日の診療についての説明は分かりやすかったですか？（再診）: 4.51点 ↑前期比+0.22",
-          type: "strength",
-        },
-        {
-          title: "設問間パターン分析",
-          content: "【パターン1】\n受付対応への評価は良好ですが、待ち時間のスコアが低い状態です。受付後の「待たされている感」が課題です。待ち時間の問題は「実際の長さ」ではなく「不透明さ」が本質であることが多いです。\n（受付対応: 4.35点、待ち時間: 3.72点）\n→ 待ち時間が10分以上になる場合、スタッフから「あと約○分です」と声かけする運用を導入しましょう。待ち時間の「見える化」だけで体感待ち時間は大幅に改善します。",
-          type: "correlation",
-        },
-        {
-          title: "初診 vs 再診ギャップ",
-          content: `初診（${Math.round(allResponses.length * 0.35)}件）と再診（${Math.round(allResponses.length * 0.65)}件）で有意なスコア差がある項目:\n- 治療説明: 初診 3.85 / 再診 4.51（差 -0.66、再診 > 初診）\n  初診患者の体験に課題があります。初来院時の不安やプロセスの分かりにくさが影響している可能性があります。\n- 安心感: 初診 3.92 / 再診 4.38（差 -0.46、再診 > 初診）\n  初診患者の体験に課題があります。初来院時の不安やプロセスの分かりにくさが影響している可能性があります。`,
-          type: "first_revisit_gap",
-        },
-        {
-          title: "曜日・時間帯パターン",
-          content: "月曜日のスコアが最も低く（3.82点、45件）、木曜日が最も高い（4.48点、52件）状態です。差は0.66ポイントあります。\n時間帯別では午後（3.95点）が低く、午前（4.38点）が高い傾向です。\n午後のスコア低下は、待ち時間の延長やスタッフ疲労が要因として多く見られます。予約枠の間隔見直しや午後の急患バッファ確保を検討してください。",
-          type: "time_pattern",
-        },
-        {
-          title: "スコア分布分析",
-          content: "スコア分布: 1点: 8件（2%）、2点: 18件（4%）、3点: 52件（12%）、4点: 168件（39%）、5点: 185件（43%）\n平均: 4.17点 / 標準偏差: 0.94\n低評価（1-2点）が6%あります。一部の患者に不満足な体験が発生しています。フリーテキストのコメントから具体的な不満要因を特定してください。",
-          type: "distribution",
-        },
-        {
-          title: "改善ポイント",
-          content: `スコアが4.0点未満の項目（優先度順）:\n- 待ち時間は気にならない程度でしたか？（初診）: 3.62点 ↑前期比+0.18（改善傾向） [待ち時間]\n- 費用に関する説明は十分でしたか？（初診）: 3.78点 ↓前期比-0.12（悪化傾向） [費用説明]\n- 治療説明は分かりやすかったですか？（初診）: 3.85点 →横ばい [治療説明]\n\n⚠ 前期比で悪化が顕著な項目: 「費用に関する説明は十分でしたか？」(-0.12)\n悪化傾向は早期に原因を特定し対処することが重要です。`,
-          type: "improvement",
-        },
-        {
-          title: "改善アクション効果検証",
-          content: "- 「待ち時間の見える化と声がけ」（42日経過）\n  ベースライン: 3.45 → 現在: 3.62（+0.17）📈 やや改善\n- 「視覚資料を活用した説明」（28日経過）\n  ベースライン: 3.80 → 現在: 3.85（+0.05）➡️ 変化なし",
-          type: "action_effect",
-        },
-        {
-          title: "トレンド分析",
-          content: `直近1週間: 回答数48件、平均スコア${recentAvgScore.toFixed(2)}点\n前週比 +0.08ポイントの上昇。改善施策の効果が出ている可能性があります。\n30日間の全体傾向: 月あたり+0.15の上昇トレンド。`,
-          type: "trend",
-        },
-        {
-          title: "経営指標×満足度",
-          content: "経営データと満足度スコアの相関（5ヶ月分）:\n満足度スコアと自費率に正の相関があります（相関係数: 0.72）。満足度が高い月は自費率も高い傾向です。丁寧な説明と信頼構築が自費選択を後押ししていることを示唆しています。\n満足度スコアとキャンセル率に相関があります（相関係数: -0.65）。満足度が高い月はキャンセルが少ない傾向です。体験改善が直接的にキャンセル率低下に貢献しています。\n直近3ヶ月の平均来院数は485人/月で、その前の3ヶ月（452人/月）から+7%増加しています。",
-          type: "business_correlation",
-        },
-        {
-          title: "季節性・前年同月比",
-          content: "季節パターン: 1月が最もスコアが低く（平均3.92）、10月が最も高い（平均4.35）傾向です。\n年末年始は駆け込み受診や急患が増え、通常より対応が手薄になりやすい時期です。この時期は特にスタッフ配置と予約枠管理を強化してください。\n回答数の季節変動: 8月が最少（平均38件）、11月が最多（平均72件）。回答が少ない月はスコアの振れ幅が大きくなるため、解釈に注意してください。",
-          type: "seasonality",
-        },
-        {
-          title: "推奨アクション",
-          content: "最優先: 「費用に関する説明は十分でしたか？」（3.78点）に対する改善アクションを登録してください。改善アクション管理画面から具体的な施策を選択できます。\n\n設問間パターン分析で検出されたパターンへの対応を検討してください。複数の設問に影響するため、改善効果が大きい可能性があります。\n\n進行中の改善アクションで効果が出ていない項目があります。施策の見直しまたは別のアプローチを検討してください。\n\n曜日・時間帯パターンで低スコアのスロットが検出されています。該当時間帯のスタッフ配置や予約枠を見直してください。\n\n季節性パターンが検出されています。低スコア月に向けた事前の体制強化（スタッフ配置・予約枠調整）を計画してください。\n\n高スコアの回答に12件のポジティブなコメントが寄せられています。スタッフミーティングで共有し、モチベーション向上に活用しましょう。",
-          type: "action",
-        },
-      ])),
-    },
-  })
-
-  // クリニック設定にadvisoryカウンターを設定（35/30 = 分析実行可能状態）
-  const advisoryPatch = JSON.stringify({
+  // Kawaii Teethカウンターを設定（25/30 = 次の獲得まであと5件）
+  const teethPatch = JSON.stringify({
     advisoryThreshold: 30,
-    responsesSinceLastAdvisory: 35,
+    responsesSinceLastAdvisory: 25,
   })
   await prisma.$executeRaw`
-    UPDATE clinics SET settings = settings || ${advisoryPatch}::jsonb
+    UPDATE clinics SET settings = settings || ${teethPatch}::jsonb
     WHERE id = ${clinic.id}::uuid
   `
-  console.log(`\nAI Advisory: 2件のレポート作成、カウンター 35/30 に設定（分析実行可能）`)
+  console.log(`\nKawaii Teeth: カウンター 25/30 に設定`)
 
   console.log("\nSeed completed!")
   console.log("\n--- Login Credentials ---")

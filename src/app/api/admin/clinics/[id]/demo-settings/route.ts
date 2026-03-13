@@ -45,8 +45,8 @@ export async function GET(
   })
 
   return successResponse({
-    responsesSinceLastAdvisory: settings.responsesSinceLastAdvisory ?? 0,
-    advisoryThreshold: settings.advisoryThreshold ?? 30,
+    teethProgress: settings.responsesSinceLastAdvisory ?? 0,
+    teethThreshold: settings.advisoryThreshold ?? 30,
     collections: collections.map((c) => ({
       collectionId: c.id,
       teethId: c.kawaiiTeethId,
@@ -68,7 +68,7 @@ export async function PATCH(
   const { id } = await params
 
   let body: {
-    responsesSinceLastAdvisory?: number
+    teethProgress?: number
     addTeethIds?: string[]
     removeCollectionIds?: string[]
   }
@@ -91,9 +91,9 @@ export async function PATCH(
     return errorResponse(messages.apiErrors.demoOnlyFeature, 400)
   }
 
-  // AI分析カウンター更新
-  if (body.responsesSinceLastAdvisory != null) {
-    const count = Math.max(0, Math.floor(body.responsesSinceLastAdvisory))
+  // Kawaii Teethカウンター更新
+  if (body.teethProgress != null) {
+    const count = Math.max(0, Math.floor(body.teethProgress))
     const patch = JSON.stringify({ responsesSinceLastAdvisory: count })
     await prisma.$executeRaw`
       UPDATE clinics SET settings = settings || ${patch}::jsonb
