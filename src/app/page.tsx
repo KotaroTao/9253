@@ -34,7 +34,6 @@ import {
   Check,
   X,
   Sparkles,
-  Bot,
   Star,
   Heart,
   BookOpen,
@@ -47,19 +46,19 @@ import {
 export const metadata: Metadata = {
   title: "MIERU Clinic | 歯科医師が、医療従事者の誇りを守るために作ったPX向上プラットフォーム",
   description:
-    "30秒タブレットアンケートで患者の本音を数値化。AI分析・経営レポート・ゲーミフィケーションで患者体験改善のPDCAを自動化。歯科医院専用・基本無料で始められます。",
+    "30秒タブレットアンケートで患者の本音を数値化。経営レポート・ゲーミフィケーションで患者体験改善のPDCAを自動化。歯科医院専用・基本無料で始められます。",
   keywords: "歯科,患者満足度,アンケート,医院経営,患者体験,MIERU Clinic,歯科経営",
   openGraph: {
     title: "MIERU Clinic | 歯科医師が作ったPX向上プラットフォーム",
     description:
-      "30秒タブレットアンケートで患者の本音を数値化。AI分析・ゲーミフィケーションで患者体験改善を自動化。歯科医院専用・基本無料。",
+      "30秒タブレットアンケートで患者の本音を数値化。ゲーミフィケーションで患者体験改善を自動化。歯科医院専用・基本無料。",
     type: "website",
   },
   twitter: {
     card: "summary",
     title: "MIERU Clinic | PX向上プラットフォーム",
     description:
-      "30秒アンケートで患者体験を数値化。AI分析・経営レポートで改善を自動化。歯科医院専用・基本無料。",
+      "30秒アンケートで患者体験を数値化。経営レポートで改善を自動化。歯科医院専用・基本無料。",
   },
 }
 
@@ -112,28 +111,21 @@ const features = [
     mock: "dashboard",
   },
   {
-    icon: Bot,
+    icon: Trophy,
     title: messages.landing.feature3Title,
     description: messages.landing.feature3Desc,
-    mock: "ai",
-    badge: "AI Powered",
-  },
-  {
-    icon: Trophy,
-    title: messages.landing.feature4Title,
-    description: messages.landing.feature4Desc,
     mock: "gamification",
   },
   {
     icon: ClipboardCheck,
-    title: messages.landing.feature5Title,
-    description: messages.landing.feature5Desc,
+    title: messages.landing.feature4Title,
+    description: messages.landing.feature4Desc,
     mock: "actions",
   },
   {
     icon: FileBarChart,
-    title: messages.landing.feature6Title,
-    description: messages.landing.feature6Desc,
+    title: messages.landing.feature5Title,
+    description: messages.landing.feature5Desc,
     mock: "metrics",
     badge: "Premium",
   },
@@ -194,12 +186,6 @@ const comparisonRows = [
     mieru: { text: "自動", status: "good" as const },
     aiReview: { text: "なし", status: "bad" as const },
     form: { text: "手動", status: "bad" as const },
-  },
-  {
-    label: "AI改善提案",
-    mieru: { text: "自動生成", status: "good" as const },
-    aiReview: { text: "なし", status: "bad" as const },
-    form: { text: "なし", status: "bad" as const },
   },
   {
     label: "経営指標との連携",
@@ -275,25 +261,6 @@ function DashboardMock() {
   )
 }
 
-function AIAnalysisMock() {
-  return (
-    <div className="rounded-xl border bg-muted/30 p-3 space-y-1.5">
-      <div className="rounded-lg bg-green-50 px-2 py-1.5">
-        <p className="text-[10px] font-semibold text-green-700">↗ 強み</p>
-        <p className="text-[9px] text-green-600">スタッフの対応 (4.7)</p>
-      </div>
-      <div className="rounded-lg bg-amber-50 px-2 py-1.5">
-        <p className="text-[10px] font-semibold text-amber-700">⚠ 改善</p>
-        <p className="text-[9px] text-amber-600">費用の説明 (3.9)</p>
-      </div>
-      <div className="rounded-lg bg-blue-50 px-2 py-1.5">
-        <p className="text-[10px] font-semibold text-blue-700">🎯 推奨</p>
-        <p className="text-[9px] text-blue-600">費用説明の改善アクション登録</p>
-      </div>
-    </div>
-  )
-}
-
 function GamificationMock() {
   return (
     <div className="rounded-xl border bg-muted/30 p-3 space-y-2">
@@ -304,7 +271,7 @@ function GamificationMock() {
       <div className="h-2 rounded-full bg-muted">
         <div className="h-full w-[83%] rounded-full bg-purple-500" />
       </div>
-      <p className="text-[9px] text-muted-foreground">25/30 件 — 次のAI分析まで</p>
+      <p className="text-[9px] text-muted-foreground">25/30 件 — 次の Kawaii Teeth まで</p>
     </div>
   )
 }
@@ -353,7 +320,6 @@ function MetricsMock() {
 const featureMocks: Record<string, () => JSX.Element> = {
   survey: SurveyMock,
   dashboard: DashboardMock,
-  ai: AIAnalysisMock,
   gamification: GamificationMock,
   actions: ActionsMock,
   metrics: MetricsMock,
@@ -438,37 +404,36 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* Card 3 (front): AI Analysis */}
+                {/* Card 3 (front): Gamification & Kawaii Teeth */}
                 <div className="hero-card-3 relative z-30 mt-20 ml-4">
                   <div className="rounded-2xl border bg-card p-5 shadow-2xl">
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="text-purple-500">🤖</span>
-                      <span className="text-sm font-bold">AI分析レポート</span>
-                      <Badge variant="secondary" className="text-[10px]">AI Powered</Badge>
+                      <span className="text-purple-500">🏆</span>
+                      <span className="text-sm font-bold">ゲーミフィケーション</span>
                     </div>
                     <div className="space-y-2">
+                      <div className="rounded-xl bg-purple-50 p-3">
+                        <p className="text-[10px] font-semibold text-purple-700 mb-1">🔥 連続ストリーク</p>
+                        <p className="text-[10px] text-purple-600">
+                          14日連続達成中！ゴールドランクまであと12件
+                        </p>
+                      </div>
+                      <div className="rounded-xl bg-pink-50 p-3">
+                        <p className="text-[10px] font-semibold text-pink-700 mb-1">🦷 Kawaii Teeth</p>
+                        <p className="text-[10px] text-pink-600">
+                          アンケート30件ごとにキャラクターを獲得！コレクション 5/12体
+                        </p>
+                      </div>
                       <div className="rounded-xl bg-blue-50 p-3">
-                        <p className="text-[10px] font-semibold text-blue-700 mb-1">📊 総合評価</p>
+                        <p className="text-[10px] font-semibold text-blue-700 mb-1">📊 質問別スコア</p>
                         <p className="text-[10px] text-blue-600">
-                          患者満足度スコア4.6で良好水準。前月比 +0.3ポイントの上昇傾向です。
+                          「スタッフの対応」(4.7)、「治療説明」(4.5) が高評価
                         </p>
                       </div>
                       <div className="rounded-xl bg-green-50 p-3">
-                        <p className="text-[10px] font-semibold text-green-700 mb-1">↗ 強み</p>
+                        <p className="text-[10px] font-semibold text-green-700 mb-1">🎯 改善アクション</p>
                         <p className="text-[10px] text-green-600">
-                          「スタッフの対応」(4.7)、「不安や痛みへの配慮」(4.6) で高評価。
-                        </p>
-                      </div>
-                      <div className="rounded-xl bg-amber-50 p-3">
-                        <p className="text-[10px] font-semibold text-amber-700 mb-1">⚠ 改善ポイント</p>
-                        <p className="text-[10px] text-amber-600">
-                          「費用に関する説明」(3.9)、「待ち時間」(4.0) がスコア低め。
-                        </p>
-                      </div>
-                      <div className="rounded-xl bg-red-50 p-3">
-                        <p className="text-[10px] font-semibold text-red-700 mb-1">🎯 推奨アクション</p>
-                        <p className="text-[10px] text-red-600">
-                          費用説明の改善アクションを登録しましょう。現在2件進行中。
+                          「費用説明の改善」実施中。ベースライン 3.9 → 現在 4.2
                         </p>
                       </div>
                     </div>

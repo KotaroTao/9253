@@ -10,7 +10,6 @@ import { ClinicSearch } from "@/components/admin/clinic-search"
 import { ClinicRow } from "@/components/admin/clinic-row"
 import { PxValueDashboard } from "@/components/admin/px-value-dashboard"
 import { AddClinicDialog } from "@/components/admin/add-clinic-dialog"
-import { AIStatusCard } from "@/components/admin/ai-status-card"
 import type { ClinicSettings, PlanTier } from "@/types"
 
 function ScoreBadge({ score, prevScore }: { score: number | null; prevScore: number | null }) {
@@ -288,9 +287,6 @@ export default async function AdminPage({
           <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
         </Link>
       </div>
-
-      {/* AI分析ステータス */}
-      <AIStatusCard />
 
       {/* PX-Value Rankings */}
       <Suspense>

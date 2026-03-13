@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma"
 import { getOperatorClinicId } from "@/lib/admin-mode"
 import { getStaffEngagementData } from "@/lib/queries/engagement"
 import { getQuestionCurrentScores } from "@/lib/queries/stats"
-import { getAdvisoryProgress } from "@/lib/queries/advisory"
 import { evaluateSpecialPlanProgress } from "@/lib/plan"
 import { StaffEngagement } from "@/components/dashboard/staff-engagement"
 import { ActivationChecklist } from "@/components/dashboard/activation-checklist"
@@ -43,8 +42,8 @@ export default async function DashboardPage() {
     ? await evaluateSpecialPlanProgress(clinicId, clinicSettings)
     : null
 
-  // Fetch engagement + active improvement actions + advisory progress + report count + staff count + dashboard comments
-  const [engagement, activeActions, advisoryProgress, advisoryReportCount, staffCount, commentsSetting] = await Promise.all([
+  // Fetch engagement + active improvement actions + staff count + dashboard comments
+  const [engagement, activeActions, staffCount, commentsSetting] = await Promise.all([
     getStaffEngagementData(clinicId, clinic?.slug),
     prisma.improvementAction.findMany({
       where: { clinicId, status: "active" },
@@ -62,8 +61,6 @@ export default async function DashboardPage() {
       orderBy: { createdAt: "desc" },
       take: 5,
     }),
-    getAdvisoryProgress(clinicId),
-    prisma.advisoryReport.count({ where: { clinicId } }),
     prisma.staff.count({ where: { clinicId, isActive: true } }),
     prisma.platformSetting.findUnique({ where: { key: "dashboardComments" } }),
   ])
@@ -98,9 +95,7 @@ export default async function DashboardPage() {
       <StaffEngagement
         data={engagement}
         kioskUrl={kioskUrl}
-        advisoryProgress={advisoryProgress}
         isAdmin={isAdmin}
-        advisoryReportCount={advisoryReportCount}
         activeActions={activeActions}
         questionScores={questionScores}
         staffCount={staffCount}

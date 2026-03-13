@@ -309,10 +309,10 @@ function DashboardMock() {
           ))}
         </div>
       </div>
-      {/* AI Insight */}
-      <div className="rounded-lg bg-blue-50 p-2">
-        <p className="text-[9px] font-medium text-blue-700 mb-0.5">AI分析</p>
-        <p className="text-[8px] text-blue-600">「待ち時間」のスコアが3.9 → 改善アクション推奨</p>
+      {/* Kawaii Teeth */}
+      <div className="rounded-lg bg-pink-50 p-2">
+        <p className="text-[9px] font-medium text-pink-700 mb-0.5">🦷 Kawaii Teeth</p>
+        <p className="text-[8px] text-pink-600">25/30件 — 次のキャラ獲得まであと5件！</p>
       </div>
     </div>
   )

@@ -59,7 +59,6 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
       "アンケート無制限",
       "スタッフ10名まで",
       "満足度レポート全機能",
-      "AI分析レポート",
       "経営レポート・KPI自動算出",
       "改善アクション管理",
       "患者属性フィルタ（5軸）",
@@ -116,7 +115,6 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
       "アンケート無制限",
       "スタッフ10名まで",
       "満足度レポート全機能",
-      "AI分析レポート",
       "経営レポート・KPI自動算出",
       "改善アクション管理",
       "患者属性フィルタ（5軸）",
@@ -129,7 +127,6 @@ export const PLANS: Record<PlanTier, PlanDefinition> = {
 /** 機能ごとに必要な最低プラン */
 export const FEATURE_REQUIREMENTS: Record<string, PlanTier> = {
   analytics: "standard",
-  advisory: "standard",
   improvement_actions: "standard",
   business_metrics: "standard",
   surveys_list: "free",
@@ -572,19 +569,8 @@ export const IMPROVEMENT_SUGGESTIONS: Record<string, ImprovementSuggestion[]> = 
   ],
 }
 
-// AI Advisory settings
-export const ADVISORY = {
-  DEFAULT_THRESHOLD: 30,           // 新規回答数でアンロック（2回目以降）
-  FIRST_THRESHOLD: 15,             // 初回分析の閾値（成功体験の早期化）
-  MIN_RESPONSES_FOR_FIRST: 15,     // 初回分析に必要な最低回答数（= FIRST_THRESHOLD）
-  HIGH_SCORE_THRESHOLD: 4.0,       // 高評価と判定する閾値
-  LOW_SCORE_THRESHOLD: 3.8,        // 低評価と判定する閾値
-  MIN_SAMPLES_FOR_INSIGHT: 5,      // インサイト生成に必要な最低サンプル数
-  SIGNIFICANT_GAP: 0.3,            // 有意な差と見なすスコア差
-  POLARIZATION_LOW_PCT: 15,        // 二極化判定: 低スコア(1-2)のパーセンテージ
-  POLARIZATION_HIGH_PCT: 40,       // 二極化判定: 高スコア(4-5)のパーセンテージ
-  CONSISTENCY_STDDEV: 0.6,         // 安定性判定: 標準偏差の閾値
-} as const
+// Kawaii Teeth 獲得閾値
+export const KAWAII_TEETH_THRESHOLD = 30 // アンケート30件で獲得
 
 // ─── 歯科コンサル知見: 設問カテゴリ別の分析ルール ───
 
@@ -684,13 +670,6 @@ export function getTimeSlotLabel(hour: number): string {
   return "夕方"
 }
 
-// AI分析回数バッジ
-export const ADVISORY_MILESTONES = [
-  { count: 1, label: "初回分析", emoji: "🔮" },
-  { count: 3, label: "3回目", emoji: "📊" },
-  { count: 5, label: "5回目", emoji: "🧪" },
-  { count: 10, label: "10回目", emoji: "🎓" },
-] as const
 
 export const OPERATOR_CLINIC_COOKIE = "mieru-operator-clinic"
 export const OPERATOR_MODE_MAX_AGE = 60 * 60 * 8 // 8 hours

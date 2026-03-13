@@ -4,10 +4,10 @@ import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { messages } from "@/lib/messages"
-import { STREAK_MILESTONES, ADVISORY_MILESTONES, RANKS } from "@/lib/constants"
+import { STREAK_MILESTONES, RANKS, KAWAII_TEETH_THRESHOLD } from "@/lib/constants"
 import {
   Trophy, CalendarOff, Smartphone, ArrowRight, Sparkles,
-  Target, TrendingUp, TrendingDown, Brain, MessageCircle, Clock, HelpCircle,
+  Target, TrendingUp, TrendingDown, MessageCircle, HelpCircle,
   ChevronLeft, ChevronRight, AlertTriangle, Users,
 } from "lucide-react"
 import Image from "next/image"
@@ -16,7 +16,6 @@ import { Confetti } from "@/components/survey/confetti"
 import { cn } from "@/lib/utils"
 import { KawaiiTeethCollection } from "@/components/dashboard/kawaii-teeth-collection"
 import type { EngagementData } from "@/lib/queries/engagement"
-import type { AdvisoryProgress } from "@/types"
 
 interface ActiveAction {
   id: string
@@ -33,9 +32,7 @@ interface ActiveAction {
 interface StaffEngagementProps {
   data: EngagementData
   kioskUrl: string
-  advisoryProgress: AdvisoryProgress
   isAdmin: boolean
-  advisoryReportCount: number
   activeActions?: ActiveAction[]
   questionScores?: Record<string, number>
   staffCount?: number
@@ -44,9 +41,7 @@ interface StaffEngagementProps {
 export function StaffEngagement({
   data,
   kioskUrl,
-  advisoryProgress,
   isAdmin,
-  advisoryReportCount,
   activeActions = [],
   questionScores = {},
   staffCount,
@@ -88,13 +83,9 @@ export function StaffEngagement({
   }, [commentCount, autoPaused, goNext])
 
   const weekTotal = weekDays.reduce((sum, d) => sum + d.count, 0)
-  const { current, threshold, percentage } = advisoryProgress
-  const advisoryUnlocked = percentage >= 100
-  const advisoryRemaining = threshold - current
 
   // 獲得済みバッジ
   const earnedStreakBadges = STREAK_MILESTONES.filter((m) => streak >= m.days)
-  const earnedAdvisoryBadges = ADVISORY_MILESTONES.filter((m) => advisoryReportCount >= m.count)
 
 
   async function handleToggleClosed(date: string, currentlyClosed: boolean) {
@@ -117,8 +108,8 @@ export function StaffEngagement({
 
   return (
     <div className="space-y-4">
-      {/* Confetti when AI analysis unlocked or daily goal achieved */}
-      {(advisoryUnlocked || (todayCount >= dailyGoal && dailyGoal > 0)) && <Confetti />}
+      {/* Confetti when daily goal achieved */}
+      {(todayCount >= dailyGoal && dailyGoal > 0) && <Confetti />}
 
       {/* スタッフ未登録アラート（管理者のみ） */}
       {isAdmin && staffCount === 0 && (
@@ -134,43 +125,6 @@ export function StaffEngagement({
             <p className="mt-0.5 text-xs text-amber-600/70">{messages.staff.noStaffAlertDesc}</p>
           </div>
           <ArrowRight className="h-4 w-4 shrink-0 text-amber-400" />
-        </Link>
-      )}
-
-      {/* AI分析未実行アラート（一度も分析していない & まだ閾値未達） */}
-      {advisoryReportCount === 0 && !advisoryUnlocked && (
-        <div className="flex items-center gap-3 rounded-xl border-2 border-purple-200 bg-gradient-to-r from-purple-50/60 to-white p-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-100 text-purple-500">
-            <Brain className="h-5 w-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-purple-900">{messages.advisory.noReport}</p>
-            <p className="mt-0.5 text-xs text-purple-600/70">
-              {messages.advisory.noReportDesc.replace("{threshold}", String(threshold))}
-            </p>
-          </div>
-          <span className="shrink-0 text-sm font-bold text-purple-500 tabular-nums">
-            {advisoryProgress.totalResponses}/{threshold}
-          </span>
-        </div>
-      )}
-
-      {/* AI分析実行可能アラート */}
-      {advisoryUnlocked && isAdmin && (
-        <Link
-          href="/dashboard/advisory"
-          className="flex items-center gap-3 rounded-xl border-2 border-purple-300 bg-gradient-to-r from-purple-50 to-purple-100/50 p-4 transition-all hover:border-purple-400 hover:shadow-md active:scale-[0.98]"
-        >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-500 text-white shadow-sm">
-            <Brain className="h-5 w-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-purple-900">AI分析を実行できます</p>
-            <p className="mt-0.5 text-xs text-purple-600/70">
-              アンケートが{threshold}件たまりました。タップして分析を実行しましょう
-            </p>
-          </div>
-          <ArrowRight className="h-4 w-4 shrink-0 text-purple-400" />
         </Link>
       )}
 
@@ -618,74 +572,40 @@ export function StaffEngagement({
         </div>
       )}
 
-      {/* AI分析クエスト */}
-      {totalCount > 0 && (
-        <Card className={cn(
-          "border-purple-200",
-          advisoryUnlocked
-            ? "bg-gradient-to-r from-purple-100/80 to-purple-50/50"
-            : "bg-gradient-to-r from-purple-50/50 to-white"
-        )}>
-          <CardContent className="py-5">
-            <div className="flex items-center gap-2">
-              <Brain className="h-4 w-4 text-purple-600" />
-              <p className="text-sm font-bold text-purple-900">
-                {messages.advisory.progressLabel}
-              </p>
-            </div>
-
-            <div className="mt-3 flex items-center gap-3">
-              <div className="flex-1 h-3 overflow-hidden rounded-full bg-purple-100">
-                <div
-                  className={cn(
-                    "h-full rounded-full transition-all duration-500",
-                    advisoryUnlocked ? "bg-purple-500" : "bg-purple-400"
-                  )}
-                  style={{ width: `${percentage}%` }}
-                />
+      {/* Kawaii Teeth 獲得クエスト */}
+      {totalCount > 0 && (() => {
+        const teethCurrent = totalCount % KAWAII_TEETH_THRESHOLD
+        const teethPercentage = Math.min(100, Math.round((teethCurrent / KAWAII_TEETH_THRESHOLD) * 100))
+        const teethRemaining = KAWAII_TEETH_THRESHOLD - teethCurrent
+        return (
+          <Card className="border-pink-200 bg-gradient-to-r from-pink-50/50 to-white">
+            <CardContent className="py-5">
+              <div className="flex items-center gap-2">
+                <span className="text-base">🦷</span>
+                <p className="text-sm font-bold text-pink-900">
+                  次の Kawaii Teeth まで
+                </p>
               </div>
-              <span className="text-sm font-bold text-purple-700 tabular-nums whitespace-nowrap">
-                {current}/{threshold}
-              </span>
-            </div>
 
-            <div className="mt-2 flex items-center justify-between">
-              {advisoryUnlocked ? (
-                <p className="text-xs font-medium text-purple-600">
-                  {messages.advisory.progressReady}
-                </p>
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  {messages.dashboard.encourageAlmostUnlock.replace("{remaining}", String(advisoryRemaining))}
-                </p>
-              )}
-              {advisoryProgress.lastReport && (
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Clock className="h-3 w-3" />
-                  {new Date(advisoryProgress.lastReport.generatedAt).toLocaleDateString("ja-JP", {
-                    month: "short",
-                    day: "numeric",
-                  })}
+              <div className="mt-3 flex items-center gap-3">
+                <div className="flex-1 h-3 overflow-hidden rounded-full bg-pink-100">
+                  <div
+                    className="h-full rounded-full bg-pink-400 transition-all duration-500"
+                    style={{ width: `${teethPercentage}%` }}
+                  />
+                </div>
+                <span className="text-sm font-bold text-pink-700 tabular-nums whitespace-nowrap">
+                  {teethCurrent}/{KAWAII_TEETH_THRESHOLD}
                 </span>
-              )}
-            </div>
+              </div>
 
-            {isAdmin && (advisoryUnlocked || advisoryProgress.lastReport) && (
-              <Link
-                href="/dashboard/advisory"
-                className={cn(
-                  "mt-3 flex items-center justify-center gap-1 rounded-lg border py-2 text-xs font-medium transition-colors",
-                  advisoryUnlocked
-                    ? "border-purple-400 bg-purple-500 text-white hover:bg-purple-600"
-                    : "border-purple-200 text-purple-600 hover:bg-purple-50"
-                )}
-              >
-                {advisoryUnlocked ? messages.advisory.generateButton : messages.advisory.viewReport}
-              </Link>
-            )}
-          </CardContent>
-        </Card>
-      )}
+              <p className="mt-2 text-xs text-muted-foreground">
+                あとアンケート{teethRemaining}件で Kawaii Teeth を獲得！
+              </p>
+            </CardContent>
+          </Card>
+        )
+      })()}
 
       {/* ⑥ マイルストーン + バッジ */}
       {totalCount > 0 && (
@@ -720,7 +640,7 @@ export function StaffEngagement({
             )}
 
             {/* Earned badges */}
-            {(earnedStreakBadges.length > 0 || earnedAdvisoryBadges.length > 0) && (
+            {earnedStreakBadges.length > 0 && (
               <div className="mt-4 border-t pt-3">
                 <p className="text-[10px] font-medium text-muted-foreground mb-2">獲得バッジ</p>
                 <div className="flex flex-wrap gap-1.5">
@@ -749,38 +669,6 @@ export function StaffEngagement({
                               <p className="text-[10px] font-bold text-orange-700 mb-1">獲得条件</p>
                               <p className="text-[10px] text-muted-foreground leading-relaxed">
                                 アンケート回答を<span className="font-bold text-orange-600">{badge.days}日連続</span>で記録する（休診日はスキップ）
-                              </p>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    )
-                  })}
-                  {earnedAdvisoryBadges.map((badge) => {
-                    const badgeKey = `advisory-${badge.count}`
-                    const isActive = activeBadge === badgeKey
-                    return (
-                      <div key={badge.count} className="relative">
-                        <button
-                          type="button"
-                          onClick={() => setActiveBadge(isActive ? null : badgeKey)}
-                          className={cn(
-                            "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
-                            isActive
-                              ? "bg-purple-200 text-purple-800 ring-1 ring-purple-300"
-                              : "bg-purple-100 text-purple-700 hover:bg-purple-150"
-                          )}
-                        >
-                          {badge.emoji}AI×{badge.count}
-                        </button>
-                        {isActive && (
-                          <>
-                            <div className="fixed inset-0 z-40" onClick={() => setActiveBadge(null)} />
-                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full z-50 mb-1.5 w-44 rounded-lg border bg-white p-2.5 shadow-lg">
-                              <div className="absolute left-1/2 -bottom-1.5 -translate-x-1/2 h-3 w-3 rotate-45 border-r border-b bg-white" />
-                              <p className="text-[10px] font-bold text-purple-700 mb-1">獲得条件</p>
-                              <p className="text-[10px] text-muted-foreground leading-relaxed">
-                                AI分析レポートを<span className="font-bold text-purple-600">{badge.count}回</span>実行する
                               </p>
                             </div>
                           </>

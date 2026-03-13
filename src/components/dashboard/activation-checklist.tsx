@@ -10,9 +10,8 @@ import { messages } from "@/lib/messages"
 interface ActivationStatus {
   staffRegistered: boolean
   firstSurveyDone: boolean
-  advisoryUnlocked: boolean
+  kawaiiTeethAcquired: boolean
   actionCreated: boolean
-  advisoryThreshold: number
   totalResponses: number
 }
 
@@ -57,14 +56,13 @@ export function ActivationChecklist({ isAdmin }: { isAdmin: boolean }) {
       description: m.firstSurveyDoneDesc,
     },
     {
-      key: "advisory",
-      label: m.advisoryUnlocked
+      key: "kawaiiTeeth",
+      label: m.kawaiiTeethAcquired
         .replace("{current}", String(status.totalResponses))
-        .replace("{threshold}", String(status.advisoryThreshold)),
-      done: status.advisoryUnlocked,
-      href: "/dashboard/advisory",
-      description: m.advisoryUnlockedDesc
-        .replace("{threshold}", String(status.advisoryThreshold)),
+        .replace("{threshold}", "30"),
+      done: status.kawaiiTeethAcquired,
+      href: "/dashboard",
+      description: m.kawaiiTeethAcquiredDesc,
     },
     ...(isAdmin
       ? [

@@ -6,7 +6,6 @@ import { successResponse, errorResponse } from "@/lib/api-helpers"
 import { messages } from "@/lib/messages"
 import { prisma } from "@/lib/prisma"
 import { processSubmission } from "@/lib/services/px-value-engine"
-import { incrementAdvisoryCounter } from "@/lib/queries/advisory"
 
 export async function POST(request: NextRequest) {
   try {
@@ -104,8 +103,6 @@ export async function POST(request: NextRequest) {
       ipHash,
     })
 
-    // AI Advisory カウンターをインクリメント（fire-and-forget）
-    incrementAdvisoryCounter(clinic.id).catch(() => {})
 
     return successResponse({ id: response.id }, 201)
   } catch {

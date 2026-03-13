@@ -6,7 +6,6 @@ import {
   Users,
   Settings,
   Target,
-  Brain,
   FileBarChart,
   Smartphone,
   ArrowRight,
@@ -80,7 +79,6 @@ const tocItems = [
   { id: "dashboard-admin", label: "管理者ダッシュボード" },
   { id: "analytics", label: "満足度レポート" },
   { id: "actions", label: "改善アクション" },
-  { id: "advisory", label: "AI分析レポート" },
   { id: "metrics", label: "経営レポート" },
   { id: "staff", label: "スタッフ管理" },
   { id: "settings", label: "設定" },
@@ -277,10 +275,6 @@ export default function GuidePage() {
                         <td className="py-2">来院数・売上・自費率からKPIを自動算出</td>
                       </tr>
                       <tr className="border-b">
-                        <td className="py-2 font-medium text-foreground">AI分析</td>
-                        <td className="py-2">回答データに基づくAIによる自動分析・改善提案</td>
-                      </tr>
-                      <tr className="border-b">
                         <td className="py-2 font-medium text-foreground">改善アクション</td>
                         <td className="py-2">分析に基づく改善施策の登録・進捗管理</td>
                       </tr>
@@ -358,41 +352,9 @@ export default function GuidePage() {
               </div>
             </section>
 
-            {/* 7. AI分析レポート */}
+            {/* 7. 経営レポート */}
             <section>
-              <SectionTitle id="advisory" number={7} title="AI分析レポート" icon={Brain} />
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  一定数の回答が蓄積されると、AIが自動的にデータを分析し、強み・改善点・推奨アクションを提案します。
-                </p>
-                <div className="rounded-lg border bg-card p-4">
-                  <h4 className="text-sm font-semibold mb-2">レポートに含まれる内容</h4>
-                  <ul className="space-y-1.5 text-xs text-muted-foreground">
-                    {[
-                      "総合評価と満足度トレンド",
-                      "強み（高スコア質問の分析）",
-                      "改善ポイント（低スコア質問の分析）",
-                      "具体的な推奨アクション",
-                      "患者セグメント分析",
-                      "時間帯・曜日パターン",
-                    ].map((text, i) => (
-                      <li key={i} className="flex items-center gap-2">
-                        <ArrowRight className="h-3 w-3 shrink-0 text-primary" />
-                        <span>{text}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <TipBox>
-                  ダッシュボードのプログレスバーで「次のAI分析まであと何件」が確認できます。
-                  アンケート回答を積み重ねることで新しいレポートが生成されます。
-                </TipBox>
-              </div>
-            </section>
-
-            {/* 8. 経営レポート */}
-            <section>
-              <SectionTitle id="metrics" number={8} title="経営レポート" icon={FileBarChart} />
+              <SectionTitle id="metrics" number={7} title="経営レポート" icon={FileBarChart} />
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   月次の来院数・売上・自費率を入力することで、患者満足度と経営指標の相関を分析できます。
@@ -440,9 +402,9 @@ export default function GuidePage() {
               </div>
             </section>
 
-            {/* 10. スタッフ管理 */}
+            {/* 8. スタッフ管理 */}
             <section>
-              <SectionTitle id="staff" number={9} title="スタッフ管理" icon={Users} />
+              <SectionTitle id="staff" number={8} title="スタッフ管理" icon={Users} />
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   スタッフの登録・編集・有効/無効の切替ができます。
@@ -464,9 +426,9 @@ export default function GuidePage() {
               </div>
             </section>
 
-            {/* 10. 設定 */}
+            {/* 9. 設定 */}
             <section>
-              <SectionTitle id="settings" number={10} title="設定" icon={Settings} />
+              <SectionTitle id="settings" number={9} title="設定" icon={Settings} />
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   クリニックの基本設定を管理できます。
@@ -493,7 +455,7 @@ export default function GuidePage() {
 
             {/* 11. FAQ */}
             <section>
-              <SectionTitle id="faq" number={11} title="よくある質問" icon={HelpCircle} />
+              <SectionTitle id="faq" number={10} title="よくある質問" icon={HelpCircle} />
               <div className="space-y-4">
                 {[
                   {
@@ -546,7 +508,7 @@ export default function GuidePage() {
 
             {/* 13. 困ったときは */}
             <section>
-              <SectionTitle id="troubleshooting" number={12} title="困ったときは" icon={Wrench} />
+              <SectionTitle id="troubleshooting" number={11} title="困ったときは" icon={Wrench} />
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   よくあるトラブルと対処法をまとめています。

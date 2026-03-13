@@ -13,7 +13,6 @@ import {
   PieChart,
   FileBarChart,
   ExternalLink,
-  Brain,
   Lock,
   Sparkles,
   Crown,
@@ -57,7 +56,6 @@ function hasFeatureAccess(effectivePlan: PlanTier, feature: string): boolean {
 const adminNavItems: NavItem[] = [
   { href: "/dashboard/analytics", label: messages.nav.analytics, icon: PieChart, feature: "analytics" },
   { href: "/dashboard/metrics", label: messages.nav.monthlyMetrics, icon: FileBarChart, feature: "business_metrics" },
-  { href: "/dashboard/advisory", label: messages.nav.advisory, icon: Brain, feature: "advisory" },
   { href: "/dashboard/actions", label: messages.improvementActions.title, icon: Target, feature: "improvement_actions" },
   { href: "/dashboard/staff", label: messages.nav.staff, icon: Users, feature: "staff_management" },
   { href: "/dashboard/settings", label: messages.nav.settings, icon: Settings },
