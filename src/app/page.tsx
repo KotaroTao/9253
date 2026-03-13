@@ -44,21 +44,21 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "MIERU Clinic | 歯科医師が、医療従事者の誇りを守るために作ったPX向上プラットフォーム",
+  title: "MIERU Clinic | 歯科医院専用 患者体験改善プラットフォーム",
   description:
-    "30秒タブレットアンケートで患者の本音を数値化。経営レポート・ゲーミフィケーションで患者体験改善のPDCAを自動化。歯科医院専用・基本無料で始められます。",
-  keywords: "歯科,患者満足度,アンケート,医院経営,患者体験,MIERU Clinic,歯科経営",
+    "30秒タブレットアンケートで患者の本音を数値化。集計・分析・レポートを自動化し、効率的に患者体験の改善サイクルを実現。歯科医院専用・基本無料で始められます。",
+  keywords: "歯科,患者満足度,アンケート,医院経営,患者体験,MIERU Clinic,歯科経営,自動化,効率化",
   openGraph: {
-    title: "MIERU Clinic | 歯科医師が作ったPX向上プラットフォーム",
+    title: "MIERU Clinic | 歯科医院専用 患者体験改善プラットフォーム",
     description:
-      "30秒タブレットアンケートで患者の本音を数値化。ゲーミフィケーションで患者体験改善を自動化。歯科医院専用・基本無料。",
+      "30秒タブレットアンケートで患者の本音を数値化。集計・分析を自動化し、効率的に改善サイクルを実現。歯科医院専用・基本無料。",
     type: "website",
   },
   twitter: {
     card: "summary",
-    title: "MIERU Clinic | PX向上プラットフォーム",
+    title: "MIERU Clinic | 患者体験改善プラットフォーム",
     description:
-      "30秒アンケートで患者体験を数値化。経営レポートで改善を自動化。歯科医院専用・基本無料。",
+      "30秒アンケートで患者体験を数値化。集計・分析・レポートを自動化。歯科医院専用・基本無料。",
   },
 }
 
@@ -265,11 +265,11 @@ function GamificationMock() {
   return (
     <div className="rounded-xl border bg-muted/30 p-3 space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-medium">🔥 連続77日</span>
+        <span className="text-[10px] font-medium">🦷 Kawaii Teeth</span>
         <span className="text-[10px] text-emerald-600">⚡ ゴールド</span>
       </div>
       <div className="h-2 rounded-full bg-muted">
-        <div className="h-full w-[83%] rounded-full bg-purple-500" />
+        <div className="h-full w-[83%] rounded-full bg-pink-400" />
       </div>
       <p className="text-[9px] text-muted-foreground">25/30 件 — 次の Kawaii Teeth まで</p>
     </div>
@@ -413,9 +413,9 @@ export default function HomePage() {
                     </div>
                     <div className="space-y-2">
                       <div className="rounded-xl bg-purple-50 p-3">
-                        <p className="text-[10px] font-semibold text-purple-700 mb-1">🔥 連続ストリーク</p>
+                        <p className="text-[10px] font-semibold text-purple-700 mb-1">⚡ ランクシステム</p>
                         <p className="text-[10px] text-purple-600">
-                          14日連続達成中！ゴールドランクまであと12件
+                          現在ゴールドランク！プラチナまであと12件
                         </p>
                       </div>
                       <div className="rounded-xl bg-pink-50 p-3">
@@ -731,7 +731,7 @@ export default function HomePage() {
               </div>
               <div className="hover-lift rounded-2xl border bg-card p-8 text-center">
                 <p className="text-gradient text-4xl font-bold tracking-tight">
-                  <CountUp end={18} suffix="+" />
+                  <CountUp end={8} suffix="+" />
                 </p>
                 <p className="mt-2 text-base font-semibold">{messages.landing.result3Label}</p>
                 <p className="mt-2 text-sm text-muted-foreground">{messages.landing.result3Desc}</p>
@@ -1013,7 +1013,7 @@ export default function HomePage() {
                   {APP_NAME}
                 </span>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  歯科医院専用 患者満足度向上プラットフォーム
+                  歯科医院専用 患者体験改善プラットフォーム
                 </p>
               </div>
               <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-sm text-muted-foreground">
