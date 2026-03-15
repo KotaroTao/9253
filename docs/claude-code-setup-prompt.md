@@ -477,7 +477,8 @@ jobs:
             --max-instances 3 \
             --service-account "cloud-run-{{サービス名}}@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com" \
             --add-cloudsql-instances ${{ secrets.CLOUD_SQL_CONNECTION }} \
-            --vpc-connector "{{サービス名}}-vpc-connector" \
+            --network "default" \
+            --subnet "default" \
             --vpc-egress "private-ranges-only" \
             --set-env-vars "NODE_ENV=production" \
             --set-env-vars "DATABASE_URL=${{ secrets.DATABASE_URL }}" \
@@ -573,12 +574,6 @@ for ROLE in roles/run.admin roles/artifactregistry.writer roles/cloudbuild.build
   gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
     --member="serviceAccount:${SA_EMAIL}" --role="${ROLE}" --quiet
 done
-
-# VPCコネクタ
-gcloud compute networks vpc-access connectors create {{サービス名}}-vpc-connector \
-  --region="${REGION}" --network=default --range=10.8.0.0/28 \
-  --machine-type=e2-micro --min-instances=2 --max-instances=10 \
-  || echo "(既に存在)"
 
 # SAキー生成
 KEY_FILE="${HOME}/github-actions-key.json"
