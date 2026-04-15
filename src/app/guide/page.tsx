@@ -13,6 +13,10 @@ import {
   HelpCircle,
   Crown,
   Wrench,
+  ShieldCheck,
+  Sparkles,
+  Trophy,
+  Flame,
 } from "lucide-react"
 
 export const metadata: Metadata = {
@@ -70,7 +74,7 @@ function TipBox({ children }: { children: React.ReactNode }) {
 const tocItems = [
   { id: "overview", label: "サービス概要" },
   { id: "survey", label: "アンケートの実施" },
-  { id: "dashboard-admin", label: "管理者ダッシュボード" },
+  { id: "dashboard-admin", label: "ダッシュボード" },
   { id: "analytics", label: "満足度レポート" },
   { id: "actions", label: "改善アクション" },
   { id: "metrics", label: "経営レポート" },
@@ -115,10 +119,20 @@ export default function GuidePage() {
             <div className="rounded-2xl border bg-card p-6 sm:p-8">
               <h1 className="text-2xl font-bold sm:text-3xl">{APP_NAME} 使い方ガイド</h1>
               <p className="mt-3 text-muted-foreground leading-relaxed">
-                このガイドでは、MIERU Clinic の基本的な使い方を医院スタッフ向けにわかりやすく説明します。
-                日々のアンケート運用からダッシュボードの見方、改善アクションの使い方まで、
-                順を追ってご案内します。
+                このガイドでは、{APP_NAME} の基本的な使い方を医院スタッフ向けにわかりやすく説明します。
+                日々のアンケート運用からダッシュボードの見方、改善アクションの使い方まで、順を追ってご案内します。
               </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                  <Tablet className="h-3 w-3" />患者体験の見える化
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                  <BarChart3 className="h-3 w-3" />データで経営改善
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                  <ShieldCheck className="h-3 w-3" />匿名・個人情報非収集
+                </span>
+              </div>
             </div>
 
             {/* 1. サービス概要 */}
@@ -126,14 +140,15 @@ export default function GuidePage() {
               <SectionTitle id="overview" number={1} title="サービス概要" icon={BarChart3} />
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  MIERU Clinic は、歯科医院専用の患者満足度向上プラットフォームです。
+                  {APP_NAME} は、歯科医院専用の<strong>患者満足度向上プラットフォーム</strong>です。
                   患者さまにタブレット（iPad等）でアンケートに回答いただき、その結果をリアルタイムで分析・可視化します。
+                  集めたデータは「患者体験の改善」に直接つながる形で表示され、医院の日々の気づきと経営判断をサポートします。
                 </p>
                 <div className="grid gap-3 sm:grid-cols-3">
                   {[
-                    { icon: Tablet, title: "30秒アンケート", desc: "タブレットで簡単回答" },
-                    { icon: BarChart3, title: "自動分析", desc: "回答データをリアルタイム集計" },
-                    { icon: Target, title: "改善サイクル", desc: "データに基づく改善を実行" },
+                    { icon: Tablet, title: "約3分アンケート", desc: "タブレットで患者さまが簡単回答" },
+                    { icon: BarChart3, title: "自動分析", desc: "スコア・属性別・トレンドをリアルタイム集計" },
+                    { icon: Target, title: "改善サイクル", desc: "データに基づく具体的な改善を実行" },
                   ].map((item, i) => (
                     <div key={i} className="rounded-lg border bg-card p-4 text-center">
                       <item.icon className="mx-auto h-8 w-8 text-primary mb-2" />
@@ -142,6 +157,10 @@ export default function GuidePage() {
                     </div>
                   ))}
                 </div>
+                <TipBox>
+                  {APP_NAME} は<strong>患者体験改善ツール</strong>であり、口コミ獲得を目的としたサービスではありません。
+                  アンケートはすべて匿名・任意で、個人を特定する情報は収集しません。IPアドレスもハッシュ化して記録されます。
+                </TipBox>
               </div>
             </section>
 
@@ -167,7 +186,7 @@ export default function GuidePage() {
                   </StepCard>
                   <StepCard step={4} title="患者さまが回答">
                     各質問に5段階（星）で評価いただきます。最後にフリーテキスト欄（任意）もあります。
-                    約30秒で完了します。
+                    設問数にもよりますが、通常3分程度で回答が完了します。
                   </StepCard>
                   <StepCard step={5} title="回答完了">
                     回答完了後、サンクスページと歯の豆知識が表示されます。
@@ -187,13 +206,65 @@ export default function GuidePage() {
               </div>
             </section>
 
-            {/* 3. 管理者ダッシュボード */}
+            {/* 3. ダッシュボード */}
             <section>
-              <SectionTitle id="dashboard-admin" number={3} title="管理者ダッシュボード" icon={BarChart3} />
+              <SectionTitle id="dashboard-admin" number={3} title="ダッシュボード" icon={BarChart3} />
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  オーナー権限でログインしたアカウントがアクセスできる追加機能です。サイドバーから各ページに移動できます。
-                  スタッフ権限のアカウントは、ダッシュボードのホーム画面のみ閲覧可能です。
+                  ログイン後のダッシュボードは、<strong>ホーム画面</strong>と、オーナー権限でのみアクセスできる<strong>各種メニュー</strong>で構成されます。
+                </p>
+
+                <h3 className="text-base font-semibold mt-4">ホーム画面（全員共通）</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  オーナー・スタッフのどちらでログインしても最初に表示される画面です。
+                  スタッフ権限のアカウントでは、このホーム画面のみが閲覧可能となります。
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-lg border bg-card p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles className="h-4 w-4 text-amber-500" />
+                      <h4 className="text-sm font-semibold">ハピネスメーター</h4>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      今日の平均スコアを絵文字で可視化。一目で患者さまの満足度がわかります。
+                    </p>
+                  </div>
+                  <div className="rounded-lg border bg-card p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Target className="h-4 w-4 text-blue-500" />
+                      <h4 className="text-sm font-semibold">日次目標</h4>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      1日のアンケート目標件数。達成時はConfettiアニメーションで祝福されます。
+                    </p>
+                  </div>
+                  <div className="rounded-lg border bg-card p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Flame className="h-4 w-4 text-orange-500" />
+                      <h4 className="text-sm font-semibold">連続ストリーク</h4>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      目標を連続達成した日数。定休日は自動スキップ。3日/7日/14日/30日/60日/90日でバッジ獲得。
+                    </p>
+                  </div>
+                  <div className="rounded-lg border bg-card p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Trophy className="h-4 w-4 text-purple-500" />
+                      <h4 className="text-sm font-semibold">ランクシステム</h4>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      通算回答数に応じた8段階ランク（ルーキー→ブロンズ→シルバー→…→レジェンド）。
+                    </p>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  さらに、<strong>患者の声</strong>（フリーテキスト回答）や<strong>スタッフリーダーボード</strong>（回答数ランキング）もホーム画面から確認できます。
+                </p>
+
+                <h3 className="text-base font-semibold mt-6">サイドバーメニュー（オーナー限定）</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  オーナー権限でログインすると、サイドバーから以下の機能にアクセスできます。
+                  一部の機能はスタンダードプラン以上でのみご利用いただけます。
                 </p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -201,32 +272,42 @@ export default function GuidePage() {
                       <tr className="border-b text-left">
                         <th className="pb-2 font-medium">メニュー</th>
                         <th className="pb-2 font-medium">内容</th>
+                        <th className="pb-2 font-medium">必要プラン</th>
                       </tr>
                     </thead>
                     <tbody className="text-muted-foreground">
                       <tr className="border-b">
                         <td className="py-2 font-medium text-foreground">満足度レポート</td>
                         <td className="py-2">期間別・属性別のスコア分析、日次トレンド、ヒートマップ</td>
+                        <td className="py-2 whitespace-nowrap"><span className="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-700">スタンダード</span></td>
                       </tr>
                       <tr className="border-b">
                         <td className="py-2 font-medium text-foreground">経営レポート</td>
-                        <td className="py-2">来院数・売上・自費率からKPIを自動算出（オーナー限定）</td>
+                        <td className="py-2">来院数・売上・自費率からKPIを自動算出</td>
+                        <td className="py-2 whitespace-nowrap"><span className="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-700">スタンダード</span></td>
                       </tr>
                       <tr className="border-b">
                         <td className="py-2 font-medium text-foreground">改善アクション</td>
                         <td className="py-2">分析に基づく改善施策の登録・進捗管理</td>
+                        <td className="py-2 whitespace-nowrap"><span className="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-700">スタンダード</span></td>
                       </tr>
                       <tr className="border-b">
                         <td className="py-2 font-medium text-foreground">スタッフ管理</td>
                         <td className="py-2">スタッフの追加・編集・有効/無効切替、ログインアカウント発行</td>
+                        <td className="py-2 whitespace-nowrap"><span className="rounded bg-green-100 px-2 py-0.5 text-xs text-green-700">フリー〜</span></td>
                       </tr>
                       <tr>
                         <td className="py-2 font-medium text-foreground">設定</td>
                         <td className="py-2">クリニック名、診療科目、定休日、アンケート完了後の誘導設定</td>
+                        <td className="py-2 whitespace-nowrap"><span className="rounded bg-green-100 px-2 py-0.5 text-xs text-green-700">フリー〜</span></td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
+                <TipBox>
+                  フリープランでは「スタンダード」バッジの機能はロック表示となります。サイドバーに鍵アイコンが表示された場合は、
+                  スタンダードプランへのアップグレードが必要です。
+                </TipBox>
               </div>
             </section>
 
@@ -236,6 +317,7 @@ export default function GuidePage() {
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   患者満足度を多角的に分析できるレポート画面です。
+                  <span className="ml-1 inline-flex items-center rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700">スタンダードプラン以上</span>
                 </p>
 
                 <h3 className="text-base font-semibold">使える分析機能</h3>
@@ -243,11 +325,12 @@ export default function GuidePage() {
                   {[
                     "期間セレクタ: 7日/30日/90日/180日/365日、またはカスタム日付範囲",
                     "患者属性フィルタ: 来院種別・診療区分・診療内容・年代・性別の5軸",
-                    "テンプレート別スコア: 初診/再診ごとの加重平均スコアと前期比較",
+                    "テンプレート別スコア: 初診/再診ごとの加重平均スコアと前期比較（増減率を自動計算）",
                     "日次トレンド: 回答数と平均スコアの推移グラフ",
                     "質問別分析: 設問ごとの平均スコアを一覧表示",
                     "満足度ヒートマップ: 曜日×時間帯のスコア分布",
                     "スタッフリーダーボード: 月次/通算の回答数ランキング",
+                    "アンケート個別閲覧: 1件ずつ全回答内容（スコア・フリーテキスト）を確認可能",
                   ].map((text, i) => (
                     <li key={i} className="flex items-start gap-2">
                       <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
@@ -255,6 +338,13 @@ export default function GuidePage() {
                     </li>
                   ))}
                 </ul>
+
+                <h3 className="text-base font-semibold mt-4">前期比較の見方</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  選択した期間（例: 直近30日）と、その1つ前の同じ長さの期間（例: その前の30日）を自動で比較します。
+                  スコアの増減と回答数の変化が同時に表示されるので、施策の効果を数値で確認できます。
+                </p>
+
                 <TipBox>
                   患者属性フィルタは医院端末モードで回答されたアンケートのみが対象です。
                   属性データが記録されていない回答はフィルタ適用外となります。
@@ -268,25 +358,31 @@ export default function GuidePage() {
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   分析結果をもとに、具体的な改善施策を登録・管理できます。
+                  <span className="ml-1 inline-flex items-center rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700">スタンダードプラン以上</span>
                 </p>
 
                 <h3 className="text-base font-semibold mt-4 mb-3">改善アクションの流れ</h3>
                 <div className="space-y-3">
                   <StepCard step={1} title="アクションを作成">
                     「新規アクション」からタイトル・説明・対象質問を入力して作成します。
-                    カテゴリ別の提案テンプレートも利用できます。
+                    「接遇」「待ち時間」「説明の分かりやすさ」などカテゴリ別の提案テンプレートから選ぶこともできます。
                   </StepCard>
                   <StepCard step={2} title="ベースラインスコアを確認">
                     作成時点の対象質問スコアがベースラインとして自動記録されます。
                   </StepCard>
                   <StepCard step={3} title="実施・記録">
                     アクション実施後、実施ログを記録していきます。
-                    「こんなことをやった」「患者の反応」などをメモできます。
+                    「こんなことをやった」「患者の反応」などを日付付きでメモできます。
                   </StepCard>
                   <StepCard step={4} title="効果測定">
                     一定期間後にスコアの変化を確認。ベースラインと比較して効果を検証します。
+                    効果があれば継続、なければ別のアプローチに切り替えます。
                   </StepCard>
                 </div>
+                <TipBox>
+                  改善アクションは「PDCAサイクル」を見える化する機能です。登録しただけで終わらせず、
+                  週1回のミーティングで進捗を確認する運用が効果的です。
+                </TipBox>
               </div>
             </section>
 
@@ -296,6 +392,8 @@ export default function GuidePage() {
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   月次の来院数・売上・自費率を入力することで、患者満足度と経営指標の相関を分析できます。
+                  <span className="ml-1 inline-flex items-center rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700">スタンダードプラン以上</span>
+                  <span className="ml-1 inline-flex items-center rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">オーナー限定</span>
                 </p>
                 <h3 className="text-base font-semibold mb-3">入力項目</h3>
                 <div className="grid gap-2 sm:grid-cols-2">
@@ -311,9 +409,23 @@ export default function GuidePage() {
                     </div>
                   ))}
                 </div>
+                <h3 className="text-base font-semibold mt-4 mb-3">自動算出される主なKPI</h3>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  {[
+                    "患者単価（月次売上 ÷ 総来院数）",
+                    "初診・再診比率",
+                    "自費率の推移",
+                    "満足度スコアと来院数の相関",
+                    "前月比の増減（売上・来院数）",
+                  ].map((text, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                      <span>{text}</span>
+                    </li>
+                  ))}
+                </ul>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  入力データから「患者単価」「満足度→来院数相関」などのKPIが自動算出されます。
-                  レポートタブでは期間別のトレンドグラフも確認できます。
+                  レポートタブでは期間別のトレンドグラフも確認でき、過去のデータを振り返ることができます。
                 </p>
 
                 <h3 className="text-base font-semibold mt-6 mb-3 flex items-center gap-2">
@@ -420,8 +532,8 @@ export default function GuidePage() {
                 <div className="space-y-2">
                   {[
                     { title: "クリニック名", desc: "ダッシュボードやアンケートに表示される名前" },
-                    { title: "診療科目", desc: "一般・矯正・小児・審美・口腔外科から選択。ベンチマーク基準に使用" },
-                    { title: "定休日（曜日指定）", desc: "毎週の定休曜日。ストリーク計算や日次目標の算出に使用され、休診日は自動スキップされます" },
+                    { title: "診療科目", desc: "一般・矯正・小児・審美・口腔外科から選択。ベンチマーク基準や目標設定に使用されます" },
+                    { title: "定休日（曜日指定）", desc: "毎週の定休曜日を登録。ストリーク計算や日次目標の算出から自動除外されます" },
                     { title: "アンケート完了後の誘導", desc: "「アンケートのみ終了」または「LINE友だち追加」の2択。LINE誘導を選ぶとサンクス画面にQRコードが表示されます" },
                     { title: "LINE公式アカウントURL", desc: "アンケート完了後に表示するLINE友だち追加リンク（任意）" },
                     { title: "医院ホームページURL", desc: "アンケート完了後に表示する医院HPリンク（任意）。LINE誘導の有無とは独立して設定可能" },
@@ -453,11 +565,15 @@ export default function GuidePage() {
                   },
                   {
                     q: "アンケートは何件まで実施できますか？",
-                    a: "ご利用プランにより異なります。フリープランは月50件まで、スタンダード以上は無制限です。",
+                    a: "ご利用プランにより異なります。フリープランは月100件まで、スタンダードプラン以上は無制限です。",
+                  },
+                  {
+                    q: "プランの違いは何ですか？",
+                    a: "フリープラン（¥0）: 月100件・スタッフ1名・データ保持3ヶ月・基本ダッシュボードのみ。スタンダードプラン（¥19,800/月）: 回答無制限・スタッフ10名・満足度/経営レポート・改善アクション・LINE誘導・データ保持無制限。エンタープライズプラン（¥39,800/月〜）: 複数院の法人横断ダッシュボード・スタッフ無制限。",
                   },
                   {
                     q: "日次目標の件数はどう決まりますか？",
-                    a: "前月の来院数（経営レポートの入力値）と診療日数から自動算出されます。前月データがない場合は過去30営業日の平均が使われます。目標を連続7日達成/未達成で目標レベル（乗数）が自動調整されます。",
+                    a: "前月の来院数（経営レポートの入力値）と診療日数から自動算出されます。前月データがない場合は過去30営業日の平均回答数が使われ、それもなければ1日10件のフォールバック値になります。目標を連続7日達成/未達成で目標レベル（乗数 0.3/0.4/0.5）が自動調整されます。",
                   },
                   {
                     q: "休診日にストリークは途切れますか？",
@@ -469,7 +585,11 @@ export default function GuidePage() {
                   },
                   {
                     q: "データはどのくらい保持されますか？",
-                    a: "プランにより異なります。フリープラン3ヶ月、スターター12ヶ月、スタンダード以上は無制限です。",
+                    a: "プランにより異なります。フリープランは3ヶ月、スタンダードプラン以上は無制限で保持されます。",
+                  },
+                  {
+                    q: "サイドバーに鍵マークが付いたメニューがあります",
+                    a: "その機能はスタンダードプラン以上でのみご利用いただけます。フリープランではロック表示となり、アップグレード案内が表示されます。",
                   },
                   {
                     q: "経営レポートが見られないスタッフがいます",
@@ -558,6 +678,22 @@ export default function GuidePage() {
                       "LINE公式アカウントのURLが正しく入力されているか確認してください",
                     ],
                   },
+                  {
+                    problem: "サイドバーのメニューに鍵マーク（ロック表示）が出ている",
+                    solutions: [
+                      "その機能はスタンダードプラン以上で利用可能です。フリープランではロック表示となります",
+                      "メニューをクリックするとアップグレード案内画面が表示されます",
+                      "プランの変更・契約については MIERU Clinic 運営までお問い合わせください",
+                    ],
+                  },
+                  {
+                    problem: "フリープランで月100件の上限に達した",
+                    solutions: [
+                      "フリープランは月100件までアンケート回答を受け付けられます",
+                      "上限に達すると翌月1日にリセットされます",
+                      "上限なしで利用したい場合はスタンダードプラン以上へのアップグレードをご検討ください",
+                    ],
+                  },
                 ].map((item, i) => (
                   <div key={i} className="rounded-lg border bg-card p-4">
                     <h4 className="flex items-start gap-2 text-sm font-semibold">
@@ -577,10 +713,25 @@ export default function GuidePage() {
               </div>
             </section>
 
-            {/* Footer note */}
+            {/* Privacy & Footer note */}
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-5">
+              <div className="flex items-start gap-3">
+                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                <div className="space-y-1">
+                  <h3 className="text-sm font-semibold text-emerald-900">プライバシー・法令遵守について</h3>
+                  <ul className="text-xs text-emerald-800 space-y-0.5">
+                    <li>・{APP_NAME} は患者さまの氏名・連絡先など個人を特定する情報を一切収集しません</li>
+                    <li>・IPアドレスはSHA-256でハッシュ化して記録され、個人の特定はできません</li>
+                    <li>・アンケートはすべて匿名・任意での回答です</li>
+                    <li>・医療広告ガイドラインに準拠した運用を行っています</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
             <div className="rounded-lg border bg-muted/30 p-5 text-center">
               <p className="text-sm text-muted-foreground">
-                ご不明な点がございましたら、管理者にお問い合わせください。
+                ご不明な点がございましたら、医院のオーナー、または {APP_NAME} 運営までお問い合わせください。
               </p>
             </div>
           </main>
